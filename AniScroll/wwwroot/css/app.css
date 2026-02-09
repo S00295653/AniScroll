@@ -1,0 +1,460 @@
+﻿/* ========== ADAPTATION WASM - CENTRAGE ========== */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.anime-scroll-app {
+    max-width: 100vw; /* Responsive sur mobile */
+    max-height: 100vh;
+}
+
+/* ========== BASE ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: black;
+    color: white;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+/* ========== APP CONTAINER ========== */
+.anime-scroll-app {
+    width: 450px;
+    height: 100vh;
+    background: black;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+/* ========== SCROLL CONTAINER ========== */
+.main-scroll {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ========== ANIME CARD ========== */
+.anime-card {
+    width: 100%;
+    /* La hauteur est maintenant définie inline via le style */
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+
+    /* ========== TRANSITION CONTROL ========== */
+    /* Pas de transition pendant le drag */
+    .anime-card.no-transition {
+        transition: none !important;
+    }
+
+    /* Transition uniquement pour le snap final */
+    .anime-card.with-transition {
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .anime-card.active {
+        pointer-events: all;
+        z-index: 10;
+    }
+
+.bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: 120%;
+    background-position: center;
+    filter: blur(6px);
+    opacity: 0.4;
+    overflow: hidden;
+}
+
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
+}
+
+/* ========== CONTENT WRAPPER - LAYOUTS ========== */
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px 30px 50px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+    /* Layout normal : grande image en haut, infos en bas */
+    .content-wrapper.layout-normal {
+        padding: 20px 30px 50px;
+    }
+
+    /* Layout short : description courte → grande image reste en bas */
+    .content-wrapper.layout-short {
+        padding: 20px 30px 30px;
+    }
+
+        .content-wrapper.layout-short .image-section {
+            flex: 1;
+            margin-bottom: 15px;
+        }
+
+        .content-wrapper.layout-short .info-section {
+            margin-top: 0;
+        }
+
+    /* Layout medium : description moyenne → image moyenne en haut */
+    .content-wrapper.layout-medium {
+        padding: 15px 30px 30px;
+    }
+
+        .content-wrapper.layout-medium .image-section {
+            flex: 0;
+            margin-bottom: 15px;
+        }
+
+        .content-wrapper.layout-medium .info-section {
+            margin-top: 0;
+        }
+
+    /* Layout long : description longue → petite image minimale en haut */
+    .content-wrapper.layout-long {
+        padding: 15px 30px 30px;
+    }
+
+        .content-wrapper.layout-long .image-section {
+            flex: 0;
+            margin-bottom: 12px;
+        }
+
+        .content-wrapper.layout-long .info-section {
+            margin-top: 0;
+        }
+
+/* ========== IMAGE ========== */
+.image-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.anime-image {
+    width: 280px;
+    height: 420px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+    .anime-image:hover {
+        transform: scale(1.05);
+    }
+
+/* ========== INFO ========== */
+.info-section {
+    margin-top: auto;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+    max-width: 390px;
+}
+
+    .title.title-long {
+        font-size: 22px;
+        margin-bottom: 8px;
+    }
+
+    .title.title-very-long {
+        font-size: 18px;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+
+.season-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #b4b4b4;
+    margin-bottom: 5px;
+}
+
+/* ========== STATUS DOT AVEC GLOW EFFECT ========== */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+    .status-dot.releasing {
+        background: rgb(0, 230, 0);
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+        animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    .status-dot.upcoming {
+        background: rgb(230, 0, 0);
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+        animation: pulse-red 2s ease-in-out infinite;
+    }
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+    }
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+    }
+}
+
+.genres {
+    font-size: 14px;
+    color: #E94560;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* ========== STATS ========== */
+.stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.badge-score {
+    background: #FFD700;
+    color: black;
+}
+
+.badge-episodes {
+    background: #0F3460;
+    color: white;
+}
+
+    .badge-episodes::before {
+        content: '📺';
+        filter: grayscale(1) brightness(2);
+        margin-right: 4px;
+    }
+
+/* ========== DESCRIPTION ========== */
+.description-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.description-preview {
+    font-size: 14px;
+    color: #c8c8c8;
+    line-height: 20px;
+    margin-bottom: 0;
+    max-width: 390px;
+    flex: 1;
+}
+
+.description-scroll-wrapper {
+    overflow-y: auto;
+    cursor: grab;
+    margin-bottom: 0;
+    flex: 1;
+    /* MASQUER LA SCROLLBAR */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE et Edge */
+}
+
+    /* MASQUER LA SCROLLBAR - WebKit (Chrome, Safari) */
+    .description-scroll-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+
+    .description-scroll-wrapper:active {
+        cursor: grabbing;
+    }
+
+.description-full {
+    font-size: 14px;
+    color: #dcdcdc;
+    line-height: 20px;
+    max-width: 390px;
+}
+
+    .description-full p {
+        margin: 0 0 15px 0;
+    }
+
+/* BOUTONS CENTRÉS */
+.expand-btn,
+.collapse-btn {
+    background: transparent;
+    border: none;
+    color: #6495ED;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 10px 0;
+    margin: 0 auto;
+    text-align: center;
+    flex-shrink: 0;
+    display: block;
+    width: 100%;
+}
+
+    .expand-btn:hover,
+    .collapse-btn:hover {
+        color: #4169E1;
+    }
+
+/* ========== LOADING ========== */
+.loading-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.loading-box {
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid #E94560;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    max-width: 370px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 25px;
+    border: 3px solid #2a2a2a;
+    border-top: 3px solid #E94560;
+    border-radius: 50%;
+    animation: spin 1.5s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-title {
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.loading-subtitle {
+    font-size: 12px;
+    color: #888888;
+}
+
+/* ========== OVERLAY CONTROLS ========== */
+.overlay-controls {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.close-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+    .close-btn:hover {
+        background: #E94560;
+    }
+
+.counter {
+    background: rgba(0, 0, 0, 0.63);
+    border-radius: 15px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
