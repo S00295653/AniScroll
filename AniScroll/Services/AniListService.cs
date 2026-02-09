@@ -9,14 +9,13 @@ namespace AniScroll.Services
         private readonly HttpClient _httpClient;
         private readonly Random _random;
 
-        // ⚠️ DIFFÉRENCE WASM : HttpClient injecté
         public AniListService(HttpClient httpClient)
         {
             _httpClient = httpClient;
             _random = new Random();
         }
 
-        public async Task<AnimeCard> GetRandomAnimeAsync()
+        public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
             try
             {
@@ -91,11 +90,11 @@ namespace AniScroll.Services
         {
             var titleObj = media["title"];
             string displayTitle = (!string.IsNullOrEmpty(titleObj?["english"]?.ToString()))
-                ? titleObj["english"].ToString()
-                : titleObj?["romaji"]?.ToString();
+                ? titleObj["english"]!.ToString()
+                : titleObj?["romaji"]?.ToString() ?? "Unknown";
 
             var coverObj = media["coverImage"];
-            string imageUrl = coverObj?["extraLarge"]?.ToString() ?? coverObj?["large"]?.ToString();
+            string imageUrl = coverObj?["extraLarge"]?.ToString() ?? coverObj?["large"]?.ToString() ?? "";
 
             string score = media["averageScore"] != null && media["averageScore"].Type != JTokenType.Null
                 ? media["averageScore"].ToString()
@@ -146,7 +145,7 @@ namespace AniScroll.Services
                 Id = media["id"]?.Value<int>() ?? 0,
                 Title = displayTitle,
                 ImageUrl = imageUrl,
-                BannerUrl = media["bannerImage"]?.ToString(),
+                BannerUrl = media["bannerImage"]?.ToString() ?? "",
                 Score = score,
                 Description = description,
                 Season = season,
@@ -159,14 +158,14 @@ namespace AniScroll.Services
 
         public async Task<List<AnimeCard>> GetMultipleAnimesAsync(int count)
         {
-            var tasks = new List<Task<AnimeCard>>();
+            var tasks = new List<Task<AnimeCard?>>();
             for (int i = 0; i < count; i++)
             {
                 tasks.Add(GetRandomAnimeAsync());
             }
 
             var results = await Task.WhenAll(tasks);
-            return results.Where(a => a != null).ToList();
+            return results.Where(a => a != null).Cast<AnimeCard>().ToList();
         }
     }
 }
