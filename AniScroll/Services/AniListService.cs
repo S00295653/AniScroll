@@ -1,9 +1,8 @@
-﻿using AnimeScrollWasm.Models;
-using AniScroll.Models;
+﻿using AniScroll.Models;
 using Newtonsoft.Json.Linq;
 using System.Text;
 
-namespace AnimeScrollWasm.Services
+namespace AniScroll.Services
 {
     public class AniListService
     {
