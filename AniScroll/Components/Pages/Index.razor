@@ -3,12 +3,13 @@
 @using AniScroll.Services
 @inject AniListService AniListService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
     <!-- Build Version -->
-    <div class="build-version">v1.2.0</div>
+    <div class="build-version">v1.3.0</div>
     
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -86,7 +87,6 @@
                                 }
                                 else
                                 {
-                                    <!-- Scroll NATIF - pas d'événements de drag sur mobile -->
                                     <div class="description-scroll-wrapper"
                                          style="@GetDescriptionWrapperStyle(anime.Description)"
                                          @ref="descScrollRef">
@@ -105,13 +105,13 @@
             </div>
         }
 
-        @if (isLoading || isPreloading)
+        @if (isLoading)
         {
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
-                    <p class="loading-title">🔍 @(isPreloading ? "Préchargement..." : "Recherche en cours...")</p>
-                    <p class="loading-subtitle">Exploration de nouveaux animes sur AniList</p>
+                    <p class="loading-title">🔍 Chargement initial...</p>
+                    <p class="loading-subtitle">Préparation de votre expérience anime</p>
                 </div>
             </div>
         }
@@ -120,9 +120,9 @@
     <!-- Contrôles overlay -->
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
-        @if (isPreloading)
+        @if (bufferSize > 0)
         {
-            <div class="preload-indicator">📥</div>
+            <div class="buffer-indicator">📦 @bufferSize ready</div>
         }
     </div>
 </div>
@@ -132,41 +132,48 @@
     private HashSet<int> expandedAnimes = new HashSet<int>();
     private bool isLoading = false;
     private int currentIndex = 0;
+    private int bufferSize = 0;
 
-    // ========== ⚙️ CONFIGURATION DU SCROLL ==========
+    // ========== ⚙️ CONFIGURATION ==========
     private double CARD_HEIGHT = 800;
     private bool viewportHeightInitialized = false;
+    private const double SWIPE_VALIDATION_PERCENT = 0.06;
 
-    // Seuil de swipe réduit pour faciliter
-    private const double SWIPE_VALIDATION_PERCENT = 0.06; // 6% = ~48 pixels sur 800px
+    // ========== 🚀 NOUVEAU SYSTÈME DE CHARGEMENT PROGRESSIF ==========
+    private const int INITIAL_LOAD_COUNT = 5;
+    private const int LOAD_MORE_THRESHOLD = 3; // Charger plus quand il reste 3 animes
+    private const int LOAD_MORE_COUNT = 3; // Charger 3 animes à la fois
+    private System.Threading.Timer? _bufferCheckTimer;
 
-    // ========== 🚀 LAZY LOADING CONFIGURATION ==========
-    private const int INITIAL_LOAD_COUNT = 5; // Nombre d'animes au démarrage
-    private const int PRELOAD_THRESHOLD = 2; // Précharger quand on est à N cartes de la fin
-    private const int BATCH_LOAD_COUNT = 5; // Nombre d'animes à charger par batch
-    private bool isPreloading = false;
-    private SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1); // Évite les chargements simultanés
-
-    // Variables pour le drag de la card principale
+    // Variables pour le drag
     private bool isDraggingCard = false;
     private double dragStartY = 0;
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
 
-    // Variables pour la description
     private ElementReference descScrollRef;
     private ElementReference appContainer;
-
-    // Track des cartes créées
     private HashSet<int> newlyCreatedCards = new HashSet<int>();
 
     // Throttling
     private DateTime lastRenderTime = DateTime.Now;
-    private const int THROTTLE_MS = 8; // ~120 FPS pour plus de fluidité
+    private const int THROTTLE_MS = 8;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnimes(INITIAL_LOAD_COUNT, isInitialLoad: true);
+        // 🚀 DÉMARRER LE BACKGROUND LOADER
+        AniListService.StartBackgroundLoading();
+        
+        // Charger les premiers animes
+        await LoadInitialAnimes();
+        
+        // Démarrer le timer pour vérifier le buffer régulièrement
+        _bufferCheckTimer = new System.Threading.Timer(
+            async _ => await UpdateBufferSize(),
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2)
+        );
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -187,33 +194,50 @@
     }
 
     // ============================================
-    // 🚀 LAZY LOADING AVEC PRÉCHARGEMENT INTELLIGENT
+    // 🚀 CHARGEMENT PROGRESSIF
     // ============================================
 
-    private async Task LoadAnimes(int count, bool isInitialLoad = false)
+    private async Task LoadInitialAnimes()
     {
-        // Utiliser le sémaphore pour éviter les chargements multiples simultanés
-        if (!await loadingSemaphore.WaitAsync(0))
-        {
-            // Un chargement est déjà en cours
-            return;
-        }
+        isLoading = true;
+        StateHasChanged();
 
         try
         {
-            if (isInitialLoad)
-            {
-                isLoading = true;
-            }
-            else
-            {
-                isPreloading = true;
-            }
+            // Récupérer depuis le buffer (instantané)
+            var newAnimes = await AniListService.GetAnimesFromBufferAsync(INITIAL_LOAD_COUNT);
             
-            StateHasChanged();
+            if (newAnimes != null && newAnimes.Count > 0)
+            {
+                int startIndex = animes.Count;
+                animes.AddRange(newAnimes);
 
+                for (int i = startIndex; i < animes.Count; i++)
+                {
+                    newlyCreatedCards.Add(i);
+                }
+
+                System.Diagnostics.Debug.WriteLine($"✅ Chargement initial: {newAnimes.Count} animes");
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+            
+            await Task.Delay(50);
+            newlyCreatedCards.Clear();
+        }
+    }
+
+    private async Task LoadMoreAnimes()
+    {
+        try
+        {
             int startIndex = animes.Count;
-            var newAnimes = await AniListService.GetMultipleAnimesAsync(count);
+            
+            // Récupérer depuis le buffer (instantané pour l'utilisateur)
+            var newAnimes = await AniListService.GetAnimesFromBufferAsync(LOAD_MORE_COUNT);
             
             if (newAnimes != null && newAnimes.Count > 0)
             {
@@ -224,39 +248,49 @@
                     newlyCreatedCards.Add(i);
                 }
 
-                System.Diagnostics.Debug.WriteLine($"✅ Chargé {newAnimes.Count} animes. Total: {animes.Count}");
+                System.Diagnostics.Debug.WriteLine($"✅ Chargé {newAnimes.Count} animes supplémentaires. Total: {animes.Count}");
+                StateHasChanged();
+                
+                await Task.Delay(50);
+                newlyCreatedCards.Clear();
             }
-
-            isLoading = false;
-            isPreloading = false;
-            StateHasChanged();
-
-            await Task.Delay(50);
-            newlyCreatedCards.Clear();
         }
-        finally
+        catch (Exception ex)
         {
-            loadingSemaphore.Release();
+            System.Diagnostics.Debug.WriteLine($"❌ Erreur LoadMoreAnimes: {ex.Message}");
         }
     }
 
-    /// <summary>
-    /// Vérifie si on doit précharger plus d'animes
-    /// </summary>
-    private async Task CheckAndPreloadIfNeeded()
+    private async Task CheckAndLoadMore()
     {
-        // Si on est proche de la fin, précharger plus d'animes
         int remainingCards = animes.Count - currentIndex - 1;
         
-        if (remainingCards <= PRELOAD_THRESHOLD && !isPreloading && !isLoading)
+        if (remainingCards <= LOAD_MORE_THRESHOLD)
         {
-            System.Diagnostics.Debug.WriteLine($"🔄 Préchargement déclenché. Cartes restantes: {remainingCards}");
-            await LoadAnimes(BATCH_LOAD_COUNT);
+            System.Diagnostics.Debug.WriteLine($"🔄 Chargement auto déclenché. Restant: {remainingCards}");
+            await LoadMoreAnimes();
+        }
+    }
+
+    private async Task UpdateBufferSize()
+    {
+        try
+        {
+            int newBufferSize = await AniListService.GetBufferSizeAsync();
+            if (newBufferSize != bufferSize)
+            {
+                bufferSize = newBufferSize;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"❌ Erreur UpdateBufferSize: {ex.Message}");
         }
     }
 
     // ============================================
-    // CALCUL DU MODE DE LAYOUT
+    // LAYOUT ET STYLES
     // ============================================
 
     private string GetLayoutMode(int animeId, string description)
@@ -308,11 +342,11 @@
         }
         else if (descLength < 800)
         {
-            return "max-height: 350px;"; // Augmenté pour voir le bouton
+            return "max-height: 350px;";
         }
         else
         {
-            return "max-height: 450px;"; // Augmenté pour voir le bouton
+            return "max-height: 450px;";
         }
     }
 
@@ -343,7 +377,7 @@
     }
 
     // ============================================
-    // 🎯 GESTION DU SWIPE - SOURIS (Desktop)
+    // 🎯 SWIPE - SOURIS
     // ============================================
 
     private void HandleCardMouseDown(MouseEventArgs e, int index)
@@ -383,16 +417,14 @@
         {
             if (currentDragOffset < 0)
             {
-                // Swipe vers le haut - carte suivante
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
-                    await CheckAndPreloadIfNeeded(); // Vérifier si on doit précharger
+                    await CheckAndLoadMore();
                 }
             }
             else if (currentDragOffset > 0)
             {
-                // Swipe vers le bas - carte précédente
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -409,7 +441,7 @@
     }
 
     // ============================================
-    // 🎯 GESTION DU SWIPE - TOUCH (Mobile)
+    // 🎯 SWIPE - TOUCH
     // ============================================
 
     private void HandleCardTouchStart(TouchEventArgs e, int index)
@@ -455,16 +487,14 @@
         {
             if (currentDragOffset < 0)
             {
-                // Swipe vers le haut - carte suivante
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
-                    await CheckAndPreloadIfNeeded(); // Vérifier si on doit précharger
+                    await CheckAndLoadMore();
                 }
             }
             else if (currentDragOffset > 0)
             {
-                // Swipe vers le bas - carte précédente
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -493,7 +523,7 @@
     }
 
     // ============================================
-    // GESTION DE L'EXPANSION
+    // EXPANSION
     // ============================================
 
     private bool IsExpanded(int animeId)
@@ -527,10 +557,13 @@
         return description.Substring(0, 150) + "...";
     }
 
-    public class ScrollInfo
+    public async ValueTask DisposeAsync()
     {
-        public double ScrollTop { get; set; }
-        public double ScrollHeight { get; set; }
-        public double ClientHeight { get; set; }
+        _bufferCheckTimer?.Dispose();
+        
+        if (AniListService is IAsyncDisposable disposable)
+        {
+            await disposable.DisposeAsync();
+        }
     }
 }
