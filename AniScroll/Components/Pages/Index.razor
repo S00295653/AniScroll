@@ -8,7 +8,7 @@
 
 <div class="anime-scroll-app" @ref="appContainer">
     <!-- Build Version -->
-    <div class="build-version">v2.1.3</div>
+    <div class="build-version">v1.2.0</div>
     
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -105,12 +105,12 @@
             </div>
         }
 
-        @if (isLoading)
+        @if (isLoading || isPreloading)
         {
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
-                    <p class="loading-title">🔍 Recherche en cours...</p>
+                    <p class="loading-title">🔍 @(isPreloading ? "Préchargement..." : "Recherche en cours...")</p>
                     <p class="loading-subtitle">Exploration de nouveaux animes sur AniList</p>
                 </div>
             </div>
@@ -120,6 +120,10 @@
     <!-- Contrôles overlay -->
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
+        @if (isPreloading)
+        {
+            <div class="preload-indicator">📥</div>
+        }
     </div>
 </div>
 
@@ -135,6 +139,13 @@
 
     // Seuil de swipe réduit pour faciliter
     private const double SWIPE_VALIDATION_PERCENT = 0.06; // 6% = ~48 pixels sur 800px
+
+    // ========== 🚀 LAZY LOADING CONFIGURATION ==========
+    private const int INITIAL_LOAD_COUNT = 5; // Nombre d'animes au démarrage
+    private const int PRELOAD_THRESHOLD = 2; // Précharger quand on est à N cartes de la fin
+    private const int BATCH_LOAD_COUNT = 5; // Nombre d'animes à charger par batch
+    private bool isPreloading = false;
+    private SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1); // Évite les chargements simultanés
 
     // Variables pour le drag de la card principale
     private bool isDraggingCard = false;
@@ -155,7 +166,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnimes(5);
+        await LoadAnimes(INITIAL_LOAD_COUNT, isInitialLoad: true);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -175,25 +186,73 @@
         }
     }
 
-    private async Task LoadAnimes(int count)
+    // ============================================
+    // 🚀 LAZY LOADING AVEC PRÉCHARGEMENT INTELLIGENT
+    // ============================================
+
+    private async Task LoadAnimes(int count, bool isInitialLoad = false)
     {
-        isLoading = true;
-        StateHasChanged();
-
-        int startIndex = animes.Count;
-        var newAnimes = await AniListService.GetMultipleAnimesAsync(count);
-        animes.AddRange(newAnimes);
-
-        for (int i = startIndex; i < animes.Count; i++)
+        // Utiliser le sémaphore pour éviter les chargements multiples simultanés
+        if (!await loadingSemaphore.WaitAsync(0))
         {
-            newlyCreatedCards.Add(i);
+            // Un chargement est déjà en cours
+            return;
         }
 
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            if (isInitialLoad)
+            {
+                isLoading = true;
+            }
+            else
+            {
+                isPreloading = true;
+            }
+            
+            StateHasChanged();
 
-        await Task.Delay(50);
-        newlyCreatedCards.Clear();
+            int startIndex = animes.Count;
+            var newAnimes = await AniListService.GetMultipleAnimesAsync(count);
+            
+            if (newAnimes != null && newAnimes.Count > 0)
+            {
+                animes.AddRange(newAnimes);
+
+                for (int i = startIndex; i < animes.Count; i++)
+                {
+                    newlyCreatedCards.Add(i);
+                }
+
+                System.Diagnostics.Debug.WriteLine($"✅ Chargé {newAnimes.Count} animes. Total: {animes.Count}");
+            }
+
+            isLoading = false;
+            isPreloading = false;
+            StateHasChanged();
+
+            await Task.Delay(50);
+            newlyCreatedCards.Clear();
+        }
+        finally
+        {
+            loadingSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Vérifie si on doit précharger plus d'animes
+    /// </summary>
+    private async Task CheckAndPreloadIfNeeded()
+    {
+        // Si on est proche de la fin, précharger plus d'animes
+        int remainingCards = animes.Count - currentIndex - 1;
+        
+        if (remainingCards <= PRELOAD_THRESHOLD && !isPreloading && !isLoading)
+        {
+            System.Diagnostics.Debug.WriteLine($"🔄 Préchargement déclenché. Cartes restantes: {remainingCards}");
+            await LoadAnimes(BATCH_LOAD_COUNT);
+        }
     }
 
     // ============================================
@@ -324,18 +383,16 @@
         {
             if (currentDragOffset < 0)
             {
+                // Swipe vers le haut - carte suivante
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
-                }
-                else
-                {
-                    await LoadAnimes(5);
-                    currentIndex++;
+                    await CheckAndPreloadIfNeeded(); // Vérifier si on doit précharger
                 }
             }
             else if (currentDragOffset > 0)
             {
+                // Swipe vers le bas - carte précédente
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -361,7 +418,6 @@
 
         if (e.Touches.Length > 0)
         {
-            // Ne pas intercepter si on touche dans la zone de description
             isDraggingCard = true;
             dragStartY = e.Touches[0].ClientY;
             currentDragOffset = 0;
@@ -399,18 +455,16 @@
         {
             if (currentDragOffset < 0)
             {
+                // Swipe vers le haut - carte suivante
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
-                }
-                else
-                {
-                    await LoadAnimes(5);
-                    currentIndex++;
+                    await CheckAndPreloadIfNeeded(); // Vérifier si on doit précharger
                 }
             }
             else if (currentDragOffset > 0)
             {
+                // Swipe vers le bas - carte précédente
                 if (currentIndex > 0)
                 {
                     currentIndex--;

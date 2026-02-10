@@ -8,6 +8,8 @@ namespace AniScroll.Services
     {
         private readonly HttpClient _httpClient;
         private readonly Random _random;
+        // Cache local pour éviter les doublons (chaque utilisateur a son propre cache en WASM)
+        private HashSet<int> loadedAnimeIds = new HashSet<int>();
 
         public AniListService(HttpClient httpClient)
         {
@@ -17,73 +19,95 @@ namespace AniScroll.Services
 
         public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
-            try
+            const int MAX_RETRIES = 5; // Éviter les doublons
+            
+            for (int retry = 0; retry < MAX_RETRIES; retry++)
             {
-                int randomPage = _random.Next(1, 80);
-                int rand = _random.Next(0, 100);
-                string mediaFilter;
+                try
+                {
+                    int randomPage = _random.Next(1, 80);
+                    int rand = _random.Next(0, 100);
+                    string mediaFilter;
 
-                if (rand < 45)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, averageScore_greater: 0, episodes_greater: 0, sort: POPULARITY_DESC)";
-                else if (rand < 65)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, averageScore_greater: 0, episodes_greater: 0, sort: SCORE_DESC)";
-                else if (rand < 80)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, sort: SCORE_DESC)";
-                else if (rand < 95)
-                    mediaFilter = "media(type: ANIME, status: RELEASING, averageScore_greater: 0, sort: TRENDING_DESC)";
-                else
-                    mediaFilter = "media(type: ANIME, status: NOT_YET_RELEASED, sort: POPULARITY_DESC)";
+                    if (rand < 45)
+                        mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC)";
+                    else if (rand < 65)
+                        mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC)";
+                    else if (rand < 80)
+                        mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC)";
+                    else if (rand < 95)
+                        mediaFilter = "media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC)";
+                    else
+                        mediaFilter = "media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC)";
 
-                var query = $@"
-                query ($page: Int) {{
-                    Page(page: $page, perPage: 1) {{
-                        {mediaFilter} {{
-                            id
-                            title {{ romaji english }}
-                            coverImage {{ extraLarge large }}
-                            bannerImage
-                            averageScore
-                            genres
-                            episodes
-                            description
-                            season
-                            seasonYear
-                            status
-                            nextAiringEpisode {{ episode }}
+                    var query = $@"
+                    query ($page: Int) {{
+                        Page(page: $page, perPage: 1) {{
+                            {mediaFilter} {{
+                                id
+                                title {{ romaji english }}
+                                coverImage {{ extraLarge large }}
+                                bannerImage
+                                averageScore
+                                genres
+                                episodes
+                                description
+                                season
+                                seasonYear
+                                status
+                                nextAiringEpisode {{ episode }}
+                            }}
                         }}
-                    }}
-                }}";
+                    }}";
 
-                var request = new { query = query, variables = new { page = randomPage } };
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var request = new { query = query, variables = new { page = randomPage } };
+                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
+                    var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
 
-                if (!response.IsSuccessStatusCode)
-                    return null;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"⚠️ Erreur API: {response.StatusCode}");
+                        continue;
+                    }
 
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                JObject data = JObject.Parse(jsonResponse);
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    JObject data = JObject.Parse(jsonResponse);
 
-                var page = data["data"]?["Page"];
-                if (page == null)
-                    return null;
+                    var page = data["data"]?["Page"];
+                    if (page == null)
+                        continue;
 
-                var mediaArray = page["media"];
-                if (mediaArray == null || !mediaArray.HasValues)
-                    return null;
+                    var mediaArray = page["media"];
+                    if (mediaArray == null || !mediaArray.HasValues)
+                        continue;
 
-                var media = mediaArray[0];
-                if (media == null)
-                    return null;
+                    var media = mediaArray[0];
+                    if (media == null)
+                        continue;
 
-                return ParseAnimeCard(media);
+                    var anime = ParseAnimeCard(media);
+                    
+                    // Vérifier si on a déjà cet anime
+                    if (loadedAnimeIds.Contains(anime.Id))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"🔄 Doublon détecté (ID: {anime.Id}), nouvelle tentative...");
+                        continue;
+                    }
+                    
+                    // Ajouter à la liste des IDs chargés
+                    loadedAnimeIds.Add(anime.Id);
+                    return anime;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Erreur lors du chargement: {ex.Message}");
+                    await Task.Delay(100); // Petit délai avant retry
+                }
             }
-            catch (Exception)
-            {
-                return null;
-            }
+
+            return null;
         }
 
         private AnimeCard ParseAnimeCard(JToken media)
@@ -159,13 +183,26 @@ namespace AniScroll.Services
         public async Task<List<AnimeCard>> GetMultipleAnimesAsync(int count)
         {
             var tasks = new List<Task<AnimeCard?>>();
+            
+            // Créer les tâches de chargement en parallèle
             for (int i = 0; i < count; i++)
             {
                 tasks.Add(GetRandomAnimeAsync());
             }
 
             var results = await Task.WhenAll(tasks);
-            return results.Where(a => a != null).Cast<AnimeCard>().ToList();
+            var validResults = results.Where(a => a != null).Cast<AnimeCard>().ToList();
+            
+            System.Diagnostics.Debug.WriteLine($"📊 Demandé: {count}, Reçu: {validResults.Count}, Cache: {loadedAnimeIds.Count} animes");
+            
+            return validResults;
+        }
+
+
+        public void ClearCache()
+        {
+            loadedAnimeIds.Clear();
+            System.Diagnostics.Debug.WriteLine("🗑️ Cache vidé");
         }
     }
 }
