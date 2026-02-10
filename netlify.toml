@@ -1,8 +1,7 @@
 [build]
   base = "AniScroll"
   publish = "bin/Release/net8.0/publish/wwwroot"
-  # On ajoute l'installation de la charge de travail WASM avant le publish
-  command = "dotnet workload install wasm-tools && dotnet publish -c Release -o bin/Release/net8.0/publish"
+  command = "dotnet publish -c Release -o bin/Release/net8.0/publish"
 
 [[redirects]]
   from = "/*"
