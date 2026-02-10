@@ -9,7 +9,7 @@
 
 <div class="anime-scroll-app" @ref="appContainer">
     <!-- Build Version -->
-    <div class="build-version">v1.3.0</div>
+    <div class="build-version">v1.3.1 🚀</div>
     
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -139,10 +139,10 @@
     private bool viewportHeightInitialized = false;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
 
-    // ========== 🚀 NOUVEAU SYSTÈME DE CHARGEMENT PROGRESSIF ==========
+    // ========== 🚀 CHARGEMENT PROGRESSIF ==========
     private const int INITIAL_LOAD_COUNT = 5;
-    private const int LOAD_MORE_THRESHOLD = 3; // Charger plus quand il reste 3 animes
-    private const int LOAD_MORE_COUNT = 3; // Charger 3 animes à la fois
+    private const int LOAD_MORE_THRESHOLD = 3;
+    private const int LOAD_MORE_COUNT = 3;
     private System.Threading.Timer? _bufferCheckTimer;
 
     // Variables pour le drag
@@ -153,7 +153,10 @@
 
     private ElementReference descScrollRef;
     private ElementReference appContainer;
-    private HashSet<int> newlyCreatedCards = new HashSet<int>();
+
+    // 🔥 FIX: Nouveau système de gestion des transitions
+    private int previousIndex = 0;
+    private bool hasJustLoaded = false;
 
     // Throttling
     private DateTime lastRenderTime = DateTime.Now;
@@ -191,6 +194,13 @@
                 System.Diagnostics.Debug.WriteLine($"❌ Erreur: {ex.Message}");
             }
         }
+
+        // 🔥 FIX: Réinitialiser le flag après le premier render
+        if (hasJustLoaded)
+        {
+            await Task.Delay(100);
+            hasJustLoaded = false;
+        }
     }
 
     // ============================================
@@ -200,23 +210,16 @@
     private async Task LoadInitialAnimes()
     {
         isLoading = true;
+        hasJustLoaded = true;
         StateHasChanged();
 
         try
         {
-            // Récupérer depuis le buffer (instantané)
             var newAnimes = await AniListService.GetAnimesFromBufferAsync(INITIAL_LOAD_COUNT);
             
             if (newAnimes != null && newAnimes.Count > 0)
             {
-                int startIndex = animes.Count;
                 animes.AddRange(newAnimes);
-
-                for (int i = startIndex; i < animes.Count; i++)
-                {
-                    newlyCreatedCards.Add(i);
-                }
-
                 System.Diagnostics.Debug.WriteLine($"✅ Chargement initial: {newAnimes.Count} animes");
             }
         }
@@ -224,9 +227,6 @@
         {
             isLoading = false;
             StateHasChanged();
-            
-            await Task.Delay(50);
-            newlyCreatedCards.Clear();
         }
     }
 
@@ -234,30 +234,24 @@
     {
         try
         {
-            int startIndex = animes.Count;
+            hasJustLoaded = true;
             
-            // Récupérer depuis le buffer (instantané pour l'utilisateur)
             var newAnimes = await AniListService.GetAnimesFromBufferAsync(LOAD_MORE_COUNT);
             
             if (newAnimes != null && newAnimes.Count > 0)
             {
                 animes.AddRange(newAnimes);
-
-                for (int i = startIndex; i < animes.Count; i++)
-                {
-                    newlyCreatedCards.Add(i);
-                }
-
                 System.Diagnostics.Debug.WriteLine($"✅ Chargé {newAnimes.Count} animes supplémentaires. Total: {animes.Count}");
                 StateHasChanged();
                 
-                await Task.Delay(50);
-                newlyCreatedCards.Clear();
+                await Task.Delay(100);
+                hasJustLoaded = false;
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"❌ Erreur LoadMoreAnimes: {ex.Message}");
+            hasJustLoaded = false;
         }
     }
 
@@ -362,17 +356,23 @@
         return "";
     }
 
+    // 🔥 FIX: Système de transition corrigé
     private string GetCardTransitionClass(int index)
     {
-        if (newlyCreatedCards.Contains(index))
-            return "no-transition";
-
+        // Pendant le drag, jamais de transition
         if (isDraggingCard)
             return "no-transition";
 
+        // Pendant le swipe (animation de snap final), toujours avec transition
         if (isTransitioning)
             return "with-transition";
 
+        // Pour les cartes qui viennent d'être chargées ET qui ne sont pas visibles
+        // on désactive temporairement les transitions pour éviter qu'elles "apparaissent" depuis nulle part
+        if (hasJustLoaded && index >= currentIndex)
+            return "no-transition";
+
+        // Par défaut: pas de transition (évite les animations parasites)
         return "no-transition";
     }
 
@@ -419,6 +419,7 @@
             {
                 if (currentIndex < animes.Count - 1)
                 {
+                    previousIndex = currentIndex;
                     currentIndex++;
                     await CheckAndLoadMore();
                 }
@@ -427,17 +428,20 @@
             {
                 if (currentIndex > 0)
                 {
+                    previousIndex = currentIndex;
                     currentIndex--;
                 }
             }
         }
 
+        // 🔥 FIX: Activer les transitions pour le snap final
         isTransitioning = true;
         currentDragOffset = 0;
         StateHasChanged();
 
-        await Task.Delay(250);
+        await Task.Delay(300); // Durée de la transition CSS (250ms + marge)
         isTransitioning = false;
+        StateHasChanged();
     }
 
     // ============================================
@@ -489,6 +493,7 @@
             {
                 if (currentIndex < animes.Count - 1)
                 {
+                    previousIndex = currentIndex;
                     currentIndex++;
                     await CheckAndLoadMore();
                 }
@@ -497,17 +502,20 @@
             {
                 if (currentIndex > 0)
                 {
+                    previousIndex = currentIndex;
                     currentIndex--;
                 }
             }
         }
 
+        // 🔥 FIX: Activer les transitions pour le snap final
         isTransitioning = true;
         currentDragOffset = 0;
         StateHasChanged();
 
-        await Task.Delay(250);
+        await Task.Delay(300); // Durée de la transition CSS (250ms + marge)
         isTransitioning = false;
+        StateHasChanged();
     }
 
     private double GetCardTransform(int index)
