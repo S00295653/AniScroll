@@ -1,4 +1,4 @@
-﻿/* ========== BASE ========== */
+/* ========== BASE ========== */
 * {
     margin: 0;
     padding: 0;
@@ -104,6 +104,7 @@ html, body {
         z-index: 10;
     }
 
+/* ========== BACKGROUND IMAGE OPTIMISÉE ========== */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -111,9 +112,23 @@ html, body {
     height: 100%;
     background-size: 120%;
     background-position: center;
-    /* filter: blur(6px);*/
+    filter: blur(6px);
     opacity: 0.4;
     overflow: hidden;
+    /* 🚀 Optimisations GPU pour blur sans lag */
+    will-change: transform;
+    transform: translateZ(0) scale(1.02); /* Scale léger pour éviter les bords blancs du blur */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    isolation: isolate; /* Crée un nouveau contexte de rendu pour isoler le blur */
+    contain: paint; /* Optimisation de rendu - indique au navigateur que le contenu ne déborde pas */
+}
+
+/* Desktop: blur plus fort */
+@media (min-width: 769px) {
+    .bg-image {
+        filter: blur(8px);
+    }
 }
 
 .gradient-overlay {
@@ -603,11 +618,4 @@ html, body {
     font-size: 11px;
     font-weight: bold;
     text-align: center;
-}
-
-@media (min-width: 769px) {
-    .bg-image {
-        filter: blur(8px);
-    }
-    /* Le flou reste sur PC */
 }
