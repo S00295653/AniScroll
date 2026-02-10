@@ -137,7 +137,7 @@
     private bool viewportHeightInitialized = false;
 
     // Pourcentage de l'écran à parcourir pour changer de carte (entre 0.1 et 0.5)
-    private const double SWIPE_VALIDATION_PERCENT = 0.25; // 25% = 200 pixels sur 800px
+    private const double SWIPE_VALIDATION_PERCENT = 0.15; // 15% = 120 pixels sur 800px (plus facile)
 
     // Variables pour le drag de la card principale
     private bool isDraggingCard = false;
@@ -159,6 +159,10 @@
 
     // Track des cartes créées pour éviter les transitions parasites
     private HashSet<int> newlyCreatedCards = new HashSet<int>();
+
+    // Variables pour throttling (améliorer la fluidité)
+    private DateTime lastRenderTime = DateTime.Now;
+    private const int THROTTLE_MS = 16; // ~60 FPS
 
     protected override async Task OnInitializedAsync()
     {
@@ -328,6 +332,13 @@
     {
         if (!isDraggingCard) return;
 
+        // Throttling pour améliorer les performances
+        var now = DateTime.Now;
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
+            return;
+
+        lastRenderTime = now;
+
         // Calculer l'offset actuel par rapport au point de départ (1:1 avec le mouvement)
         currentDragOffset = e.ClientY - dragStartY;
 
@@ -404,6 +415,13 @@
     private void HandleCardTouchMove(TouchEventArgs e)
     {
         if (!isDraggingCard) return;
+
+        // Throttling pour améliorer les performances
+        var now = DateTime.Now;
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
+            return;
+
+        lastRenderTime = now;
 
         if (e.Touches.Length > 0)
         {
@@ -491,7 +509,14 @@
         {
             // Mode swipe : les cartes suivent la souris
             currentDragOffset = e.ClientY - descSwipeStartY;
-            StateHasChanged();
+            
+            // Throttling pour le mode swipe
+            var now = DateTime.Now;
+            if ((now - lastRenderTime).TotalMilliseconds >= THROTTLE_MS)
+            {
+                lastRenderTime = now;
+                StateHasChanged();
+            }
             return;
         }
 
@@ -499,8 +524,8 @@
         double currentScrollTop = scrollInfo.ScrollTop;
         double maxScroll = scrollInfo.ScrollHeight - scrollInfo.ClientHeight;
 
-        bool atStart = currentScrollTop <= 0;
-        bool atEnd = currentScrollTop >= maxScroll - 5;
+        bool atStart = currentScrollTop <= 1; // Petite marge de tolérance
+        bool atEnd = currentScrollTop >= maxScroll - 1; // Petite marge de tolérance
 
         // Si on est au bout ET qu'on a relâché depuis le dernier scroll
         if (((atStart && deltaY < 0) || (atEnd && deltaY > 0)) && hasReleasedAfterDescScroll)
@@ -609,7 +634,14 @@
         if (descSwipeMode)
         {
             currentDragOffset = e.Touches[0].ClientY - descSwipeStartY;
-            StateHasChanged();
+            
+            // Throttling pour le mode swipe
+            var now = DateTime.Now;
+            if ((now - lastRenderTime).TotalMilliseconds >= THROTTLE_MS)
+            {
+                lastRenderTime = now;
+                StateHasChanged();
+            }
             return;
         }
 
@@ -617,8 +649,8 @@
         double currentScrollTop = scrollInfo.ScrollTop;
         double maxScroll = scrollInfo.ScrollHeight - scrollInfo.ClientHeight;
 
-        bool atStart = currentScrollTop <= 0;
-        bool atEnd = currentScrollTop >= maxScroll - 5;
+        bool atStart = currentScrollTop <= 1; // Petite marge de tolérance
+        bool atEnd = currentScrollTop >= maxScroll - 1; // Petite marge de tolérance
 
         if (((atStart && deltaY < 0) || (atEnd && deltaY > 0)) && hasReleasedAfterDescScroll)
         {
