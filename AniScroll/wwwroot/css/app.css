@@ -110,14 +110,15 @@ html, body {
     inset: 0;
     width: 100%;
     height: 100%;
-    background-size: 120%;
-    background-position: center;
+    background-size: cover; /* Cover au lieu de 120% pour un meilleur centrage */
+    background-position: center center; /* Centrage explicite */
+    background-repeat: no-repeat; /* Évite le loop de l'image */
     filter: blur(6px);
     opacity: 0.4;
     overflow: hidden;
     /* 🚀 Optimisations GPU pour blur sans lag */
     will-change: transform;
-    transform: translateZ(0) scale(1.02); /* Scale léger pour éviter les bords blancs du blur */
+    transform: translateZ(0) scale(1.1); /* Scale de 1.1 au lieu de 1.02 pour compenser le blur */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     isolation: isolate; /* Crée un nouveau contexte de rendu pour isoler le blur */
