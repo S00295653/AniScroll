@@ -3,12 +3,17 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 html, body {
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Empêche le rebond Safari */
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: black;
     color: white;
 }
@@ -21,15 +26,16 @@ html, body {
 /* ========== APP CONTAINER - RESPONSIVE ========== */
 .anime-scroll-app {
     width: 100%;
-    height: 100dvh; /* Dynamic Viewport pour mobile */
+    height: 100dvh;
     max-width: 450px;
+    background: black;
+    position: relative;
     margin: 0 auto;
     overflow-y: scroll;
     scroll-snap-type: y mandatory; /* Force l'aimantation des cartes */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
 }
-
     .anime-scroll-app::-webkit-scrollbar {
         display: none;
     }
@@ -70,11 +76,15 @@ html, body {
 /* ========== ANIME CARD ========== */
 .anime-card {
     width: 100%;
-    height: 100dvh; /* Chaque carte prend tout l'écran */
-    scroll-snap-align: start; /* S'aimante au début */
-    scroll-snap-stop: always; /* Empêche de sauter 10 cartes d'un coup */
-    position: relative;
+    height: 100dvh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
     overflow: hidden;
+    touch-action: none; /* Désactiver le scroll natif pour gérer nous-mêmes */
+    will-change: transform; /* Optimisation GPU */
+    transform: translateZ(0); /* Forcer l'accélération matérielle */
 }
 
 
@@ -99,34 +109,33 @@ html, body {
     inset: 0;
     width: 100%;
     height: 100%;
-    background-size: cover;
+    background-size: 120%;
     background-position: center;
+    filter: blur(6px);
     opacity: 0.4;
-    /* On retire le filter: blur sur mobile pour la fluidité */
-}
-
-@media (min-width: 769px) {
-    .bg-image {
-        filter: blur(8px);
-    }
-    /* Le flou reste sur PC */
+    overflow: hidden;
 }
 
 .gradient-overlay {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 100%);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
 /* ========== CONTENT WRAPPER - LAYOUTS ========== */
 .content-wrapper {
     position: relative;
-    z-index: 2;
-    height: 100%;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    padding: 20px 20px 80px; /* Espace pour la barre de navigation mobile */
+    height: 100%;
+    padding: 20px 30px 50px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Responsive padding pour mobile */
@@ -209,17 +218,21 @@ html, body {
 
 /* ========== IMAGE ========== */
 .image-section {
-    margin: auto 0;
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex: 1;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .anime-image {
-    width: 220px;
-    aspect-ratio: 2/3;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    object-fit: cover;
+    width: 280px;
+    height: 420px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* Responsive image pour mobile */
@@ -244,10 +257,12 @@ html, body {
 }
 
 .title {
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+    max-width: 390px;
 }
 
 /* Responsive title pour mobile */
@@ -328,10 +343,10 @@ html, body {
 }
 
 .genres {
-    color: #E94560;
     font-size: 14px;
+    color: #E94560;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 /* ========== STATS ========== */
@@ -373,12 +388,11 @@ html, body {
 
 .description-preview {
     font-size: 14px;
-    color: #ccc;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    color: #c8c8c8;
+    line-height: 20px;
+    margin-bottom: 0;
+    max-width: 390px;
+    flex: 1;
 }
 
 @media (max-width: 768px) {
@@ -591,3 +605,9 @@ html, body {
     text-align: center;
 }
 
+@media (min-width: 769px) {
+    .bg-image {
+        filter: blur(8px);
+    }
+    /* Le flou reste sur PC */
+}
