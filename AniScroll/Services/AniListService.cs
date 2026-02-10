@@ -10,6 +10,8 @@ namespace AniScroll.Services
         private readonly Random _random;
         // Cache local pour éviter les doublons (chaque utilisateur a son propre cache en WASM)
         private HashSet<int> loadedAnimeIds = new HashSet<int>();
+        
+        private const string ANILIST_API_URL = "https://graphql.anilist.co";
 
         public AniListService(HttpClient httpClient)
         {
@@ -60,15 +62,27 @@ namespace AniScroll.Services
                         }}
                     }}";
 
-                    var request = new { query = query, variables = new { page = randomPage } };
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
+                    var requestBody = new { query = query, variables = new { page = randomPage } };
+                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(requestBody);
+                    
+                    // 🔥 FIX CORS: Configuration correcte de la requête pour Blazor WASM
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                    var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
+                    
+                    // 🚀 Créer une requête avec les bons headers
+                    var request = new HttpRequestMessage(HttpMethod.Post, ANILIST_API_URL)
+                    {
+                        Content = content
+                    };
+                    
+                    // Headers essentiels pour l'API GraphQL AniList
+                    request.Headers.Add("Accept", "application/json");
+                    
+                    var response = await _httpClient.SendAsync(request);
 
                     if (!response.IsSuccessStatusCode)
                     {
                         System.Diagnostics.Debug.WriteLine($"⚠️ Erreur API: {response.StatusCode}");
+                        System.Diagnostics.Debug.WriteLine($"⚠️ Détails: {await response.Content.ReadAsStringAsync()}");
                         continue;
                     }
 
@@ -98,7 +112,15 @@ namespace AniScroll.Services
                     
                     // Ajouter à la liste des IDs chargés
                     loadedAnimeIds.Add(anime.Id);
+                    System.Diagnostics.Debug.WriteLine($"✅ Anime chargé: {anime.Title} (ID: {anime.Id})");
                     return anime;
+                }
+                catch (HttpRequestException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Erreur HTTP: {ex.Message}");
+                    if (ex.InnerException != null)
+                        System.Diagnostics.Debug.WriteLine($"   Inner: {ex.InnerException.Message}");
+                    await Task.Delay(200); // Délai plus long avant retry
                 }
                 catch (Exception ex)
                 {
@@ -107,6 +129,7 @@ namespace AniScroll.Services
                 }
             }
 
+            System.Diagnostics.Debug.WriteLine($"⚠️ Échec après {MAX_RETRIES} tentatives");
             return null;
         }
 
