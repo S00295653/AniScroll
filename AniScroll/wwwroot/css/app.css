@@ -111,7 +111,7 @@ html, body {
     height: 100%;
     background-size: 120%;
     background-position: center;
-    filter: blur(6px);
+    /* filter: blur(6px);*/
     opacity: 0.4;
     overflow: hidden;
 }
