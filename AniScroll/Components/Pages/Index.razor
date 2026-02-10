@@ -7,6 +7,9 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
+    <!-- Build Version -->
+    <div class="build-version">v2.1.0</div>
+    
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
         {
@@ -83,16 +86,10 @@
                                 }
                                 else
                                 {
+                                    <!-- Scroll NATIF - pas d'événements de drag sur mobile -->
                                     <div class="description-scroll-wrapper"
                                          style="@GetDescriptionWrapperStyle(anime.Description)"
-                                         @ref="descScrollRef"
-                                         @onmousedown="HandleDescMouseDown"
-                                         @onmousemove="HandleDescMouseMove"
-                                         @onmouseup="HandleDescMouseUp"
-                                         @onmouseleave="HandleDescMouseUp"
-                                         @ontouchstart="HandleDescTouchStart"
-                                         @ontouchmove="HandleDescTouchMove"
-                                         @ontouchend="HandleDescTouchEnd">
+                                         @ref="descScrollRef">
                                         <div class="description-full">
                                             <p>@anime.Description</p>
                                             <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
@@ -132,12 +129,12 @@
     private bool isLoading = false;
     private int currentIndex = 0;
 
-    // ========== ⚙️ CONFIGURATION DU SCROLL - AJUSTABLE ICI ==========
-    private double CARD_HEIGHT = 800; // Sera calculé dynamiquement
+    // ========== ⚙️ CONFIGURATION DU SCROLL ==========
+    private double CARD_HEIGHT = 800;
     private bool viewportHeightInitialized = false;
 
-    // Pourcentage de l'écran à parcourir pour changer de carte (entre 0.1 et 0.5)
-    private const double SWIPE_VALIDATION_PERCENT = 0.15; // 15% = 120 pixels sur 800px (plus facile)
+    // Seuil de swipe réduit pour faciliter
+    private const double SWIPE_VALIDATION_PERCENT = 0.12; // 12% = ~96 pixels sur 800px
 
     // Variables pour le drag de la card principale
     private bool isDraggingCard = false;
@@ -145,24 +142,16 @@
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
 
-    // Variables pour le scroll de la description
-    private bool isDraggingDesc = false;
-    private double descDragStartY = 0;
-    private double descScrollStartTop = 0;
+    // Variables pour la description
     private ElementReference descScrollRef;
     private ElementReference appContainer;
 
-    // Variables pour le mode swipe depuis la description
-    private bool descSwipeMode = false;
-    private double descSwipeStartY = 0;
-    private bool hasReleasedAfterDescScroll = true;
-
-    // Track des cartes créées pour éviter les transitions parasites
+    // Track des cartes créées
     private HashSet<int> newlyCreatedCards = new HashSet<int>();
 
-    // Variables pour throttling (améliorer la fluidité)
+    // Throttling
     private DateTime lastRenderTime = DateTime.Now;
-    private const int THROTTLE_MS = 16; // ~60 FPS
+    private const int THROTTLE_MS = 8; // ~120 FPS pour plus de fluidité
 
     protected override async Task OnInitializedAsync()
     {
@@ -175,19 +164,13 @@
         {
             try
             {
-                // Obtenir la hauteur réelle du viewport
                 CARD_HEIGHT = await JS.InvokeAsync<double>("getViewportHeight");
                 viewportHeightInitialized = true;
-
-                // Debug: afficher la hauteur obtenue
-                System.Diagnostics.Debug.WriteLine($"✅ Viewport height: {CARD_HEIGHT}px");
-
                 StateHasChanged();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur lors du calcul de la hauteur: {ex.Message}");
-                // Garder la valeur par défaut de 800
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur: {ex.Message}");
             }
         }
     }
@@ -201,7 +184,6 @@
         var newAnimes = await AniListService.GetMultipleAnimesAsync(count);
         animes.AddRange(newAnimes);
 
-        // Marquer les nouvelles cartes comme "nouvelles" pour éviter la transition
         for (int i = startIndex; i < animes.Count; i++)
         {
             newlyCreatedCards.Add(i);
@@ -210,7 +192,6 @@
         isLoading = false;
         StateHasChanged();
 
-        // Après le rendu, retirer le flag "nouvelles cartes"
         await Task.Delay(50);
         newlyCreatedCards.Clear();
     }
@@ -268,11 +249,11 @@
         }
         else if (descLength < 800)
         {
-            return "max-height: 300px;";
+            return "max-height: 350px;"; // Augmenté pour voir le bouton
         }
         else
         {
-            return "max-height: 400px;";
+            return "max-height: 450px;"; // Augmenté pour voir le bouton
         }
     }
 
@@ -288,21 +269,14 @@
         return "";
     }
 
-    // ============================================
-    // 🎯 CLASSE CSS POUR TRANSITION
-    // ============================================
-
     private string GetCardTransitionClass(int index)
     {
-        // Ne pas appliquer de transition aux cartes nouvellement créées
         if (newlyCreatedCards.Contains(index))
             return "no-transition";
 
-        // Ne pas appliquer de transition pendant le drag
         if (isDraggingCard)
             return "no-transition";
 
-        // Appliquer la transition uniquement pendant le snap final
         if (isTransitioning)
             return "with-transition";
 
@@ -310,18 +284,13 @@
     }
 
     // ============================================
-    // 🎯 SCROLL VERTICAL TYPE INSTAGRAM/TIKTOK - SOURIS
+    // 🎯 GESTION DU SWIPE - SOURIS (Desktop)
     // ============================================
 
     private void HandleCardMouseDown(MouseEventArgs e, int index)
     {
-        // Ne pas permettre le drag si on scrolle dans la description
-        if (isDraggingDesc) return;
-
-        // Ne permettre le drag que sur la carte active
         if (index != currentIndex) return;
 
-        // Commencer le drag
         isDraggingCard = true;
         dragStartY = e.ClientY;
         currentDragOffset = 0;
@@ -332,17 +301,13 @@
     {
         if (!isDraggingCard) return;
 
-        // Throttling pour améliorer les performances
         var now = DateTime.Now;
         if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
             return;
 
         lastRenderTime = now;
 
-        // Calculer l'offset actuel par rapport au point de départ (1:1 avec le mouvement)
         currentDragOffset = e.ClientY - dragStartY;
-
-        // Déclencher le re-render pour que les cartes suivent la souris
         StateHasChanged();
     }
 
@@ -352,31 +317,25 @@
 
         isDraggingCard = false;
 
-        // Calculer le seuil de validation (en pixels)
         double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
-
-        // Déterminer si le swipe est validé
         bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
 
         if (swipeValidated)
         {
             if (currentDragOffset < 0)
             {
-                // Swipe vers le haut → Carte suivante
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
                 }
                 else
                 {
-                    // Charger plus d'animes
                     await LoadAnimes(5);
                     currentIndex++;
                 }
             }
             else if (currentDragOffset > 0)
             {
-                // Swipe vers le bas → Carte précédente
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -384,27 +343,25 @@
             }
         }
 
-        // Activer la transition pour le snap final
         isTransitioning = true;
         currentDragOffset = 0;
         StateHasChanged();
 
-        // Désactiver la transition après animation
-        await Task.Delay(300);
+        await Task.Delay(250);
         isTransitioning = false;
     }
 
     // ============================================
-    // 🎯 SCROLL VERTICAL TYPE INSTAGRAM/TIKTOK - TOUCH
+    // 🎯 GESTION DU SWIPE - TOUCH (Mobile)
     // ============================================
 
     private void HandleCardTouchStart(TouchEventArgs e, int index)
     {
-        if (isDraggingDesc) return;
         if (index != currentIndex) return;
 
         if (e.Touches.Length > 0)
         {
+            // Ne pas intercepter si on touche dans la zone de description
             isDraggingCard = true;
             dragStartY = e.Touches[0].ClientY;
             currentDragOffset = 0;
@@ -416,7 +373,6 @@
     {
         if (!isDraggingCard) return;
 
-        // Throttling pour améliorer les performances
         var now = DateTime.Now;
         if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
             return;
@@ -466,265 +422,20 @@
         currentDragOffset = 0;
         StateHasChanged();
 
-        await Task.Delay(300);
+        await Task.Delay(250);
         isTransitioning = false;
     }
 
     private double GetCardTransform(int index)
     {
-        // Position de base : chaque carte est espacée de CARD_HEIGHT
         double basePosition = (index - currentIndex) * CARD_HEIGHT;
 
-        // Si on est en train de dragger, TOUTES les cartes bougent ensemble
-        if (isDraggingCard || descSwipeMode)
+        if (isDraggingCard)
         {
             return basePosition + currentDragOffset;
         }
 
-        // Position normale
         return basePosition;
-    }
-
-    // ============================================
-    // SCROLL DE LA DESCRIPTION - SOURIS
-    // ============================================
-
-    private async Task HandleDescMouseDown(MouseEventArgs e)
-    {
-        isDraggingDesc = true;
-        descDragStartY = e.ClientY;
-        descSwipeMode = false;
-
-        var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
-        descScrollStartTop = scrollInfo.ScrollTop;
-    }
-
-    private async Task HandleDescMouseMove(MouseEventArgs e)
-    {
-        if (!isDraggingDesc) return;
-
-        double deltaY = descDragStartY - e.ClientY;
-
-        if (descSwipeMode)
-        {
-            // Mode swipe : les cartes suivent la souris
-            currentDragOffset = e.ClientY - descSwipeStartY;
-            
-            // Throttling pour le mode swipe
-            var now = DateTime.Now;
-            if ((now - lastRenderTime).TotalMilliseconds >= THROTTLE_MS)
-            {
-                lastRenderTime = now;
-                StateHasChanged();
-            }
-            return;
-        }
-
-        var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
-        double currentScrollTop = scrollInfo.ScrollTop;
-        double maxScroll = scrollInfo.ScrollHeight - scrollInfo.ClientHeight;
-
-        bool atStart = currentScrollTop <= 1; // Petite marge de tolérance
-        bool atEnd = currentScrollTop >= maxScroll - 1; // Petite marge de tolérance
-
-        // Si on est au bout ET qu'on a relâché depuis le dernier scroll
-        if (((atStart && deltaY < 0) || (atEnd && deltaY > 0)) && hasReleasedAfterDescScroll)
-        {
-            // Activer le mode swipe
-            descSwipeMode = true;
-            descSwipeStartY = e.ClientY;
-            isDraggingCard = true;
-            dragStartY = e.ClientY;
-            currentDragOffset = 0;
-            hasReleasedAfterDescScroll = false;
-            isTransitioning = false;
-        }
-        else
-        {
-            // Scroller normalement dans la description
-            double newScrollTop = descScrollStartTop + deltaY;
-            newScrollTop = Math.Max(0, Math.Min(newScrollTop, maxScroll));
-            await JS.InvokeVoidAsync("setScrollTop", descScrollRef, newScrollTop);
-
-            hasReleasedAfterDescScroll = false;
-        }
-    }
-
-    private async Task HandleDescMouseUp(MouseEventArgs e)
-    {
-        if (!isDraggingDesc) return;
-
-        isDraggingDesc = false;
-
-        if (descSwipeMode)
-        {
-            descSwipeMode = false;
-            isDraggingCard = false;
-
-            // Calculer le seuil de validation
-            double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
-            bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
-
-            if (swipeValidated)
-            {
-                if (currentDragOffset < 0)
-                {
-                    if (currentIndex < animes.Count - 1)
-                    {
-                        currentIndex++;
-                        expandedAnimes.Remove(animes[currentIndex - 1].Id);
-                    }
-                    else
-                    {
-                        await LoadAnimes(5);
-                        currentIndex++;
-                        if (currentIndex > 0)
-                        {
-                            expandedAnimes.Remove(animes[currentIndex - 1].Id);
-                        }
-                    }
-                }
-                else if (currentDragOffset > 0)
-                {
-                    if (currentIndex > 0)
-                    {
-                        expandedAnimes.Remove(animes[currentIndex].Id);
-                        currentIndex--;
-                    }
-                }
-            }
-
-            // Activer la transition pour le snap final
-            isTransitioning = true;
-            currentDragOffset = 0;
-            StateHasChanged();
-
-            // Désactiver la transition après animation
-            await Task.Delay(300);
-            isTransitioning = false;
-        }
-
-        hasReleasedAfterDescScroll = true;
-        StateHasChanged();
-    }
-
-    // ============================================
-    // SCROLL DE LA DESCRIPTION - TOUCH
-    // ============================================
-
-    private async Task HandleDescTouchStart(TouchEventArgs e)
-    {
-        if (e.Touches.Length > 0)
-        {
-            isDraggingDesc = true;
-            descDragStartY = e.Touches[0].ClientY;
-            descSwipeMode = false;
-
-            var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
-            descScrollStartTop = scrollInfo.ScrollTop;
-        }
-    }
-
-    private async Task HandleDescTouchMove(TouchEventArgs e)
-    {
-        if (!isDraggingDesc || e.Touches.Length == 0) return;
-
-        double deltaY = descDragStartY - e.Touches[0].ClientY;
-
-        if (descSwipeMode)
-        {
-            currentDragOffset = e.Touches[0].ClientY - descSwipeStartY;
-            
-            // Throttling pour le mode swipe
-            var now = DateTime.Now;
-            if ((now - lastRenderTime).TotalMilliseconds >= THROTTLE_MS)
-            {
-                lastRenderTime = now;
-                StateHasChanged();
-            }
-            return;
-        }
-
-        var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
-        double currentScrollTop = scrollInfo.ScrollTop;
-        double maxScroll = scrollInfo.ScrollHeight - scrollInfo.ClientHeight;
-
-        bool atStart = currentScrollTop <= 1; // Petite marge de tolérance
-        bool atEnd = currentScrollTop >= maxScroll - 1; // Petite marge de tolérance
-
-        if (((atStart && deltaY < 0) || (atEnd && deltaY > 0)) && hasReleasedAfterDescScroll)
-        {
-            descSwipeMode = true;
-            descSwipeStartY = e.Touches[0].ClientY;
-            isDraggingCard = true;
-            dragStartY = e.Touches[0].ClientY;
-            currentDragOffset = 0;
-            hasReleasedAfterDescScroll = false;
-            isTransitioning = false;
-        }
-        else
-        {
-            double newScrollTop = descScrollStartTop + deltaY;
-            newScrollTop = Math.Max(0, Math.Min(newScrollTop, maxScroll));
-            await JS.InvokeVoidAsync("setScrollTop", descScrollRef, newScrollTop);
-
-            hasReleasedAfterDescScroll = false;
-        }
-    }
-
-    private async Task HandleDescTouchEnd(TouchEventArgs e)
-    {
-        if (!isDraggingDesc) return;
-
-        isDraggingDesc = false;
-
-        if (descSwipeMode)
-        {
-            descSwipeMode = false;
-            isDraggingCard = false;
-
-            double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
-            bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
-
-            if (swipeValidated)
-            {
-                if (currentDragOffset < 0)
-                {
-                    if (currentIndex < animes.Count - 1)
-                    {
-                        currentIndex++;
-                        expandedAnimes.Remove(animes[currentIndex - 1].Id);
-                    }
-                    else
-                    {
-                        await LoadAnimes(5);
-                        currentIndex++;
-                        if (currentIndex > 0)
-                        {
-                            expandedAnimes.Remove(animes[currentIndex - 1].Id);
-                        }
-                    }
-                }
-                else if (currentDragOffset > 0)
-                {
-                    if (currentIndex > 0)
-                    {
-                        expandedAnimes.Remove(animes[currentIndex].Id);
-                        currentIndex--;
-                    }
-                }
-            }
-
-            isTransitioning = true;
-            currentDragOffset = 0;
-            StateHasChanged();
-
-            await Task.Delay(300);
-            isTransitioning = false;
-        }
-
-        hasReleasedAfterDescScroll = true;
-        StateHasChanged();
     }
 
     // ============================================

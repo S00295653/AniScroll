@@ -135,7 +135,7 @@ html, body {
 /* Responsive padding pour mobile */
 @media (max-width: 768px) {
     .content-wrapper {
-        padding: 15px 20px 40px;
+        padding: 15px 20px 60px; /* Plus d'espace en bas */
     }
 }
 
@@ -143,10 +143,16 @@ html, body {
     .content-wrapper.layout-normal {
         padding: 20px 30px 50px;
     }
+    
+    @media (max-width: 768px) {
+        .content-wrapper.layout-normal {
+            padding: 15px 20px 60px;
+        }
+    }
 
     /* Layout short : description courte → grande image reste en bas */
     .content-wrapper.layout-short {
-        padding: 20px 30px 30px;
+        padding: 20px 30px 40px;
     }
 
         .content-wrapper.layout-short .image-section {
@@ -157,10 +163,16 @@ html, body {
         .content-wrapper.layout-short .info-section {
             margin-top: 0;
         }
+        
+        @media (max-width: 768px) {
+            .content-wrapper.layout-short {
+                padding: 15px 20px 60px;
+            }
+        }
 
     /* Layout medium : description moyenne → image moyenne en haut */
     .content-wrapper.layout-medium {
-        padding: 15px 30px 30px;
+        padding: 15px 30px 40px;
     }
 
         .content-wrapper.layout-medium .image-section {
@@ -171,10 +183,16 @@ html, body {
         .content-wrapper.layout-medium .info-section {
             margin-top: 0;
         }
+        
+        @media (max-width: 768px) {
+            .content-wrapper.layout-medium {
+                padding: 15px 20px 60px;
+            }
+        }
 
     /* Layout long : description longue → petite image minimale en haut */
     .content-wrapper.layout-long {
-        padding: 15px 30px 30px;
+        padding: 15px 30px 40px;
     }
 
         .content-wrapper.layout-long .image-section {
@@ -185,16 +203,12 @@ html, body {
         .content-wrapper.layout-long .info-section {
             margin-top: 0;
         }
-
-/* Responsive layouts pour mobile */
-@media (max-width: 768px) {
-    .content-wrapper.layout-normal,
-    .content-wrapper.layout-short,
-    .content-wrapper.layout-medium,
-    .content-wrapper.layout-long {
-        padding: 15px 20px 40px;
-    }
-}
+        
+        @media (max-width: 768px) {
+            .content-wrapper.layout-long {
+                padding: 15px 20px 60px;
+            }
+        }
 
 /* ========== IMAGE ========== */
 .image-section {
@@ -383,13 +397,21 @@ html, body {
 
 .description-scroll-wrapper {
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll natif fluide sur iOS */
     cursor: grab;
     margin-bottom: 0;
     flex: 1;
     /* MASQUER LA SCROLLBAR */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE et Edge */
-    touch-action: pan-y; /* Permettre le scroll tactile vertical */
+}
+
+/* Sur mobile, permettre le scroll natif */
+@media (max-width: 768px) {
+    .description-scroll-wrapper {
+        touch-action: pan-y !important; /* Force le scroll vertical natif */
+        cursor: default;
+    }
 }
 
     /* MASQUER LA SCROLLBAR - WebKit (Chrome, Safari) */
@@ -520,6 +542,31 @@ html, body {
         position: absolute;
         top: 10px;
         right: 10px;
+    }
+}
+
+/* Build version en haut à gauche */
+.build-version {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 5px 10px;
+    color: #00ff00;
+    font-size: 10px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+@media (max-width: 768px) {
+    .build-version {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 9px;
+        padding: 4px 8px;
     }
 }
 
