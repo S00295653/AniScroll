@@ -20,7 +20,10 @@
                  @onmousedown="(e) => HandleCardMouseDown(e, index)"
                  @onmousemove="HandleCardMouseMove"
                  @onmouseup="HandleCardMouseUp"
-                 @onmouseleave="HandleCardMouseUp">
+                 @onmouseleave="HandleCardMouseUp"
+                 @ontouchstart="(e) => HandleCardTouchStart(e, index)"
+                 @ontouchmove="HandleCardTouchMove"
+                 @ontouchend="HandleCardTouchEnd">
 
                 <!-- Background image flou -->
                 <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
@@ -86,7 +89,10 @@
                                          @onmousedown="HandleDescMouseDown"
                                          @onmousemove="HandleDescMouseMove"
                                          @onmouseup="HandleDescMouseUp"
-                                         @onmouseleave="HandleDescMouseUp">
+                                         @onmouseleave="HandleDescMouseUp"
+                                         @ontouchstart="HandleDescTouchStart"
+                                         @ontouchmove="HandleDescTouchMove"
+                                         @ontouchend="HandleDescTouchEnd">
                                         <div class="description-full">
                                             <p>@anime.Description</p>
                                             <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
@@ -116,7 +122,6 @@
 
     <!-- Contrôles overlay -->
     <div class="overlay-controls">
-        <!-- ⚠️ BOUTON CLOSE SUPPRIMÉ pour WASM -->
         <div class="counter">@animes.Count animes</div>
     </div>
 </div>
@@ -301,7 +306,7 @@
     }
 
     // ============================================
-    // 🎯 SCROLL VERTICAL TYPE INSTAGRAM/TIKTOK
+    // 🎯 SCROLL VERTICAL TYPE INSTAGRAM/TIKTOK - SOURIS
     // ============================================
 
     private void HandleCardMouseDown(MouseEventArgs e, int index)
@@ -378,6 +383,75 @@
         isTransitioning = false;
     }
 
+    // ============================================
+    // 🎯 SCROLL VERTICAL TYPE INSTAGRAM/TIKTOK - TOUCH
+    // ============================================
+
+    private void HandleCardTouchStart(TouchEventArgs e, int index)
+    {
+        if (isDraggingDesc) return;
+        if (index != currentIndex) return;
+
+        if (e.Touches.Length > 0)
+        {
+            isDraggingCard = true;
+            dragStartY = e.Touches[0].ClientY;
+            currentDragOffset = 0;
+            isTransitioning = false;
+        }
+    }
+
+    private void HandleCardTouchMove(TouchEventArgs e)
+    {
+        if (!isDraggingCard) return;
+
+        if (e.Touches.Length > 0)
+        {
+            currentDragOffset = e.Touches[0].ClientY - dragStartY;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleCardTouchEnd(TouchEventArgs e)
+    {
+        if (!isDraggingCard) return;
+
+        isDraggingCard = false;
+
+        double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
+        bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
+
+        if (swipeValidated)
+        {
+            if (currentDragOffset < 0)
+            {
+                if (currentIndex < animes.Count - 1)
+                {
+                    currentIndex++;
+                }
+                else
+                {
+                    await LoadAnimes(5);
+                    currentIndex++;
+                }
+            }
+            else if (currentDragOffset > 0)
+            {
+                if (currentIndex > 0)
+                {
+                    currentIndex--;
+                }
+            }
+        }
+
+        isTransitioning = true;
+        currentDragOffset = 0;
+        StateHasChanged();
+
+        await Task.Delay(300);
+        isTransitioning = false;
+    }
+
     private double GetCardTransform(int index)
     {
         // Position de base : chaque carte est espacée de CARD_HEIGHT
@@ -394,7 +468,7 @@
     }
 
     // ============================================
-    // SCROLL DE LA DESCRIPTION
+    // SCROLL DE LA DESCRIPTION - SOURIS
     // ============================================
 
     private async Task HandleDescMouseDown(MouseEventArgs e)
@@ -501,6 +575,118 @@
             StateHasChanged();
 
             // Désactiver la transition après animation
+            await Task.Delay(300);
+            isTransitioning = false;
+        }
+
+        hasReleasedAfterDescScroll = true;
+        StateHasChanged();
+    }
+
+    // ============================================
+    // SCROLL DE LA DESCRIPTION - TOUCH
+    // ============================================
+
+    private async Task HandleDescTouchStart(TouchEventArgs e)
+    {
+        if (e.Touches.Length > 0)
+        {
+            isDraggingDesc = true;
+            descDragStartY = e.Touches[0].ClientY;
+            descSwipeMode = false;
+
+            var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
+            descScrollStartTop = scrollInfo.ScrollTop;
+        }
+    }
+
+    private async Task HandleDescTouchMove(TouchEventArgs e)
+    {
+        if (!isDraggingDesc || e.Touches.Length == 0) return;
+
+        double deltaY = descDragStartY - e.Touches[0].ClientY;
+
+        if (descSwipeMode)
+        {
+            currentDragOffset = e.Touches[0].ClientY - descSwipeStartY;
+            StateHasChanged();
+            return;
+        }
+
+        var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", descScrollRef);
+        double currentScrollTop = scrollInfo.ScrollTop;
+        double maxScroll = scrollInfo.ScrollHeight - scrollInfo.ClientHeight;
+
+        bool atStart = currentScrollTop <= 0;
+        bool atEnd = currentScrollTop >= maxScroll - 5;
+
+        if (((atStart && deltaY < 0) || (atEnd && deltaY > 0)) && hasReleasedAfterDescScroll)
+        {
+            descSwipeMode = true;
+            descSwipeStartY = e.Touches[0].ClientY;
+            isDraggingCard = true;
+            dragStartY = e.Touches[0].ClientY;
+            currentDragOffset = 0;
+            hasReleasedAfterDescScroll = false;
+            isTransitioning = false;
+        }
+        else
+        {
+            double newScrollTop = descScrollStartTop + deltaY;
+            newScrollTop = Math.Max(0, Math.Min(newScrollTop, maxScroll));
+            await JS.InvokeVoidAsync("setScrollTop", descScrollRef, newScrollTop);
+
+            hasReleasedAfterDescScroll = false;
+        }
+    }
+
+    private async Task HandleDescTouchEnd(TouchEventArgs e)
+    {
+        if (!isDraggingDesc) return;
+
+        isDraggingDesc = false;
+
+        if (descSwipeMode)
+        {
+            descSwipeMode = false;
+            isDraggingCard = false;
+
+            double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
+            bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
+
+            if (swipeValidated)
+            {
+                if (currentDragOffset < 0)
+                {
+                    if (currentIndex < animes.Count - 1)
+                    {
+                        currentIndex++;
+                        expandedAnimes.Remove(animes[currentIndex - 1].Id);
+                    }
+                    else
+                    {
+                        await LoadAnimes(5);
+                        currentIndex++;
+                        if (currentIndex > 0)
+                        {
+                            expandedAnimes.Remove(animes[currentIndex - 1].Id);
+                        }
+                    }
+                }
+                else if (currentDragOffset > 0)
+                {
+                    if (currentIndex > 0)
+                    {
+                        expandedAnimes.Remove(animes[currentIndex].Id);
+                        currentIndex--;
+                    }
+                }
+            }
+
+            isTransitioning = true;
+            currentDragOffset = 0;
+            StateHasChanged();
+
             await Task.Delay(300);
             isTransitioning = false;
         }
