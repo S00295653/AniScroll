@@ -9,14 +9,53 @@ namespace AniScroll.Services
         private readonly HttpClient _httpClient;
         private readonly Random _random;
 
+        // Gestion du rate limiting
+        private DateTime? _rateLimitedUntil = null;
+        private const int RATE_LIMIT_DURATION_SECONDS = 60; // 1 minute de cooldown
+
         public AniListService(HttpClient httpClient)
         {
             _httpClient = httpClient;
             _random = new Random();
         }
 
+        public bool IsRateLimited()
+        {
+            if (_rateLimitedUntil == null)
+                return false;
+
+            if (DateTime.UtcNow >= _rateLimitedUntil)
+            {
+                _rateLimitedUntil = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        public int GetRateLimitSecondsRemaining()
+        {
+            if (_rateLimitedUntil == null)
+                return 0;
+
+            var remaining = (_rateLimitedUntil.Value - DateTime.UtcNow).TotalSeconds;
+            return Math.Max(0, (int)Math.Ceiling(remaining));
+        }
+
+        private void SetRateLimited()
+        {
+            _rateLimitedUntil = DateTime.UtcNow.AddSeconds(RATE_LIMIT_DURATION_SECONDS);
+            System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
+        }
+
         public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
+            if (IsRateLimited())
+            {
+                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - requête ignorée");
+                return null;
+            }
+
             try
             {
                 int randomPage = _random.Next(1, 80);
@@ -61,8 +100,19 @@ namespace AniScroll.Services
 
                 var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
 
-                if (!response.IsSuccessStatusCode)
+                // Gestion du rate limiting (429)
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests - Rate limit activé");
+                    SetRateLimited();
                     return null;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
+                    return null;
+                }
 
                 var jsonResponse = await response.Content.ReadAsStringAsync();
                 JObject data = JObject.Parse(jsonResponse);
@@ -81,8 +131,14 @@ namespace AniScroll.Services
 
                 return ParseAnimeCard(media);
             }
-            catch (Exception)
+            catch (HttpRequestException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur réseau: {ex.Message}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur inattendue: {ex.Message}");
                 return null;
             }
         }
@@ -157,16 +213,56 @@ namespace AniScroll.Services
             };
         }
 
-        public async Task<List<AnimeCard>> GetMultipleAnimesAsync(int count)
+        public async Task<AnimeLoadResult> GetMultipleAnimesAsync(int count)
         {
-            var tasks = new List<Task<AnimeCard?>>();
-            for (int i = 0; i < count; i++)
+            if (IsRateLimited())
             {
-                tasks.Add(GetRandomAnimeAsync());
+                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
+                return new AnimeLoadResult 
+                { 
+                    Animes = new List<AnimeCard>(), 
+                    IsRateLimited = true 
+                };
             }
 
-            var results = await Task.WhenAll(tasks);
-            return results.Where(a => a != null).Cast<AnimeCard>().ToList();
+            var tasks = new List<Task<AnimeCard?>>();
+            var results = new List<AnimeCard>();
+
+            for (int i = 0; i < count; i++)
+            {
+                // Vérifier à chaque itération si on est devenu rate limited
+                if (IsRateLimited())
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {i} requêtes");
+                    break;
+                }
+
+                var anime = await GetRandomAnimeAsync();
+                if (anime != null)
+                {
+                    results.Add(anime);
+                }
+                else if (IsRateLimited())
+                {
+                    // Si on vient d'être rate limited, arrêter
+                    break;
+                }
+
+                // Petit délai entre chaque requête pour éviter de saturer
+                await Task.Delay(100);
+            }
+
+            return new AnimeLoadResult 
+            { 
+                Animes = results, 
+                IsRateLimited = IsRateLimited() 
+            };
         }
+    }
+
+    public class AnimeLoadResult
+    {
+        public List<AnimeCard> Animes { get; set; } = new List<AnimeCard>();
+        public bool IsRateLimited { get; set; }
     }
 }

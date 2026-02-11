@@ -27,20 +27,19 @@ html, body {
 .anime-scroll-app {
     width: 100%;
     height: 100dvh;
-    max-width: 450px;
     background: black;
     position: relative;
     margin: 0 auto;
     overflow-y: scroll;
-    scroll-snap-type: y mandatory; /* Force l'aimantation des cartes */
+    scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
+    -webkit-overflow-scrolling: touch;
 }
     .anime-scroll-app::-webkit-scrollbar {
         display: none;
     }
 
-/* Desktop: centrer verticalement avec effet fenêtre */
+/* Desktop: PLEIN ÉCRAN avec max-width augmenté */
 @media (min-width: 769px) {
     body {
         display: flex;
@@ -49,9 +48,22 @@ html, body {
     }
     
     .anime-scroll-app {
-        max-height: 90vh;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        max-width: 100vw; /* Plein écran horizontal */
+        max-height: 100vh; /* Plein écran vertical */
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0; /* Pas de bordures arrondies */
+        box-shadow: none; /* Pas d'ombre */
+    }
+}
+
+/* Tablettes: Format intermédiaire */
+@media (min-width: 769px) and (max-width: 1200px) {
+    .anime-scroll-app {
+        max-width: 800px;
+        max-height: 95vh;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     }
 }
 
@@ -60,7 +72,7 @@ html, body {
     .anime-scroll-app {
         max-width: 100vw;
         height: 100vh;
-        height: 100dvh; /* Dynamic viewport height pour mobile */
+        height: 100dvh;
         border-radius: 0;
     }
 }
@@ -82,19 +94,16 @@ html, body {
     left: 0;
     pointer-events: none;
     overflow: hidden;
-    touch-action: none; /* Désactiver le scroll natif pour gérer nous-mêmes */
-    will-change: transform; /* Optimisation GPU */
-    transform: translateZ(0); /* Forcer l'accélération matérielle */
+    touch-action: none;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
-
     /* ========== TRANSITION CONTROL ========== */
-    /* Pas de transition pendant le drag */
     .anime-card.no-transition {
         transition: none !important;
     }
 
-    /* Transition uniquement pour le snap final */
     .anime-card.with-transition {
         transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -110,22 +119,20 @@ html, body {
     inset: 0;
     width: 100%;
     height: 100%;
-    background-size: cover; /* Cover au lieu de 120% pour un meilleur centrage */
-    background-position: center center; /* Centrage explicite */
-    background-repeat: no-repeat; /* Évite le loop de l'image */
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
     filter: blur(6px);
     opacity: 0.4;
     overflow: hidden;
-    /* 🚀 Optimisations GPU pour blur sans lag */
     will-change: transform;
-    transform: translateZ(0) scale(1.1); /* Scale de 1.1 au lieu de 1.02 pour compenser le blur */
+    transform: translateZ(0) scale(1.1);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    isolation: isolate; /* Crée un nouveau contexte de rendu pour isoler le blur */
-    contain: paint; /* Optimisation de rendu - indique au navigateur que le contenu ne déborde pas */
+    isolation: isolate;
+    contain: paint;
 }
 
-/* Desktop: blur plus fort */
 @media (min-width: 769px) {
     .bg-image {
         filter: blur(8px);
@@ -154,14 +161,21 @@ html, body {
     overflow: hidden;
 }
 
-/* Responsive padding pour mobile */
-@media (max-width: 768px) {
+/* Desktop: padding augmenté pour profiter de l'espace */
+@media (min-width: 1201px) {
     .content-wrapper {
-        padding: 15px 20px 60px; /* Plus d'espace en bas */
+        padding: 40px 60px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
     }
 }
 
-    /* Layout normal : grande image en haut, infos en bas */
+@media (max-width: 768px) {
+    .content-wrapper {
+        padding: 15px 20px 60px;
+    }
+}
+
     .content-wrapper.layout-normal {
         padding: 20px 30px 50px;
     }
@@ -172,7 +186,6 @@ html, body {
         }
     }
 
-    /* Layout short : description courte → grande image reste en bas */
     .content-wrapper.layout-short {
         padding: 20px 30px 40px;
     }
@@ -192,7 +205,6 @@ html, body {
             }
         }
 
-    /* Layout medium : description moyenne → image moyenne en haut */
     .content-wrapper.layout-medium {
         padding: 15px 30px 40px;
     }
@@ -212,7 +224,6 @@ html, body {
             }
         }
 
-    /* Layout long : description longue → petite image minimale en haut */
     .content-wrapper.layout-long {
         padding: 15px 30px 40px;
     }
@@ -251,7 +262,14 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Responsive image pour mobile */
+/* Desktop: image plus grande */
+@media (min-width: 1201px) {
+    .anime-image {
+        width: 350px;
+        height: 525px;
+    }
+}
+
 @media (max-width: 768px) {
     .anime-image {
         width: 240px;
@@ -259,7 +277,6 @@ html, body {
     }
 }
 
-/* Pas de hover sur mobile */
 @media (min-width: 769px) {
     .anime-image:hover {
         transform: scale(1.05);
@@ -278,14 +295,20 @@ html, body {
     margin-bottom: 10px;
     line-height: 1.2;
     transition: all 0.3s ease;
-    max-width: 390px;
+    max-width: 100%;
 }
 
-/* Responsive title pour mobile */
+/* Desktop: titre plus grand */
+@media (min-width: 1201px) {
+    .title {
+        font-size: 36px;
+        max-width: 900px;
+    }
+}
+
 @media (max-width: 768px) {
     .title {
         font-size: 24px;
-        max-width: 100%;
     }
 }
 
@@ -407,36 +430,37 @@ html, body {
     color: #c8c8c8;
     line-height: 20px;
     margin-bottom: 0;
-    max-width: 390px;
+    max-width: 100%;
     flex: 1;
 }
 
-@media (max-width: 768px) {
+/* Desktop: description plus large */
+@media (min-width: 1201px) {
     .description-preview {
-        max-width: 100%;
+        font-size: 16px;
+        line-height: 24px;
+        max-width: 900px;
     }
 }
 
 .description-scroll-wrapper {
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Scroll natif fluide sur iOS */
+    -webkit-overflow-scrolling: touch;
     cursor: grab;
     margin-bottom: 0;
     flex: 1;
-    /* MASQUER LA SCROLLBAR */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE et Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* IMPORTANT: Permettre le scroll natif sur la description */
+    touch-action: pan-y !important;
 }
 
-/* Sur mobile, permettre le scroll natif */
 @media (max-width: 768px) {
     .description-scroll-wrapper {
-        touch-action: pan-y !important; /* Force le scroll vertical natif */
         cursor: default;
     }
 }
 
-    /* MASQUER LA SCROLLBAR - WebKit (Chrome, Safari) */
     .description-scroll-wrapper::-webkit-scrollbar {
         display: none;
     }
@@ -449,12 +473,15 @@ html, body {
     font-size: 14px;
     color: #dcdcdc;
     line-height: 20px;
-    max-width: 390px;
+    max-width: 100%;
 }
 
-@media (max-width: 768px) {
+/* Desktop: description plus large */
+@media (min-width: 1201px) {
     .description-full {
-        max-width: 100%;
+        font-size: 16px;
+        line-height: 24px;
+        max-width: 900px;
     }
 }
 
@@ -462,7 +489,6 @@ html, body {
         margin: 0 0 15px 0;
     }
 
-/* BOUTONS CENTRÉS */
 .expand-btn,
 .collapse-btn {
     background: transparent;
@@ -477,7 +503,6 @@ html, body {
     flex-shrink: 0;
     display: block;
     width: 100%;
-    /* Agrandir la zone tactile sur mobile */
     min-height: 44px;
 }
 
@@ -506,6 +531,17 @@ html, body {
     padding: 40px;
     text-align: center;
     max-width: 370px;
+}
+
+/* RATE LIMIT BOX - Style différent */
+.rate-limit-box {
+    border: 1px solid #FF6B6B;
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.rate-limit-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
 }
 
 @media (max-width: 768px) {
@@ -558,7 +594,6 @@ html, body {
     gap: 10px;
 }
 
-/* Position relative au container sur mobile */
 @media (max-width: 768px) {
     .overlay-controls {
         position: absolute;
@@ -567,7 +602,6 @@ html, body {
     }
 }
 
-/* Build version en haut à gauche */
 .build-version {
     position: fixed;
     top: 15px;
@@ -620,7 +654,31 @@ html, body {
     font-weight: bold;
     text-align: center;
 }
-/* ========== INDICATEUR DE BUFFER (NOUVEAU) ========== */
+
+/* ========== RATE LIMIT BADGE ========== */
+.rate-limit-badge {
+    background: rgba(255, 107, 107, 0.8);
+    border-radius: 15px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse-red-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red-badge {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+/* ========== INDICATEUR DE BUFFER ========== */
 .buffer-indicator {
     background: rgba(76, 175, 80, 0.8);
     border-radius: 15px;

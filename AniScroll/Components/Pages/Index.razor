@@ -8,7 +8,7 @@
 
 <div class="anime-scroll-app" @ref="appContainer">
     <!-- Build Version -->
-    <div class="build-version">v2.1.3</div>
+    <div class="build-version">v1.3.1</div>
     
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -86,10 +86,11 @@
                                 }
                                 else
                                 {
-                                    <!-- Scroll NATIF - pas d'événements de drag sur mobile -->
-                                    <div class="description-scroll-wrapper"
+                                    <!-- Scroll NATIF avec détection de fin de scroll -->
+                                    <div class="description-scroll-wrapper description-scroll-zone"
                                          style="@GetDescriptionWrapperStyle(anime.Description)"
-                                         @ref="descScrollRef">
+                                         @ref="descScrollRef"
+                                         data-anime-id="@anime.Id">
                                         <div class="description-full">
                                             <p>@anime.Description</p>
                                             <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
@@ -115,11 +116,26 @@
                 </div>
             </div>
         }
+
+        @if (isRateLimited)
+        {
+            <div class="loading-area">
+                <div class="loading-box rate-limit-box">
+                    <div class="rate-limit-icon">⏱️</div>
+                    <p class="loading-title">Limite API atteinte</p>
+                    <p class="loading-subtitle">Nouvelle tentative dans @rateLimitCountdown secondes...</p>
+                </div>
+            </div>
+        }
     </div>
 
     <!-- Contrôles overlay -->
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
+        @if (isRateLimited)
+        {
+            <div class="rate-limit-badge">🚫 Rate Limited</div>
+        }
     </div>
 </div>
 
@@ -127,6 +143,8 @@
     private List<AnimeCard> animes = new List<AnimeCard>();
     private HashSet<int> expandedAnimes = new HashSet<int>();
     private bool isLoading = false;
+    private bool isRateLimited = false;
+    private int rateLimitCountdown = 0;
     private int currentIndex = 0;
 
     // ========== ⚙️ CONFIGURATION DU SCROLL ==========
@@ -142,6 +160,10 @@
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
 
+    // Variables pour détecter si on est dans la zone de description
+    private bool isTouchingDescription = false;
+    private bool descriptionScrolledToBottom = false;
+
     // Variables pour la description
     private ElementReference descScrollRef;
     private ElementReference appContainer;
@@ -152,6 +174,9 @@
     // Throttling
     private DateTime lastRenderTime = DateTime.Now;
     private const int THROTTLE_MS = 8; // ~120 FPS pour plus de fluidité
+
+    // Timer pour le rate limit
+    private System.Threading.Timer? rateLimitTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,12 +202,31 @@
 
     private async Task LoadAnimes(int count)
     {
+        // Vérifier si on est rate limited
+        if (AniListService.IsRateLimited())
+        {
+            isRateLimited = true;
+            StartRateLimitCountdown();
+            StateHasChanged();
+            return;
+        }
+
         isLoading = true;
         StateHasChanged();
 
         int startIndex = animes.Count;
-        var newAnimes = await AniListService.GetMultipleAnimesAsync(count);
-        animes.AddRange(newAnimes);
+        var result = await AniListService.GetMultipleAnimesAsync(count);
+
+        if (result.IsRateLimited)
+        {
+            isRateLimited = true;
+            isLoading = false;
+            StartRateLimitCountdown();
+            StateHasChanged();
+            return;
+        }
+
+        animes.AddRange(result.Animes);
 
         for (int i = startIndex; i < animes.Count; i++)
         {
@@ -194,6 +238,25 @@
 
         await Task.Delay(50);
         newlyCreatedCards.Clear();
+    }
+
+    private void StartRateLimitCountdown()
+    {
+        rateLimitCountdown = AniListService.GetRateLimitSecondsRemaining();
+
+        rateLimitTimer?.Dispose();
+        rateLimitTimer = new System.Threading.Timer(async _ =>
+        {
+            rateLimitCountdown = AniListService.GetRateLimitSecondsRemaining();
+
+            if (rateLimitCountdown <= 0)
+            {
+                isRateLimited = false;
+                rateLimitTimer?.Dispose();
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
     // ============================================
@@ -249,11 +312,11 @@
         }
         else if (descLength < 800)
         {
-            return "max-height: 350px;"; // Augmenté pour voir le bouton
+            return "max-height: 350px;";
         }
         else
         {
-            return "max-height: 450px;"; // Augmenté pour voir le bouton
+            return "max-height: 450px;";
         }
     }
 
@@ -291,6 +354,13 @@
     {
         if (index != currentIndex) return;
 
+        // Vérifier si on clique dans une zone de description
+        var target = e.Target as string;
+        if (IsDescriptionElement(target))
+        {
+            return;
+        }
+
         isDraggingCard = true;
         dragStartY = e.ClientY;
         currentDragOffset = 0;
@@ -324,18 +394,28 @@
         {
             if (currentDragOffset < 0)
             {
+                // Swipe vers le haut - anime suivant
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
                 }
                 else
                 {
-                    await LoadAnimes(5);
-                    currentIndex++;
+                    // Essayer de charger plus d'animes seulement si pas rate limited
+                    if (!AniListService.IsRateLimited())
+                    {
+                        await LoadAnimes(5);
+                        if (animes.Count > currentIndex + 1)
+                        {
+                            currentIndex++;
+                        }
+                    }
+                    // Sinon on reste sur le dernier anime
                 }
             }
             else if (currentDragOffset > 0)
             {
+                // Swipe vers le bas - anime précédent
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -355,22 +435,74 @@
     // 🎯 GESTION DU SWIPE - TOUCH (Mobile)
     // ============================================
 
-    private void HandleCardTouchStart(TouchEventArgs e, int index)
+    private async Task HandleCardTouchStart(TouchEventArgs e, int index)
     {
         if (index != currentIndex) return;
 
         if (e.Touches.Length > 0)
         {
-            // Ne pas intercepter si on touche dans la zone de description
+            var touch = e.Touches[0];
+
+            // Vérifier si le touch est dans une zone de description scrollable
+            isTouchingDescription = await JS.InvokeAsync<bool>(
+                "isTouchingDescriptionZone", 
+                touch.ClientX, 
+                touch.ClientY
+            );
+
+            if (isTouchingDescription)
+            {
+                // Vérifier si la description est scrollée au bout
+                var currentAnime = animes[currentIndex];
+                if (IsExpanded(currentAnime.Id))
+                {
+                    descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
+                        "isDescriptionAtBottom"
+                    );
+                }
+                return;
+            }
+
             isDraggingCard = true;
-            dragStartY = e.Touches[0].ClientY;
+            dragStartY = touch.ClientY;
             currentDragOffset = 0;
             isTransitioning = false;
         }
     }
 
-    private void HandleCardTouchMove(TouchEventArgs e)
+    private async Task HandleCardTouchMove(TouchEventArgs e)
     {
+        if (e.Touches.Length > 0)
+        {
+            var touch = e.Touches[0];
+
+            // Si on touche la description et qu'elle n'est pas au bout, ne pas intercepter
+            if (isTouchingDescription)
+            {
+                descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
+                    "isDescriptionAtBottom"
+                );
+
+                // Si on scroll vers le haut dans la description, reset
+                double deltaY = touch.ClientY - dragStartY;
+                if (deltaY > 0 || !descriptionScrolledToBottom)
+                {
+                    return;
+                }
+
+                // Si on est au bout et qu'on scroll vers le bas, on peut commencer le drag
+                if (descriptionScrolledToBottom && deltaY < 0)
+                {
+                    if (!isDraggingCard)
+                    {
+                        isDraggingCard = true;
+                        dragStartY = touch.ClientY;
+                        currentDragOffset = 0;
+                    }
+                }
+            }
+        }
+
         if (!isDraggingCard) return;
 
         var now = DateTime.Now;
@@ -388,6 +520,9 @@
 
     private async Task HandleCardTouchEnd(TouchEventArgs e)
     {
+        isTouchingDescription = false;
+        descriptionScrolledToBottom = false;
+
         if (!isDraggingCard) return;
 
         isDraggingCard = false;
@@ -399,18 +534,28 @@
         {
             if (currentDragOffset < 0)
             {
+                // Swipe vers le haut - anime suivant
                 if (currentIndex < animes.Count - 1)
                 {
                     currentIndex++;
                 }
                 else
                 {
-                    await LoadAnimes(5);
-                    currentIndex++;
+                    // Essayer de charger plus d'animes seulement si pas rate limited
+                    if (!AniListService.IsRateLimited())
+                    {
+                        await LoadAnimes(5);
+                        if (animes.Count > currentIndex + 1)
+                        {
+                            currentIndex++;
+                        }
+                    }
+                    // Sinon on reste sur le dernier anime
                 }
             }
             else if (currentDragOffset > 0)
             {
+                // Swipe vers le bas - anime précédent
                 if (currentIndex > 0)
                 {
                     currentIndex--;
@@ -436,6 +581,15 @@
         }
 
         return basePosition;
+    }
+
+    private bool IsDescriptionElement(string? target)
+    {
+        if (string.IsNullOrEmpty(target)) return false;
+        
+        return target.Contains("description-scroll-zone") || 
+               target.Contains("description-full") ||
+               target.Contains("collapse-btn");
     }
 
     // ============================================
@@ -471,6 +625,11 @@
             return description;
 
         return description.Substring(0, 150) + "...";
+    }
+
+    public void Dispose()
+    {
+        rateLimitTimer?.Dispose();
     }
 
     public class ScrollInfo
