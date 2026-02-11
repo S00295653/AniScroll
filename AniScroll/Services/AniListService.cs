@@ -147,14 +147,14 @@ namespace AniScroll.Services
         {
             var titleObj = media["title"];
             string displayTitle = (!string.IsNullOrEmpty(titleObj?["english"]?.ToString()))
-                ? titleObj["english"]!.ToString()
+                ? titleObj!["english"]!.ToString()
                 : titleObj?["romaji"]?.ToString() ?? "Unknown";
 
             var coverObj = media["coverImage"];
             string imageUrl = coverObj?["extraLarge"]?.ToString() ?? coverObj?["large"]?.ToString() ?? "";
 
-            string score = media["averageScore"] != null && media["averageScore"].Type != JTokenType.Null
-                ? media["averageScore"].ToString()
+            string score = media["averageScore"] != null && media["averageScore"]!.Type != JTokenType.Null
+                ? media["averageScore"]!.ToString()
                 : "N/A";
 
             string description = media["description"]?.ToString() ?? "";
@@ -169,8 +169,10 @@ namespace AniScroll.Services
 
             if (status == "RELEASING")
             {
-                int? totalEpisodes = media["episodes"]?.Type == JTokenType.Null ? null : (int?)media["episodes"];
-                int? nextAiring = media["nextAiringEpisode"]?["episode"]?.Type == JTokenType.Null ? null : (int?)media["nextAiringEpisode"]["episode"];
+                int? totalEpisodes = media["episodes"] != null && media["episodes"]!.Type != JTokenType.Null ? (int?)media["episodes"] : null;
+                int? nextAiring = media["nextAiringEpisode"]?["episode"] != null && media["nextAiringEpisode"]!["episode"]!.Type != JTokenType.Null 
+                    ? (int?)media["nextAiringEpisode"]!["episode"] 
+                    : null;
 
                 if (nextAiring.HasValue)
                 {
@@ -185,8 +187,8 @@ namespace AniScroll.Services
             }
             else if (status == "FINISHED" || status == "NOT_YET_RELEASED")
             {
-                if (media["episodes"] != null && media["episodes"].Type != JTokenType.Null)
-                    epDisplay = media["episodes"].ToString();
+                if (media["episodes"] != null && media["episodes"]!.Type != JTokenType.Null)
+                    epDisplay = media["episodes"]!.ToString();
             }
 
             var genres = new List<string>();
@@ -194,7 +196,7 @@ namespace AniScroll.Services
             if (genresArray != null && genresArray.HasValues)
             {
                 for (int i = 0; i < Math.Min(3, genresArray.Count()); i++)
-                    genres.Add(genresArray[i].ToString());
+                    genres.Add(genresArray[i]!.ToString());
             }
 
             return new AnimeCard

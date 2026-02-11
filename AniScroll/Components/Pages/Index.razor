@@ -149,7 +149,6 @@
 
     // ========== ⚙️ CONFIGURATION DU SCROLL ==========
     private double CARD_HEIGHT = 800;
-    private bool viewportHeightInitialized = false;
 
     // Seuil de swipe réduit pour faciliter
     private const double SWIPE_VALIDATION_PERCENT = 0.06; // 6% = ~48 pixels sur 800px
@@ -190,7 +189,6 @@
             try
             {
                 CARD_HEIGHT = await JS.InvokeAsync<double>("getViewportHeight");
-                viewportHeightInitialized = true;
                 StateHasChanged();
             }
             catch (Exception ex)
@@ -354,13 +352,8 @@
     {
         if (index != currentIndex) return;
 
-        // Vérifier si on clique dans une zone de description
-        var target = e.Target as string;
-        if (IsDescriptionElement(target))
-        {
-            return;
-        }
-
+        // Sur desktop, on active toujours le drag
+        // La zone de description gère son propre scroll via CSS
         isDraggingCard = true;
         dragStartY = e.ClientY;
         currentDragOffset = 0;
@@ -581,15 +574,6 @@
         }
 
         return basePosition;
-    }
-
-    private bool IsDescriptionElement(string? target)
-    {
-        if (string.IsNullOrEmpty(target)) return false;
-        
-        return target.Contains("description-scroll-zone") || 
-               target.Contains("description-full") ||
-               target.Contains("collapse-btn");
     }
 
     // ============================================
