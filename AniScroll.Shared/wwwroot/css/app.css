@@ -23,14 +23,16 @@ html, body {
     height: 100%;
 }
 
-/* ========== APP CONTAINER - RESPONSIVE ========== */
+/* ========== APP CONTAINER - TOUJOURS RESPONSIVE ========== */
 .anime-scroll-app {
-    width: 100%;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
     height: 100dvh;
     background: black;
     position: relative;
-    margin: 0 auto;
     overflow-y: scroll;
+    overflow-x: hidden; /* Empêcher le scroll horizontal */
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -39,44 +41,6 @@ html, body {
     .anime-scroll-app::-webkit-scrollbar {
         display: none;
     }
-
-/* Desktop: PLEIN ÉCRAN avec max-width augmenté */
-@media (max-width: 768px) {
-    body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .anime-scroll-app {
-        max-width: 100vw; /* Plein écran horizontal */
-        max-height: 100vh; /* Plein écran vertical */
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0; /* Pas de bordures arrondies */
-        box-shadow: none; /* Pas d'ombre */
-    }
-}
-
-/* Tablettes: Format intermédiaire */
-@media (min-width: 769px) and (max-width: 1200px) {
-    .anime-scroll-app {
-        max-width: 800px;
-        max-height: 95vh;
-        border-radius: 10px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    }
-}
-
-/* Mobile: plein écran */
-@media (min-width: 769px) {
-    .anime-scroll-app {
-        max-width: 100vw;
-        height: 100vh;
-        height: 100dvh;
-        border-radius: 0;
-    }
-}
 
 /* ========== SCROLL CONTAINER ========== */
 .main-scroll {
@@ -89,6 +53,7 @@ html, body {
 /* ========== ANIME CARD ========== */
 .anime-card {
     width: 100%;
+    height: 100vh;
     height: 100dvh;
     position: absolute;
     top: 0;
@@ -134,12 +99,6 @@ html, body {
     contain: paint;
 }
 
-@media (min-width: 769px) {
-    .bg-image {
-        filter: blur(8px);
-    }
-}
-
 .gradient-overlay {
     position: absolute;
     top: 0;
@@ -149,113 +108,63 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== CONTENT WRAPPER - LAYOUTS ========== */
+/* ========== CONTENT WRAPPER - RESPONSIVE ========== */
 .content-wrapper {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 20px 30px 50px;
+    max-height: 100vh;
+    max-height: 100dvh;
+    padding: 15px 20px 0px;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-sizing: border-box;
     overflow: hidden;
 }
 
-/* Desktop: padding augmenté pour profiter de l'espace */
-@media (min-width: 1201px) {
+/* Petits écrans (mobile portrait) */
+@media (max-width: 400px) {
     .content-wrapper {
-        padding: 40px 60px 60px;
+    }
+}
+
+/* Écrans moyens (mobile paysage, petites tablettes) */
+@media (min-width: 401px) and (max-width: 768px) {
+    .content-wrapper {
+    }
+}
+
+/* Tablettes */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .content-wrapper {
+    }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+    .content-wrapper {
         max-width: 1200px;
         margin: 0 auto;
     }
 }
 
-@media (max-width: 768px) {
-    .content-wrapper {
-        padding: 15px 20px 60px;
-    }
-}
 
-.content-wrapper.layout-normal {
-    padding: 20px 30px 50px;
-}
 
-@media (max-width: 768px) {
-    .content-wrapper.layout-normal {
-        padding: 15px 20px 60px;
-    }
-}
-
-.content-wrapper.layout-short {
-    padding: 20px 30px 40px;
-}
-
-    .content-wrapper.layout-short .image-section {
-        flex: 1;
-        margin-bottom: 15px;
-    }
-
-    .content-wrapper.layout-short .info-section {
-        margin-top: 0;
-    }
-
-@media (max-width: 768px) {
-    .content-wrapper.layout-short {
-        padding: 15px 20px 60px;
-    }
-}
-
-.content-wrapper.layout-medium {
-    padding: 15px 30px 40px;
-}
-
-    .content-wrapper.layout-medium .image-section {
-        flex: 0;
-        margin-bottom: 15px;
-    }
-
-    .content-wrapper.layout-medium .info-section {
-        margin-top: 0;
-    }
-
-@media (max-width: 768px) {
-    .content-wrapper.layout-medium {
-        padding: 15px 20px 60px;
-    }
-}
-
-.content-wrapper.layout-long {
-    padding: 15px 30px 40px;
-}
-
-    .content-wrapper.layout-long .image-section {
-        flex: 0;
-        margin-bottom: 12px;
-    }
-
-    .content-wrapper.layout-long .info-section {
-        margin-top: 0;
-    }
-
-@media (max-width: 768px) {
-    .content-wrapper.layout-long {
-        padding: 15px 20px 60px;
-    }
-}
-
-/* ========== IMAGE ========== */
+/* ========== IMAGE - RESPONSIVE ========== */
 .image-section {
     display: flex;
     justify-content: center;
     align-items: center;
     flex: 1;
+    min-height: 0; /* Important pour flexbox */
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .anime-image {
-    width: 280px;
-    height: 420px;
+    width: min(240px, 90vw);
+    height: calc(min(240px, 90vw) * 1.5);
+    max-height: 40vh;
     border-radius: 8px;
     background-size: cover;
     background-position: center;
@@ -263,91 +172,83 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Desktop: image plus grande */
-@media (min-width: 1201px) {
+/* Écrans moyens */
+@media (min-width: 401px) and (max-width: 768px) {
     .anime-image {
-        width: 350px;
-        height: 525px;
+        width: min(260px, 85vw);
+        height: calc(min(260px, 85vw) * 1.5);
+        max-height: 45vh;
     }
 }
 
-@media (max-width: 768px) {
+/* Tablettes */
+@media (min-width: 769px) and (max-width: 1024px) {
     .anime-image {
-        width: 240px;
-        height: 360px;
+        width: 280px;
+        height: 420px;
+        max-height: 50vh;
     }
 }
 
-@media (min-width: 769px) {
-    .anime-image:hover {
-        transform: scale(1.05);
+/* Desktop */
+@media (min-width: 1025px) {
+    .anime-image {
+        width: 320px;
+        height: 480px;
+        max-height: 55vh;
     }
+
+        .anime-image:hover {
+            transform: scale(1.05);
+        }
 }
 
-/* ========== INFO ========== */
+/* ========== INFO SECTION - RESPONSIVE ========== */
 .info-section {
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .title {
-    font-size: 28px;
+    font-size: clamp(18px, 5vw, 28px);
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     line-height: 1.2;
     transition: all 0.3s ease;
     max-width: 100%;
+    word-wrap: break-word;
 }
 
-/* Desktop: titre plus grand */
-@media (min-width: 1201px) {
-    .title {
-        font-size: 36px;
-        max-width: 900px;
-    }
-}
-
-@media (max-width: 768px) {
-    .title {
-        font-size: 24px;
-    }
-}
-
-.title.title-long {
-    font-size: 22px;
-    margin-bottom: 8px;
-}
-
-.title.title-very-long {
-    font-size: 18px;
-    margin-bottom: 6px;
-    line-height: 1.3;
-}
-
-@media (max-width: 768px) {
     .title.title-long {
-        font-size: 20px;
+        font-size: clamp(16px, 4.5vw, 22px);
+        margin-bottom: 6px;
     }
 
     .title.title-very-long {
-        font-size: 16px;
+        font-size: clamp(14px, 4vw, 18px);
+        margin-bottom: 5px;
+        line-height: 1.3;
     }
-}
 
 .season-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     color: #b4b4b4;
     margin-bottom: 5px;
 }
 
-/* ========== STATUS DOT AVEC GLOW EFFECT ========== */
+/* ========== STATUS DOT ========== */
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
+    flex-shrink: 0;
 }
 
     .status-dot.releasing {
@@ -383,24 +284,27 @@ html, body {
 }
 
 .genres {
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     color: #E94560;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    word-wrap: break-word;
 }
 
 /* ========== STATS ========== */
 .stats {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
 .badge {
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: clamp(11px, 2.5vw, 14px);
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .badge-score {
@@ -419,42 +323,47 @@ html, body {
         margin-right: 4px;
     }
 
-/* ========== DESCRIPTION ========== */
+/* ========== DESCRIPTION - TOUJOURS VISIBLE ========== */
 .description-container {
     position: relative;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .description-preview {
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     color: #c8c8c8;
-    line-height: 20px;
+    line-height: 1.4;
     margin-bottom: 0;
     max-width: 100%;
-    flex: 1;
-}
-
-/* Desktop: description plus large */
-@media (min-width: 1201px) {
-    .description-preview {
-        font-size: 16px;
-        line-height: 24px;
-        max-width: 900px;
-    }
+    word-wrap: break-word;
+    overflow: hidden;
 }
 
 .description-scroll-wrapper {
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     cursor: grab;
     margin-bottom: 0;
     flex: 1;
+    min-height: 0;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* IMPORTANT: Permettre le scroll natif sur la description */
     touch-action: pan-y !important;
+    max-height: 100%;
 }
+
+    .description-scroll-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+
+    .description-scroll-wrapper:active {
+        cursor: grabbing;
+    }
 
 @media (max-width: 768px) {
     .description-scroll-wrapper {
@@ -462,49 +371,38 @@ html, body {
     }
 }
 
-.description-scroll-wrapper::-webkit-scrollbar {
-    display: none;
-}
-
-.description-scroll-wrapper:active {
-    cursor: grabbing;
-}
-
 .description-full {
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     color: #dcdcdc;
-    line-height: 20px;
+    line-height: 1.4;
     max-width: 100%;
+    word-wrap: break-word;
+    padding-bottom: 10px;
 }
 
-/* Desktop: description plus large */
-@media (min-width: 1201px) {
-    .description-full {
-        font-size: 16px;
-        line-height: 24px;
-        max-width: 900px;
+    .description-full p {
+        margin: 0 0 10px 0;
     }
-}
 
-.description-full p {
-    margin: 0 0 15px 0;
-}
-
+/* BOUTONS TOUJOURS VISIBLES */
 .expand-btn,
 .collapse-btn {
     background: transparent;
     border: none;
     color: #6495ED;
-    font-size: 14px;
+    font-size: clamp(12px, 3vw, 14px);
     font-weight: bold;
     cursor: pointer;
-    padding: 10px 0;
-    margin: 0 auto;
+    padding: 8px 0;
+    margin: 5px auto 0;
     text-align: center;
     flex-shrink: 0;
     display: block;
     width: 100%;
-    min-height: 44px;
+    min-height: 40px;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0) 100%);
 }
 
     .expand-btn:hover,
@@ -529,33 +427,26 @@ html, body {
     background: rgba(0, 0, 0, 0.08);
     border: 1px solid #E94560;
     border-radius: 15px;
-    padding: 40px;
+    padding: 30px 20px;
     text-align: center;
-    max-width: 370px;
+    max-width: 90%;
+    width: 370px;
 }
 
-/* RATE LIMIT BOX - Style différent */
 .rate-limit-box {
     border: 1px solid #FF6B6B;
     background: rgba(255, 107, 107, 0.1);
 }
 
 .rate-limit-icon {
-    font-size: 60px;
-    margin-bottom: 20px;
-}
-
-@media (max-width: 768px) {
-    .loading-box {
-        max-width: 90%;
-        padding: 30px 20px;
-    }
+    font-size: clamp(40px, 10vw, 60px);
+    margin-bottom: 15px;
 }
 
 .spinner {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 25px;
+    width: clamp(40px, 10vw, 60px);
+    height: clamp(40px, 10vw, 60px);
+    margin: 0 auto 20px;
     border: 3px solid #2a2a2a;
     border-top: 3px solid #E94560;
     border-radius: 50%;
@@ -573,96 +464,58 @@ html, body {
 }
 
 .loading-title {
-    font-size: 16px;
+    font-size: clamp(14px, 3.5vw, 16px);
     color: white;
     font-weight: 600;
     margin-bottom: 8px;
 }
 
 .loading-subtitle {
-    font-size: 12px;
+    font-size: clamp(11px, 2.5vw, 12px);
     color: #888888;
 }
 
 /* ========== OVERLAY CONTROLS ========== */
 .overlay-controls {
     position: fixed;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     z-index: 100;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-@media (max-width: 768px) {
-    .overlay-controls {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-    }
+    gap: 8px;
 }
 
 .build-version {
     position: fixed;
-    top: 15px;
-    left: 15px;
+    top: 10px;
+    left: 10px;
     z-index: 100;
     background: rgba(0, 0, 0, 0.7);
-    border-radius: 10px;
-    padding: 5px 10px;
+    border-radius: 8px;
+    padding: 4px 8px;
     color: #00ff00;
-    font-size: 10px;
+    font-size: clamp(8px, 2vw, 10px);
     font-weight: bold;
     font-family: 'Courier New', monospace;
 }
 
-@media (max-width: 768px) {
-    .build-version {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        font-size: 9px;
-        padding: 4px 8px;
-    }
-}
-
-.close-btn {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-
-    .close-btn:hover {
-        background: #E94560;
-    }
-
 .counter {
     background: rgba(0, 0, 0, 0.63);
-    border-radius: 15px;
-    padding: 5px 10px;
+    border-radius: 12px;
+    padding: 4px 8px;
     color: white;
-    font-size: 11px;
+    font-size: clamp(9px, 2.5vw, 11px);
     font-weight: bold;
     text-align: center;
 }
 
-/* ========== RATE LIMIT BADGE ========== */
 .rate-limit-badge {
     background: rgba(255, 107, 107, 0.8);
-    border-radius: 15px;
-    padding: 5px 10px;
+    border-radius: 12px;
+    padding: 4px 8px;
     color: white;
-    font-size: 11px;
+    font-size: clamp(9px, 2.5vw, 11px);
     font-weight: bold;
     text-align: center;
     animation: pulse-red-badge 2s ease-in-out infinite;
@@ -680,13 +533,12 @@ html, body {
     }
 }
 
-/* ========== INDICATEUR DE BUFFER ========== */
 .buffer-indicator {
     background: rgba(76, 175, 80, 0.8);
-    border-radius: 15px;
-    padding: 5px 10px;
+    border-radius: 12px;
+    padding: 4px 8px;
     color: white;
-    font-size: 11px;
+    font-size: clamp(9px, 2.5vw, 11px);
     font-weight: bold;
     text-align: center;
     animation: pulse-buffer 2s ease-in-out infinite;
@@ -702,4 +554,9 @@ html, body {
         opacity: 1;
         transform: scale(1.03);
     }
+}
+
+/* ========== MESSAGE D'ERREUR MASQUÉ ========== */
+#blazor-error-ui {
+    display: none !important;
 }
