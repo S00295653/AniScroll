@@ -1,0 +1,705 @@
+﻿/* ========== BASE ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: black;
+    color: white;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+/* ========== APP CONTAINER - RESPONSIVE ========== */
+.anime-scroll-app {
+    width: 100%;
+    height: 100dvh;
+    background: black;
+    position: relative;
+    margin: 0 auto;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+    .anime-scroll-app::-webkit-scrollbar {
+        display: none;
+    }
+
+/* Desktop: PLEIN ÉCRAN avec max-width augmenté */
+@media (max-width: 768px) {
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .anime-scroll-app {
+        max-width: 100vw; /* Plein écran horizontal */
+        max-height: 100vh; /* Plein écran vertical */
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0; /* Pas de bordures arrondies */
+        box-shadow: none; /* Pas d'ombre */
+    }
+}
+
+/* Tablettes: Format intermédiaire */
+@media (min-width: 769px) and (max-width: 1200px) {
+    .anime-scroll-app {
+        max-width: 800px;
+        max-height: 95vh;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* Mobile: plein écran */
+@media (min-width: 769px) {
+    .anime-scroll-app {
+        max-width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+/* ========== SCROLL CONTAINER ========== */
+.main-scroll {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ========== ANIME CARD ========== */
+.anime-card {
+    width: 100%;
+    height: 100dvh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    overflow: hidden;
+    touch-action: none;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+    /* ========== TRANSITION CONTROL ========== */
+    .anime-card.no-transition {
+        transition: none !important;
+    }
+
+    .anime-card.with-transition {
+        transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .anime-card.active {
+        pointer-events: all;
+        z-index: 10;
+    }
+
+/* ========== BACKGROUND IMAGE OPTIMISÉE ========== */
+.bg-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    filter: blur(6px);
+    opacity: 0.4;
+    overflow: hidden;
+    will-change: transform;
+    transform: translateZ(0) scale(1.1);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    isolation: isolate;
+    contain: paint;
+}
+
+@media (min-width: 769px) {
+    .bg-image {
+        filter: blur(8px);
+    }
+}
+
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
+}
+
+/* ========== CONTENT WRAPPER - LAYOUTS ========== */
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px 30px 50px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Desktop: padding augmenté pour profiter de l'espace */
+@media (min-width: 1201px) {
+    .content-wrapper {
+        padding: 40px 60px 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .content-wrapper {
+        padding: 15px 20px 60px;
+    }
+}
+
+.content-wrapper.layout-normal {
+    padding: 20px 30px 50px;
+}
+
+@media (max-width: 768px) {
+    .content-wrapper.layout-normal {
+        padding: 15px 20px 60px;
+    }
+}
+
+.content-wrapper.layout-short {
+    padding: 20px 30px 40px;
+}
+
+    .content-wrapper.layout-short .image-section {
+        flex: 1;
+        margin-bottom: 15px;
+    }
+
+    .content-wrapper.layout-short .info-section {
+        margin-top: 0;
+    }
+
+@media (max-width: 768px) {
+    .content-wrapper.layout-short {
+        padding: 15px 20px 60px;
+    }
+}
+
+.content-wrapper.layout-medium {
+    padding: 15px 30px 40px;
+}
+
+    .content-wrapper.layout-medium .image-section {
+        flex: 0;
+        margin-bottom: 15px;
+    }
+
+    .content-wrapper.layout-medium .info-section {
+        margin-top: 0;
+    }
+
+@media (max-width: 768px) {
+    .content-wrapper.layout-medium {
+        padding: 15px 20px 60px;
+    }
+}
+
+.content-wrapper.layout-long {
+    padding: 15px 30px 40px;
+}
+
+    .content-wrapper.layout-long .image-section {
+        flex: 0;
+        margin-bottom: 12px;
+    }
+
+    .content-wrapper.layout-long .info-section {
+        margin-top: 0;
+    }
+
+@media (max-width: 768px) {
+    .content-wrapper.layout-long {
+        padding: 15px 20px 60px;
+    }
+}
+
+/* ========== IMAGE ========== */
+.image-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.anime-image {
+    width: 280px;
+    height: 420px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Desktop: image plus grande */
+@media (min-width: 1201px) {
+    .anime-image {
+        width: 350px;
+        height: 525px;
+    }
+}
+
+@media (max-width: 768px) {
+    .anime-image {
+        width: 240px;
+        height: 360px;
+    }
+}
+
+@media (min-width: 769px) {
+    .anime-image:hover {
+        transform: scale(1.05);
+    }
+}
+
+/* ========== INFO ========== */
+.info-section {
+    margin-top: auto;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+    max-width: 100%;
+}
+
+/* Desktop: titre plus grand */
+@media (min-width: 1201px) {
+    .title {
+        font-size: 36px;
+        max-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 24px;
+    }
+}
+
+.title.title-long {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.title.title-very-long {
+    font-size: 18px;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+    .title.title-long {
+        font-size: 20px;
+    }
+
+    .title.title-very-long {
+        font-size: 16px;
+    }
+}
+
+.season-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #b4b4b4;
+    margin-bottom: 5px;
+}
+
+/* ========== STATUS DOT AVEC GLOW EFFECT ========== */
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+    .status-dot.releasing {
+        background: rgb(0, 230, 0);
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+        animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    .status-dot.upcoming {
+        background: rgb(230, 0, 0);
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+        animation: pulse-red 2s ease-in-out infinite;
+    }
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+    }
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+    }
+}
+
+.genres {
+    font-size: 14px;
+    color: #E94560;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* ========== STATS ========== */
+.stats {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.badge-score {
+    background: #FFD700;
+    color: black;
+}
+
+.badge-episodes {
+    background: #0F3460;
+    color: white;
+}
+
+    .badge-episodes::before {
+        content: '📺';
+        filter: grayscale(1) brightness(2);
+        margin-right: 4px;
+    }
+
+/* ========== DESCRIPTION ========== */
+.description-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.description-preview {
+    font-size: 14px;
+    color: #c8c8c8;
+    line-height: 20px;
+    margin-bottom: 0;
+    max-width: 100%;
+    flex: 1;
+}
+
+/* Desktop: description plus large */
+@media (min-width: 1201px) {
+    .description-preview {
+        font-size: 16px;
+        line-height: 24px;
+        max-width: 900px;
+    }
+}
+
+.description-scroll-wrapper {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+    margin-bottom: 0;
+    flex: 1;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* IMPORTANT: Permettre le scroll natif sur la description */
+    touch-action: pan-y !important;
+}
+
+@media (max-width: 768px) {
+    .description-scroll-wrapper {
+        cursor: default;
+    }
+}
+
+.description-scroll-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.description-scroll-wrapper:active {
+    cursor: grabbing;
+}
+
+.description-full {
+    font-size: 14px;
+    color: #dcdcdc;
+    line-height: 20px;
+    max-width: 100%;
+}
+
+/* Desktop: description plus large */
+@media (min-width: 1201px) {
+    .description-full {
+        font-size: 16px;
+        line-height: 24px;
+        max-width: 900px;
+    }
+}
+
+.description-full p {
+    margin: 0 0 15px 0;
+}
+
+.expand-btn,
+.collapse-btn {
+    background: transparent;
+    border: none;
+    color: #6495ED;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 10px 0;
+    margin: 0 auto;
+    text-align: center;
+    flex-shrink: 0;
+    display: block;
+    width: 100%;
+    min-height: 44px;
+}
+
+    .expand-btn:hover,
+    .collapse-btn:hover {
+        color: #4169E1;
+    }
+
+/* ========== LOADING ========== */
+.loading-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+}
+
+.loading-box {
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid #E94560;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    max-width: 370px;
+}
+
+/* RATE LIMIT BOX - Style différent */
+.rate-limit-box {
+    border: 1px solid #FF6B6B;
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.rate-limit-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .loading-box {
+        max-width: 90%;
+        padding: 30px 20px;
+    }
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 25px;
+    border: 3px solid #2a2a2a;
+    border-top: 3px solid #E94560;
+    border-radius: 50%;
+    animation: spin 1.5s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-title {
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.loading-subtitle {
+    font-size: 12px;
+    color: #888888;
+}
+
+/* ========== OVERLAY CONTROLS ========== */
+.overlay-controls {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .overlay-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+.build-version {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 5px 10px;
+    color: #00ff00;
+    font-size: 10px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+@media (max-width: 768px) {
+    .build-version {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 9px;
+        padding: 4px 8px;
+    }
+}
+
+.close-btn {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+    .close-btn:hover {
+        background: #E94560;
+    }
+
+.counter {
+    background: rgba(0, 0, 0, 0.63);
+    border-radius: 15px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* ========== RATE LIMIT BADGE ========== */
+.rate-limit-badge {
+    background: rgba(255, 107, 107, 0.8);
+    border-radius: 15px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse-red-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red-badge {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+/* ========== INDICATEUR DE BUFFER ========== */
+.buffer-indicator {
+    background: rgba(76, 175, 80, 0.8);
+    border-radius: 15px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse-buffer 2s ease-in-out infinite;
+}
+
+@keyframes pulse-buffer {
+    0%, 100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.03);
+    }
+}
