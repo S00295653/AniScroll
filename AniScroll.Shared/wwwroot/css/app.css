@@ -23,7 +23,7 @@ html, body {
     height: 100%;
 }
 
-/* ========== APP CONTAINER - TOUJOURS RESPONSIVE ========== */
+/* ========== APP CONTAINER ========== */
 .anime-scroll-app {
     width: 100vw;
     width: 100dvw;
@@ -32,7 +32,7 @@ html, body {
     background: black;
     position: relative;
     overflow-y: scroll;
-    overflow-x: hidden; /* Empêcher le scroll horizontal */
+    overflow-x: hidden;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
@@ -65,7 +65,6 @@ html, body {
     transform: translateZ(0);
 }
 
-    /* ========== TRANSITION CONTROL ========== */
     .anime-card.no-transition {
         transition: none !important;
     }
@@ -79,7 +78,7 @@ html, body {
         z-index: 10;
     }
 
-/* ========== BACKGROUND IMAGE OPTIMISÉE ========== */
+/* ========== BACKGROUND IMAGE ========== */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -108,63 +107,70 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== CONTENT WRAPPER - RESPONSIVE ========== */
+/* ========== BLUR OVERLAYS (Haut et Bas) ========== */
+.anime-card::before,
+.anime-card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 80px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Blur overlay en haut */
+.anime-card::before {
+    top: 0;
+    background: linear-gradient(to bottom, 
+        rgba(0, 0, 0, 0.95) 0%, 
+        rgba(0, 0, 0, 0.7) 30%, 
+        rgba(0, 0, 0, 0.3) 60%,
+        transparent 100%
+    );
+}
+
+/* Blur overlay en bas */
+.anime-card::after {
+    bottom: 0;
+    background: linear-gradient(to top, 
+        rgba(0, 0, 0, 0.95) 0%, 
+        rgba(0, 0, 0, 0.7) 30%, 
+        rgba(0, 0, 0, 0.3) 60%,
+        transparent 100%
+    );
+}
+
+/* ========== CONTENT WRAPPER - LAYOUT STRICT ========== */
 .content-wrapper {
     position: relative;
-    z-index: 1;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     height: 100%;
     max-height: 100vh;
     max-height: 100dvh;
-    padding: 15px 20px 0px;
+    padding: 20px 20px 30px;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-sizing: border-box;
     overflow: hidden;
 }
 
-/* Petits écrans (mobile portrait) */
-@media (max-width: 400px) {
-    .content-wrapper {
-    }
-}
-
-/* Écrans moyens (mobile paysage, petites tablettes) */
-@media (min-width: 401px) and (max-width: 768px) {
-    .content-wrapper {
-    }
-}
-
-/* Tablettes */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .content-wrapper {
-    }
-}
-
-/* Desktop */
-@media (min-width: 1025px) {
-    .content-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-}
-
-
-
-/* ========== IMAGE - RESPONSIVE ========== */
+/* ========== IMAGE SECTION - Prend le maximum de place ========== */
 .image-section {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex: 1;
-    min-height: 0; /* Important pour flexbox */
+    flex: 1 1 auto;
+    min-height: 200px;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 10px 0;
 }
 
 .anime-image {
-    width: min(240px, 90vw);
-    height: calc(min(240px, 90vw) * 1.5);
-    max-height: 40vh;
+    width: min(280px, 85vw);
+    height: calc(min(280px, 85vw) * 1.5);
+    max-height: 55vh;
     border-radius: 8px;
     background-size: cover;
     background-position: center;
@@ -172,75 +178,78 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Écrans moyens */
-@media (min-width: 401px) and (max-width: 768px) {
-    .anime-image {
-        width: min(260px, 85vw);
-        height: calc(min(260px, 85vw) * 1.5);
-        max-height: 45vh;
-    }
+/* Mode expanded - image réduite */
+.content-wrapper.layout-short .anime-image,
+.content-wrapper.layout-medium .anime-image,
+.content-wrapper.layout-long .anime-image {
+    width: 180px;
+    height: 270px;
+    max-height: 35vh;
 }
 
-/* Tablettes */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .anime-image {
-        width: 280px;
-        height: 420px;
-        max-height: 50vh;
-    }
-}
-
-/* Desktop */
-@media (min-width: 1025px) {
-    .anime-image {
-        width: 320px;
-        height: 480px;
-        max-height: 55vh;
-    }
-
-        .anime-image:hover {
-            transform: scale(1.05);
-        }
-}
-
-/* ========== INFO SECTION - RESPONSIVE ========== */
+/* ========== INFO SECTION - LAYOUT STRICT ========== */
 .info-section {
-    margin-top: auto;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+/* ========== TITRE ADAPTATIF ========== */
 .title {
-    font-size: clamp(18px, 5vw, 28px);
+    font-size: 24px;
     font-weight: bold;
     margin-bottom: 8px;
     line-height: 1.2;
     transition: all 0.3s ease;
     max-width: 100%;
     word-wrap: break-word;
+    flex-shrink: 0;
 }
 
+    /* Titre long - réduction progressive */
     .title.title-long {
-        font-size: clamp(16px, 4.5vw, 22px);
+        font-size: 20px;
         margin-bottom: 6px;
     }
 
+    /* Titre très long - réduction maximale */
     .title.title-very-long {
-        font-size: clamp(14px, 4vw, 18px);
+        font-size: 16px;
         margin-bottom: 5px;
         line-height: 1.3;
     }
 
+/* Mode expanded - titre plus petit */
+.content-wrapper.layout-short .title,
+.content-wrapper.layout-medium .title,
+.content-wrapper.layout-long .title {
+    font-size: 18px;
+}
+
+.content-wrapper.layout-short .title.title-long,
+.content-wrapper.layout-medium .title.title-long,
+.content-wrapper.layout-long .title.title-long {
+    font-size: 16px;
+}
+
+.content-wrapper.layout-short .title.title-very-long,
+.content-wrapper.layout-medium .title.title-very-long,
+.content-wrapper.layout-long .title.title-very-long {
+    font-size: 14px;
+}
+
+/* ========== SEASON INFO ========== */
 .season-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: clamp(12px, 3vw, 14px);
+    font-size: 13px;
     color: #b4b4b4;
     margin-bottom: 5px;
+    flex-shrink: 0;
 }
 
 /* ========== STATUS DOT ========== */
@@ -283,12 +292,14 @@ html, body {
     }
 }
 
+/* ========== GENRES ========== */
 .genres {
-    font-size: clamp(12px, 3vw, 14px);
+    font-size: 13px;
     color: #E94560;
     font-weight: 600;
     margin-bottom: 8px;
     word-wrap: break-word;
+    flex-shrink: 0;
 }
 
 /* ========== STATS ========== */
@@ -297,12 +308,13 @@ html, body {
     gap: 8px;
     margin-bottom: 10px;
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .badge {
     padding: 4px 8px;
     border-radius: 5px;
-    font-size: clamp(11px, 2.5vw, 14px);
+    font-size: 13px;
     font-weight: bold;
     white-space: nowrap;
 }
@@ -323,38 +335,51 @@ html, body {
         margin-right: 4px;
     }
 
-/* ========== DESCRIPTION - TOUJOURS VISIBLE ========== */
+/* ========== DESCRIPTION CONTAINER - POSITION FIXE ========== */
 .description-container {
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    flex: 1;
-    overflow: hidden;
+    min-height: 80px;
+    max-height: 80px;
+    flex-shrink: 0;
+    overflow: visible;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+/* Mode expanded - description prend 60% de l'écran */
+.content-wrapper.layout-short .description-container,
+.content-wrapper.layout-medium .description-container,
+.content-wrapper.layout-long .description-container {
+    max-height: 60vh;
+    min-height: 200px;
+}
+
+/* ========== DESCRIPTION PREVIEW ========== */
 .description-preview {
-    font-size: clamp(12px, 3vw, 14px);
+    font-size: 13px;
     color: #c8c8c8;
     line-height: 1.4;
     margin-bottom: 0;
     max-width: 100%;
     word-wrap: break-word;
     overflow: hidden;
+    flex-shrink: 1;
 }
 
+/* ========== DESCRIPTION SCROLL WRAPPER ========== */
 .description-scroll-wrapper {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     cursor: grab;
-    margin-bottom: 0;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    max-height: 100%;
     scrollbar-width: none;
     -ms-overflow-style: none;
     touch-action: pan-y !important;
-    max-height: 100%;
+    padding-bottom: 50px;
 }
 
     .description-scroll-wrapper::-webkit-scrollbar {
@@ -371,44 +396,56 @@ html, body {
     }
 }
 
+/* ========== DESCRIPTION FULL ========== */
 .description-full {
-    font-size: clamp(12px, 3vw, 14px);
+    font-size: 13px;
     color: #dcdcdc;
     line-height: 1.4;
     max-width: 100%;
     word-wrap: break-word;
-    padding-bottom: 10px;
 }
 
     .description-full p {
         margin: 0 0 10px 0;
     }
 
-/* BOUTONS TOUJOURS VISIBLES */
+/* ========== BOUTONS - POSITION FIXE ========== */
 .expand-btn,
 .collapse-btn {
-    background: transparent;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, 
+        rgba(0, 0, 0, 0.98) 0%, 
+        rgba(0, 0, 0, 0.85) 50%, 
+        rgba(0, 0, 0, 0.6) 100%
+    );
     border: none;
     color: #6495ED;
-    font-size: clamp(12px, 3vw, 14px);
+    font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    padding: 8px 0;
-    margin: 5px auto 0;
+    padding: 15px 0;
+    margin: 0;
     text-align: center;
     flex-shrink: 0;
     display: block;
     width: 100%;
-    min-height: 40px;
-    position: sticky;
-    bottom: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0) 100%);
+    min-height: 50px;
+    z-index: 10;
 }
 
     .expand-btn:hover,
     .collapse-btn:hover {
         color: #4169E1;
     }
+
+/* Bouton collapse dans le wrapper scrollable */
+.description-scroll-wrapper .collapse-btn {
+    position: sticky;
+    margin-top: 10px;
+}
 
 /* ========== LOADING ========== */
 .loading-area {
@@ -439,13 +476,13 @@ html, body {
 }
 
 .rate-limit-icon {
-    font-size: clamp(40px, 10vw, 60px);
+    font-size: 50px;
     margin-bottom: 15px;
 }
 
 .spinner {
-    width: clamp(40px, 10vw, 60px);
-    height: clamp(40px, 10vw, 60px);
+    width: 50px;
+    height: 50px;
     margin: 0 auto 20px;
     border: 3px solid #2a2a2a;
     border-top: 3px solid #E94560;
@@ -464,14 +501,14 @@ html, body {
 }
 
 .loading-title {
-    font-size: clamp(14px, 3.5vw, 16px);
+    font-size: 15px;
     color: white;
     font-weight: 600;
     margin-bottom: 8px;
 }
 
 .loading-subtitle {
-    font-size: clamp(11px, 2.5vw, 12px);
+    font-size: 12px;
     color: #888888;
 }
 
@@ -495,7 +532,7 @@ html, body {
     border-radius: 8px;
     padding: 4px 8px;
     color: #00ff00;
-    font-size: clamp(8px, 2vw, 10px);
+    font-size: 9px;
     font-weight: bold;
     font-family: 'Courier New', monospace;
 }
@@ -505,7 +542,7 @@ html, body {
     border-radius: 12px;
     padding: 4px 8px;
     color: white;
-    font-size: clamp(9px, 2.5vw, 11px);
+    font-size: 10px;
     font-weight: bold;
     text-align: center;
 }
@@ -515,7 +552,7 @@ html, body {
     border-radius: 12px;
     padding: 4px 8px;
     color: white;
-    font-size: clamp(9px, 2.5vw, 11px);
+    font-size: 10px;
     font-weight: bold;
     text-align: center;
     animation: pulse-red-badge 2s ease-in-out infinite;
@@ -538,7 +575,7 @@ html, body {
     border-radius: 12px;
     padding: 4px 8px;
     color: white;
-    font-size: clamp(9px, 2.5vw, 11px);
+    font-size: 10px;
     font-weight: bold;
     text-align: center;
     animation: pulse-buffer 2s ease-in-out infinite;
@@ -559,4 +596,16 @@ html, body {
 /* ========== MESSAGE D'ERREUR MASQUÉ ========== */
 #blazor-error-ui {
     display: none !important;
+}
+
+/* ========== RESPONSIVE DESKTOP ========== */
+@media (min-width: 1025px) {
+    .content-wrapper {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    .anime-image:hover {
+        transform: scale(1.05);
+    }
 }
