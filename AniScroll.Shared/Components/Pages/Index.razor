@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v1.5.0</div>
+    <div class="build-version">v1.4.1</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -33,7 +33,7 @@
                 <div class="content-wrapper layout-@layoutMode">
                     <div class="image-section">
                         <div class="anime-image"
-                             style="background-image: url('@anime.ImageUrl');"></div>
+                             style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"></div>
                     </div>
 
                     <div class="info-section">
@@ -137,7 +137,7 @@
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
     private int currentIndex = 0;
-    private int previousIndex = -1;
+    private int previousIndex = -1; // Pour détecter le changement
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
     private bool isDraggingCard = false;
@@ -174,7 +174,7 @@
             }
         }
 
-        // Fermer la description si on change d'anime
+        // FERMER LA DESCRIPTION SI ON CHANGE D'ANIME
         if (previousIndex != currentIndex && previousIndex >= 0)
         {
             if (previousIndex < animes.Count)
@@ -264,7 +264,27 @@
         return "long";
     }
 
-    // Style strict pour la description avec calcul intelligent
+    private string GetImageStyle(int animeId, string description)
+    {
+        if (!IsExpanded(animeId))
+            return "";
+
+        string layoutMode = GetLayoutMode(animeId, description);
+
+        switch (layoutMode)
+        {
+            case "short":
+                return "width: 280px; height: 420px;";
+            case "medium":
+                return "width: 200px; height: 300px;";
+            case "long":
+                return "width: 140px; height: 210px;";
+            default:
+                return "";
+        }
+    }
+
+    // STYLE STRICT POUR LA DESCRIPTION - MAX 50VH
     private string GetDescriptionWrapperStyle(string description)
     {
         if (string.IsNullOrEmpty(description))
@@ -272,7 +292,7 @@
 
         int descLength = description.Length;
 
-        // Limiter strictement à 50vh maximum
+        // Toujours limiter à 50vh maximum
         if (descLength < 300)
         {
             return "max-height: min(200px, 50vh); overflow-y: auto;";
@@ -287,25 +307,10 @@
         }
     }
 
-    // Calcul de la classe du titre avec prise en compte de l'expansion
     private string GetTitleClass(string title)
     {
         if (string.IsNullOrEmpty(title)) return "";
 
-        // Si la description est ouverte, forcer la réduction du titre
-        var currentAnime = animes.FirstOrDefault(a => a.Title == title);
-        if (currentAnime != null && IsExpanded(currentAnime.Id))
-        {
-            // En mode expanded, toujours réduire selon la longueur
-            if (title.Length > 50)
-                return "title-very-long";
-            else if (title.Length > 30)
-                return "title-long";
-            
-            return "";
-        }
-
-        // Mode normal
         if (title.Length > 50)
             return "title-very-long";
         else if (title.Length > 30)
@@ -438,6 +443,7 @@
         {
             var touch = e.Touches[0];
 
+            // Scroll isolé dans la description
             if (isScrollingInDescription)
             {
                 var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
@@ -445,6 +451,7 @@
 
                 double deltaY = touch.ClientY - dragStartY;
                 
+                // Si on scroll vers le haut et qu'on est en haut : passer à la card précédente
                 if (isAtTop && deltaY > 0)
                 {
                     if (!isDraggingCard)
@@ -454,6 +461,7 @@
                         currentDragOffset = 0;
                     }
                 }
+                // Si on scroll vers le bas et qu'on est en bas : passer à la card suivante
                 else if (descriptionScrolledToBottom && deltaY < 0)
                 {
                     if (!isDraggingCard)
@@ -465,6 +473,7 @@
                 }
                 else
                 {
+                    // Sinon, scroll normal dans la description
                     return;
                 }
             }
@@ -567,11 +576,13 @@
         return description?.Length > 150;
     }
 
+    // Calcul sécurisé - JAMAIS de superposition
     private string GetSafePreviewDescription(string description)
     {
         if (string.IsNullOrEmpty(description))
             return "";
 
+        // Mobile : 110 chars, PC : 130 chars
         int maxChars = 110;
 
         if (description.Length <= maxChars)

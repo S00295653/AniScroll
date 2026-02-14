@@ -78,7 +78,7 @@ html, body {
         z-index: 10;
     }
 
-/* ========== BACKGROUND IMAGE ========== */
+/* ========== BACKGROUND IMAGE - FIX BUG PIXELS ========== */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -107,7 +107,7 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== BLUR OVERLAYS - HAUT ET BAS, MOINS SOMBRE ========== */
+/* ========== BLUR OVERLAYS ========== */
 .anime-card::before,
 .anime-card::after {
     content: '';
@@ -119,29 +119,27 @@ html, body {
     z-index: 2;
 }
 
-/* Blur overlay EN HAUT - ENCORE MOINS SOMBRE */
 .anime-card::before {
     top: 0;
     background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.4) 0%,   /* Réduit de 0.6 */
-        rgba(0, 0, 0, 0.2) 30%,  /* Réduit de 0.35 */
-        rgba(0, 0, 0, 0.1) 60%,  /* Réduit de 0.15 */
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.35) 30%,
+        rgba(0, 0, 0, 0.15) 60%,
         transparent 100%
     );
 }
 
-/* Blur overlay EN BAS - ENCORE MOINS SOMBRE */
 .anime-card::after {
     bottom: 0;
     background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.4) 0%,   /* Réduit de 0.6 */
-        rgba(0, 0, 0, 0.2) 30%,  /* Réduit de 0.35 */
-        rgba(0, 0, 0, 0.1) 60%,  /* Réduit de 0.15 */
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.35) 30%,
+        rgba(0, 0, 0, 0.15) 60%,
         transparent 100%
     );
 }
 
-/* ========== CONTENT WRAPPER - ANIMATION FLUIDE UNIQUE ========== */
+/* ========== CONTENT WRAPPER ========== */
 .content-wrapper {
     position: relative;
     z-index: 3;
@@ -151,42 +149,40 @@ html, body {
     max-height: 100vh;
     max-height: 100dvh;
     padding: 20px 20px 30px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-sizing: border-box;
     overflow: hidden;
-    /* ANIMATION UNIQUE FLUIDE sur TOUTES les propriétés */
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* ========== IMAGE SECTION - ANIMATION FLUIDE ========== */
+/* ========== IMAGE SECTION ========== */
 .image-section {
     display: flex;
     justify-content: center;
     align-items: center;
     flex: 1 1 auto;
     min-height: 200px;
-    padding: 10px 0;
-    /* ANIMATION FLUIDE */
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 10px 0;
 }
 
-/* ========== ANIME IMAGE - ANIMATION FLUIDE ========== */
+/* ========== ANIME IMAGE - FIX BUG PIXELS ========== */
 .anime-image {
     width: min(280px, 85vw);
     height: calc(min(280px, 85vw) * 1.5);
     max-height: 55vh;
     border-radius: 8px;
     background-size: cover;
-    background-position: center center;
+    background-position: center center; /* Centré pour éviter le bug */
     background-repeat: no-repeat;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Fix pour éviter les artefacts de pixels */
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
     overflow: hidden;
-    /* ANIMATION FLUIDE */
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Mode expanded - image réduite MOBILE */
+/* Mode expanded - image réduite */
 .content-wrapper.layout-short .anime-image,
 .content-wrapper.layout-medium .anime-image,
 .content-wrapper.layout-long .anime-image {
@@ -209,13 +205,12 @@ html, body {
         max-height: 60vh;
     }
 
-    /* Mode expanded PC - IMAGE PLUS GRANDE */
     .content-wrapper.layout-short .anime-image,
     .content-wrapper.layout-medium .anime-image,
     .content-wrapper.layout-long .anime-image {
-        width: 280px;  /* Au lieu de 240px */
-        height: 420px; /* Au lieu de 360px */
-        max-height: 45vh; /* Au lieu de 40vh */
+        width: 240px;
+        height: 360px;
+        max-height: 40vh;
     }
 }
 
@@ -231,13 +226,12 @@ html, body {
         max-height: 65vh;
     }
 
-    /* Mode expanded PC LARGE - IMAGE ENCORE PLUS GRANDE */
     .content-wrapper.layout-short .anime-image,
     .content-wrapper.layout-medium .anime-image,
     .content-wrapper.layout-long .anime-image {
-        width: 320px;  /* Au lieu de 280px */
-        height: 480px; /* Au lieu de 420px */
-        max-height: 50vh; /* Au lieu de 45vh */
+        width: 280px;
+        height: 420px;
+        max-height: 45vh;
     }
 
     .anime-image:hover {
@@ -245,29 +239,26 @@ html, body {
     }
 }
 
-/* ========== INFO SECTION - ANIMATION FLUIDE ========== */
+/* ========== INFO SECTION ========== */
 .info-section {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: visible;
-    /* ANIMATION FLUIDE */
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* ========== TITRE - ANIMATION FLUIDE ========== */
+/* ========== TITRE ========== */
 .title {
     font-size: 24px;
     font-weight: bold;
     margin-bottom: 8px;
     line-height: 1.2;
+    transition: all 0.3s ease;
     max-width: 100%;
     word-wrap: break-word;
     flex-shrink: 0;
-    /* ANIMATION FLUIDE sur font-size et margin */
-    transition: font-size 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
-                margin 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
     .title.title-long {
@@ -281,26 +272,22 @@ html, body {
         line-height: 1.3;
     }
 
-/* Mode expanded - titre plus petit pour éviter superposition */
 .content-wrapper.layout-short .title,
 .content-wrapper.layout-medium .title,
 .content-wrapper.layout-long .title {
     font-size: 18px;
-    margin-bottom: 6px;
 }
 
 .content-wrapper.layout-short .title.title-long,
 .content-wrapper.layout-medium .title.title-long,
 .content-wrapper.layout-long .title.title-long {
     font-size: 16px;
-    margin-bottom: 5px;
 }
 
 .content-wrapper.layout-short .title.title-very-long,
 .content-wrapper.layout-medium .title.title-very-long,
 .content-wrapper.layout-long .title.title-very-long {
     font-size: 14px;
-    margin-bottom: 4px;
 }
 
 @media (min-width: 768px) {
@@ -311,34 +298,16 @@ html, body {
 
     .title.title-long {
         font-size: 26px;
-        margin-bottom: 8px;
     }
 
     .title.title-very-long {
         font-size: 22px;
-        margin-bottom: 7px;
     }
 
-    /* PC expanded - titre adapté */
     .content-wrapper.layout-short .title,
     .content-wrapper.layout-medium .title,
     .content-wrapper.layout-long .title {
         font-size: 24px;
-        margin-bottom: 8px;
-    }
-
-    .content-wrapper.layout-short .title.title-long,
-    .content-wrapper.layout-medium .title.title-long,
-    .content-wrapper.layout-long .title.title-long {
-        font-size: 20px;
-        margin-bottom: 6px;
-    }
-
-    .content-wrapper.layout-short .title.title-very-long,
-    .content-wrapper.layout-medium .title.title-very-long,
-    .content-wrapper.layout-long .title.title-very-long {
-        font-size: 18px;
-        margin-bottom: 5px;
     }
 }
 
@@ -350,34 +319,10 @@ html, body {
 
     .title.title-long {
         font-size: 30px;
-        margin-bottom: 10px;
     }
 
     .title.title-very-long {
         font-size: 24px;
-        margin-bottom: 8px;
-    }
-
-    /* PC large expanded - titre adapté */
-    .content-wrapper.layout-short .title,
-    .content-wrapper.layout-medium .title,
-    .content-wrapper.layout-long .title {
-        font-size: 28px;
-        margin-bottom: 9px;
-    }
-
-    .content-wrapper.layout-short .title.title-long,
-    .content-wrapper.layout-medium .title.title-long,
-    .content-wrapper.layout-long .title.title-long {
-        font-size: 24px;
-        margin-bottom: 7px;
-    }
-
-    .content-wrapper.layout-short .title.title-very-long,
-    .content-wrapper.layout-medium .title.title-very-long,
-    .content-wrapper.layout-long .title.title-very-long {
-        font-size: 20px;
-        margin-bottom: 6px;
     }
 }
 
@@ -510,7 +455,7 @@ html, body {
         margin-right: 4px;
     }
 
-/* ========== DESCRIPTION CONTAINER - ANIMATION FLUIDE ========== */
+/* ========== DESCRIPTION CONTAINER - STRICT LAYOUT ========== */
 .description-container {
     position: relative;
     display: flex;
@@ -519,12 +464,10 @@ html, body {
     max-height: 80px;
     flex-shrink: 0;
     overflow: visible;
-    /* ANIMATION FLUIDE sur min/max-height */
-    transition: min-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
-                max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Mode expanded */
+/* Mode expanded - STRICT 50% de l'écran */
 .content-wrapper.layout-short .description-container,
 .content-wrapper.layout-medium .description-container,
 .content-wrapper.layout-long .description-container {
@@ -553,7 +496,7 @@ html, body {
     }
 }
 
-/* ========== DESCRIPTION SCROLL WRAPPER ========== */
+/* ========== DESCRIPTION SCROLL WRAPPER - NO BOUNCE ========== */
 .description-scroll-wrapper {
     overflow-y: auto;
     overflow-x: hidden;
@@ -561,13 +504,14 @@ html, body {
     cursor: grab;
     flex: 1 1 auto;
     min-height: 0;
-    max-height: calc(100% - 60px);
+    max-height: calc(100% - 60px); /* Réserve 60px pour le bouton */
     scrollbar-width: none;
     -ms-overflow-style: none;
     touch-action: pan-y !important;
+    /* NO BOUNCE sur mobile */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: auto;
-    margin-bottom: 60px;
+    margin-bottom: 60px; /* Espace strict pour le bouton */
 }
 
     .description-scroll-wrapper::-webkit-scrollbar {
@@ -605,14 +549,14 @@ html, body {
     }
 }
 
-/* ========== BOUTONS ========== */
+/* ========== BOUTONS - TRANSPARENT STRICT ========== */
 .expand-btn,
 .collapse-btn {
     position: absolute;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    background: transparent !important;
+    background: transparent !important; /* FORCE transparent */
     border: none;
     color: #6495ED;
     font-size: 14px;
@@ -622,11 +566,12 @@ html, body {
     margin: 0;
     text-align: center;
     display: inline-block;
-    width: auto !important;
+    width: auto !important; /* FORCE auto */
     min-height: auto;
     z-index: 10;
     white-space: nowrap;
     text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    /* Enlever tout background */
     box-shadow: none;
 }
 
@@ -641,7 +586,7 @@ html, body {
     .expand-btn:hover,
     .collapse-btn:hover {
         color: #4169E1;
-        background: transparent !important;
+        background: transparent !important; /* FORCE même au hover */
     }
 
     .expand-btn:active,
@@ -649,7 +594,7 @@ html, body {
         background: transparent !important;
     }
 
-/* ========== LOADING ========== */
+/* ========== LOADING - FOND OPAQUE ========== */
 .loading-area {
     width: 100%;
     height: 100%;
@@ -660,13 +605,14 @@ html, body {
     top: 0;
     left: 0;
     z-index: 100;
+    /* FOND OPAQUE POUR MASQUER L'ANIME CARD */
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
 .loading-box {
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.9); /* Plus opaque */
     border: 1px solid #E94560;
     border-radius: 15px;
     padding: 30px 20px;
