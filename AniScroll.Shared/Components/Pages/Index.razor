@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v1.4.0</div>
+    <div class="build-version">v1.4.1</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -137,6 +137,7 @@
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
     private int currentIndex = 0;
+    private int previousIndex = -1; // Pour détecter le changement
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
     private bool isDraggingCard = false;
@@ -172,6 +173,21 @@
                 System.Diagnostics.Debug.WriteLine($"❌ Erreur: {ex.Message}");
             }
         }
+
+        // FERMER LA DESCRIPTION SI ON CHANGE D'ANIME
+        if (previousIndex != currentIndex && previousIndex >= 0)
+        {
+            if (previousIndex < animes.Count)
+            {
+                var previousAnime = animes[previousIndex];
+                if (expandedAnimes.Contains(previousAnime.Id))
+                {
+                    expandedAnimes.Remove(previousAnime.Id);
+                }
+            }
+        }
+
+        previousIndex = currentIndex;
     }
 
     private async Task LoadAnimes(int count)
@@ -268,6 +284,7 @@
         }
     }
 
+    // STYLE STRICT POUR LA DESCRIPTION - MAX 50VH
     private string GetDescriptionWrapperStyle(string description)
     {
         if (string.IsNullOrEmpty(description))
@@ -275,17 +292,18 @@
 
         int descLength = description.Length;
 
+        // Toujours limiter à 50vh maximum
         if (descLength < 300)
         {
-            return "max-height: none; overflow-y: visible;";
+            return "max-height: min(200px, 50vh); overflow-y: auto;";
         }
         else if (descLength < 800)
         {
-            return "max-height: 350px;";
+            return "max-height: min(350px, 50vh); overflow-y: auto;";
         }
         else
         {
-            return "max-height: 450px;";
+            return "max-height: min(450px, 50vh); overflow-y: auto;";
         }
     }
 
@@ -425,19 +443,27 @@
         {
             var touch = e.Touches[0];
 
-            // Si on scroll dans la description
+            // Scroll isolé dans la description
             if (isScrollingInDescription)
             {
-                descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
-                    "isDescriptionAtBottom"
-                );
+                var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
+                descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
 
-                // Ne bouger la card que si on est en bas ET qu'on scroll vers le bas
                 double deltaY = touch.ClientY - dragStartY;
                 
-                if (descriptionScrolledToBottom && deltaY < 0)
+                // Si on scroll vers le haut et qu'on est en haut : passer à la card précédente
+                if (isAtTop && deltaY > 0)
                 {
-                    // On est en bas et on scroll vers le bas : commencer à bouger la card
+                    if (!isDraggingCard)
+                    {
+                        isDraggingCard = true;
+                        dragStartY = touch.ClientY;
+                        currentDragOffset = 0;
+                    }
+                }
+                // Si on scroll vers le bas et qu'on est en bas : passer à la card suivante
+                else if (descriptionScrolledToBottom && deltaY < 0)
+                {
                     if (!isDraggingCard)
                     {
                         isDraggingCard = true;
@@ -447,7 +473,7 @@
                 }
                 else
                 {
-                    // Sinon, ne rien faire : le scroll reste dans la description
+                    // Sinon, scroll normal dans la description
                     return;
                 }
             }
@@ -550,25 +576,23 @@
         return description?.Length > 150;
     }
 
-    // NOUVELLE MÉTHODE : Calcul sécurisé de la preview (ne se superpose JAMAIS avec le bouton)
+    // Calcul sécurisé - JAMAIS de superposition
     private string GetSafePreviewDescription(string description)
     {
         if (string.IsNullOrEmpty(description))
             return "";
 
-        // Limite à environ 2-3 lignes de texte (environ 100-120 chars selon la taille de la police)
+        // Mobile : 110 chars, PC : 130 chars
         int maxChars = 110;
 
         if (description.Length <= maxChars)
             return description;
 
-        // Trouver le dernier espace avant la limite pour éviter de couper un mot
         int cutPosition = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
         
-        if (cutPosition == -1 || cutPosition < 50) // Si pas d'espace trouvé, couper brutalement
+        if (cutPosition == -1 || cutPosition < 50)
             cutPosition = maxChars;
 
-        // Ajouter "..." SANS risque de superposition
         return description.Substring(0, cutPosition).TrimEnd() + "...";
     }
 

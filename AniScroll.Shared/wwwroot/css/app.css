@@ -78,7 +78,7 @@ html, body {
         z-index: 10;
     }
 
-/* ========== BACKGROUND IMAGE ========== */
+/* ========== BACKGROUND IMAGE - FIX BUG PIXELS ========== */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -107,36 +107,34 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== BLUR OVERLAYS (Haut et Bas) - DIVISÉ PAR 2 ET MOINS SOMBRE ========== */
+/* ========== BLUR OVERLAYS ========== */
 .anime-card::before,
 .anime-card::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    height: 40px; /* Divisé par 2 (était 80px) */
+    height: 40px;
     pointer-events: none;
     z-index: 2;
 }
 
-/* Blur overlay en haut - MOINS SOMBRE */
 .anime-card::before {
     top: 0;
     background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.6) 0%,  /* Était 0.95 */
-        rgba(0, 0, 0, 0.35) 30%, /* Était 0.7 */
-        rgba(0, 0, 0, 0.15) 60%, /* Était 0.3 */
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.35) 30%,
+        rgba(0, 0, 0, 0.15) 60%,
         transparent 100%
     );
 }
 
-/* Blur overlay en bas - MOINS SOMBRE */
 .anime-card::after {
     bottom: 0;
     background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.6) 0%,  /* Était 0.95 */
-        rgba(0, 0, 0, 0.35) 30%, /* Était 0.7 */
-        rgba(0, 0, 0, 0.15) 60%, /* Était 0.3 */
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.35) 30%,
+        rgba(0, 0, 0, 0.15) 60%,
         transparent 100%
     );
 }
@@ -167,15 +165,21 @@ html, body {
     padding: 10px 0;
 }
 
+/* ========== ANIME IMAGE - FIX BUG PIXELS ========== */
 .anime-image {
     width: min(280px, 85vw);
     height: calc(min(280px, 85vw) * 1.5);
     max-height: 55vh;
     border-radius: 8px;
     background-size: cover;
-    background-position: center;
+    background-position: center center; /* Centré pour éviter le bug */
+    background-repeat: no-repeat;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* Fix pour éviter les artefacts de pixels */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    overflow: hidden;
 }
 
 /* Mode expanded - image réduite */
@@ -187,7 +191,7 @@ html, body {
     max-height: 35vh;
 }
 
-/* ========== RESPONSIVE PC - ÉLÉMENTS PLUS GRANDS ========== */
+/* ========== RESPONSIVE PC ========== */
 @media (min-width: 768px) {
     .content-wrapper {
         max-width: 600px;
@@ -245,7 +249,7 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* ========== TITRE ADAPTATIF ========== */
+/* ========== TITRE ========== */
 .title {
     font-size: 24px;
     font-weight: bold;
@@ -286,7 +290,6 @@ html, body {
     font-size: 14px;
 }
 
-/* TITRE PLUS GRAND SUR PC */
 @media (min-width: 768px) {
     .title {
         font-size: 32px;
@@ -452,7 +455,7 @@ html, body {
         margin-right: 4px;
     }
 
-/* ========== DESCRIPTION CONTAINER - POSITION FIXE POUR BOUTONS ========== */
+/* ========== DESCRIPTION CONTAINER - STRICT LAYOUT ========== */
 .description-container {
     position: relative;
     display: flex;
@@ -464,15 +467,15 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Mode expanded */
+/* Mode expanded - STRICT 50% de l'écran */
 .content-wrapper.layout-short .description-container,
 .content-wrapper.layout-medium .description-container,
 .content-wrapper.layout-long .description-container {
-    max-height: 60vh;
-    min-height: 200px;
+    max-height: 50vh;
+    min-height: 150px;
 }
 
-/* ========== DESCRIPTION PREVIEW - NE SE SUPERPOSE JAMAIS AVEC LE BOUTON ========== */
+/* ========== DESCRIPTION PREVIEW ========== */
 .description-preview {
     font-size: 13px;
     color: #c8c8c8;
@@ -482,7 +485,6 @@ html, body {
     word-wrap: break-word;
     overflow: hidden;
     flex-shrink: 1;
-    /* Réserve de l'espace pour le bouton (50px) */
     padding-bottom: 50px;
 }
 
@@ -490,11 +492,11 @@ html, body {
     .description-preview {
         font-size: 16px;
         line-height: 1.5;
-        padding-bottom: 55px;
+        padding-bottom: 60px;
     }
 }
 
-/* ========== DESCRIPTION SCROLL WRAPPER - SCROLL ISOLÉ ========== */
+/* ========== DESCRIPTION SCROLL WRAPPER - NO BOUNCE ========== */
 .description-scroll-wrapper {
     overflow-y: auto;
     overflow-x: hidden;
@@ -502,12 +504,14 @@ html, body {
     cursor: grab;
     flex: 1 1 auto;
     min-height: 0;
-    max-height: 100%;
+    max-height: calc(100% - 60px); /* Réserve 60px pour le bouton */
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* CRITIQUE : Isoler le scroll de la card */
     touch-action: pan-y !important;
-    padding-bottom: 60px; /* Espace pour le bouton */
+    /* NO BOUNCE sur mobile */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: auto;
+    margin-bottom: 60px; /* Espace strict pour le bouton */
 }
 
     .description-scroll-wrapper::-webkit-scrollbar {
@@ -531,6 +535,7 @@ html, body {
     line-height: 1.4;
     max-width: 100%;
     word-wrap: break-word;
+    padding-bottom: 10px;
 }
 
     .description-full p {
@@ -544,29 +549,30 @@ html, body {
     }
 }
 
-/* ========== BOUTONS - MÊME POSITION, TRANSPARENT, HITBOX = TEXTE ========== */
+/* ========== BOUTONS - TRANSPARENT STRICT ========== */
 .expand-btn,
 .collapse-btn {
     position: absolute;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    background: transparent; /* TRANSPARENT */
+    background: transparent !important; /* FORCE transparent */
     border: none;
     color: #6495ED;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    padding: 12px 20px; /* Hitbox = texte + padding raisonnable */
+    padding: 12px 20px;
     margin: 0;
     text-align: center;
-    display: inline-block; /* Hitbox suit le contenu */
-    width: auto; /* Pas de largeur 100% */
+    display: inline-block;
+    width: auto !important; /* FORCE auto */
     min-height: auto;
     z-index: 10;
     white-space: nowrap;
-    /* Petit gradient subtil derrière le texte pour lisibilité */
     text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    /* Enlever tout background */
+    box-shadow: none;
 }
 
 @media (min-width: 768px) {
@@ -580,9 +586,15 @@ html, body {
     .expand-btn:hover,
     .collapse-btn:hover {
         color: #4169E1;
+        background: transparent !important; /* FORCE même au hover */
     }
 
-/* ========== LOADING - Z-INDEX SUPÉRIEUR ========== */
+    .expand-btn:active,
+    .collapse-btn:active {
+        background: transparent !important;
+    }
+
+/* ========== LOADING - FOND OPAQUE ========== */
 .loading-area {
     width: 100%;
     height: 100%;
@@ -592,17 +604,22 @@ html, body {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 100; /* Au-dessus de tout */
+    z-index: 100;
+    /* FOND OPAQUE POUR MASQUER L'ANIME CARD */
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .loading-box {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.9); /* Plus opaque */
     border: 1px solid #E94560;
     border-radius: 15px;
     padding: 30px 20px;
     text-align: center;
     max-width: 90%;
     width: 370px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
 @media (min-width: 768px) {
@@ -615,7 +632,7 @@ html, body {
 
 .rate-limit-box {
     border: 1px solid #FF6B6B;
-    background: rgba(255, 107, 107, 0.1);
+    background: rgba(255, 107, 107, 0.2);
 }
 
 .rate-limit-icon {
@@ -760,29 +777,6 @@ html, body {
     50% {
         opacity: 1;
         transform: scale(1.05);
-    }
-}
-
-.buffer-indicator {
-    background: rgba(76, 175, 80, 0.8);
-    border-radius: 12px;
-    padding: 4px 8px;
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-    text-align: center;
-    animation: pulse-buffer 2s ease-in-out infinite;
-}
-
-@keyframes pulse-buffer {
-    0%, 100% {
-        opacity: 0.7;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 1;
-        transform: scale(1.03);
     }
 }
 
