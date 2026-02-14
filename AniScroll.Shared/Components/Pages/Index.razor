@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v1.3.1</div>
+    <div class="build-version">v1.4.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -69,7 +69,7 @@
                             <div class="description-container">
                                 @if (!IsExpanded(anime.Id))
                                 {
-                                    <p class="description-preview">@GetPreviewDescription(anime.Description)</p>
+                                    <p class="description-preview">@GetSafePreviewDescription(anime.Description)</p>
                                     @if (NeedsExpansion(anime.Description))
                                     {
                                         <button class="expand-btn" @onclick="() => ToggleExpand(anime.Id)">
@@ -85,11 +85,11 @@
                                          data-anime-id="@anime.Id">
                                         <div class="description-full">
                                             <p>@anime.Description</p>
-                                            <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
-                                                See Less
-                                            </button>
                                         </div>
                                     </div>
+                                    <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
+                                        See Less
+                                    </button>
                                 }
                             </div>
                         }
@@ -145,6 +145,7 @@
     private bool isTransitioning = false;
     private bool isTouchingDescription = false;
     private bool descriptionScrolledToBottom = false;
+    private bool isScrollingInDescription = false;
     private ElementReference descScrollRef;
     private ElementReference appContainer;
     private HashSet<int> newlyCreatedCards = new HashSet<int>();
@@ -403,6 +404,7 @@
                 var currentAnime = animes[currentIndex];
                 if (IsExpanded(currentAnime.Id))
                 {
+                    isScrollingInDescription = true;
                     descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
                         "isDescriptionAtBottom"
                     );
@@ -423,26 +425,30 @@
         {
             var touch = e.Touches[0];
 
-            if (isTouchingDescription)
+            // Si on scroll dans la description
+            if (isScrollingInDescription)
             {
                 descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
                     "isDescriptionAtBottom"
                 );
 
+                // Ne bouger la card que si on est en bas ET qu'on scroll vers le bas
                 double deltaY = touch.ClientY - dragStartY;
-                if (deltaY > 0 || !descriptionScrolledToBottom)
-                {
-                    return;
-                }
-
+                
                 if (descriptionScrolledToBottom && deltaY < 0)
                 {
+                    // On est en bas et on scroll vers le bas : commencer à bouger la card
                     if (!isDraggingCard)
                     {
                         isDraggingCard = true;
                         dragStartY = touch.ClientY;
                         currentDragOffset = 0;
                     }
+                }
+                else
+                {
+                    // Sinon, ne rien faire : le scroll reste dans la description
+                    return;
                 }
             }
         }
@@ -464,6 +470,7 @@
 
     private async Task HandleCardTouchEnd(TouchEventArgs e)
     {
+        isScrollingInDescription = false;
         isTouchingDescription = false;
         descriptionScrolledToBottom = false;
 
@@ -543,15 +550,31 @@
         return description?.Length > 150;
     }
 
-    private string GetPreviewDescription(string description)
+    // NOUVELLE MÉTHODE : Calcul sécurisé de la preview (ne se superpose JAMAIS avec le bouton)
+    private string GetSafePreviewDescription(string description)
     {
         if (string.IsNullOrEmpty(description))
             return "";
 
-        if (description.Length <= 150)
+        // Limite à environ 2-3 lignes de texte (environ 100-120 chars selon la taille de la police)
+        int maxChars = 110;
+
+        if (description.Length <= maxChars)
             return description;
 
-        return description.Substring(0, 150) + "...";
+        // Trouver le dernier espace avant la limite pour éviter de couper un mot
+        int cutPosition = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
+        
+        if (cutPosition == -1 || cutPosition < 50) // Si pas d'espace trouvé, couper brutalement
+            cutPosition = maxChars;
+
+        // Ajouter "..." SANS risque de superposition
+        return description.Substring(0, cutPosition).TrimEnd() + "...";
+    }
+
+    private string GetPreviewDescription(string description)
+    {
+        return GetSafePreviewDescription(description);
     }
 
     public void Dispose()

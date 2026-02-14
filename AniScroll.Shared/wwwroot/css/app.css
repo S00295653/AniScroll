@@ -107,41 +107,41 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== BLUR OVERLAYS (Haut et Bas) ========== */
+/* ========== BLUR OVERLAYS (Haut et Bas) - DIVISÉ PAR 2 ET MOINS SOMBRE ========== */
 .anime-card::before,
 .anime-card::after {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    height: 80px;
+    height: 40px; /* Divisé par 2 (était 80px) */
     pointer-events: none;
     z-index: 2;
 }
 
-/* Blur overlay en haut */
+/* Blur overlay en haut - MOINS SOMBRE */
 .anime-card::before {
     top: 0;
     background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.95) 0%, 
-        rgba(0, 0, 0, 0.7) 30%, 
-        rgba(0, 0, 0, 0.3) 60%,
+        rgba(0, 0, 0, 0.6) 0%,  /* Était 0.95 */
+        rgba(0, 0, 0, 0.35) 30%, /* Était 0.7 */
+        rgba(0, 0, 0, 0.15) 60%, /* Était 0.3 */
         transparent 100%
     );
 }
 
-/* Blur overlay en bas */
+/* Blur overlay en bas - MOINS SOMBRE */
 .anime-card::after {
     bottom: 0;
     background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.95) 0%, 
-        rgba(0, 0, 0, 0.7) 30%, 
-        rgba(0, 0, 0, 0.3) 60%,
+        rgba(0, 0, 0, 0.6) 0%,  /* Était 0.95 */
+        rgba(0, 0, 0, 0.35) 30%, /* Était 0.7 */
+        rgba(0, 0, 0, 0.15) 60%, /* Était 0.3 */
         transparent 100%
     );
 }
 
-/* ========== CONTENT WRAPPER - LAYOUT STRICT ========== */
+/* ========== CONTENT WRAPPER ========== */
 .content-wrapper {
     position: relative;
     z-index: 3;
@@ -156,7 +156,7 @@ html, body {
     overflow: hidden;
 }
 
-/* ========== IMAGE SECTION - Prend le maximum de place ========== */
+/* ========== IMAGE SECTION ========== */
 .image-section {
     display: flex;
     justify-content: center;
@@ -187,7 +187,55 @@ html, body {
     max-height: 35vh;
 }
 
-/* ========== INFO SECTION - LAYOUT STRICT ========== */
+/* ========== RESPONSIVE PC - ÉLÉMENTS PLUS GRANDS ========== */
+@media (min-width: 768px) {
+    .content-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px 30px 40px;
+    }
+
+    .anime-image {
+        width: 360px;
+        height: 540px;
+        max-height: 60vh;
+    }
+
+    .content-wrapper.layout-short .anime-image,
+    .content-wrapper.layout-medium .anime-image,
+    .content-wrapper.layout-long .anime-image {
+        width: 240px;
+        height: 360px;
+        max-height: 40vh;
+    }
+}
+
+@media (min-width: 1025px) {
+    .content-wrapper {
+        max-width: 700px;
+        padding: 40px 40px 50px;
+    }
+
+    .anime-image {
+        width: 400px;
+        height: 600px;
+        max-height: 65vh;
+    }
+
+    .content-wrapper.layout-short .anime-image,
+    .content-wrapper.layout-medium .anime-image,
+    .content-wrapper.layout-long .anime-image {
+        width: 280px;
+        height: 420px;
+        max-height: 45vh;
+    }
+
+    .anime-image:hover {
+        transform: scale(1.05);
+    }
+}
+
+/* ========== INFO SECTION ========== */
 .info-section {
     flex: 0 0 auto;
     display: flex;
@@ -209,20 +257,17 @@ html, body {
     flex-shrink: 0;
 }
 
-    /* Titre long - réduction progressive */
     .title.title-long {
         font-size: 20px;
         margin-bottom: 6px;
     }
 
-    /* Titre très long - réduction maximale */
     .title.title-very-long {
         font-size: 16px;
         margin-bottom: 5px;
         line-height: 1.3;
     }
 
-/* Mode expanded - titre plus petit */
 .content-wrapper.layout-short .title,
 .content-wrapper.layout-medium .title,
 .content-wrapper.layout-long .title {
@@ -241,6 +286,43 @@ html, body {
     font-size: 14px;
 }
 
+/* TITRE PLUS GRAND SUR PC */
+@media (min-width: 768px) {
+    .title {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    .title.title-long {
+        font-size: 26px;
+    }
+
+    .title.title-very-long {
+        font-size: 22px;
+    }
+
+    .content-wrapper.layout-short .title,
+    .content-wrapper.layout-medium .title,
+    .content-wrapper.layout-long .title {
+        font-size: 24px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .title {
+        font-size: 36px;
+        margin-bottom: 12px;
+    }
+
+    .title.title-long {
+        font-size: 30px;
+    }
+
+    .title.title-very-long {
+        font-size: 24px;
+    }
+}
+
 /* ========== SEASON INFO ========== */
 .season-info {
     display: flex;
@@ -252,12 +334,27 @@ html, body {
     flex-shrink: 0;
 }
 
+@media (min-width: 768px) {
+    .season-info {
+        font-size: 16px;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+}
+
 /* ========== STATUS DOT ========== */
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .status-dot {
+        width: 12px;
+        height: 12px;
+    }
 }
 
     .status-dot.releasing {
@@ -302,6 +399,13 @@ html, body {
     flex-shrink: 0;
 }
 
+@media (min-width: 768px) {
+    .genres {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+}
+
 /* ========== STATS ========== */
 .stats {
     display: flex;
@@ -317,6 +421,19 @@ html, body {
     font-size: 13px;
     font-weight: bold;
     white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .stats {
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .badge {
+        padding: 6px 12px;
+        font-size: 16px;
+        border-radius: 6px;
+    }
 }
 
 .badge-score {
@@ -335,7 +452,7 @@ html, body {
         margin-right: 4px;
     }
 
-/* ========== DESCRIPTION CONTAINER - POSITION FIXE ========== */
+/* ========== DESCRIPTION CONTAINER - POSITION FIXE POUR BOUTONS ========== */
 .description-container {
     position: relative;
     display: flex;
@@ -347,7 +464,7 @@ html, body {
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Mode expanded - description prend 60% de l'écran */
+/* Mode expanded */
 .content-wrapper.layout-short .description-container,
 .content-wrapper.layout-medium .description-container,
 .content-wrapper.layout-long .description-container {
@@ -355,7 +472,7 @@ html, body {
     min-height: 200px;
 }
 
-/* ========== DESCRIPTION PREVIEW ========== */
+/* ========== DESCRIPTION PREVIEW - NE SE SUPERPOSE JAMAIS AVEC LE BOUTON ========== */
 .description-preview {
     font-size: 13px;
     color: #c8c8c8;
@@ -365,9 +482,19 @@ html, body {
     word-wrap: break-word;
     overflow: hidden;
     flex-shrink: 1;
+    /* Réserve de l'espace pour le bouton (50px) */
+    padding-bottom: 50px;
 }
 
-/* ========== DESCRIPTION SCROLL WRAPPER ========== */
+@media (min-width: 768px) {
+    .description-preview {
+        font-size: 16px;
+        line-height: 1.5;
+        padding-bottom: 55px;
+    }
+}
+
+/* ========== DESCRIPTION SCROLL WRAPPER - SCROLL ISOLÉ ========== */
 .description-scroll-wrapper {
     overflow-y: auto;
     overflow-x: hidden;
@@ -378,8 +505,9 @@ html, body {
     max-height: 100%;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    /* CRITIQUE : Isoler le scroll de la card */
     touch-action: pan-y !important;
-    padding-bottom: 50px;
+    padding-bottom: 60px; /* Espace pour le bouton */
 }
 
     .description-scroll-wrapper::-webkit-scrollbar {
@@ -390,7 +518,7 @@ html, body {
         cursor: grabbing;
     }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .description-scroll-wrapper {
         cursor: default;
     }
@@ -409,31 +537,44 @@ html, body {
         margin: 0 0 10px 0;
     }
 
-/* ========== BOUTONS - POSITION FIXE ========== */
+@media (min-width: 768px) {
+    .description-full {
+        font-size: 16px;
+        line-height: 1.5;
+    }
+}
+
+/* ========== BOUTONS - MÊME POSITION, TRANSPARENT, HITBOX = TEXTE ========== */
 .expand-btn,
 .collapse-btn {
     position: absolute;
     bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.98) 0%, 
-        rgba(0, 0, 0, 0.85) 50%, 
-        rgba(0, 0, 0, 0.6) 100%
-    );
+    left: 50%;
+    transform: translateX(-50%);
+    background: transparent; /* TRANSPARENT */
     border: none;
     color: #6495ED;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    padding: 15px 0;
+    padding: 12px 20px; /* Hitbox = texte + padding raisonnable */
     margin: 0;
     text-align: center;
-    flex-shrink: 0;
-    display: block;
-    width: 100%;
-    min-height: 50px;
+    display: inline-block; /* Hitbox suit le contenu */
+    width: auto; /* Pas de largeur 100% */
+    min-height: auto;
     z-index: 10;
+    white-space: nowrap;
+    /* Petit gradient subtil derrière le texte pour lisibilité */
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+@media (min-width: 768px) {
+    .expand-btn,
+    .collapse-btn {
+        font-size: 18px;
+        padding: 14px 24px;
+    }
 }
 
     .expand-btn:hover,
@@ -441,13 +582,7 @@ html, body {
         color: #4169E1;
     }
 
-/* Bouton collapse dans le wrapper scrollable */
-.description-scroll-wrapper .collapse-btn {
-    position: sticky;
-    margin-top: 10px;
-}
-
-/* ========== LOADING ========== */
+/* ========== LOADING - Z-INDEX SUPÉRIEUR ========== */
 .loading-area {
     width: 100%;
     height: 100%;
@@ -457,7 +592,7 @@ html, body {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 5;
+    z-index: 100; /* Au-dessus de tout */
 }
 
 .loading-box {
@@ -470,6 +605,14 @@ html, body {
     width: 370px;
 }
 
+@media (min-width: 768px) {
+    .loading-box {
+        width: 450px;
+        padding: 40px 30px;
+        border-radius: 20px;
+    }
+}
+
 .rate-limit-box {
     border: 1px solid #FF6B6B;
     background: rgba(255, 107, 107, 0.1);
@@ -480,6 +623,13 @@ html, body {
     margin-bottom: 15px;
 }
 
+@media (min-width: 768px) {
+    .rate-limit-icon {
+        font-size: 70px;
+        margin-bottom: 20px;
+    }
+}
+
 .spinner {
     width: 50px;
     height: 50px;
@@ -488,6 +638,14 @@ html, body {
     border-top: 3px solid #E94560;
     border-radius: 50%;
     animation: spin 1.5s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+}
+
+@media (min-width: 768px) {
+    .spinner {
+        width: 70px;
+        height: 70px;
+        border-width: 4px;
+    }
 }
 
 @keyframes spin {
@@ -510,6 +668,17 @@ html, body {
 .loading-subtitle {
     font-size: 12px;
     color: #888888;
+}
+
+@media (min-width: 768px) {
+    .loading-title {
+        font-size: 20px;
+        margin-bottom: 10px;
+    }
+
+    .loading-subtitle {
+        font-size: 16px;
+    }
 }
 
 /* ========== OVERLAY CONTROLS ========== */
@@ -537,6 +706,14 @@ html, body {
     font-family: 'Courier New', monospace;
 }
 
+@media (min-width: 768px) {
+    .build-version {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 10px;
+    }
+}
+
 .counter {
     background: rgba(0, 0, 0, 0.63);
     border-radius: 12px;
@@ -545,6 +722,14 @@ html, body {
     font-size: 10px;
     font-weight: bold;
     text-align: center;
+}
+
+@media (min-width: 768px) {
+    .counter {
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 14px;
+    }
 }
 
 .rate-limit-badge {
@@ -556,6 +741,14 @@ html, body {
     font-weight: bold;
     text-align: center;
     animation: pulse-red-badge 2s ease-in-out infinite;
+}
+
+@media (min-width: 768px) {
+    .rate-limit-badge {
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 14px;
+    }
 }
 
 @keyframes pulse-red-badge {
@@ -596,16 +789,4 @@ html, body {
 /* ========== MESSAGE D'ERREUR MASQUÉ ========== */
 #blazor-error-ui {
     display: none !important;
-}
-
-/* ========== RESPONSIVE DESKTOP ========== */
-@media (min-width: 1025px) {
-    .content-wrapper {
-        max-width: 480px;
-        margin: 0 auto;
-    }
-
-    .anime-image:hover {
-        transform: scale(1.05);
-    }
 }
