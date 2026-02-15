@@ -53,13 +53,12 @@
                     @onclick="ToggleSearch">
                 @if (IsSearchOpen)
                 {
-                    <!-- Reels / scroll feed icon -->
+                    <!-- Play in box icon -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round"
                          stroke-linejoin="round">
-                        <rect x="2" y="2" width="15" height="11" rx="2"></rect>
-                        <rect x="5" y="11" width="15" height="11" rx="2" opacity="0.55"></rect>
-                        <path d="M18 5l3 2.5-3 2.5"></path>
+                        <rect x="2" y="2" width="20" height="20" rx="4"></rect>
+                        <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"></polygon>
                     </svg>
                 }
                 else
@@ -104,7 +103,6 @@
 
         if (IsSearchOpen)
         {
-            // Wait for pill to fully expand before focusing
             await Task.Delay(650);
             try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
             catch { }

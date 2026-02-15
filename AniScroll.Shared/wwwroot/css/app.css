@@ -803,7 +803,7 @@ html, body {
 .nav-section {
     flex: 0 0 auto;
     width: 100%;
-    background: rgba(14, 14, 22, 1); /* ← same color as .main-nav-bar, fills the corner cutouts */
+    background: transparent;
 }
 
 @media (min-width: 768px) {
