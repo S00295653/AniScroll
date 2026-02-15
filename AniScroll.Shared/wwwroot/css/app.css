@@ -807,15 +807,13 @@ html, body {
 }
 
 @media (min-width: 768px) {
-    .nav-section {
-        display: none;
-    }
+    .nav-section { display: none; }
 }
 
-/* ========== MAIN NAV BAR — grows when search opens ========== */
+/* ========== MAIN NAV BAR ========== */
 .main-nav-bar {
     width: 100%;
-    background: rgba(14, 14,22, 0.96);
+    background: rgba(14, 14, 22, 0.96);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-radius: 28px 28px 0 0;
@@ -828,37 +826,68 @@ html, body {
     overflow: hidden;
 }
 
-/* ========== SEARCH ROW (inside the bar) ========== */
+/* ========== SEARCH ROW — expands the bar upward ========== */
 .search-row {
     width: 100%;
-    max-width: 420px;
     height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     overflow: hidden;
-    transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.25s ease;
-    opacity: 0;
+    transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-section.search-open .search-row {
-    height: 56px;
-    opacity: 1;
-    transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.2s ease 0.15s;
+    height: 68px;
 }
 
-.search-inner {
+/* ========== MORPHING PILL — circle → bar (same trick as before) ========== */
+/*
+ * Full width is ~380px. Circle state: scaleX(52/380 ≈ 0.137).
+ * The pill always has its final width; we just squash it into a circle with scaleX.
+ */
+.search-morphing-pill {
+    width: min(380px, calc(100vw - 40px));
+    height: 48px;
+    background: rgba(30, 30, 46, 0.98);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+
+    /* Closed: invisible circle */
+    opacity: 0;
+    transform: scaleX(0.137) translateY(4px);
+    transform-origin: center center;
+    transition:
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+        opacity   0.2s  ease 0s;
+}
+
+.search-morphing-pill.expanded {
+    opacity: 1;
+    transform: scaleX(1) translateY(0);
+    transition:
+        transform 0.5s  cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s,
+        opacity   0.18s ease 0.13s;
+}
+
+.search-pill-content {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 20px;
-    height: 56px;
+    padding: 0 16px;
+    width: 100%;
+    height: 100%;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.12s ease 0s;
 }
 
-.search-inner.visible {
+.search-pill-content.visible {
     opacity: 1;
-    transition: opacity 0.3s ease 0.3s;
+    transition: opacity 0.28s ease 0.48s;
 }
 
 .search-pill-icon {
@@ -877,12 +906,10 @@ html, body {
     caret-color: #E94560;
     user-select: text;
     -webkit-user-select: text;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    padding-bottom: 4px;
 }
 
 .search-field::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.28);
 }
 
 .clear-search-btn {
@@ -906,35 +933,21 @@ html, body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* ========== SEPARATOR LINE between search and buttons ========== */
-.nav-section.search-open .nav-buttons-row::before {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 20px;
-    right: 20px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.07);
-}
-
 /* ========== BUTTONS ROW ========== */
 .nav-buttons-row {
     width: 100%;
-    max-width: 100%;
     display: flex;
     justify-content: space-around;
     align-items: center;
     gap: 4px;
-    padding: 10px 16px max(16px, env(safe-area-inset-bottom));
-    position: relative;
+    padding: 8px 16px max(14px, env(safe-area-inset-bottom));
 }
 
 /* ========== NAV BUTTONS ========== */
 .nav-btn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.45);
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -943,7 +956,7 @@ html, body {
     gap: 4px;
     padding: 6px 14px;
     border-radius: 14px;
-    transition: color 0.25s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: color 0.22s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     flex: 1;
     min-width: 0;
     position: relative;
@@ -969,30 +982,44 @@ html, body {
     letter-spacing: 0.03em;
 }
 
-/* ========== CENTER BUTTON — flush, centered, subtle ========== */
+/* ========== CENTER BUTTON — squircle ========== */
 .nav-center-btn {
     flex: 0 0 auto;
     padding: 0;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: rgba(233, 69, 96, 0.18);
-    border: 1.5px solid rgba(233, 69, 96, 0.45);
-    color: #E94560;
-    margin: 0;
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;          /* squircle */
+    background: linear-gradient(145deg, #E94560 0%, #b02040 100%);
+    border: none;
+    color: white;
+    box-shadow:
+        0 4px 16px rgba(233, 69, 96, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
     transition:
-        background 0.35s ease,
-        border-color 0.35s ease,
-        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: none;
+        background   0.35s ease,
+        box-shadow   0.35s ease,
+        border-radius 0.35s ease,
+        transform    0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    overflow: visible;
+    overflow: hidden;
+}
+
+/* Subtle inner shine */
+.nav-center-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 38% 28%, rgba(255,255,255,0.2) 0%, transparent 60%);
+    border-radius: inherit;
+    pointer-events: none;
 }
 
 .nav-center-btn.is-active {
-    background: rgba(100, 149, 237, 0.18);
-    border-color: rgba(100, 149, 237, 0.5);
-    color: #6495ED;
+    background: linear-gradient(145deg, #5a7fd4 0%, #3558b8 100%);
+    box-shadow:
+        0 4px 16px rgba(100, 149, 237, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    border-radius: 50%;           /* morphs to circle when search is open */
 }
 
 .nav-center-btn:active {
@@ -1000,11 +1027,12 @@ html, body {
 }
 
 .center-btn-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
     position: relative;
     z-index: 1;
     transition: transform 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55);
