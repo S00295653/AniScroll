@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v1.4.1</div>
+    <div class="build-version">v1.4.2</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -128,6 +128,12 @@
             <div class="rate-limit-badge">🚫 Rate Limited</div>
         }
     </div>
+
+    <AniScroll.Shared.Components.Layout.NavigationBar
+        OnSearchToggled="HandleSearchToggled"
+        OnListsClicked="HandleListsClicked"
+        OnProfileClicked="HandleProfileClicked"
+        OnSearchQueryChanged="HandleSearchQueryChanged" />
 </div>
 
 @code {
@@ -137,7 +143,7 @@
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
     private int currentIndex = 0;
-    private int previousIndex = -1; // Pour détecter le changement
+    private int previousIndex = -1;
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
     private bool isDraggingCard = false;
@@ -174,7 +180,6 @@
             }
         }
 
-        // FERMER LA DESCRIPTION SI ON CHANGE D'ANIME
         if (previousIndex != currentIndex && previousIndex >= 0)
         {
             if (previousIndex < animes.Count)
@@ -284,7 +289,6 @@
         }
     }
 
-    // STYLE STRICT POUR LA DESCRIPTION - MAX 50VH
     private string GetDescriptionWrapperStyle(string description)
     {
         if (string.IsNullOrEmpty(description))
@@ -292,7 +296,6 @@
 
         int descLength = description.Length;
 
-        // Toujours limiter à 50vh maximum
         if (descLength < 300)
         {
             return "max-height: min(200px, 50vh); overflow-y: auto;";
@@ -443,7 +446,6 @@
         {
             var touch = e.Touches[0];
 
-            // Scroll isolé dans la description
             if (isScrollingInDescription)
             {
                 var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
@@ -451,7 +453,6 @@
 
                 double deltaY = touch.ClientY - dragStartY;
                 
-                // Si on scroll vers le haut et qu'on est en haut : passer à la card précédente
                 if (isAtTop && deltaY > 0)
                 {
                     if (!isDraggingCard)
@@ -461,7 +462,6 @@
                         currentDragOffset = 0;
                     }
                 }
-                // Si on scroll vers le bas et qu'on est en bas : passer à la card suivante
                 else if (descriptionScrolledToBottom && deltaY < 0)
                 {
                     if (!isDraggingCard)
@@ -473,7 +473,6 @@
                 }
                 else
                 {
-                    // Sinon, scroll normal dans la description
                     return;
                 }
             }
@@ -576,13 +575,11 @@
         return description?.Length > 150;
     }
 
-    // Calcul sécurisé - JAMAIS de superposition
     private string GetSafePreviewDescription(string description)
     {
         if (string.IsNullOrEmpty(description))
             return "";
 
-        // Mobile : 110 chars, PC : 130 chars
         int maxChars = 110;
 
         if (description.Length <= maxChars)
@@ -599,6 +596,31 @@
     private string GetPreviewDescription(string description)
     {
         return GetSafePreviewDescription(description);
+    }
+
+    // Navigation Bar Event Handlers
+    private void HandleSearchToggled()
+    {
+        System.Diagnostics.Debug.WriteLine("🔍 Search toggled");
+        // TODO: Implement search mode toggle logic
+    }
+
+    private void HandleListsClicked()
+    {
+        System.Diagnostics.Debug.WriteLine("📝 Lists clicked");
+        // TODO: Navigate to lists page
+    }
+
+    private void HandleProfileClicked()
+    {
+        System.Diagnostics.Debug.WriteLine("👤 Profile clicked");
+        // TODO: Navigate to profile page
+    }
+
+    private void HandleSearchQueryChanged(string query)
+    {
+        System.Diagnostics.Debug.WriteLine($"🔎 Search query: {query}");
+        // TODO: Implement search functionality with AniList API
     }
 
     public void Dispose()

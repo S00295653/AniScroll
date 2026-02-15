@@ -60,3 +60,9 @@ window.isDescriptionAtTop = function () {
 
     return isAtTop;
 };
+
+window.focusElement = function (element) {
+    if (element) {
+        element.focus();
+    }
+};
