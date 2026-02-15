@@ -2,6 +2,15 @@
     return window.innerHeight;
 };
 
+// Nouvelle fonction : retourne la hauteur réelle de la zone de scroll (sans la nav)
+window.getScrollSectionHeight = function () {
+    const scrollSection = document.querySelector('.main-scroll');
+    if (scrollSection) {
+        return scrollSection.clientHeight;
+    }
+    return window.innerHeight;
+};
+
 window.getScrollInfo = function (element) {
     if (!element) {
         return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };

@@ -1,25 +1,28 @@
 @inject IJSRuntime JS
 
-<div class="mobile-navigation @(IsSearchOpen ? "search-active" : "")">
-    
-    <!-- Search Expansion Zone -->
-    <div class="search-expansion @(IsSearchOpen ? "expanded" : "")">
-        <div class="search-circle @(IsSearchOpen ? "grow" : "")">
-            <div class="search-input-container @(IsSearchOpen ? "visible" : "")">
-                <svg class="search-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+<div class="nav-section @(IsSearchOpen ? "search-open" : "")">
+
+    <!-- Zone de recherche qui apparaît au-dessus de la nav bar -->
+    <div class="search-expansion-zone">
+        <div class="search-morphing-pill @(IsSearchOpen ? "expanded" : "")">
+            <div class="search-pill-content @(IsSearchOpen ? "visible" : "")">
+                <svg class="search-pill-icon" width="20" height="20" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5">
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
-                <input type="text" 
-                       class="search-field" 
-                       placeholder="Search anime..." 
+                <input type="text"
+                       class="search-field"
+                       placeholder="Search anime..."
                        @bind="SearchQuery"
                        @bind:event="oninput"
+                       @onchange="OnSearchChanged"
                        @ref="searchInputRef" />
                 @if (!string.IsNullOrEmpty(SearchQuery))
                 {
                     <button class="clear-search-btn" @onclick="ClearSearch">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
@@ -29,31 +32,44 @@
         </div>
     </div>
 
-    <!-- Navigation Bar -->
-    <nav class="modern-nav-bar">
-        <button class="nav-item" @onclick="OnListsClick">
-            <div class="nav-item-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <!-- Barre de navigation -->
+    <nav class="main-nav-bar">
+
+        <!-- Bouton Lists -->
+        <button class="nav-btn" @onclick="OnListsClick">
+            <div class="nav-btn-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
                     <rect x="3" y="14" width="7" height="7"></rect>
                     <rect x="14" y="14" width="7" height="7"></rect>
                 </svg>
             </div>
-            <span class="nav-item-label">Lists</span>
+            <span class="nav-btn-label">Lists</span>
         </button>
 
-        <button class="nav-item nav-item-center @(IsSearchOpen ? "is-active" : "")" @onclick="ToggleSearch">
-            <div class="center-button-icon">
+        <!-- Bouton central (Search / Reels) -->
+        <button class="nav-btn nav-center-btn @(IsSearchOpen ? "is-active" : "")"
+                @onclick="ToggleSearch">
+            <div class="center-btn-icon">
                 @if (IsSearchOpen)
                 {
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <path d="M3 12h18M3 6h18M3 18h18"></path>
+                    <!-- Icône "scroll/reels" — indique le mode scrolling -->
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                         stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="m9 10 3 3 3-3"></path>
+                        <line x1="12" y1="13" x2="12" y2="20"></line>
+                        <line x1="8" y1="20" x2="16" y2="20"></line>
                     </svg>
                 }
                 else
                 {
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <!-- Icône loupe -->
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
@@ -61,15 +77,18 @@
             </div>
         </button>
 
-        <button class="nav-item" @onclick="OnProfileClick">
-            <div class="nav-item-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <!-- Bouton Profile -->
+        <button class="nav-btn" @onclick="OnProfileClick">
+            <div class="nav-btn-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <circle cx="12" cy="8" r="5"></circle>
                     <path d="M20 21a8 8 0 1 0-16 0"></path>
                 </svg>
             </div>
-            <span class="nav-item-label">Profile</span>
+            <span class="nav-btn-label">Profile</span>
         </button>
+
     </nav>
 </div>
 
@@ -86,15 +105,21 @@
     private async Task ToggleSearch()
     {
         IsSearchOpen = !IsSearchOpen;
-        
+
         if (IsSearchOpen)
         {
-            await Task.Delay(600);
-            await JS.InvokeVoidAsync("focusElement", searchInputRef);
+            // Attendre la fin de l'animation avant de focus
+            await Task.Delay(700);
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", searchInputRef);
+            }
+            catch { }
         }
         else
         {
             SearchQuery = string.Empty;
+            await OnSearchQueryChanged.InvokeAsync(string.Empty);
         }
 
         await OnSearchToggled.InvokeAsync();
@@ -103,24 +128,15 @@
     private void ClearSearch()
     {
         SearchQuery = string.Empty;
+        OnSearchQueryChanged.InvokeAsync(string.Empty);
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        SearchQuery = e.Value?.ToString() ?? string.Empty;
         OnSearchQueryChanged.InvokeAsync(SearchQuery);
     }
 
-    private void OnListsClick()
-    {
-        OnListsClicked.InvokeAsync();
-    }
-
-    private void OnProfileClick()
-    {
-        OnProfileClicked.InvokeAsync();
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (!string.IsNullOrEmpty(SearchQuery))
-        {
-            OnSearchQueryChanged.InvokeAsync(SearchQuery);
-        }
-    }
+    private void OnListsClick() => OnListsClicked.InvokeAsync();
+    private void OnProfileClick() => OnProfileClicked.InvokeAsync();
 }
