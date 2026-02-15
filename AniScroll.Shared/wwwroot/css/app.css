@@ -803,7 +803,7 @@ html, body {
 .nav-section {
     flex: 0 0 auto;
     width: 100%;
-    /* No padding, no absolute positioning — sits naturally at the bottom */
+    background: rgba(14, 14, 22, 1); /* ← same color as .main-nav-bar, fills the corner cutouts */
 }
 
 @media (min-width: 768px) {
@@ -813,10 +813,8 @@ html, body {
 /* ========== NAV BAR ========== */
 .main-nav-bar {
     width: 100%;
-    background: rgba(12, 12, 20, 0.97);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border-radius: 22px 22px 0 0;
+    background: rgba(14, 14,22, 0.96);
+    border-radius: 32px 32px 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     flex-direction: column;
@@ -985,17 +983,19 @@ html, body {
 }
 
 /* ========== CENTER BUTTON ========== */
+/* ========== CENTER BUTTON ========== */
 .nav-center-btn {
     flex: 0 0 auto;
     width: 56px;
     height: 56px;
-    border-radius: 18px;         /* squircle */
+    border-radius: 18px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;      /* ← contain the ::before */
+    overflow: hidden;        /* ← clip the shine so it can't bleed out */
 
-    /* Red gradient — search mode */
     background: linear-gradient(150deg, #ff4d6b 0%, #c8253f 100%);
     border: none;
     color: white;
@@ -1011,7 +1011,6 @@ html, body {
         transform       0.2s  cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Shine overlay */
 .nav-center-btn::before {
     content: '';
     position: absolute;
@@ -1021,14 +1020,13 @@ html, body {
     pointer-events: none;
 }
 
-/* Active (scroll mode) — blue, becomes a circle */
 .nav-center-btn.is-active {
     background: linear-gradient(150deg, #5d8ef0 0%, #2c5cc5 100%);
     box-shadow:
         0 0 0 6px rgba(44, 92, 197, 0.12),
         0 4px 18px rgba(44, 92, 197, 0.35),
         inset 0 1px 0 rgba(255,255,255,0.2);
-    border-radius: 50%;          /* morphs from squircle → circle */
+    border-radius: 50%;
 }
 
 .nav-center-btn:active {
