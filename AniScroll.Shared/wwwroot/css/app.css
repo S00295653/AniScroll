@@ -804,21 +804,20 @@ html, body {
     flex: 0 0 auto;
     width: 100%;
     background: transparent;
+    border-radius: 22px 22px 0 0;
+    overflow: hidden;
 }
 
 @media (min-width: 768px) {
     .nav-section { display: none; }
 }
 
-/* ========== NAV BAR ========== */
 .main-nav-bar {
     width: 100%;
     background: rgba(14, 14, 22, 0.96);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    /* clip-path clip TOUT y compris backdrop-filter, contrairement à border-radius */
-    clip-path: inset(0 0 0 0 round 22px 22px 0 0);
-    -webkit-clip-path: inset(0 0 0 0 round 22px 22px 0 0);
+    border-radius: 22px 22px 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     flex-direction: column;
