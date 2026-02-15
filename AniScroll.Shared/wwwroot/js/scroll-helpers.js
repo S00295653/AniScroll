@@ -1,4 +1,8 @@
 ﻿window.getViewportHeight = function () {
+    const scrollSection = document.querySelector('.main-scroll');
+    if (scrollSection) {
+        return scrollSection.clientHeight;
+    }
     return window.innerHeight;
 };
 
