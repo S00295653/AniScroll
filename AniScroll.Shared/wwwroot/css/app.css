@@ -803,101 +803,67 @@ html, body {
 .nav-section {
     flex: 0 0 auto;
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0;
-    background: transparent;
     z-index: 100;
-    overflow: visible;
 }
 
-/* Masqué sur desktop */
 @media (min-width: 768px) {
     .nav-section {
         display: none;
     }
 }
 
-/* ========== ZONE D'EXPANSION RECHERCHE ========== */
-.search-expansion-zone {
+/* ========== MAIN NAV BAR — grows when search opens ========== */
+.main-nav-bar {
+    width: 100%;
+    background: rgba(14, 14,22, 0.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 28px 28px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow:
+        0 -4px 24px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+/* ========== SEARCH ROW (inside the bar) ========== */
+.search-row {
     width: 100%;
     max-width: 420px;
     height: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     overflow: hidden;
-    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-bottom: 0;
-}
-
-.nav-section.search-open .search-expansion-zone {
-    height: 68px;
-    margin-bottom: 6px;
-}
-
-/* ========== PILULE MORPHING — CERCLE → BARRE RECHERCHE ========== */
-/*
- * Truc CSS : la pilule a toujours sa largeur finale (~380px).
- * scaleX(0.137) ≈ 52/380 → visuellement un cercle (w ≈ h = 52px).
- * L'animation scaleX(0.137) → scaleX(1) donne l'effet "cercle qui s'élargit".
- */
-.search-morphing-pill {
-    width: min(380px, calc(100vw - 40px));
-    height: 52px;
-    background: rgba(18, 18, 30, 0.97);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 26px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-
-    /* État initial : invisible, forme de cercle */
+    transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
     opacity: 0;
-    transform: scaleX(0.137) translateY(8px);
-    transform-origin: center center;
-
-    /* Fermeture */
-    transition:
-        transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-        opacity 0.25s ease 0s;
 }
 
-.search-morphing-pill.expanded {
-    /* Ouverture : délai pour laisser la zone s'agrandir d'abord */
+.nav-section.search-open .search-row {
+    height: 56px;
     opacity: 1;
-    transform: scaleX(1) translateY(0);
-    transition:
-        transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.18s,
-        opacity 0.2s ease 0.15s;
+    transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease 0.15s;
 }
 
-/* ========== CONTENU DE LA PILULE ========== */
-.search-pill-content {
+.search-inner {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 18px;
-    width: 100%;
-    height: 100%;
+    padding: 0 20px;
+    height: 56px;
     opacity: 0;
-    /* Fermeture : disparaît immédiatement */
-    transition: opacity 0.15s ease 0s;
+    transition: opacity 0.15s ease;
 }
 
-.search-pill-content.visible {
+.search-inner.visible {
     opacity: 1;
-    /* Ouverture : apparaît après que la pilule soit élargie */
-    transition: opacity 0.3s ease 0.55s;
+    transition: opacity 0.3s ease 0.3s;
 }
 
 .search-pill-icon {
     flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .search-field {
@@ -911,64 +877,72 @@ html, body {
     caret-color: #E94560;
     user-select: text;
     -webkit-user-select: text;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 4px;
 }
 
 .search-field::placeholder {
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.3);
 }
 
 .clear-search-btn {
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.15s ease;
     padding: 0;
+    transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .clear-search-btn:active {
     transform: scale(0.88);
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.2);
 }
 
-/* ========== BARRE DE NAVIGATION ========== */
-.main-nav-bar {
-    background: rgba(14, 14, 22, 0.96);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 28px 28px 0 0;
-    padding: 14px 16px max(20px, env(safe-area-inset-bottom));
-    max-width: 100%;   /* full width now, not pill-shaped */
+/* ========== SEPARATOR LINE between search and buttons ========== */
+.nav-section.search-open .nav-buttons-row::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* ========== BUTTONS ROW ========== */
+.nav-buttons-row {
     width: 100%;
+    max-width: 100%;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    gap: 8px;
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.45),
-        0 0 0 1px rgba(255, 255, 255, 0.08);
+    gap: 4px;
+    padding: 10px 16px max(16px, env(safe-area-inset-bottom));
+    position: relative;
 }
 
-/* ========== BOUTONS NAV ========== */
+/* ========== NAV BUTTONS ========== */
 .nav-btn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 8px 14px;
-    border-radius: 18px;
+    padding: 6px 14px;
+    border-radius: 14px;
     transition: color 0.25s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     flex: 1;
     min-width: 0;
@@ -982,16 +956,11 @@ html, body {
 }
 
 .nav-btn-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.nav-btn:active .nav-btn-icon {
-    transform: scale(0.88);
 }
 
 .nav-btn-label {
@@ -1000,61 +969,30 @@ html, body {
     letter-spacing: 0.03em;
 }
 
-/* Ripple */
-.nav-btn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    transform: scale(0);
-    opacity: 0;
-    transition: transform 0.35s ease, opacity 0.35s ease;
-    pointer-events: none;
-}
-
-.nav-btn:active::after {
-    transform: scale(1);
-    opacity: 1;
-    transition: none;
-}
-
-/* ========== BOUTON CENTRAL ========== */
+/* ========== CENTER BUTTON — flush, centered, subtle ========== */
 .nav-center-btn {
     flex: 0 0 auto;
     padding: 0;
-    min-width: 62px;
-    width: 62px;
-    height: 62px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    background: linear-gradient(145deg, #E94560 0%, #c93050 100%);
-    box-shadow:
-        0 6px 20px rgba(233, 69, 96, 0.45),
-        0 0 0 3px rgba(14, 14, 22, 0.96);
-    margin-top: -14px;
-    margin-bottom: -6px;
-    color: white;
+    background: rgba(233, 69, 96, 0.18);
+    border: 1.5px solid rgba(233, 69, 96, 0.45);
+    color: #E94560;
+    margin: 0;
     transition:
-        background 0.4s ease,
-        box-shadow 0.4s ease,
-        transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        background 0.35s ease,
+        border-color 0.35s ease,
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: none;
     position: relative;
-    overflow: hidden;
-}
-
-.nav-center-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22) 0%, transparent 65%);
-    border-radius: 50%;
+    overflow: visible;
 }
 
 .nav-center-btn.is-active {
-    background: linear-gradient(145deg, #6495ED 0%, #3a6fd8 100%);
-    box-shadow:
-        0 6px 20px rgba(100, 149, 237, 0.5),
-        0 0 0 3px rgba(14, 14, 22, 0.96);
+    background: rgba(100, 149, 237, 0.18);
+    border-color: rgba(100, 149, 237, 0.5);
+    color: #6495ED;
 }
 
 .nav-center-btn:active {
@@ -1062,19 +1000,16 @@ html, body {
 }
 
 .center-btn-icon {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
     position: relative;
     z-index: 1;
-    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: transform 0.35s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .nav-center-btn:active .center-btn-icon {
-    transform: rotate(15deg) scale(0.9);
+    transform: rotate(12deg) scale(0.9);
 }
-
-

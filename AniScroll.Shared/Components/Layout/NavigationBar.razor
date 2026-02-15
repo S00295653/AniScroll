@@ -1,12 +1,12 @@
 @inject IJSRuntime JS
 
 <div class="nav-section @(IsSearchOpen ? "search-open" : "")">
+    <nav class="main-nav-bar">
 
-    <!-- Zone de recherche qui apparaît au-dessus de la nav bar -->
-    <div class="search-expansion-zone">
-        <div class="search-morphing-pill @(IsSearchOpen ? "expanded" : "")">
-            <div class="search-pill-content @(IsSearchOpen ? "visible" : "")">
-                <svg class="search-pill-icon" width="20" height="20" viewBox="0 0 24 24"
+        <!-- Search row : expand the bar from inside -->
+        <div class="search-row">
+            <div class="search-inner @(IsSearchOpen ? "visible" : "")">
+                <svg class="search-pill-icon" width="18" height="18" viewBox="0 0 24 24"
                      fill="none" stroke="currentColor" stroke-width="2.5">
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
@@ -21,7 +21,7 @@
                 @if (!string.IsNullOrEmpty(SearchQuery))
                 {
                     <button class="clear-search-btn" @onclick="ClearSearch">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="2.5">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -30,65 +30,62 @@
                 }
             </div>
         </div>
-    </div>
 
-    <!-- Barre de navigation -->
-    <nav class="main-nav-bar">
+        <!-- Nav buttons -->
+        <div class="nav-buttons-row">
 
-        <!-- Bouton Lists -->
-        <button class="nav-btn" @onclick="OnListsClick">
-            <div class="nav-btn-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                </svg>
-            </div>
-            <span class="nav-btn-label">Lists</span>
-        </button>
-
-        <!-- Bouton central (Search / Reels) -->
-        <button class="nav-btn nav-center-btn @(IsSearchOpen ? "is-active" : "")"
-                @onclick="ToggleSearch">
-            <div class="center-btn-icon">
-                @if (IsSearchOpen)
-                {
-                    <!-- Icône "scroll/reels" — indique le mode scrolling -->
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-                         stroke-linejoin="round">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                        <path d="m9 10 3 3 3-3"></path>
-                        <line x1="12" y1="13" x2="12" y2="20"></line>
-                        <line x1="8" y1="20" x2="16" y2="20"></line>
+            <button class="nav-btn" @onclick="OnListsClick">
+                <div class="nav-btn-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
                     </svg>
-                }
-                else
-                {
-                    <!-- Icône loupe -->
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
+                </div>
+                <span class="nav-btn-label">Lists</span>
+            </button>
+
+            <button class="nav-btn nav-center-btn @(IsSearchOpen ? "is-active" : "")"
+                    @onclick="ToggleSearch">
+                <div class="center-btn-icon">
+                    @if (IsSearchOpen)
+                    {
+                        <!-- Cards / scroll feed icon -->
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <rect x="5" y="10" width="14" height="10" rx="2" opacity="0.4"></rect>
+                            <rect x="3" y="6" width="14" height="10" rx="2" opacity="0.7"></rect>
+                            <rect x="1" y="2" width="14" height="10" rx="2"></rect>
+                            <polyline points="19 9 22 6 22 14"></polyline>
+                            <line x1="22" y1="6" x2="22" y2="14"></line>
+                        </svg>
+                    }
+                    else
+                    {
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    }
+                </div>
+            </button>
+
+            <button class="nav-btn" @onclick="OnProfileClick">
+                <div class="nav-btn-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="8" r="5"></circle>
+                        <path d="M20 21a8 8 0 1 0-16 0"></path>
                     </svg>
-                }
-            </div>
-        </button>
+                </div>
+                <span class="nav-btn-label">Profile</span>
+            </button>
 
-        <!-- Bouton Profile -->
-        <button class="nav-btn" @onclick="OnProfileClick">
-            <div class="nav-btn-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <circle cx="12" cy="8" r="5"></circle>
-                    <path d="M20 21a8 8 0 1 0-16 0"></path>
-                </svg>
-            </div>
-            <span class="nav-btn-label">Profile</span>
-        </button>
-
+        </div>
     </nav>
 </div>
 
@@ -108,12 +105,8 @@
 
         if (IsSearchOpen)
         {
-            // Attendre la fin de l'animation avant de focus
-            await Task.Delay(700);
-            try
-            {
-                await JS.InvokeVoidAsync("focusElement", searchInputRef);
-            }
+            await Task.Delay(400);
+            try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
             catch { }
         }
         else
