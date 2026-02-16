@@ -33,11 +33,13 @@
                 <div class="content-wrapper layout-@layoutMode">
                     <div class="image-section">
                         <div class="anime-image"
-                             style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"></div>
+                             style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"
+                             @onclick="() => HandleImageClick(anime)"></div>
                     </div>
 
                     <div class="info-section">
-                        <h1 class="title @GetTitleClass(anime.Title)">@anime.Title</h1>
+                        <h1 class="title @GetTitleClass(anime.Title)" 
+                            @onclick="() => HandleTitleClick(anime)">@anime.Title</h1>
 
                         @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
                         {
@@ -103,8 +105,8 @@
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
-                    <p class="loading-title">🔍 Recherche en cours...</p>
-                    <p class="loading-subtitle">Exploration de nouveaux animes sur AniList</p>
+                    <p class="loading-title">🔍 Searching...</p>
+                    <p class="loading-subtitle">Exploring new anime on AniList</p>
                 </div>
             </div>
         }
@@ -114,8 +116,8 @@
             <div class="loading-area">
                 <div class="loading-box rate-limit-box">
                     <div class="rate-limit-icon">⏱️</div>
-                    <p class="loading-title">Limite API atteinte</p>
-                    <p class="loading-subtitle">Nouvelle tentative dans @rateLimitCountdown secondes...</p>
+                    <p class="loading-title">API Rate Limit Reached</p>
+                    <p class="loading-subtitle">Retrying in @rateLimitCountdown seconds...</p>
                 </div>
             </div>
         }
@@ -134,6 +136,11 @@
         OnListsClicked="HandleListsClicked"
         OnProfileClicked="HandleProfileClicked"
         OnSearchQueryChanged="HandleSearchQueryChanged" />
+
+    <AniScroll.Shared.Components.Layout.AnimeDetailPopup
+        CurrentAnime="selectedAnime"
+        IsVisible="showDetailPopup"
+        OnClose="CloseDetailPopup" />
 </div>
 
 @code {
@@ -160,6 +167,14 @@
     private const int THROTTLE_MS = 8;
     private System.Threading.Timer? rateLimitTimer;
 
+    // Popup state
+    private bool showDetailPopup = false;
+    private AnimeCard? selectedAnime = null;
+
+    // Click detection
+    private bool hasMoved = false;
+    private double clickThreshold = 10;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAnimes(5);
@@ -176,7 +191,7 @@
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Error: {ex.Message}");
             }
         }
 
@@ -344,11 +359,18 @@
         dragStartY = e.ClientY;
         currentDragOffset = 0;
         isTransitioning = false;
+        hasMoved = false;
     }
 
     private void HandleCardMouseMove(MouseEventArgs e)
     {
         if (!isDraggingCard) return;
+
+        double deltaY = Math.Abs(e.ClientY - dragStartY);
+        if (deltaY > clickThreshold)
+        {
+            hasMoved = true;
+        }
 
         var now = DateTime.Now;
         if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
@@ -400,6 +422,7 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
+        hasMoved = false;
         StateHasChanged();
 
         await Task.Delay(250);
@@ -437,6 +460,7 @@
             dragStartY = touch.ClientY;
             currentDragOffset = 0;
             isTransitioning = false;
+            hasMoved = false;
         }
     }
 
@@ -446,14 +470,20 @@
         {
             var touch = e.Touches[0];
 
+            double deltaY = Math.Abs(touch.ClientY - dragStartY);
+            if (deltaY > clickThreshold)
+            {
+                hasMoved = true;
+            }
+
             if (isScrollingInDescription)
             {
                 var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
                 descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
 
-                double deltaY = touch.ClientY - dragStartY;
+                double deltaYDir = touch.ClientY - dragStartY;
                 
-                if (isAtTop && deltaY > 0)
+                if (isAtTop && deltaYDir > 0)
                 {
                     if (!isDraggingCard)
                     {
@@ -462,7 +492,7 @@
                         currentDragOffset = 0;
                     }
                 }
-                else if (descriptionScrolledToBottom && deltaY < 0)
+                else if (descriptionScrolledToBottom && deltaYDir < 0)
                 {
                     if (!isDraggingCard)
                     {
@@ -537,6 +567,7 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
+        hasMoved = false;
         StateHasChanged();
 
         await Task.Delay(250);
@@ -593,34 +624,56 @@
         return description.Substring(0, cutPosition).TrimEnd() + "...";
     }
 
-    private string GetPreviewDescription(string description)
+    // Popup handlers
+    private void HandleImageClick(AnimeCard anime)
     {
-        return GetSafePreviewDescription(description);
+        if (!hasMoved && !isDraggingCard)
+        {
+            ShowAnimeDetails(anime);
+        }
+    }
+
+    private void HandleTitleClick(AnimeCard anime)
+    {
+        if (!hasMoved && !isDraggingCard)
+        {
+            ShowAnimeDetails(anime);
+        }
+    }
+
+    private void ShowAnimeDetails(AnimeCard anime)
+    {
+        selectedAnime = anime;
+        showDetailPopup = true;
+        StateHasChanged();
+    }
+
+    private void CloseDetailPopup()
+    {
+        showDetailPopup = false;
+        selectedAnime = null;
+        StateHasChanged();
     }
 
     // Navigation Bar Event Handlers
     private void HandleSearchToggled()
     {
         System.Diagnostics.Debug.WriteLine("🔍 Search toggled");
-        // TODO: Implement search mode toggle logic
     }
 
     private void HandleListsClicked()
     {
         System.Diagnostics.Debug.WriteLine("📝 Lists clicked");
-        // TODO: Navigate to lists page
     }
 
     private void HandleProfileClicked()
     {
         System.Diagnostics.Debug.WriteLine("👤 Profile clicked");
-        // TODO: Navigate to profile page
     }
 
     private void HandleSearchQueryChanged(string query)
     {
         System.Diagnostics.Debug.WriteLine($"🔎 Search query: {query}");
-        // TODO: Implement search functionality with AniList API
     }
 
     public void Dispose()

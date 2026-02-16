@@ -3,12 +3,13 @@
 <div class="nav-section">
     <nav class="main-nav-bar @(IsSearchOpen ? "search-open" : "")">
 
-        <!-- Search row: height 0 → expands, then pill morphs inside -->
+        <!-- Search row -->
         <div class="search-row">
             <div class="search-morphing-pill @(IsSearchOpen ? "expanded" : "")">
                 <div class="search-pill-content @(IsSearchOpen ? "visible" : "")">
                     <svg class="search-pill-icon" width="17" height="17" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2.5">
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
@@ -23,7 +24,8 @@
                     {
                         <button class="clear-search-btn" @onclick="ClearSearch">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5">
+                                 stroke="currentColor" stroke-width="2.5"
+                                 stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
@@ -39,7 +41,8 @@
             <button class="nav-btn" @onclick="OnListsClick">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                         stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7" rx="1"></rect>
                         <rect x="14" y="3" width="7" height="7" rx="1"></rect>
                         <rect x="3" y="14" width="7" height="7" rx="1"></rect>
@@ -49,14 +52,14 @@
                 <span class="nav-btn-label">Lists</span>
             </button>
 
-            <button class="nav-btn nav-center-btn @(IsSearchOpen ? "is-active" : "")"
+            <button class="nav-center-btn @(IsSearchOpen ? "is-active" : "")"
                     @onclick="ToggleSearch">
                 @if (IsSearchOpen)
                 {
                     <!-- Play in box icon -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                         stroke-linejoin="round">
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="2" width="20" height="20" rx="4"></rect>
                         <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"></polygon>
                     </svg>
@@ -65,7 +68,8 @@
                 {
                     <!-- Search icon -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                         stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
@@ -75,7 +79,8 @@
             <button class="nav-btn" @onclick="OnProfileClick">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                         stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="8" r="4"></circle>
                         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
                     </svg>

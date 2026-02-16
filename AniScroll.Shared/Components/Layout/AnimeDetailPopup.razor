@@ -1,0 +1,154 @@
+﻿@using AniScroll.Shared.Models
+@inject IJSRuntime JS
+
+@if (IsVisible && CurrentAnime != null)
+{
+    <div class="anime-detail-overlay" @onclick="OnOverlayClick">
+        <div class="anime-detail-popup" @onclick:stopPropagation="true">
+
+            <!-- Header avec image de fond -->
+            <div class="popup-header" style="background-image: url('@CurrentAnime.BannerUrl');">
+                <div class="popup-header-gradient"></div>
+                <button class="popup-close-btn" @onclick="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Contenu scrollable -->
+            <div class="popup-content">
+
+                <!-- Image et infos principales -->
+                <div class="popup-main-info">
+                    <div class="popup-cover-section">
+                        <div class="popup-cover-image"
+                             style="background-image: url('@CurrentAnime.ImageUrl');"></div>
+                    </div>
+
+                    <div class="popup-info-section">
+                        <h1 class="popup-title">@CurrentAnime.Title</h1>
+
+                        @if (!string.IsNullOrEmpty(CurrentAnime.Season) && CurrentAnime.Year.HasValue)
+                        {
+                            <div class="popup-season">
+                                @if (CurrentAnime.Status == "RELEASING")
+                                {
+                                    <span class="status-dot releasing"></span>
+                                }
+                                else if (CurrentAnime.Status == "NOT_YET_RELEASED")
+                                {
+                                    <span class="status-dot upcoming"></span>
+                                }
+                                <span>@CurrentAnime.Season @CurrentAnime.Year</span>
+                            </div>
+                        }
+
+                        <div class="popup-stats-row">
+                            <div class="popup-stat-item">
+                                <div class="popup-stat-label">Score</div>
+                                <div class="popup-stat-value">★ @CurrentAnime.Score</div>
+                            </div>
+                            <div class="popup-stat-item">
+                                <div class="popup-stat-label">Episodes</div>
+                                <div class="popup-stat-value">@CurrentAnime.Episodes</div>
+                            </div>
+                            <div class="popup-stat-item">
+                                <div class="popup-stat-label">Status</div>
+                                <div class="popup-stat-value">@GetStatusText(CurrentAnime.Status)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Genres -->
+                @if (CurrentAnime.Genres?.Any() == true)
+                {
+                    <div class="popup-section">
+                        <h3 class="popup-section-title">Genres</h3>
+                        <div class="popup-genres-list">
+                            @foreach (var genre in CurrentAnime.Genres)
+                            {
+                                <span class="popup-genre-tag">@genre</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Description -->
+                @if (!string.IsNullOrEmpty(CurrentAnime.Description))
+                {
+                    <div class="popup-section">
+                        <h3 class="popup-section-title">Synopsis</h3>
+                        <p class="popup-description">@CurrentAnime.Description</p>
+                    </div>
+                }
+
+                <!-- Actions -->
+                <div class="popup-actions">
+                    <button class="popup-action-btn primary" @onclick="OnAddToList">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add to List
+                    </button>
+                    <button class="popup-action-btn secondary" @onclick="OnShare">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        Share
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public AnimeCard? CurrentAnime { get; set; }
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private void Close()
+    {
+        OnClose.InvokeAsync();
+    }
+
+    private void OnOverlayClick()
+    {
+        Close();
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "RELEASING" => "Ongoing",
+            "FINISHED" => "Completed",
+            "NOT_YET_RELEASED" => "Upcoming",
+            _ => status
+        };
+    }
+
+    private void OnAddToList()
+    {
+        System.Diagnostics.Debug.WriteLine($"📝 Add to list: {CurrentAnime?.Title}");
+        // TODO: Implement add to list functionality
+    }
+
+    private void OnShare()
+    {
+        System.Diagnostics.Debug.WriteLine($"📤 Share: {CurrentAnime?.Title}");
+        // TODO: Implement share functionality
+    }
+}
