@@ -47,6 +47,147 @@ namespace AniScroll.Shared.Services
             System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
         }
 
+        // Nouvelle méthode optimisée : récupère 60 animes avec plusieurs requêtes rapides
+        public async Task<AnimeLoadResult> GetBulkAnimesAsync()
+        {
+            if (IsRateLimited())
+            {
+                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
+                return new AnimeLoadResult
+                {
+                    Animes = new List<AnimeCard>(),
+                    IsRateLimited = true
+                };
+            }
+
+            var results = new List<AnimeCard>();
+            
+            // Configuration : combien d'animes par catégorie
+            var categories = new List<(string filter, int count, int page)>
+            {
+                // 20 populaires (2 pages de 10)
+                ("FINISHED", 10, 1),
+                ("FINISHED", 10, 2),
+                
+                // 15 top score (3 pages de 5)
+                ("FINISHED_SCORE", 5, 1),
+                ("FINISHED_SCORE", 5, 2),
+                ("FINISHED_SCORE", 5, 3),
+                
+                // 15 hidden gems (3 pages de 5)
+                ("HIDDEN", 5, 1),
+                ("HIDDEN", 5, 2),
+                ("HIDDEN", 5, 3),
+                
+                // 8 ongoing
+                ("RELEASING", 8, 1),
+                
+                // 2 upcoming
+                ("UPCOMING", 2, 1)
+            };
+
+            foreach (var (filter, count, page) in categories)
+            {
+                if (IsRateLimited())
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {results.Count} animes");
+                    break;
+                }
+
+                var animes = await GetAnimesByFilter(filter, count, page);
+                if (animes != null && animes.Any())
+                {
+                    results.AddRange(animes);
+                    System.Diagnostics.Debug.WriteLine($"✅ {animes.Count} animes récupérés ({filter}, page {page})");
+                }
+
+                // Petit délai pour éviter le rate limit
+                await Task.Delay(50);
+            }
+
+            // Mélanger pour un ordre aléatoire
+            results = results.OrderBy(x => _random.Next()).ToList();
+
+            System.Diagnostics.Debug.WriteLine($"🎉 Total: {results.Count} animes chargés");
+
+            return new AnimeLoadResult
+            {
+                Animes = results,
+                IsRateLimited = IsRateLimited()
+            };
+        }
+
+        private async Task<List<AnimeCard>?> GetAnimesByFilter(string filterType, int perPage, int pageNumber)
+        {
+            try
+            {
+                string mediaFilter = filterType switch
+                {
+                    "FINISHED" => "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC",
+                    "FINISHED_SCORE" => "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC",
+                    "HIDDEN" => "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC",
+                    "RELEASING" => "type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC",
+                    "UPCOMING" => "type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC",
+                    _ => "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC"
+                };
+
+                var query = $@"
+                query ($page: Int, $perPage: Int) {{
+                    Page(page: $page, perPage: $perPage) {{
+                        media({mediaFilter}) {{
+                            {GetAnimeFields()}
+                        }}
+                    }}
+                }}";
+
+                var variables = new { page = pageNumber, perPage = perPage };
+                var request = new { query = query, variables = variables };
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests");
+                    SetRateLimited();
+                    return null;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
+                    return null;
+                }
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                JObject data = JObject.Parse(jsonResponse);
+
+                var pageData = data["data"]?["Page"];
+                if (pageData == null) return null;
+
+                var mediaArray = pageData["media"];
+                if (mediaArray == null || !mediaArray.HasValues) return null;
+
+                var animes = new List<AnimeCard>();
+                foreach (var media in mediaArray)
+                {
+                    var anime = ParseAnimeCard(media);
+                    if (anime != null)
+                    {
+                        animes.Add(anime);
+                    }
+                }
+
+                return animes;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
             if (IsRateLimited())
@@ -62,18 +203,24 @@ namespace AniScroll.Shared.Services
                 string mediaFilter;
 
                 if (rand < 45)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC)";
+                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
                 else if (rand < 65)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC)";
+                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC";
                 else if (rand < 80)
-                    mediaFilter = "media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC)";
+                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC";
                 else if (rand < 95)
-                    mediaFilter = "media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC)";
+                    mediaFilter = "type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC";
                 else
-                    mediaFilter = "media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC)";
+                    mediaFilter = "type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
 
-
-                var query = GetDetailedAnimeQuery();
+                var query = $@"
+                query ($page: Int) {{
+                    Page(page: $page, perPage: 1) {{
+                        media({mediaFilter}) {{
+                            {GetAnimeFields()}
+                        }}
+                    }}
+                }}";
 
                 var request = new { query = query, variables = new { page = randomPage } };
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
@@ -123,154 +270,6 @@ namespace AniScroll.Shared.Services
             }
         }
 
-        // Nouvelle méthode : récupère 60 animes en une seule requête
-        public async Task<AnimeLoadResult> GetBulkAnimesAsync()
-        {
-            if (IsRateLimited())
-            {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = true
-                };
-            }
-
-            try
-            {
-                // Répartition : 27 populaires, 12 top score, 12 hidden gems, 8 ongoing, 1 upcoming
-                var query = @"
-                query {
-                    popular1: Page(page: 1, perPage: 9) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    popular2: Page(page: 2, perPage: 9) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    popular3: Page(page: 3, perPage: 9) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    topScore1: Page(page: 1, perPage: 6) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    topScore2: Page(page: 2, perPage: 6) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    hiddenGems1: Page(page: 1, perPage: 6) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    hiddenGems2: Page(page: 2, perPage: 6) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    ongoing: Page(page: 1, perPage: 8) {
-                        media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: TRENDING_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    upcoming: Page(page: 1, perPage: 1) {
-                        media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                }";
-
-                var request = new { query = query };
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests - Rate limit activé");
-                    SetRateLimited();
-                    return new AnimeLoadResult
-                    {
-                        Animes = new List<AnimeCard>(),
-                        IsRateLimited = true
-                    };
-                }
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
-                    return new AnimeLoadResult
-                    {
-                        Animes = new List<AnimeCard>(),
-                        IsRateLimited = false
-                    };
-                }
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                JObject data = JObject.Parse(jsonResponse);
-
-                var results = new List<AnimeCard>();
-
-                // Extraire les animes de toutes les catégories
-                var categories = new[] { "popular1", "popular2", "popular3", "topScore1", "topScore2", 
-                                        "hiddenGems1", "hiddenGems2", "ongoing", "upcoming" };
-
-                foreach (var category in categories)
-                {
-                    var categoryData = data["data"]?[category];
-                    if (categoryData?["media"] != null && categoryData["media"]!.HasValues)
-                    {
-                        foreach (var media in categoryData["media"]!)
-                        {
-                            var anime = ParseAnimeCard(media);
-                            if (anime != null)
-                            {
-                                results.Add(anime);
-                            }
-                        }
-                    }
-                }
-
-                // Mélanger pour un ordre aléatoire
-                results = results.OrderBy(x => _random.Next()).ToList();
-
-                System.Diagnostics.Debug.WriteLine($"✅ {results.Count} animes récupérés en une requête");
-
-                return new AnimeLoadResult
-                {
-                    Animes = results,
-                    IsRateLimited = false
-                };
-            }
-            catch (HttpRequestException ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur réseau: {ex.Message}");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = false
-                };
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur inattendue: {ex.Message}");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = false
-                };
-            }
-        }
-
         private string GetAnimeFields()
         {
             return @"
@@ -317,18 +316,6 @@ namespace AniScroll.Shared.Services
                     id
                 }
             ";
-        }
-
-        private string GetDetailedAnimeQuery()
-        {
-            return @"
-                query ($page: Int) {
-                    Page(page: $page, perPage: 1) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                }";
         }
 
         private AnimeCard ParseAnimeCard(JToken media)
@@ -574,43 +561,41 @@ namespace AniScroll.Shared.Services
                 };
             }
 
-            // Si on demande 5 ou moins, utiliser l'ancienne méthode
-            if (count <= 5)
+            // Pour de grandes quantités (> 10), utiliser la méthode bulk optimisée
+            if (count > 10)
             {
-                var results = new List<AnimeCard>();
-
-                for (int i = 0; i < count; i++)
-                {
-                    if (IsRateLimited())
-                    {
-                        System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {i} requêtes");
-                        break;
-                    }
-
-                    var anime = await GetRandomAnimeAsync();
-                    if (anime != null)
-                    {
-                        results.Add(anime);
-                    }
-                    else if (IsRateLimited())
-                    {
-                        break;
-                    }
-
-                    await Task.Delay(100);
-                }
-
-                return new AnimeLoadResult
-                {
-                    Animes = results,
-                    IsRateLimited = IsRateLimited()
-                };
-            }
-            else
-            {
-                // Pour de grandes quantités, utiliser la méthode bulk
                 return await GetBulkAnimesAsync();
             }
+
+            // Pour de petites quantités, utiliser l'ancienne méthode
+            var results = new List<AnimeCard>();
+
+            for (int i = 0; i < count; i++)
+            {
+                if (IsRateLimited())
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {i} requêtes");
+                    break;
+                }
+
+                var anime = await GetRandomAnimeAsync();
+                if (anime != null)
+                {
+                    results.Add(anime);
+                }
+                else if (IsRateLimited())
+                {
+                    break;
+                }
+
+                await Task.Delay(100);
+            }
+
+            return new AnimeLoadResult
+            {
+                Animes = results,
+                IsRateLimited = IsRateLimited()
+            };
         }
     }
 
