@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v2.0.0</div>
+    <div class="build-version">v2.1.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -102,13 +102,14 @@
             </div>
         }
 
-        @if (isLoading)
+        @* Popup de loading SEULEMENT pour le chargement initial *@
+        @if (isLoading && !isInitialLoadComplete)
         {
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
                     <p class="loading-title">🔍 Loading...</p>
-                    <p class="loading-subtitle">Fetching 60 awesome animes</p>
+                    <p class="loading-subtitle">Fetching 61 awesome animes</p>
                 </div>
             </div>
         }
@@ -127,6 +128,7 @@
 
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
+        @* Badge de preloading discret - n'interrompt pas le scroll *@
         @if (isPreloading)
         {
             <div class="preload-badge">🔄 Preloading...</div>
@@ -151,6 +153,7 @@
     private List<AnimeCard> animes = new List<AnimeCard>();
     private HashSet<int> expandedAnimes = new HashSet<int>();
     private bool isLoading = false;
+    private bool isInitialLoadComplete = false; // Nouveau flag pour savoir si le premier load est fait
     private bool isPreloading = false;
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
@@ -186,8 +189,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Charger les 60 premiers animes
-        await LoadAnimes(60);
+        // Charger les 61 premiers animes
+        await LoadAnimes(61, isBackgroundLoad: false);
+        isInitialLoadComplete = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -236,17 +240,19 @@
         hasPreloaded = true;
         StateHasChanged();
 
-        System.Diagnostics.Debug.WriteLine("🔄 Début du preloading des 60 prochains animes...");
+        System.Diagnostics.Debug.WriteLine("🔄 Début du preloading des 61 prochains animes EN ARRIÈRE-PLAN...");
 
-        await LoadAnimes(60);
+        // PRELOAD SILENCIEUX - ne bloque pas l'UI
+        await LoadAnimes(61, isBackgroundLoad: true);
 
         isPreloading = false;
         StateHasChanged();
 
-        System.Diagnostics.Debug.WriteLine("✅ Preloading terminé !");
+        System.Diagnostics.Debug.WriteLine("✅ Preloading terminé ! L'utilisateur peut continuer à scroller.");
     }
 
-    private async Task LoadAnimes(int count)
+    // Méthode LoadAnimes avec paramètre isBackgroundLoad
+    private async Task LoadAnimes(int count, bool isBackgroundLoad = false)
     {
         if (AniListService.IsRateLimited())
         {
@@ -256,8 +262,12 @@
             return;
         }
 
-        isLoading = true;
-        StateHasChanged();
+        // Afficher le popup de loading SEULEMENT si ce n'est PAS un background load
+        if (!isBackgroundLoad)
+        {
+            isLoading = true;
+            StateHasChanged();
+        }
 
         int startIndex = animes.Count;
         var result = await AniListService.GetMultipleAnimesAsync(count);
@@ -265,7 +275,10 @@
         if (result.IsRateLimited)
         {
             isRateLimited = true;
-            isLoading = false;
+            if (!isBackgroundLoad)
+            {
+                isLoading = false;
+            }
             StartRateLimitCountdown();
             StateHasChanged();
             return;
@@ -273,14 +286,17 @@
 
         animes.AddRange(result.Animes);
 
-        System.Diagnostics.Debug.WriteLine($"✅ Chargé {result.Animes.Count} animes. Total: {animes.Count}");
+        System.Diagnostics.Debug.WriteLine($"✅ Chargé {result.Animes.Count} animes. Total: {animes.Count} (Background: {isBackgroundLoad})");
 
         for (int i = startIndex; i < animes.Count; i++)
         {
             newlyCreatedCards.Add(i);
         }
 
-        isLoading = false;
+        if (!isBackgroundLoad)
+        {
+            isLoading = false;
+        }
         StateHasChanged();
 
         await Task.Delay(50);
@@ -441,7 +457,7 @@
                 {
                     if (!AniListService.IsRateLimited())
                     {
-                        await LoadAnimes(60);
+                        await LoadAnimes(61, isBackgroundLoad: false);
                         if (animes.Count > currentIndex + 1)
                         {
                             currentIndex++;
@@ -586,7 +602,7 @@
                 {
                     if (!AniListService.IsRateLimited())
                     {
-                        await LoadAnimes(60);
+                        await LoadAnimes(61, isBackgroundLoad: false);
                         if (animes.Count > currentIndex + 1)
                         {
                             currentIndex++;

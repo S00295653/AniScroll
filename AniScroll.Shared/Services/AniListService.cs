@@ -47,7 +47,7 @@ namespace AniScroll.Shared.Services
             System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
         }
 
-        // Méthode optimisée : récupère des pools puis sélectionne exactement 60 animes
+        // Méthode optimisée : récupère des pools puis sélectionne exactement 61 animes
         public async Task<AnimeLoadResult> GetBulkAnimesAsync()
         {
             if (IsRateLimited())
@@ -139,10 +139,10 @@ namespace AniScroll.Shared.Services
                 System.Diagnostics.Debug.WriteLine($"  - Ongoing: {ongoingPool.Count}");
                 System.Diagnostics.Debug.WriteLine($"  - Upcoming: {upcomingPool.Count}");
 
-                // Sélectionner EXACTEMENT 60 animes selon les proportions
+                // Sélectionner EXACTEMENT 61 animes selon les proportions
                 var selectedAnimes = new List<AnimeCard>();
 
-                // 27 populaires (45%)
+                // 27 populaires (44%)
                 selectedAnimes.AddRange(SelectRandomAnimes(popularPool, 27));
 
                 // 12 top score (20%)
@@ -151,13 +151,13 @@ namespace AniScroll.Shared.Services
                 // 12 hidden gems (20%)
                 selectedAnimes.AddRange(SelectRandomAnimes(hiddenGemsPool, 12));
 
-                // 8 ongoing (13%)
-                selectedAnimes.AddRange(SelectRandomAnimes(ongoingPool, 8));
+                // 9 ongoing (15%)
+                selectedAnimes.AddRange(SelectRandomAnimes(ongoingPool, 9));
 
-                // 1 upcoming (2%)
+                // 1 upcoming (1%)
                 selectedAnimes.AddRange(SelectRandomAnimes(upcomingPool, 1));
 
-                System.Diagnostics.Debug.WriteLine($"✅ Sélection: {selectedAnimes.Count} animes (27+12+12+8+1 = 60)");
+                System.Diagnostics.Debug.WriteLine($"✅ Sélection: {selectedAnimes.Count} animes (27+12+12+9+1 = 61)");
 
                 // Mélanger le résultat final
                 selectedAnimes = selectedAnimes.OrderBy(x => _random.Next()).ToList();
@@ -624,7 +624,7 @@ namespace AniScroll.Shared.Services
             {
                 var bulkResult = await GetBulkAnimesAsync();
                 
-                // Si on a récupéré plus que demandé, tronquer (mais normalement on a exactement 60)
+                // Si on a récupéré plus que demandé, tronquer (mais normalement on a exactement 61)
                 if (bulkResult.Animes.Count > count)
                 {
                     bulkResult.Animes = bulkResult.Animes.Take(count).ToList();
