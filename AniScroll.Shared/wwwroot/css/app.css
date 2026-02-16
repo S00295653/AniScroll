@@ -25,28 +25,22 @@ html, body {
 
 /* ========== APP CONTAINER ========== */
 .anime-scroll-app {
-    display: flex;
-    flex-direction: column;
     width: 100vw;
     width: 100dvw;
     height: 100vh;
     height: 100dvh;
     background: black;
     position: relative;
-    overflow: hidden;   /* ← plus d'overflow-y: scroll ici */
+    overflow: hidden;
 }
-
-
-    .anime-scroll-app::-webkit-scrollbar {
-        display: none;
-    }
 
 /* ========== SCROLL CONTAINER ========== */
 .main-scroll {
-    flex: 1 1 auto;     /* prend tout l'espace restant */
-    min-height: 0;      /* essentiel pour flex + overflow */
     width: 100%;
-    position: relative;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
     overflow: hidden;
 }
 
@@ -120,22 +114,12 @@ html, body {
 
 .anime-card::before {
     top: 0;
-    background: linear-gradient(to bottom, 
-        rgba(0, 0, 0, 0.6) 0%,
-        rgba(0, 0, 0, 0.35) 30%,
-        rgba(0, 0, 0, 0.15) 60%,
-        transparent 100%
-    );
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.35) 30%, rgba(0, 0, 0, 0.15) 60%, transparent 100% );
 }
 
 .anime-card::after {
     bottom: 0;
-    background: linear-gradient(to top, 
-        rgba(0, 0, 0, 0.6) 0%,
-        rgba(0, 0, 0, 0.35) 30%,
-        rgba(0, 0, 0, 0.15) 60%,
-        transparent 100%
-    );
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.35) 30%, rgba(0, 0, 0, 0.15) 60%, transparent 100% );
 }
 
 /* ========== CONTENT WRAPPER ========== */
@@ -147,13 +131,13 @@ html, body {
     height: 100%;
     max-height: 100vh;
     max-height: 100dvh;
-    padding: 20px 20px 20px;
+    padding: 20px 20px 110px;
     transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-sizing: border-box;
     overflow: hidden;
 }
 
-/* Desktop - no bottom padding needed */
+/* Desktop */
 @media (min-width: 768px) {
     .content-wrapper {
         max-width: 600px;
@@ -202,17 +186,6 @@ html, body {
     width: 180px;
     height: 270px;
     max-height: 35vh;
-}
-
-/* ========== IMAGE SECTION ========== */
-.image-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 1 1 auto;
-    min-height: 200px;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-    padding: 10px 0;
 }
 
 /* ========== RESPONSIVE PC ========== */
@@ -291,17 +264,17 @@ html, body {
     font-size: 18px;
 }
 
-.content-wrapper.layout-short .title.title-long,
-.content-wrapper.layout-medium .title.title-long,
-.content-wrapper.layout-long .title.title-long {
-    font-size: 16px;
-}
+    .content-wrapper.layout-short .title.title-long,
+    .content-wrapper.layout-medium .title.title-long,
+    .content-wrapper.layout-long .title.title-long {
+        font-size: 16px;
+    }
 
-.content-wrapper.layout-short .title.title-very-long,
-.content-wrapper.layout-medium .title.title-very-long,
-.content-wrapper.layout-long .title.title-very-long {
-    font-size: 14px;
-}
+    .content-wrapper.layout-short .title.title-very-long,
+    .content-wrapper.layout-medium .title.title-very-long,
+    .content-wrapper.layout-long .title.title-very-long {
+        font-size: 14px;
+    }
 
 @media (min-width: 768px) {
     .title {
@@ -309,13 +282,13 @@ html, body {
         margin-bottom: 10px;
     }
 
-    .title.title-long {
-        font-size: 26px;
-    }
+        .title.title-long {
+            font-size: 26px;
+        }
 
-    .title.title-very-long {
-        font-size: 22px;
-    }
+        .title.title-very-long {
+            font-size: 22px;
+        }
 
     .content-wrapper.layout-short .title,
     .content-wrapper.layout-medium .title,
@@ -330,13 +303,13 @@ html, body {
         margin-bottom: 12px;
     }
 
-    .title.title-long {
-        font-size: 30px;
-    }
+        .title.title-long {
+            font-size: 30px;
+        }
 
-    .title.title-very-long {
-        font-size: 24px;
-    }
+        .title.title-very-long {
+            font-size: 24px;
+        }
 }
 
 /* ========== SEASON INFO ========== */
@@ -373,17 +346,17 @@ html, body {
     }
 }
 
-    .status-dot.releasing {
-        background: rgb(0, 230, 0);
-        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
-        animation: pulse-green 2s ease-in-out infinite;
-    }
+.status-dot.releasing {
+    background: rgb(0, 230, 0);
+    box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+    animation: pulse-green 2s ease-in-out infinite;
+}
 
-    .status-dot.upcoming {
-        background: rgb(230, 0, 0);
-        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
-        animation: pulse-red 2s ease-in-out infinite;
-    }
+.status-dot.upcoming {
+    background: rgb(230, 0, 0);
+    box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+    animation: pulse-red 2s ease-in-out infinite;
+}
 
 @keyframes pulse-green {
     0%, 100% {
@@ -593,16 +566,16 @@ html, body {
     }
 }
 
-    .expand-btn:hover,
-    .collapse-btn:hover {
-        color: #4169E1;
-        background: transparent !important;
-    }
+.expand-btn:hover,
+.collapse-btn:hover {
+    color: #4169E1;
+    background: transparent !important;
+}
 
-    .expand-btn:active,
-    .collapse-btn:active {
-        background: transparent !important;
-    }
+.expand-btn:active,
+.collapse-btn:active {
+    background: transparent !important;
+}
 
 /* ========== LOADING - FOND OPAQUE ========== */
 .loading-area {
@@ -790,26 +763,32 @@ html, body {
 }
 
 /* ========== MESSAGE D'ERREUR MASQUÉ ========== */
-/* ========== MESSAGE D'ERREUR MASQUÉ ========== */
 #blazor-error-ui {
     display: none !important;
 }
 
 /* ======================================================
-   NAVIGATION — SECTIONS INDÉPENDANTES (non superposées)
+   NAVIGATION — FLOTTANTE AU-DESSUS DES CARTES
    ====================================================== */
 
 /* ========== SECTION NAVIGATION ========== */
 .nav-section {
-    flex: 0 0 auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
     background: transparent;
     border-radius: 22px 22px 0 0;
     overflow: hidden;
+    z-index: 1000;
+    pointer-events: none;
 }
 
 @media (min-width: 768px) {
-    .nav-section { display: none; }
+    .nav-section {
+        display: none;
+    }
 }
 
 .main-nav-bar {
@@ -823,6 +802,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     overflow: hidden;
+    pointer-events: all;
 }
 
 /* ========== SEARCH ROW — grows the bar upward ========== */
@@ -830,7 +810,6 @@ html, body {
     width: 100%;
     height: 0;
     overflow: hidden;
-    /* Step 1: bar grows */
     transition: height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -839,13 +818,6 @@ html, body {
 }
 
 /* ========== MORPHING PILL ========== */
-/*
- * Always full-width internally. We squash it with scaleX to fake a circle.
- * pill height = 46px, full width ≈ calc(100vw - 32px).
- * circle state: scaleX so width ≈ 46px → scaleX = 46 / fullWidth ≈ 0.12 on a 380px wide bar.
- * We use a CSS variable so it works at any width via transform-origin: left + offset trick.
- * Simpler: just use scaleX(0.124) with transform-origin: center — visually a circle.
- */
 .search-morphing-pill {
     width: calc(100% - 32px);
     height: 46px;
@@ -857,26 +829,17 @@ html, body {
     display: flex;
     align-items: center;
     overflow: hidden;
-
-    /* CLOSED — invisible, squashed to a circle */
     opacity: 0;
     transform: scaleX(0.124);
     transform-origin: center center;
-
-    /* Closing animation */
-    transition:
-        transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0s,
-        opacity   0.18s ease 0s;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0s, opacity 0.18s ease 0s;
 }
 
-.search-morphing-pill.expanded {
-    /* OPEN — Step 2: circle appears (opacity), Step 3: expands to bar */
-    opacity: 1;
-    transform: scaleX(1);
-    transition:
-        opacity   0.16s ease                              0.18s,  /* appear as circle */
-        transform 0.48s cubic-bezier(0.34, 1.4, 0.64, 1) 0.20s;  /* expand with bounce */
-}
+    .search-morphing-pill.expanded {
+        opacity: 1;
+        transform: scaleX(1);
+        transition: opacity 0.16s ease 0.18s, transform 0.48s cubic-bezier(0.34, 1.4, 0.64, 1) 0.20s;
+    }
 
 /* ========== PILL CONTENT ========== */
 .search-pill-content {
@@ -886,15 +849,14 @@ html, body {
     padding: 0 14px;
     width: 100%;
     height: 100%;
-    /* Hidden until pill is wide enough */
     opacity: 0;
     transition: opacity 0.14s ease 0s;
 }
 
-.search-pill-content.visible {
-    opacity: 1;
-    transition: opacity 0.26s ease 0.56s; /* appears after pill is fully expanded */
-}
+    .search-pill-content.visible {
+        opacity: 1;
+        transition: opacity 0.26s ease 0.56s;
+    }
 
 .search-pill-icon {
     flex-shrink: 0;
@@ -914,9 +876,9 @@ html, body {
     -webkit-user-select: text;
 }
 
-.search-field::placeholder {
-    color: rgba(255, 255, 255, 0.28);
-}
+    .search-field::placeholder {
+        color: rgba(255, 255, 255, 0.28);
+    }
 
 .clear-search-btn {
     flex-shrink: 0;
@@ -934,10 +896,10 @@ html, body {
     transition: background 0.18s ease, transform 0.14s ease;
 }
 
-.clear-search-btn:active {
-    transform: scale(0.86);
-    background: rgba(255, 255, 255, 0.18);
-}
+    .clear-search-btn:active {
+        transform: scale(0.86);
+        background: rgba(255, 255, 255, 0.18);
+    }
 
 /* ========== BUTTONS ROW ========== */
 .nav-buttons-row {
@@ -966,10 +928,10 @@ html, body {
     min-width: 0;
 }
 
-.nav-btn:active {
-    transform: scale(0.88);
-    color: rgba(255, 255, 255, 0.85);
-}
+    .nav-btn:active {
+        transform: scale(0.88);
+        color: rgba(255, 255, 255, 0.85);
+    }
 
 .nav-btn-icon {
     width: 21px;
@@ -986,7 +948,6 @@ html, body {
 }
 
 /* ========== CENTER BUTTON ========== */
-/* ========== CENTER BUTTON ========== */
 .nav-center-btn {
     flex: 0 0 auto;
     width: 56px;
@@ -996,42 +957,30 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;      /* ← contain the ::before */
-    overflow: hidden;        /* ← clip the shine so it can't bleed out */
-
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(150deg, #ff4d6b 0%, #c8253f 100%);
     border: none;
     color: white;
-    box-shadow:
-        0 0 0 6px rgba(200, 37, 63, 0.12),
-        0 4px 18px rgba(200, 37, 63, 0.35),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-
-    transition:
-        background      0.38s ease,
-        box-shadow      0.38s ease,
-        border-radius   0.38s ease,
-        transform       0.2s  cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 0 6px rgba(200, 37, 63, 0.12), 0 4px 18px rgba(200, 37, 63, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: background 0.38s ease, box-shadow 0.38s ease, border-radius 0.38s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.nav-center-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 36% 26%, rgba(255,255,255,0.22) 0%, transparent 58%);
-    border-radius: inherit;
-    pointer-events: none;
-}
+    .nav-center-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 36% 26%, rgba(255,255,255,0.22) 0%, transparent 58%);
+        border-radius: inherit;
+        pointer-events: none;
+    }
 
-.nav-center-btn.is-active {
-    background: linear-gradient(150deg, #5d8ef0 0%, #2c5cc5 100%);
-    box-shadow:
-        0 0 0 6px rgba(44, 92, 197, 0.12),
-        0 4px 18px rgba(44, 92, 197, 0.35),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-    border-radius: 50%;
-}
+    .nav-center-btn.is-active {
+        background: linear-gradient(150deg, #5d8ef0 0%, #2c5cc5 100%);
+        box-shadow: 0 0 0 6px rgba(44, 92, 197, 0.12), 0 4px 18px rgba(44, 92, 197, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        border-radius: 50%;
+    }
 
-.nav-center-btn:active {
-    transform: scale(0.86);
-}
+    .nav-center-btn:active {
+        transform: scale(0.86);
+    }
