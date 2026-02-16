@@ -56,19 +56,20 @@
                     @onclick="ToggleSearch">
                 @if (IsSearchOpen)
                 {
-                    <!-- Play in box icon -->
+                    <!-- Play in box icon - Utilise fill pour éviter les superpositions -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="1"></rect>
+                        <rect x="2" y="2" width="20" height="20" rx="4"></rect>
                         <path d="M10 8 L16 12 L10 16 Z" fill="currentColor" stroke="none"></path>
                     </svg>
                 }
                 else
                 {
-                    <!-- Search icon -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Search icon - Ligne séparée pour éviter superposition -->
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
@@ -81,7 +82,7 @@
                          stroke="currentColor" stroke-width="1.9"
                          stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+                        <path d="M4 20 C4 16 7.6 13 12 13 C16.4 13 20 16 20 20"></path>
                     </svg>
                 </div>
                 <span class="nav-btn-label">Profile</span>
