@@ -7,7 +7,7 @@
         <div class="anime-detail-popup" @onclick:stopPropagation="true">
 
             <!-- Header avec bannière -->
-            <div class="detail-banner" style="background-image: url('@(string.IsNullOrEmpty(CurrentAnime.BannerUrl) ? CurrentAnime.ImageUrl : CurrentAnime.BannerUrl)');">
+            <div class="detail-banner" style="background-image: url('@CurrentAnime.BannerUrl');">
                 <div class="detail-banner-gradient"></div>
                 <button class="detail-close-btn" @onclick="Close">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -255,34 +255,6 @@
                     </div>
                 }
 
-                <!-- Relations -->
-                @if (CurrentAnime.Relations?.Any() == true)
-                {
-                    <div class="detail-content-section detail-relations-section">
-                        <h3 class="detail-section-header">Relations</h3>
-                        <div class="detail-relations-grid">
-                            @foreach (var relation in CurrentAnime.Relations)
-                            {
-                                <div class="detail-relation-card" @onclick="() => OnRelationClick(relation)">
-                                    @if (!string.IsNullOrEmpty(relation.ImageUrl))
-                                    {
-                                        <div class="detail-relation-image"
-                                             style="background-image: url('@relation.ImageUrl');"></div>
-                                    }
-                                    <div class="detail-relation-info">
-                                        <span class="detail-relation-type">@FormatRelationType(relation.Type)</span>
-                                        <h4 class="detail-relation-title">@relation.Title</h4>
-                                        @if (!string.IsNullOrEmpty(relation.Format))
-                                        {
-                                            <span class="detail-relation-format">@relation.Format</span>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-
                 <!-- Tags -->
                 @if (CurrentAnime.Tags?.Any() == true)
                 {
@@ -370,24 +342,6 @@
         };
     }
 
-    private string FormatRelationType(string type)
-    {
-        return type switch
-        {
-            "SEQUEL" => "Sequel",
-            "PREQUEL" => "Prequel",
-            "SIDE_STORY" => "Side Story",
-            "PARENT" => "Parent Story",
-            "ALTERNATIVE" => "Alternative",
-            "SPIN_OFF" => "Spin-off",
-            "SUMMARY" => "Summary",
-            "ADAPTATION" => "Adaptation",
-            "CHARACTER" => "Character",
-            "OTHER" => "Other",
-            _ => type.Replace("_", " ")
-        };
-    }
-
     private void OnAddToList()
     {
         System.Diagnostics.Debug.WriteLine($"📝 Add to list: {CurrentAnime?.Title}");
@@ -411,11 +365,5 @@
             System.Diagnostics.Debug.WriteLine($"🔗 Opening: {url}");
             // TODO: Open in browser
         }
-    }
-
-    private void OnRelationClick(AnimeRelation relation)
-    {
-        System.Diagnostics.Debug.WriteLine($"🔗 Clicked relation: {relation.Title} (ID: {relation.Id})");
-        // TODO: Fetch and display the related anime
     }
 }

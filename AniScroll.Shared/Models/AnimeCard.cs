@@ -1,14 +1,5 @@
 ﻿namespace AniScroll.Shared.Models
 {
-    public class AnimeRelation
-    {
-        public int Id { get; set; }
-        public string Type { get; set; } = string.Empty; // SEQUEL, PREQUEL, SIDE_STORY, etc.
-        public string Title { get; set; } = string.Empty;
-        public string ImageUrl { get; set; } = string.Empty;
-        public string Format { get; set; } = string.Empty;
-    }
-
     public class AnimeCard
     {
         public int Id { get; set; }
@@ -37,6 +28,18 @@
         public string Hashtag { get; set; } = string.Empty;
         public string TrailerUrl { get; set; } = string.Empty;
         public int? AverageScore { get; set; }
-        public List<AnimeRelation> Relations { get; set; } = new List<AnimeRelation>();
+
+        // Relations (sequels, prequels, etc.)
+        public List<AnimeRelation> Relations { get; set; } = new();
+
+        // Classe nested pour les relations
+        public class AnimeRelation
+        {
+            public int Id { get; set; }
+            public string Type { get; set; } = "";
+            public string Title { get; set; } = "";
+            public string ImageUrl { get; set; } = "";
+            public string Format { get; set; } = "";
+        }
     }
 }

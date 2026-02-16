@@ -132,15 +132,9 @@ namespace AniScroll.Shared.Services
                                     relationType
                                     node {{
                                         id
-                                        title {{
-                                            romaji
-                                            english
-                                        }}
-                                        coverImage {{
-                                            large
-                                        }}
+                                        title {{ romaji english }}
+                                        coverImage {{ large }}
                                         format
-                                        type
                                     }}
                                 }}
                             }}
@@ -303,7 +297,7 @@ namespace AniScroll.Shared.Services
             {
                 foreach (var studio in studiosObj.Take(3))
                 {
-                    string? studioName = studio["name"]?.ToString();
+                    string studioName = studio["name"]?.ToString();
                     if (!string.IsNullOrEmpty(studioName))
                         studios.Add(studioName);
                 }
@@ -316,7 +310,7 @@ namespace AniScroll.Shared.Services
             {
                 foreach (var tag in tagsArray.OrderByDescending(t => t["rank"]).Take(15))
                 {
-                    string? tagName = tag["name"]?.ToString();
+                    string tagName = tag["name"]?.ToString();
                     if (!string.IsNullOrEmpty(tagName))
                         tags.Add(tagName);
                 }
@@ -337,40 +331,37 @@ namespace AniScroll.Shared.Services
             }
 
             // Relations
-            var relations = new List<AnimeRelation>();
-            var relationsObj = media["relations"]?["edges"];
-            if (relationsObj != null && relationsObj.HasValues)
+            var relations = new List<AnimeCard.AnimeRelation>();
+            var relationsEdges = media["relations"]?["edges"];
+            if (relationsEdges != null && relationsEdges.HasValues)
             {
-                foreach (var edge in relationsObj.Take(10))
+                foreach (var edge in relationsEdges.Take(10))
                 {
                     var node = edge["node"];
-                    if (node != null)
+                    var nodeType = node?["type"]?.ToString();
+
+                    // Ne garder que les animes (pas les mangas)
+                    if (nodeType == "ANIME")
                     {
-                        // Filter to only show ANIME relations (not MANGA, etc.)
-                        string? nodeType = node["type"]?.ToString();
-                        if (nodeType != "ANIME")
-                            continue;
+                        var relationType = edge["relationType"]?.ToString() ?? "";
+                        var relationTitle = node?["title"]?["english"]?.ToString()
+                            ?? node?["title"]?["romaji"]?.ToString()
+                            ?? "";
+                        var relationImage = node?["coverImage"]?["large"]?.ToString() ?? "";
+                        var relationFormat = node?["format"]?.ToString() ?? "";
+                        var relationId = node?["id"]?.Value<int>() ?? 0;
 
-                        string relationType = edge["relationType"]?.ToString() ?? "";
-                        var relationTitleObj = node["title"];
-                        string relationTitle = relationTitleObj?["english"]?.ToString() ??
-                                             relationTitleObj?["romaji"]?.ToString() ?? "";
-
-                        if (string.IsNullOrEmpty(relationTitle))
-                            continue;
-
-                        int relationId = node["id"]?.Value<int>() ?? 0;
-                        if (relationId == 0)
-                            continue;
-
-                        relations.Add(new AnimeRelation
+                        if (!string.IsNullOrEmpty(relationTitle))
                         {
-                            Id = relationId,
-                            Type = relationType,
-                            Title = relationTitle,
-                            ImageUrl = node["coverImage"]?["large"]?.ToString() ?? "",
-                            Format = node["format"]?.ToString() ?? ""
-                        });
+                            relations.Add(new AnimeCard.AnimeRelation
+                            {
+                                Id = relationId,
+                                Title = relationTitle,
+                                ImageUrl = relationImage,
+                                RelationType = FormatRelationType(relationType),
+                                Format = relationFormat
+                            });
+                        }
                     }
                 }
             }
@@ -404,6 +395,23 @@ namespace AniScroll.Shared.Services
                 TrailerUrl = trailerUrl,
                 AverageScore = averageScore,
                 Relations = relations
+            };
+        }
+
+        private string FormatRelationType(string relationType)
+        {
+            return relationType switch
+            {
+                "SEQUEL" => "Sequel",
+                "PREQUEL" => "Prequel",
+                "ALTERNATIVE" => "Alternative",
+                "SIDE_STORY" => "Side Story",
+                "PARENT" => "Parent Story",
+                "SUMMARY" => "Summary",
+                "ADAPTATION" => "Adaptation",
+                "SPIN_OFF" => "Spin-off",
+                "OTHER" => "Related",
+                _ => relationType
             };
         }
 
