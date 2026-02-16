@@ -177,7 +177,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnimes(5);
+        // Charger 60 animes en une fois
+        var result = await AniListService.GetBulkAnimesAsync();
+        animes.AddRange(result.Animes);
+        
+        if (result.IsRateLimited)
+        {
+            isRateLimited = true;
+            StartRateLimitCountdown();
+        }
+        
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
