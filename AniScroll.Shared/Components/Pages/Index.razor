@@ -388,7 +388,8 @@
 
         isDraggingCard = false;
 
-        double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
+        double cardActualHeight = CARD_HEIGHT - 20;
+        double swipeThreshold = cardActualHeight * SWIPE_VALIDATION_PERCENT;
         bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
 
         if (swipeValidated)
@@ -576,7 +577,8 @@
 
     private double GetCardTransform(int index)
     {
-        double basePosition = (index - currentIndex) * CARD_HEIGHT;
+        double cardActualHeight = CARD_HEIGHT - 20; // Prend en compte l'espacement de 20px
+        double basePosition = (index - currentIndex) * cardActualHeight;
 
         if (isDraggingCard)
         {
