@@ -132,9 +132,15 @@ namespace AniScroll.Shared.Services
                                     relationType
                                     node {{
                                         id
-                                        title {{ romaji english }}
-                                        coverImage {{ large }}
+                                        title {{
+                                            romaji
+                                            english
+                                        }}
+                                        coverImage {{
+                                            large
+                                        }}
                                         format
+                                        type
                                     }}
                                 }}
                             }}

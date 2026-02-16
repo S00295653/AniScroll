@@ -30,16 +30,16 @@
         public int? AverageScore { get; set; }
 
         // Relations (sequels, prequels, etc.)
-        public List<AnimeRelation> Relations { get; set; } = new();
+        public List<AnimeRelation> Relations { get; set; } = new List<AnimeRelation>();
 
         // Classe nested pour les relations
         public class AnimeRelation
         {
             public int Id { get; set; }
-            public string Type { get; set; } = "";
-            public string Title { get; set; } = "";
-            public string ImageUrl { get; set; } = "";
-            public string Format { get; set; } = "";
+            public string Title { get; set; } = string.Empty;
+            public string ImageUrl { get; set; } = string.Empty;
+            public string RelationType { get; set; } = string.Empty;
+            public string Format { get; set; } = string.Empty;
         }
     }
 }

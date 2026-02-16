@@ -36,15 +36,27 @@ html, body {
 
 /* ========== SCROLL CONTAINER ========== */
 .main-scroll {
-    height: calc(100% - 84px); /* 84px = hauteur navbar fermée */
-    overflow-y: auto;
-    scroll-snap-type: y mandatory;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
 }
 
 /* ========== ANIME CARD - AVEC ESPACEMENT ========== */
 .anime-card {
-    height: calc(100vh - 84px);
-    scroll-snap-align: start;
+    width: 100%;
+    height: calc(100% - 20px); /* Réduit de 20px pour voir la carte suivante */
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    overflow: hidden;
+    touch-action: none;
+    will-change: transform;
+    transform: translateZ(0);
+    border-radius: 0 0 20px 20px; /* Coins arrondis en bas */
 }
 
     .anime-card.no-transition {
