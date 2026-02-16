@@ -44,14 +44,14 @@ namespace AniScroll.Shared.Services
         private void SetRateLimited()
         {
             _rateLimitedUntil = DateTime.UtcNow.AddSeconds(RATE_LIMIT_DURATION_SECONDS);
-            System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited until {_rateLimitedUntil}");
+            System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
         }
 
         public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
             if (IsRateLimited())
             {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - request ignored");
+                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - requête ignorée");
                 return null;
             }
 
@@ -72,61 +72,23 @@ namespace AniScroll.Shared.Services
                 else
                     mediaFilter = "media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC)";
 
+
                 var query = $@"
                 query ($page: Int) {{
                     Page(page: $page, perPage: 1) {{
                         {mediaFilter} {{
                             id
-                            title {{ 
-                                romaji 
-                                english 
-                                native 
-                            }}
-                            coverImage {{ 
-                                extraLarge 
-                                large 
-                            }}
+                            title {{ romaji english }}
+                            coverImage {{ extraLarge large }}
                             bannerImage
                             averageScore
-                            meanScore
                             genres
                             episodes
-                            duration
                             description
                             season
                             seasonYear
                             status
-                            format
-                            source
-                            startDate {{
-                                year
-                                month
-                                day
-                            }}
-                            endDate {{
-                                year
-                                month
-                                day
-                            }}
-                            popularity
-                            favourites
-                            hashtag
-                            studios(isMain: true) {{
-                                nodes {{
-                                    name
-                                }}
-                            }}
-                            tags {{
-                                name
-                                rank
-                            }}
-                            trailer {{
-                                id
-                                site
-                            }}
-                            nextAiringEpisode {{ 
-                                episode 
-                            }}
+                            nextAiringEpisode {{ episode }}
                         }}
                     }}
                 }}";
@@ -139,14 +101,14 @@ namespace AniScroll.Shared.Services
 
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests - Rate limit activated");
+                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests - Rate limit activé");
                     SetRateLimited();
                     return null;
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ API Error: {response.StatusCode}");
+                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
                     return null;
                 }
 
@@ -169,12 +131,12 @@ namespace AniScroll.Shared.Services
             }
             catch (HttpRequestException ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Network error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur réseau: {ex.Message}");
                 return null;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Unexpected error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Erreur inattendue: {ex.Message}");
                 return null;
             }
         }
@@ -186,9 +148,6 @@ namespace AniScroll.Shared.Services
                 ? titleObj!["english"]!.ToString()
                 : titleObj?["romaji"]?.ToString() ?? "Unknown";
 
-            string titleEnglish = titleObj?["english"]?.ToString() ?? "";
-            string titleNative = titleObj?["native"]?.ToString() ?? "";
-
             var coverObj = media["coverImage"];
             string imageUrl = coverObj?["extraLarge"]?.ToString() ?? coverObj?["large"]?.ToString() ?? "";
 
@@ -196,56 +155,16 @@ namespace AniScroll.Shared.Services
                 ? media["averageScore"]!.ToString()
                 : "N/A";
 
-            string meanScore = media["meanScore"] != null && media["meanScore"]!.Type != JTokenType.Null
-                ? media["meanScore"]!.ToString()
-                : "N/A";
-
             string description = media["description"]?.ToString() ?? "";
             description = System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", string.Empty);
 
             string season = media["season"]?.ToString() ?? "";
-            if (!string.IsNullOrEmpty(season))
-            {
-                season = char.ToUpper(season[0]) + season.Substring(1).ToLower();
-            }
-
             string yearStr = media["seasonYear"]?.ToString() ?? "";
             int? year = int.TryParse(yearStr, out int y) ? y : null;
             string status = media["status"]?.ToString() ?? "";
-            string format = media["format"]?.ToString() ?? "";
-            string source = media["source"]?.ToString() ?? "";
 
-            // Format source text
-            if (!string.IsNullOrEmpty(source))
-            {
-                source = source.Replace("_", " ");
-                source = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(source.ToLower());
-            }
-
-            // Format dates
-            string startDate = FormatDate(media["startDate"]);
-            string endDate = FormatDate(media["endDate"]);
-
-            int? popularity = media["popularity"] != null && media["popularity"]!.Type != JTokenType.Null
-                ? (int?)media["popularity"]
-                : null;
-
-            int? favourites = media["favourites"] != null && media["favourites"]!.Type != JTokenType.Null
-                ? (int?)media["favourites"]
-                : null;
-
-            int? duration = media["duration"] != null && media["duration"]!.Type != JTokenType.Null
-                ? (int?)media["duration"]
-                : null;
-
-            int? averageScore = media["averageScore"] != null && media["averageScore"]!.Type != JTokenType.Null
-                ? (int?)media["averageScore"]
-                : null;
-
-            string hashtag = media["hashtag"]?.ToString() ?? "";
-
-            // Episodes display
             string epDisplay = "N/A";
+
             if (status == "RELEASING")
             {
                 int? totalEpisodes = media["episodes"] != null && media["episodes"]!.Type != JTokenType.Null ? (int?)media["episodes"] : null;
@@ -270,7 +189,6 @@ namespace AniScroll.Shared.Services
                     epDisplay = media["episodes"]!.ToString();
             }
 
-            // Genres
             var genres = new List<string>();
             var genresArray = media["genres"];
             if (genresArray != null && genresArray.HasValues)
@@ -279,114 +197,27 @@ namespace AniScroll.Shared.Services
                     genres.Add(genresArray[i]!.ToString());
             }
 
-            // Studios
-            var studios = new List<string>();
-            var studiosObj = media["studios"]?["nodes"];
-            if (studiosObj != null && studiosObj.HasValues)
-            {
-                foreach (var studio in studiosObj.Take(3))
-                {
-                    string studioName = studio["name"]?.ToString();
-                    if (!string.IsNullOrEmpty(studioName))
-                        studios.Add(studioName);
-                }
-            }
-
-            // Tags
-            var tags = new List<string>();
-            var tagsArray = media["tags"];
-            if (tagsArray != null && tagsArray.HasValues)
-            {
-                foreach (var tag in tagsArray.OrderByDescending(t => t["rank"]).Take(15))
-                {
-                    string tagName = tag["name"]?.ToString();
-                    if (!string.IsNullOrEmpty(tagName))
-                        tags.Add(tagName);
-                }
-            }
-
-            // Trailer
-            string trailerUrl = "";
-            var trailer = media["trailer"];
-            if (trailer != null)
-            {
-                string site = trailer["site"]?.ToString() ?? "";
-                string id = trailer["id"]?.ToString() ?? "";
-
-                if (site == "youtube" && !string.IsNullOrEmpty(id))
-                {
-                    trailerUrl = $"https://www.youtube.com/embed/{id}";
-                }
-            }
-
             return new AnimeCard
             {
                 Id = media["id"]?.Value<int>() ?? 0,
                 Title = displayTitle,
-                TitleEnglish = titleEnglish,
-                TitleNative = titleNative,
                 ImageUrl = imageUrl,
                 BannerUrl = media["bannerImage"]?.ToString() ?? "",
                 Score = score,
-                MeanScore = meanScore,
                 Description = description,
                 Season = season,
                 Year = year,
                 Status = status,
                 Episodes = epDisplay,
-                Duration = duration,
-                Format = format,
-                Source = source,
-                StartDate = startDate,
-                EndDate = endDate,
-                Popularity = popularity,
-                Favourites = favourites,
-                Genres = genres,
-                Studios = studios,
-                Tags = tags,
-                Hashtag = hashtag,
-                TrailerUrl = trailerUrl,
-                AverageScore = averageScore
+                Genres = genres
             };
-        }
-
-        private string FormatDate(JToken? dateToken)
-        {
-            if (dateToken == null)
-                return "";
-
-            int? year = dateToken["year"] != null && dateToken["year"]!.Type != JTokenType.Null
-                ? (int?)dateToken["year"]
-                : null;
-
-            int? month = dateToken["month"] != null && dateToken["month"]!.Type != JTokenType.Null
-                ? (int?)dateToken["month"]
-                : null;
-
-            int? day = dateToken["day"] != null && dateToken["day"]!.Type != JTokenType.Null
-                ? (int?)dateToken["day"]
-                : null;
-
-            if (!year.HasValue)
-                return "";
-
-            if (!month.HasValue)
-                return year.Value.ToString();
-
-            string[] monthNames = { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-            string monthStr = month.Value >= 1 && month.Value <= 12 ? monthNames[month.Value] : "";
-
-            if (!day.HasValue)
-                return $"{monthStr} {year.Value}";
-
-            return $"{monthStr} {day.Value}, {year.Value}";
         }
 
         public async Task<AnimeLoadResult> GetMultipleAnimesAsync(int count)
         {
             if (IsRateLimited())
             {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - loading cancelled");
+                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
                 return new AnimeLoadResult
                 {
                     Animes = new List<AnimeCard>(),
@@ -400,7 +231,7 @@ namespace AniScroll.Shared.Services
             {
                 if (IsRateLimited())
                 {
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited after {i} requests");
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {i} requêtes");
                     break;
                 }
 

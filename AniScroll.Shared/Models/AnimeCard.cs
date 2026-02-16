@@ -4,29 +4,14 @@
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string TitleEnglish { get; set; } = string.Empty;
-        public string TitleNative { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
         public string BannerUrl { get; set; } = string.Empty;
         public string Score { get; set; } = "N/A";
-        public string MeanScore { get; set; } = "N/A";
         public string Description { get; set; } = string.Empty;
         public string Season { get; set; } = string.Empty;
         public int? Year { get; set; }
         public string Status { get; set; } = string.Empty;
         public string Episodes { get; set; } = "N/A";
-        public int? Duration { get; set; }
-        public string Format { get; set; } = string.Empty;
-        public string Source { get; set; } = string.Empty;
-        public string StartDate { get; set; } = string.Empty;
-        public string EndDate { get; set; } = string.Empty;
-        public int? Popularity { get; set; }
-        public int? Favourites { get; set; }
         public List<string> Genres { get; set; } = new List<string>();
-        public List<string> Studios { get; set; } = new List<string>();
-        public List<string> Tags { get; set; } = new List<string>();
-        public string Hashtag { get; set; } = string.Empty;
-        public string TrailerUrl { get; set; } = string.Empty;
-        public int? AverageScore { get; set; }
     }
 }

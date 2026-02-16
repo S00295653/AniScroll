@@ -1,41 +1,77 @@
-﻿// Calcule la hauteur d'une carte anime (hauteur de la page - navbar fermée)
-window.getCardHeight = function () {
-    const navBar = document.querySelector('.main-nav-bar');
-    const navHeight = navBar ? navBar.offsetHeight : 80;
-    return window.innerHeight - navHeight;
+﻿window.getViewportHeight = function () {
+    const scrollSection = document.querySelector('.main-scroll');
+    if (scrollSection) {
+        return scrollSection.clientHeight;
+    }
+    return window.innerHeight;
 };
 
-// Retourne la position de scroll actuelle
-window.getScrollPosition = function () {
+// Nouvelle fonction : retourne la hauteur réelle de la zone de scroll (sans la nav)
+window.getScrollSectionHeight = function () {
     const scrollSection = document.querySelector('.main-scroll');
-    if (!scrollSection) {
+    if (scrollSection) {
+        return scrollSection.clientHeight;
+    }
+    return window.innerHeight;
+};
+
+window.getScrollInfo = function (element) {
+    if (!element) {
         return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
     }
 
     return {
-        scrollTop: scrollSection.scrollTop,
-        scrollHeight: scrollSection.scrollHeight,
-        clientHeight: scrollSection.clientHeight
+        scrollTop: element.scrollTop,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight
     };
 };
 
-// Initialise les hauteurs des cartes
-window.initializeCardHeights = function () {
-    const cards = document.querySelectorAll('.anime-card-container');
-    const cardHeight = window.getCardHeight();
-
-    cards.forEach(card => {
-        card.style.height = `${cardHeight}px`;
-    });
+window.setScrollTop = function (element, value) {
+    if (element) {
+        element.scrollTop = value;
+    }
 };
 
-// Initialise le scroll infini
-window.initializeInfiniteScroll = function () {
-    window.initializeCardHeights();
+window.isTouchingDescriptionZone = function (clientX, clientY) {
+    const elements = document.elementsFromPoint(clientX, clientY);
 
-    window.addEventListener('resize', () => {
-        window.initializeCardHeights();
-    });
+    for (let element of elements) {
+        if (element.classList.contains('description-scroll-zone') ||
+            element.classList.contains('description-full') ||
+            element.classList.contains('description-scroll-wrapper') ||
+            element.closest('.description-scroll-wrapper')) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+window.isDescriptionAtBottom = function () {
+    const descWrapper = document.querySelector('.anime-card.active .description-scroll-wrapper');
+
+    if (!descWrapper) {
+        return false;
+    }
+
+    const tolerance = 5;
+    const isAtBottom = descWrapper.scrollTop + descWrapper.clientHeight >= descWrapper.scrollHeight - tolerance;
+
+    return isAtBottom;
+};
+
+window.isDescriptionAtTop = function () {
+    const descWrapper = document.querySelector('.anime-card.active .description-scroll-wrapper');
+
+    if (!descWrapper) {
+        return true;
+    }
+
+    const tolerance = 5;
+    const isAtTop = descWrapper.scrollTop <= tolerance;
+
+    return isAtTop;
 };
 
 window.focusElement = function (element) {

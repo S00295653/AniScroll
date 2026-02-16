@@ -38,8 +38,10 @@
                     </div>
 
                     <div class="info-section">
-                        <h1 class="title @GetTitleClass(anime.Title)" 
-                            @onclick="() => HandleTitleClick(anime)">@anime.Title</h1>
+                        <h1 class="title @GetTitleClass(anime.Title)"
+                            @onclick="() => HandleTitleClick(anime)">
+                            @anime.Title
+                        </h1>
 
                         @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
                         {
@@ -131,16 +133,14 @@
         }
     </div>
 
-    <AniScroll.Shared.Components.Layout.NavigationBar
-        OnSearchToggled="HandleSearchToggled"
-        OnListsClicked="HandleListsClicked"
-        OnProfileClicked="HandleProfileClicked"
-        OnSearchQueryChanged="HandleSearchQueryChanged" />
+    <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
+                                                      OnListsClicked="HandleListsClicked"
+                                                      OnProfileClicked="HandleProfileClicked"
+                                                      OnSearchQueryChanged="HandleSearchQueryChanged" />
 
-    <AniScroll.Shared.Components.Layout.AnimeDetailPopup
-        CurrentAnime="selectedAnime"
-        IsVisible="showDetailPopup"
-        OnClose="CloseDetailPopup" />
+    <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
+                                                         IsVisible="showDetailPopup"
+                                                         OnClose="CloseDetailPopup" />
 </div>
 
 @code {
@@ -388,8 +388,7 @@
 
         isDraggingCard = false;
 
-        double cardActualHeight = CARD_HEIGHT - 20;
-        double swipeThreshold = cardActualHeight * SWIPE_VALIDATION_PERCENT;
+        double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
         bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
 
         if (swipeValidated)
@@ -483,7 +482,7 @@
                 descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
 
                 double deltaYDir = touch.ClientY - dragStartY;
-                
+
                 if (isAtTop && deltaYDir > 0)
                 {
                     if (!isDraggingCard)
@@ -577,8 +576,7 @@
 
     private double GetCardTransform(int index)
     {
-        double cardActualHeight = CARD_HEIGHT - 20; // Prend en compte l'espacement de 20px
-        double basePosition = (index - currentIndex) * cardActualHeight;
+        double basePosition = (index - currentIndex) * CARD_HEIGHT;
 
         if (isDraggingCard)
         {
@@ -619,7 +617,7 @@
             return description;
 
         int cutPosition = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
-        
+
         if (cutPosition == -1 || cutPosition < 50)
             cutPosition = maxChars;
 
