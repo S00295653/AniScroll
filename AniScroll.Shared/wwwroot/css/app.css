@@ -984,7 +984,7 @@ html, body {
    ====================================================== */
 
 /* ======================================================
-   POPUP DÉTAILS ANIME - CSS AJOUTÉ
+   POPUP DÉTAILS ANIME - VERSION AMÉLIORÉE
    ====================================================== */
 
 .anime-detail-overlay {
@@ -1028,7 +1028,7 @@ html, body {
     .anime-detail-popup {
         width: 90%;
         height: 90%;
-        max-width: 900px;
+        max-width: 950px;
         max-height: 90vh;
         border-radius: 24px;
     }
@@ -1047,7 +1047,7 @@ html, body {
 /* ========== POPUP HEADER ========== */
 .popup-header {
     position: relative;
-    height: 200px;
+    height: 180px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1056,14 +1056,14 @@ html, body {
 
 @media (min-width: 768px) {
     .popup-header {
-        height: 260px;
+        height: 240px;
     }
 }
 
 .popup-header-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(15, 15, 20, 0.95) 100% );
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(15, 15, 20, 1) 100%);
 }
 
 .popup-close-btn {
@@ -1133,34 +1133,37 @@ html, body {
     border-radius: 3px;
 }
 
-/* ========== MAIN INFO SECTION - CORRIGÉ ========== */
-.popup-main-info {
+/* ========== MAIN SECTION - COVER CENTRÉE ========== */
+.popup-main-section {
     display: flex;
-    gap: 16px;
+    flex-direction: column;
+    gap: 20px;
     margin-top: -60px;
     margin-bottom: 24px;
     position: relative;
     z-index: 5;
-    padding-top: 20px;
 }
 
 @media (min-width: 768px) {
-    .popup-main-info {
+    .popup-main-section {
         margin-top: -80px;
-        gap: 28px;
+        gap: 24px;
         margin-bottom: 32px;
-        padding-top: 0;
     }
 }
 
-.popup-cover-section {
-    flex-shrink: 0;
+/* Cover container - CENTRÉE */
+.popup-cover-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
 }
 
 .popup-cover-image {
-    width: 120px;
-    height: 180px;
-    border-radius: 10px;
+    width: 140px;
+    height: 210px;
+    border-radius: 12px;
     background-size: cover;
     background-position: center;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
@@ -1169,91 +1172,154 @@ html, body {
 
 @media (min-width: 768px) {
     .popup-cover-image {
-        width: 160px;
-        height: 240px;
-        border-radius: 14px;
+        width: 180px;
+        height: 270px;
+        border-radius: 16px;
     }
 }
 
-.popup-info-section {
-    flex: 1;
+/* ========== PRIMARY INFO ========== */
+.popup-primary-info {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-top: 0;
-    min-width: 0;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
 }
 
 @media (min-width: 768px) {
-    .popup-info-section {
-        gap: 10px;
+    .popup-primary-info {
+        gap: 16px;
     }
 }
 
 .popup-title {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: bold;
     line-height: 1.2;
     margin: 0;
     color: white;
     word-break: break-word;
+    max-width: 100%;
 }
 
 @media (min-width: 768px) {
     .popup-title {
-        font-size: 28px;
+        font-size: 32px;
     }
 }
 
-.popup-format {
+.popup-format-badge {
+    background: rgba(233, 69, 96, 0.15);
+    border: 1px solid rgba(233, 69, 96, 0.4);
+    color: #E94560;
+    padding: 6px 16px;
+    border-radius: 20px;
     font-size: 13px;
-    color: #888;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@media (min-width: 768px) {
+    .popup-format-badge {
+        font-size: 14px;
+        padding: 7px 18px;
+    }
+}
+
+/* ========== GENRES INLINE ========== */
+.popup-genres-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.popup-genre-tag-small {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ddd;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
     font-weight: 600;
 }
 
 @media (min-width: 768px) {
-    .popup-format {
-        font-size: 15px;
+    .popup-genre-tag-small {
+        font-size: 13px;
+        padding: 5px 14px;
     }
 }
 
-.popup-season {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #b4b4b4;
-}
-
-@media (min-width: 768px) {
-    .popup-season {
-        font-size: 15px;
-    }
-}
-
-/* ========== STATS GRID ========== */
-.popup-stats-grid {
+/* ========== STATS COMPACT GRID ========== */
+.popup-stats-compact {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-top: 8px;
+    width: 100%;
+    max-width: 500px;
 }
 
 @media (min-width: 768px) {
-    .popup-stats-grid {
+    .popup-stats-compact {
         grid-template-columns: repeat(3, 1fr);
         gap: 16px;
-        margin-top: 12px;
     }
 }
 
-.popup-stat-item {
+.popup-stat-compact {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
 }
 
-.popup-stat-label {
+@media (min-width: 768px) {
+    .popup-stat-compact {
+        padding: 12px 14px;
+    }
+}
+
+.popup-stat-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .popup-stat-icon {
+        font-size: 24px;
+    }
+}
+
+.popup-stat-data {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.popup-stat-value-big {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    line-height: 1;
+}
+
+@media (min-width: 768px) {
+    .popup-stat-value-big {
+        font-size: 18px;
+    }
+}
+
+.popup-stat-label-small {
     font-size: 10px;
     color: #888;
     text-transform: uppercase;
@@ -1262,68 +1328,145 @@ html, body {
 }
 
 @media (min-width: 768px) {
-    .popup-stat-label {
-        font-size: 12px;
+    .popup-stat-label-small {
+        font-size: 11px;
     }
 }
 
-.popup-stat-value {
-    font-size: 15px;
-    font-weight: bold;
-    color: white;
+.status-dot.finished {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #888;
+}
+
+/* ========== ACTION ROW ========== */
+.popup-action-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 500px;
+    justify-content: center;
 }
 
 @media (min-width: 768px) {
-    .popup-stat-value {
-        font-size: 18px;
+    .popup-action-row {
+        gap: 12px;
     }
 }
 
-/* ========== DETAILS GRID ========== */
-.popup-details-grid {
+.popup-action-btn {
+    flex: 1;
+    min-width: 100px;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+    .popup-action-btn {
+        padding: 13px 20px;
+        font-size: 14px;
+    }
+}
+
+.popup-action-btn.primary {
+    background: linear-gradient(150deg, #ff4d6b 0%, #c8253f 100%);
+    color: white;
+    box-shadow: 0 4px 16px rgba(200, 37, 63, 0.4);
+}
+
+    .popup-action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(200, 37, 63, 0.5);
+    }
+
+    .popup-action-btn.primary:active {
+        transform: translateY(0);
+    }
+
+.popup-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+    .popup-action-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .popup-action-btn.secondary:active {
+        transform: translateY(0);
+    }
+
+/* ========== INFO GRID ========== */
+.popup-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
     margin-bottom: 24px;
-    padding: 16px;
+    padding: 18px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 @media (min-width: 768px) {
-    .popup-details-grid {
-        gap: 14px;
+    .popup-info-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
         padding: 20px;
         margin-bottom: 32px;
     }
 }
 
-.popup-detail-item {
+.popup-info-item {
     display: flex;
-    gap: 12px;
-    font-size: 14px;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.popup-info-full-width {
+    grid-column: 1 / -1;
+}
+
+.popup-info-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
 @media (min-width: 768px) {
-    .popup-detail-item {
+    .popup-info-label {
+        font-size: 12px;
+    }
+}
+
+.popup-info-value {
+    font-size: 14px;
+    color: #dcdcdc;
+    font-weight: 500;
+}
+
+@media (min-width: 768px) {
+    .popup-info-value {
         font-size: 15px;
     }
 }
 
-.popup-detail-label {
-    color: #888;
-    font-weight: 600;
-    min-width: 70px;
-    flex-shrink: 0;
-}
-
-.popup-detail-value {
-    color: #dcdcdc;
-    flex: 1;
-}
-
-/* ========== POPUP SECTIONS ========== */
+/* ========== SECTIONS ========== */
 .popup-section {
     margin-bottom: 24px;
 }
@@ -1335,47 +1478,22 @@ html, body {
 }
 
 .popup-section-title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: bold;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     color: white;
 }
 
 @media (min-width: 768px) {
     .popup-section-title {
-        font-size: 20px;
+        font-size: 22px;
         margin-bottom: 16px;
     }
 }
 
-/* ========== GENRES LIST ========== */
-.popup-genres-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.popup-genre-tag {
-    background: rgba(233, 69, 96, 0.15);
-    border: 1px solid rgba(233, 69, 96, 0.4);
-    color: #E94560;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-@media (min-width: 768px) {
-    .popup-genre-tag {
-        padding: 7px 16px;
-        font-size: 14px;
-    }
-}
-
-/* ========== DESCRIPTION ========== */
 .popup-description {
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: 14px;
+    line-height: 1.7;
     color: #dcdcdc;
     margin: 0;
 }
@@ -1383,7 +1501,7 @@ html, body {
 @media (min-width: 768px) {
     .popup-description {
         font-size: 15px;
-        line-height: 1.7;
+        line-height: 1.8;
     }
 }
 
@@ -1490,72 +1608,34 @@ html, body {
     }
 }
 
-/* ========== ACTION BUTTONS ========== */
-.popup-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+/* Badge de preloading */
+.preload-badge {
+    background: rgba(100, 149, 237, 0.8);
+    border-radius: 12px;
+    padding: 4px 8px;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    animation: pulse-blue-badge 2s ease-in-out infinite;
 }
 
 @media (min-width: 768px) {
-    .popup-actions {
-        gap: 12px;
+    .preload-badge {
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 14px;
     }
 }
 
-.popup-action-btn {
-    flex: 1;
-    min-width: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 18px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
+@keyframes pulse-blue-badge {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
 
-@media (min-width: 768px) {
-    .popup-action-btn {
-        padding: 14px 22px;
-        font-size: 15px;
-        border-radius: 12px;
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
     }
 }
-
-.popup-action-btn.primary {
-    background: linear-gradient(150deg, #ff4d6b 0%, #c8253f 100%);
-    color: white;
-    box-shadow: 0 4px 16px rgba(200, 37, 63, 0.4);
-}
-
-    .popup-action-btn.primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(200, 37, 63, 0.5);
-    }
-
-    .popup-action-btn.primary:active {
-        transform: translateY(0);
-    }
-
-.popup-action-btn.secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-    .popup-action-btn.secondary:hover {
-        background: rgba(255, 255, 255, 0.12);
-        transform: translateY(-2px);
-    }
-
-    .popup-action-btn.secondary:active {
-        transform: translateY(0);
-    }

@@ -47,7 +47,7 @@ namespace AniScroll.Shared.Services
             System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
         }
 
-        // Nouvelle méthode : récupère des pools puis sélectionne aléatoirement
+        // Méthode optimisée : récupère des pools puis sélectionne exactement 60 animes
         public async Task<AnimeLoadResult> GetBulkAnimesAsync()
         {
             if (IsRateLimited())
@@ -62,7 +62,6 @@ namespace AniScroll.Shared.Services
 
             try
             {
-                // Une seule requête avec plusieurs catégories
                 var query = @"
                 query {
                     popular: Page(page: 1, perPage: 50) {
@@ -140,7 +139,7 @@ namespace AniScroll.Shared.Services
                 System.Diagnostics.Debug.WriteLine($"  - Ongoing: {ongoingPool.Count}");
                 System.Diagnostics.Debug.WriteLine($"  - Upcoming: {upcomingPool.Count}");
 
-                // Sélectionner aléatoirement selon les proportions
+                // Sélectionner EXACTEMENT 60 animes selon les proportions
                 var selectedAnimes = new List<AnimeCard>();
 
                 // 27 populaires (45%)
@@ -158,10 +157,12 @@ namespace AniScroll.Shared.Services
                 // 1 upcoming (2%)
                 selectedAnimes.AddRange(SelectRandomAnimes(upcomingPool, 1));
 
-                // Mélanger le résultat final pour plus de variété
+                System.Diagnostics.Debug.WriteLine($"✅ Sélection: {selectedAnimes.Count} animes (27+12+12+8+1 = 60)");
+
+                // Mélanger le résultat final
                 selectedAnimes = selectedAnimes.OrderBy(x => _random.Next()).ToList();
 
-                System.Diagnostics.Debug.WriteLine($"🎉 {selectedAnimes.Count} animes sélectionnés et mélangés");
+                System.Diagnostics.Debug.WriteLine($"🎉 {selectedAnimes.Count} animes finaux mélangés et prêts");
 
                 return new AnimeLoadResult
                 {
@@ -219,11 +220,17 @@ namespace AniScroll.Shared.Services
         private List<AnimeCard> SelectRandomAnimes(List<AnimeCard> pool, int count)
         {
             if (pool.Count == 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Pool vide, impossible de sélectionner {count} animes");
                 return new List<AnimeCard>();
+            }
 
             // Si on demande plus que disponible, retourner tout le pool
             if (count >= pool.Count)
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ Demande de {count} animes mais seulement {pool.Count} disponibles");
                 return new List<AnimeCard>(pool);
+            }
 
             // Sélection aléatoire sans doublons
             var selected = new List<AnimeCard>();
@@ -459,7 +466,7 @@ namespace AniScroll.Shared.Services
             var relationsData = media["relations"]?["edges"];
             if (relationsData != null && relationsData.HasValues)
             {
-                foreach (var edge in relationsData.Take(8)) // Limiter à 8 relations
+                foreach (var edge in relationsData.Take(8))
                 {
                     var node = edge["node"];
                     if (node == null || node["type"]?.ToString() != "ANIME") continue;
@@ -617,7 +624,7 @@ namespace AniScroll.Shared.Services
             {
                 var bulkResult = await GetBulkAnimesAsync();
                 
-                // Si on a récupéré plus que demandé, tronquer
+                // Si on a récupéré plus que demandé, tronquer (mais normalement on a exactement 60)
                 if (bulkResult.Animes.Count > count)
                 {
                     bulkResult.Animes = bulkResult.Animes.Take(count).ToList();

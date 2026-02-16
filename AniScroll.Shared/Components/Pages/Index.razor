@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v1.5.0</div>
+    <div class="build-version">v2.0.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -107,8 +107,8 @@
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
-                    <p class="loading-title">🔍 Searching...</p>
-                    <p class="loading-subtitle">Exploring new anime on AniList</p>
+                    <p class="loading-title">🔍 Loading...</p>
+                    <p class="loading-subtitle">Fetching 60 awesome animes</p>
                 </div>
             </div>
         }
@@ -127,6 +127,10 @@
 
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
+        @if (isPreloading)
+        {
+            <div class="preload-badge">🔄 Preloading...</div>
+        }
         @if (isRateLimited)
         {
             <div class="rate-limit-badge">🚫 Rate Limited</div>
@@ -147,6 +151,7 @@
     private List<AnimeCard> animes = new List<AnimeCard>();
     private HashSet<int> expandedAnimes = new HashSet<int>();
     private bool isLoading = false;
+    private bool isPreloading = false;
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
     private int currentIndex = 0;
@@ -167,6 +172,10 @@
     private const int THROTTLE_MS = 8;
     private System.Threading.Timer? rateLimitTimer;
 
+    // Preloading
+    private const int PRELOAD_THRESHOLD = 40; // Commence le preload après avoir vu 40 animes
+    private bool hasPreloaded = false;
+
     // Popup state
     private bool showDetailPopup = false;
     private AnimeCard? selectedAnime = null;
@@ -177,17 +186,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Charger 60 animes en une fois
-        var result = await AniListService.GetBulkAnimesAsync();
-        animes.AddRange(result.Animes);
-        
-        if (result.IsRateLimited)
-        {
-            isRateLimited = true;
-            StartRateLimitCountdown();
-        }
-        
-        StateHasChanged();
+        // Charger les 60 premiers animes
+        await LoadAnimes(60);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -215,9 +215,35 @@
                     expandedAnimes.Remove(previousAnime.Id);
                 }
             }
+
+            // PRELOADING INTELLIGENT : Si on a vu 40 animes et qu'on n'a pas encore preloadé
+            if (currentIndex >= PRELOAD_THRESHOLD && !hasPreloaded && !isPreloading)
+            {
+                System.Diagnostics.Debug.WriteLine($"🔄 Seuil de preload atteint ({currentIndex} >= {PRELOAD_THRESHOLD})");
+                _ = PreloadNextBatch();
+            }
         }
 
         previousIndex = currentIndex;
+    }
+
+    private async Task PreloadNextBatch()
+    {
+        if (isPreloading || hasPreloaded)
+            return;
+
+        isPreloading = true;
+        hasPreloaded = true;
+        StateHasChanged();
+
+        System.Diagnostics.Debug.WriteLine("🔄 Début du preloading des 60 prochains animes...");
+
+        await LoadAnimes(60);
+
+        isPreloading = false;
+        StateHasChanged();
+
+        System.Diagnostics.Debug.WriteLine("✅ Preloading terminé !");
     }
 
     private async Task LoadAnimes(int count)
@@ -246,6 +272,8 @@
         }
 
         animes.AddRange(result.Animes);
+
+        System.Diagnostics.Debug.WriteLine($"✅ Chargé {result.Animes.Count} animes. Total: {animes.Count}");
 
         for (int i = startIndex; i < animes.Count; i++)
         {
@@ -413,7 +441,7 @@
                 {
                     if (!AniListService.IsRateLimited())
                     {
-                        await LoadAnimes(5);
+                        await LoadAnimes(60);
                         if (animes.Count > currentIndex + 1)
                         {
                             currentIndex++;
@@ -558,7 +586,7 @@
                 {
                     if (!AniListService.IsRateLimited())
                     {
-                        await LoadAnimes(5);
+                        await LoadAnimes(60);
                         if (animes.Count > currentIndex + 1)
                         {
                             currentIndex++;
@@ -634,7 +662,6 @@
         return description.Substring(0, cutPosition).TrimEnd() + "...";
     }
 
-    // Popup handlers
     private void HandleImageClick(AnimeCard anime)
     {
         if (!hasMoved && !isDraggingCard)
@@ -665,7 +692,6 @@
         StateHasChanged();
     }
 
-    // Navigation Bar Event Handlers
     private void HandleSearchToggled()
     {
         System.Diagnostics.Debug.WriteLine("🔍 Search toggled");
