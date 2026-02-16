@@ -127,6 +127,23 @@ namespace AniScroll.Shared.Services
                             nextAiringEpisode {{ 
                                 episode 
                             }}
+                            relations {{
+                                edges {{
+                                    relationType
+                                    node {{
+                                        id
+                                        title {{
+                                            romaji
+                                            english
+                                        }}
+                                        coverImage {{
+                                            large
+                                        }}
+                                        format
+                                        type
+                                    }}
+                                }}
+                            }}
                         }}
                     }}
                 }}";
@@ -319,6 +336,42 @@ namespace AniScroll.Shared.Services
                 }
             }
 
+            // Relations
+            var relations = new List<AnimeCard.AnimeRelation>();
+            var relationsEdges = media["relations"]?["edges"];
+            if (relationsEdges != null && relationsEdges.HasValues)
+            {
+                foreach (var edge in relationsEdges.Take(10))
+                {
+                    var node = edge["node"];
+                    var nodeType = node?["type"]?.ToString();
+
+                    // Ne garder que les animes (pas les mangas)
+                    if (nodeType == "ANIME")
+                    {
+                        var relationType = edge["relationType"]?.ToString() ?? "";
+                        var relationTitle = node?["title"]?["english"]?.ToString()
+                            ?? node?["title"]?["romaji"]?.ToString()
+                            ?? "";
+                        var relationImage = node?["coverImage"]?["large"]?.ToString() ?? "";
+                        var relationFormat = node?["format"]?.ToString() ?? "";
+                        var relationId = node?["id"]?.Value<int>() ?? 0;
+
+                        if (!string.IsNullOrEmpty(relationTitle))
+                        {
+                            relations.Add(new AnimeCard.AnimeRelation
+                            {
+                                Id = relationId,
+                                Title = relationTitle,
+                                ImageUrl = relationImage,
+                                RelationType = FormatRelationType(relationType),
+                                Format = relationFormat
+                            });
+                        }
+                    }
+                }
+            }
+
             return new AnimeCard
             {
                 Id = media["id"]?.Value<int>() ?? 0,
@@ -346,7 +399,25 @@ namespace AniScroll.Shared.Services
                 Tags = tags,
                 Hashtag = hashtag,
                 TrailerUrl = trailerUrl,
-                AverageScore = averageScore
+                AverageScore = averageScore,
+                Relations = relations
+            };
+        }
+
+        private string FormatRelationType(string relationType)
+        {
+            return relationType switch
+            {
+                "SEQUEL" => "Sequel",
+                "PREQUEL" => "Prequel",
+                "ALTERNATIVE" => "Alternative",
+                "SIDE_STORY" => "Side Story",
+                "PARENT" => "Parent Story",
+                "SUMMARY" => "Summary",
+                "ADAPTATION" => "Adaptation",
+                "SPIN_OFF" => "Spin-off",
+                "OTHER" => "Related",
+                _ => relationType
             };
         }
 
