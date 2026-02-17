@@ -161,7 +161,7 @@
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
     private bool isDraggingCard = false;
     private double dragStartY = 0;
-    private double dragStartX = 0;  // Track X axis for strict click detection
+    private double dragStartX = 0;
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
     private bool isTouchingDescription = false;
@@ -181,9 +181,12 @@
     private bool showDetailPopup = false;
     private AnimeCard? selectedAnime = null;
 
-    // Click detection — strict: no movement at all allowed
+    // ─── Click detection ────────────────────────────────────────────────────────
+    // hasMoved is set true as soon as the pointer moves beyond clickThreshold.
+    // It is reset ONLY at the start of MouseDown / TouchStart so that the value
+    // is still valid when the @onclick event fires (which is AFTER MouseUp).
     private bool hasMoved = false;
-    private const double clickThreshold = 5; // pixels, strict
+    private const double clickThreshold = 5; // pixels
 
     protected override async Task OnInitializedAsync()
     {
@@ -336,6 +339,7 @@
         dragStartX = e.ClientX;
         currentDragOffset = 0;
         isTransitioning = false;
+        // ✅ Reset here — before the gesture begins
         hasMoved = false;
     }
 
@@ -343,7 +347,6 @@
     {
         if (!isDraggingCard) return;
 
-        // Track both axes for strict click detection
         double deltaX = Math.Abs(e.ClientX - dragStartX);
         double deltaY = Math.Abs(e.ClientY - dragStartY);
         if (deltaX > clickThreshold || deltaY > clickThreshold)
@@ -384,11 +387,14 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
-        hasMoved = false;
+        // ✅ Do NOT reset hasMoved here — @onclick fires after MouseUp
+        //    and still needs the correct hasMoved value.
         StateHasChanged();
 
         await Task.Delay(250);
         isTransitioning = false;
+        // Safe to reset now — all click handlers have already fired
+        hasMoved = false;
     }
 
     private async Task HandleCardTouchStart(TouchEventArgs e, int index)
@@ -416,6 +422,7 @@
             dragStartX = touch.ClientX;
             currentDragOffset = 0;
             isTransitioning = false;
+            // ✅ Reset here — before the gesture begins
             hasMoved = false;
         }
     }
@@ -505,11 +512,13 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
-        hasMoved = false;
+        // ✅ Do NOT reset hasMoved here — tap handlers fire after TouchEnd
         StateHasChanged();
 
         await Task.Delay(250);
         isTransitioning = false;
+        // Safe to reset after all handlers have fired
+        hasMoved = false;
     }
 
     private double GetCardTransform(int index)
@@ -542,7 +551,7 @@
 
     private void HandleImageClick(AnimeCard anime)
     {
-        // Only open popup if user didn't move at all
+        // Only open popup if the pointer did not move during the interaction
         if (!hasMoved && !isDraggingCard)
             ShowAnimeDetails(anime);
     }

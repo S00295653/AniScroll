@@ -8,11 +8,6 @@ namespace AniScroll.Maui
         {
             InitializeComponent();
 
-            // Intercept all URL navigation in the BlazorWebView.
-            // External URLs (anything that isn't our local app) get opened
-            // in the system browser instead of inside the WebView.
-            // This prevents third-party JS (Crunchyroll, YouTube, etc.)
-            // from executing in the sandboxed WebView environment and crashing.
             blazorWebView.UrlLoading += OnUrlLoading;
         }
 
@@ -20,8 +15,11 @@ namespace AniScroll.Maui
         {
             var uri = e.Url;
 
-            // Allow internal Blazor app navigation (localhost / app scheme)
+            // Sur Windows, MAUI BlazorWebView utilise 0.0.0.1 (pas 0.0.0.0) comme hôte interne.
+            // Sans ce filtre, toutes les pages internes sont ouvertes dans le navigateur externe
+            // → fenêtre noire + onglet navigateur qui s'ouvre.
             if (uri.Host == "0.0.0.0" ||
+                uri.Host == "0.0.0.1" ||       // ← CORRECTION : hôte réel sur Windows
                 uri.Host == "localhost" ||
                 uri.Scheme == "app" ||
                 uri.Scheme == "about" ||
@@ -31,8 +29,7 @@ namespace AniScroll.Maui
                 return;
             }
 
-            // All external URLs → open in the system browser (Safari, Chrome, etc.)
-            // and cancel WebView navigation entirely
+            // Tous les liens externes → navigateur système
             e.UrlLoadingStrategy = UrlLoadingStrategy.OpenExternally;
         }
     }
