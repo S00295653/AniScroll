@@ -6,7 +6,7 @@
     <div class="anime-detail-overlay" @onclick="OnOverlayClick">
         <div class="anime-detail-modal"
              @onclick:stopPropagation="true"
-             style="transform: translateY(@(pullOffset)px); transition: @(isPulling ? "none" : "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)");">
+             style="transform: translateY(@(pullOffset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px); transition: @(isPulling ? "none" : "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <button class="modal-close-btn" @onclick="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -15,12 +15,6 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
             </button>
-
-            @* Pull-to-close indicator *@
-            <div class="pull-indicator" style="opacity: @(Math.Min(pullOffset / 80.0, 1).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));">
-                <div class="pull-handle"></div>
-                <span class="pull-label">Release to close</span>
-            </div>
 
             <div class="modal-scroll-container"
                  @ref="scrollContainerRef"
@@ -129,7 +123,7 @@
                                 <div class="info-col">
                                     <div class="info-field">
                                         <span class="info-lbl">Score</span>
-                                        <span class="info-val score-val">@CurrentAnime.Score</span>
+                                        <span class="info-val">@CurrentAnime.Score</span>
                                     </div>
                                     @if (CurrentAnime.Favourites.HasValue)
                                     {
@@ -393,13 +387,16 @@
     private bool isFavorited = false;
     private int? _lastAnimeId = null;
 
-    // ─── Pull-to-close state ────────────────────────────────────────────────────
+    // ─── Swipe-UP-to-close state ────────────────────────────────────────────────
+    // When the user is already at the top of the scroll and swipes upward
+    // (finger moves UP = deltaY negative), we translate the modal upward.
+    // No visual indicator is shown — the modal itself moves.
     private ElementReference scrollContainerRef;
-    private double pullOffset = 0;
+    private double pullOffset = 0;      // negative = modal moves up
     private double pullStartY = 0;
     private bool isPulling = false;
     private bool isPullTrackingActive = false;
-    private const double PULL_CLOSE_THRESHOLD = 110; // px to drag before releasing closes
+    private const double PULL_CLOSE_THRESHOLD = 80; // px upward movement to trigger close
 
     protected override void OnParametersSet()
     {
@@ -407,17 +404,19 @@
         {
             isFavorited = false;
             pullOffset = 0;
+            isPulling = false;
+            isPullTrackingActive = false;
             _lastAnimeId = CurrentAnime?.Id;
         }
     }
 
-    // ─── Pull-to-close touch handlers ──────────────────────────────────────────
+    // ─── Touch handlers ──────────────────────────────────────────────────────────
 
     private async Task HandleModalTouchStart(TouchEventArgs e)
     {
         if (e.Touches.Length == 0) return;
 
-        // Only start tracking if the scroll container is at the very top
+        // Only activate if scroll is already at the very top
         bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
         if (!atTop) return;
 
@@ -431,10 +430,10 @@
     {
         if (!isPullTrackingActive || e.Touches.Length == 0) return;
 
-        double delta = e.Touches[0].ClientY - pullStartY;
+        double delta = e.Touches[0].ClientY - pullStartY; // negative = finger moved up
 
-        // Only drag downward
-        if (delta <= 0)
+        // Only track upward movement (delta < 0)
+        if (delta >= 0)
         {
             isPulling = false;
             pullOffset = 0;
@@ -442,8 +441,8 @@
         }
 
         isPulling = true;
-        // Apply rubber-band resistance: feels heavy as you pull further
-        pullOffset = Math.Sqrt(delta) * 7;
+        // Rubber-band: modal moves up but with resistance
+        pullOffset = -Math.Sqrt(-delta) * 6; // negative = translateY upward
         StateHasChanged();
     }
 
@@ -454,24 +453,25 @@
         isPullTrackingActive = false;
         isPulling = false;
 
-        if (pullOffset >= PULL_CLOSE_THRESHOLD)
+        // pullOffset is negative; check absolute value against threshold
+        if (Math.Abs(pullOffset) >= PULL_CLOSE_THRESHOLD)
         {
-            // Animate off screen then close
-            pullOffset = 800;
+            // Fly off screen upward then close
+            pullOffset = -900;
             StateHasChanged();
-            await Task.Delay(280);
+            await Task.Delay(260);
             pullOffset = 0;
             await OnClose.InvokeAsync();
         }
         else
         {
-            // Snap back
+            // Snap back to center
             pullOffset = 0;
             StateHasChanged();
         }
     }
 
-    // ─── Other handlers ─────────────────────────────────────────────────────────
+    // ─── Helpers ─────────────────────────────────────────────────────────────────
 
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();

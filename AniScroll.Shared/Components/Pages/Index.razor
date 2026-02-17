@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v2.2.0</div>
+    <div class="build-version">v2.3.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -15,7 +15,8 @@
             var index = i;
             var anime = animes[i];
             var isVisible = index == currentIndex;
-            var layoutMode = GetLayoutMode(anime.Id, anime.Description);
+            var distance = Math.Abs(index - currentIndex);
+            var layoutMode = distance <= RENDER_WINDOW ? GetLayoutMode(anime.Id, anime.Description) : "normal";
 
             <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
                  style="transform: translateY(@GetCardTransform(index)px); height: @(CARD_HEIGHT)px;"
@@ -27,78 +28,86 @@
                  @ontouchmove="HandleCardTouchMove"
                  @ontouchend="HandleCardTouchEnd">
 
-                <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
-                <div class="gradient-overlay"></div>
+                @* ── Virtual rendering: only render content for nearby cards ─────────── *@
+                @* Cards further than RENDER_WINDOW are kept as invisible placeholders,   *@
+                @* which avoids DOM bloat while preserving correct scroll positions.      *@
+                @if (distance <= RENDER_WINDOW)
+                {
+                    <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
+                    <div class="gradient-overlay"></div>
 
-                <div class="content-wrapper layout-@layoutMode">
-                    <div class="image-section">
-                        <div class="anime-image"
-                             style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"
-                             @onclick="() => HandleImageClick(anime)"></div>
-                    </div>
-
-                    <div class="info-section">
-                        <h1 class="title @GetTitleClass(anime.Title)"
-                            @onclick="() => HandleTitleClick(anime)">
-                            @anime.Title
-                        </h1>
-
-                        @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
-                        {
-                            <div class="season-info">
-                                @if (anime.Status == "RELEASING")
-                                {
-                                    <span class="status-dot releasing"></span>
-                                }
-                                else if (anime.Status == "NOT_YET_RELEASED")
-                                {
-                                    <span class="status-dot upcoming"></span>
-                                }
-                                <span>@anime.Season @anime.Year</span>
-                            </div>
-                        }
-
-                        @if (anime.Genres?.Any() == true)
-                        {
-                            <p class="genres">@string.Join(" • ", anime.Genres)</p>
-                        }
-
-                        <div class="stats">
-                            <div class="badge badge-score">★ @anime.Score</div>
-                            <div class="badge badge-episodes">@anime.Episodes EP</div>
+                    <div class="content-wrapper layout-@layoutMode">
+                        <div class="image-section">
+                            <div class="anime-image"
+                                 style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"
+                                 @onclick="() => HandleImageClick(anime)"></div>
                         </div>
 
-                        @if (!string.IsNullOrEmpty(anime.Description))
-                        {
-                            <div class="description-container">
-                                @if (!IsExpanded(anime.Id))
-                                {
-                                    <p class="description-preview">@GetSafePreviewDescription(anime.Description)</p>
-                                    @if (NeedsExpansion(anime.Description))
+                        <div class="info-section">
+                            <h1 class="title @GetTitleClass(anime.Title)"
+                                @onclick="() => HandleTitleClick(anime)">
+                                @anime.Title
+                            </h1>
+
+                            @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
+                            {
+                                <div class="season-info">
+                                    @if (anime.Status == "RELEASING")
                                     {
-                                        <button class="expand-btn" @onclick="() => ToggleExpand(anime.Id)">
-                                            Read More
+                                        <span class="status-dot releasing"></span>
+                                    }
+                                    else if (anime.Status == "NOT_YET_RELEASED")
+                                    {
+                                        <span class="status-dot upcoming"></span>
+                                    }
+                                    <span>@anime.Season @anime.Year</span>
+                                </div>
+                            }
+
+                            @if (anime.Genres?.Any() == true)
+                            {
+                                <p class="genres">@string.Join(" • ", anime.Genres)</p>
+                            }
+
+                            <div class="stats">
+                                <div class="badge badge-score">★ @anime.Score</div>
+                                <div class="badge badge-episodes">@anime.Episodes EP</div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(anime.Description))
+                            {
+                                <div class="description-container">
+                                    @if (!IsExpanded(anime.Id))
+                                    {
+                                        <p class="description-preview">@GetSafePreviewDescription(anime.Description)</p>
+                                        @if (NeedsExpansion(anime.Description))
+                                        {
+                                            <button class="expand-btn" @onclick="() => ToggleExpand(anime.Id)">
+                                                Read More
+                                            </button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="description-scroll-wrapper description-scroll-zone"
+                                             style="@GetDescriptionWrapperStyle(anime.Description)"
+                                             @ref="descScrollRef"
+                                             data-anime-id="@anime.Id">
+                                            <div class="description-full">
+                                                <p>@anime.Description</p>
+                                            </div>
+                                        </div>
+                                        <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
+                                            See Less
                                         </button>
                                     }
-                                }
-                                else
-                                {
-                                    <div class="description-scroll-wrapper description-scroll-zone"
-                                         style="@GetDescriptionWrapperStyle(anime.Description)"
-                                         @ref="descScrollRef"
-                                         data-anime-id="@anime.Id">
-                                        <div class="description-full">
-                                            <p>@anime.Description</p>
-                                        </div>
-                                    </div>
-                                    <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
-                                        See Less
-                                    </button>
-                                }
-                            </div>
-                        }
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
+                }
+                @* else: empty placeholder div — CSS gives it correct height via inline style above *@
+
             </div>
         }
 
@@ -126,7 +135,7 @@
     </div>
 
     <div class="overlay-controls">
-        <div class="counter">@animes.Count animes</div>
+        <div class="counter">@currentIndex / @animes.Count</div>
         @if (isPreloading)
         {
             <div class="preload-badge">Loading more...</div>
@@ -137,7 +146,6 @@
         }
     </div>
 
-    @* Hide the nav bar when the detail popup is open *@
     @if (!showDetailPopup)
     {
         <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
@@ -152,17 +160,34 @@
 </div>
 
 @code {
-    private List<AnimeCard> animes = new List<AnimeCard>();
-    private HashSet<int> expandedAnimes = new HashSet<int>();
+    // ─── Data ───────────────────────────────────────────────────────────────────
+    // animes list grows indefinitely — we NEVER remove items so back-navigation works.
+    // DOM is kept lean by RENDER_WINDOW: only ±5 cards around currentIndex are rendered.
+    private List<AnimeCard> animes = new();
+    private HashSet<int> expandedAnimes = new();
+
+    // ─── Virtualization ─────────────────────────────────────────────────────────
+    // Cards outside this window from currentIndex render as empty placeholder divs.
+    // The card's height + transform are still applied via inline style, so positions
+    // stay correct. Content (images, text) is simply not in the DOM.
+    private const int RENDER_WINDOW = 5;
+
+    // ─── Loading ─────────────────────────────────────────────────────────────────
     private bool isLoading = false;
     private bool isInitialLoadComplete = false;
     private bool isPreloading = false;
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
+    private const int PRELOAD_THRESHOLD = 40;
+    private System.Threading.Timer? rateLimitTimer;
+
+    // ─── Navigation ──────────────────────────────────────────────────────────────
     private int currentIndex = 0;
     private int previousIndex = -1;
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
+
+    // ─── Drag state ──────────────────────────────────────────────────────────────
     private bool isDraggingCard = false;
     private double dragStartY = 0;
     private double dragStartX = 0;
@@ -171,26 +196,23 @@
     private bool isTouchingDescription = false;
     private bool descriptionScrolledToBottom = false;
     private bool isScrollingInDescription = false;
+
+    // ─── Misc ────────────────────────────────────────────────────────────────────
     private ElementReference descScrollRef;
     private ElementReference appContainer;
-    private HashSet<int> newlyCreatedCards = new HashSet<int>();
+    private HashSet<int> newlyCreatedCards = new();
     private DateTime lastRenderTime = DateTime.Now;
     private const int THROTTLE_MS = 8;
-    private System.Threading.Timer? rateLimitTimer;
+    private bool hasMoved = false;
+    private const double clickThreshold = 5;
 
-    // ─── Background loading ─────────────────────────────────────────────────────
-    // Trigger whenever the user is within PRELOAD_THRESHOLD cards of the end.
-    // No boolean "hasPreloaded" flag — isPreloading alone prevents concurrent
-    // loads, and the condition resets naturally each time new animes are appended.
-    private const int PRELOAD_THRESHOLD = 40;
-
-    // Popup
+    // ─── Popup ───────────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
     private AnimeCard? selectedAnime = null;
 
-    // Click detection
-    private bool hasMoved = false;
-    private const double clickThreshold = 5;
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  LIFECYCLE
+    // ═══════════════════════════════════════════════════════════════════════════
 
     protected override async Task OnInitializedAsync()
     {
@@ -209,7 +231,7 @@
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error getting viewport height: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Viewport height error: {ex.Message}");
             }
         }
 
@@ -218,13 +240,12 @@
             // Collapse description of the card we just left
             if (previousIndex < animes.Count)
             {
-                var previousAnime = animes[previousIndex];
-                if (expandedAnimes.Contains(previousAnime.Id))
-                    expandedAnimes.Remove(previousAnime.Id);
+                var prev = animes[previousIndex];
+                if (expandedAnimes.Contains(prev.Id))
+                    expandedAnimes.Remove(prev.Id);
             }
 
-            // ✅ Trigger background load whenever within PRELOAD_THRESHOLD of the end.
-            // Works for every batch, not just the first — no hasPreloaded flag needed.
+            // Background load when approaching the end
             if (animes.Count > 0 &&
                 currentIndex >= animes.Count - PRELOAD_THRESHOLD &&
                 !isPreloading &&
@@ -236,6 +257,10 @@
 
         previousIndex = currentIndex;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  DATA LOADING
+    // ═══════════════════════════════════════════════════════════════════════════
 
     private async Task PreloadNextBatch()
     {
@@ -295,20 +320,23 @@
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════════════════════════════════════
+
     private string GetLayoutMode(int animeId, string description)
     {
         if (!IsExpanded(animeId)) return "normal";
-        int descLength = description?.Length ?? 0;
-        if (descLength < 300) return "short";
-        if (descLength < 800) return "medium";
+        int len = description?.Length ?? 0;
+        if (len < 300) return "short";
+        if (len < 800) return "medium";
         return "long";
     }
 
     private string GetImageStyle(int animeId, string description)
     {
         if (!IsExpanded(animeId)) return "";
-        string layoutMode = GetLayoutMode(animeId, description);
-        return layoutMode switch
+        return GetLayoutMode(animeId, description) switch
         {
             "short" => "width: 280px; height: 420px;",
             "medium" => "width: 200px; height: 300px;",
@@ -320,17 +348,17 @@
     private string GetDescriptionWrapperStyle(string description)
     {
         if (string.IsNullOrEmpty(description)) return "max-height: 200px;";
-        int descLength = description.Length;
-        if (descLength < 300) return "max-height: min(200px, 50vh); overflow-y: auto;";
-        else if (descLength < 800) return "max-height: min(350px, 50vh); overflow-y: auto;";
-        else return "max-height: min(450px, 50vh); overflow-y: auto;";
+        int len = description.Length;
+        if (len < 300) return "max-height: min(200px, 50vh); overflow-y: auto;";
+        if (len < 800) return "max-height: min(350px, 50vh); overflow-y: auto;";
+        return "max-height: min(450px, 50vh); overflow-y: auto;";
     }
 
     private string GetTitleClass(string title)
     {
         if (string.IsNullOrEmpty(title)) return "";
         if (title.Length > 50) return "title-very-long";
-        else if (title.Length > 30) return "title-long";
+        if (title.Length > 30) return "title-long";
         return "";
     }
 
@@ -340,188 +368,6 @@
         if (isDraggingCard) return "no-transition";
         if (isTransitioning) return "with-transition";
         return "no-transition";
-    }
-
-    private void HandleCardMouseDown(MouseEventArgs e, int index)
-    {
-        if (index != currentIndex) return;
-        isDraggingCard = true;
-        dragStartY = e.ClientY;
-        dragStartX = e.ClientX;
-        currentDragOffset = 0;
-        isTransitioning = false;
-        hasMoved = false;
-    }
-
-    private void HandleCardMouseMove(MouseEventArgs e)
-    {
-        if (!isDraggingCard) return;
-
-        double deltaX = Math.Abs(e.ClientX - dragStartX);
-        double deltaY = Math.Abs(e.ClientY - dragStartY);
-        if (deltaX > clickThreshold || deltaY > clickThreshold)
-            hasMoved = true;
-
-        var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
-        lastRenderTime = now;
-
-        currentDragOffset = e.ClientY - dragStartY;
-        StateHasChanged();
-    }
-
-    private async Task HandleCardMouseUp(MouseEventArgs e)
-    {
-        if (!isDraggingCard) return;
-        isDraggingCard = false;
-
-        double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
-        bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
-
-        if (swipeValidated)
-        {
-            if (currentDragOffset < 0)
-            {
-                if (currentIndex < animes.Count - 1) currentIndex++;
-                else if (!AniListService.IsRateLimited())
-                {
-                    await LoadAnimes(60, isBackgroundLoad: false);
-                    if (animes.Count > currentIndex + 1) currentIndex++;
-                }
-            }
-            else if (currentDragOffset > 0)
-            {
-                if (currentIndex > 0) currentIndex--;
-            }
-        }
-
-        isTransitioning = true;
-        currentDragOffset = 0;
-        StateHasChanged();
-
-        await Task.Delay(250);
-        isTransitioning = false;
-        hasMoved = false;
-    }
-
-    private async Task HandleCardTouchStart(TouchEventArgs e, int index)
-    {
-        if (index != currentIndex) return;
-        if (e.Touches.Length > 0)
-        {
-            var touch = e.Touches[0];
-            isTouchingDescription = await JS.InvokeAsync<bool>("isTouchingDescriptionZone", touch.ClientX, touch.ClientY);
-
-            if (isTouchingDescription)
-            {
-                var currentAnime = animes[currentIndex];
-                if (IsExpanded(currentAnime.Id))
-                {
-                    isScrollingInDescription = true;
-                    descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
-                }
-                return;
-            }
-
-            isDraggingCard = true;
-            dragStartY = touch.ClientY;
-            dragStartX = touch.ClientX;
-            currentDragOffset = 0;
-            isTransitioning = false;
-            hasMoved = false;
-        }
-    }
-
-    private async Task HandleCardTouchMove(TouchEventArgs e)
-    {
-        if (e.Touches.Length > 0)
-        {
-            var touch = e.Touches[0];
-
-            double deltaX = Math.Abs(touch.ClientX - dragStartX);
-            double deltaY = Math.Abs(touch.ClientY - dragStartY);
-            if (deltaX > clickThreshold || deltaY > clickThreshold)
-                hasMoved = true;
-
-            if (isScrollingInDescription)
-            {
-                var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
-                descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
-                double deltaYDir = touch.ClientY - dragStartY;
-
-                if (isAtTop && deltaYDir > 0)
-                {
-                    if (!isDraggingCard)
-                    {
-                        isDraggingCard = true;
-                        dragStartY = touch.ClientY;
-                        dragStartX = touch.ClientX;
-                        currentDragOffset = 0;
-                    }
-                }
-                else if (descriptionScrolledToBottom && deltaYDir < 0)
-                {
-                    if (!isDraggingCard)
-                    {
-                        isDraggingCard = true;
-                        dragStartY = touch.ClientY;
-                        dragStartX = touch.ClientX;
-                        currentDragOffset = 0;
-                    }
-                }
-                else return;
-            }
-        }
-
-        if (!isDraggingCard) return;
-
-        var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
-        lastRenderTime = now;
-
-        if (e.Touches.Length > 0)
-        {
-            currentDragOffset = e.Touches[0].ClientY - dragStartY;
-            StateHasChanged();
-        }
-    }
-
-    private async Task HandleCardTouchEnd(TouchEventArgs e)
-    {
-        isScrollingInDescription = false;
-        isTouchingDescription = false;
-        descriptionScrolledToBottom = false;
-
-        if (!isDraggingCard) return;
-        isDraggingCard = false;
-
-        double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
-        bool swipeValidated = Math.Abs(currentDragOffset) >= swipeThreshold;
-
-        if (swipeValidated)
-        {
-            if (currentDragOffset < 0)
-            {
-                if (currentIndex < animes.Count - 1) currentIndex++;
-                else if (!AniListService.IsRateLimited())
-                {
-                    await LoadAnimes(60, isBackgroundLoad: false);
-                    if (animes.Count > currentIndex + 1) currentIndex++;
-                }
-            }
-            else if (currentDragOffset > 0)
-            {
-                if (currentIndex > 0) currentIndex--;
-            }
-        }
-
-        isTransitioning = true;
-        currentDragOffset = 0;
-        StateHasChanged();
-
-        await Task.Delay(250);
-        isTransitioning = false;
-        hasMoved = false;
     }
 
     private double GetCardTransform(int index)
@@ -547,21 +393,167 @@
         if (string.IsNullOrEmpty(description)) return "";
         int maxChars = 110;
         if (description.Length <= maxChars) return description;
-        int cutPosition = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
-        if (cutPosition == -1 || cutPosition < 50) cutPosition = maxChars;
-        return description.Substring(0, cutPosition).TrimEnd() + "...";
+        int cut = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
+        if (cut == -1 || cut < 50) cut = maxChars;
+        return description.Substring(0, cut).TrimEnd() + "...";
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  MOUSE INPUT
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private void HandleCardMouseDown(MouseEventArgs e, int index)
+    {
+        if (index != currentIndex) return;
+        isDraggingCard = true;
+        dragStartY = e.ClientY;
+        dragStartX = e.ClientX;
+        currentDragOffset = 0;
+        isTransitioning = false;
+        hasMoved = false;
+    }
+
+    private void HandleCardMouseMove(MouseEventArgs e)
+    {
+        if (!isDraggingCard) return;
+
+        if (Math.Abs(e.ClientX - dragStartX) > clickThreshold ||
+            Math.Abs(e.ClientY - dragStartY) > clickThreshold)
+            hasMoved = true;
+
+        var now = DateTime.Now;
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
+        lastRenderTime = now;
+
+        currentDragOffset = e.ClientY - dragStartY;
+        StateHasChanged();
+    }
+
+    private async Task HandleCardMouseUp(MouseEventArgs e)
+    {
+        if (!isDraggingCard) return;
+        isDraggingCard = false;
+        await FinishSwipe();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  TOUCH INPUT
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async Task HandleCardTouchStart(TouchEventArgs e, int index)
+    {
+        if (index != currentIndex || e.Touches.Length == 0) return;
+
+        var touch = e.Touches[0];
+        isTouchingDescription = await JS.InvokeAsync<bool>("isTouchingDescriptionZone", touch.ClientX, touch.ClientY);
+
+        if (isTouchingDescription && IsExpanded(animes[currentIndex].Id))
+        {
+            isScrollingInDescription = true;
+            descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
+            return;
+        }
+
+        isDraggingCard = true;
+        dragStartY = touch.ClientY;
+        dragStartX = touch.ClientX;
+        currentDragOffset = 0;
+        isTransitioning = false;
+        hasMoved = false;
+    }
+
+    private async Task HandleCardTouchMove(TouchEventArgs e)
+    {
+        if (e.Touches.Length == 0) return;
+
+        var touch = e.Touches[0];
+        if (Math.Abs(touch.ClientX - dragStartX) > clickThreshold ||
+            Math.Abs(touch.ClientY - dragStartY) > clickThreshold)
+            hasMoved = true;
+
+        if (isScrollingInDescription)
+        {
+            bool atTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
+            descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
+            double dy = touch.ClientY - dragStartY;
+
+            bool shouldDrag = (atTop && dy > 0) || (descriptionScrolledToBottom && dy < 0);
+            if (!shouldDrag) return;
+
+            if (!isDraggingCard)
+            {
+                isDraggingCard = true;
+                dragStartY = touch.ClientY;
+                dragStartX = touch.ClientX;
+                currentDragOffset = 0;
+            }
+        }
+
+        if (!isDraggingCard) return;
+
+        var now = DateTime.Now;
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
+        lastRenderTime = now;
+
+        currentDragOffset = touch.ClientY - dragStartY;
+        StateHasChanged();
+    }
+
+    private async Task HandleCardTouchEnd(TouchEventArgs e)
+    {
+        isScrollingInDescription = false;
+        isTouchingDescription = false;
+        descriptionScrolledToBottom = false;
+
+        if (!isDraggingCard) return;
+        isDraggingCard = false;
+        await FinishSwipe();
+    }
+
+    // ─── Shared swipe completion ─────────────────────────────────────────────
+    private async Task FinishSwipe()
+    {
+        double threshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
+
+        if (Math.Abs(currentDragOffset) >= threshold)
+        {
+            if (currentDragOffset < 0)
+            {
+                if (currentIndex < animes.Count - 1)
+                    currentIndex++;
+                else if (!AniListService.IsRateLimited())
+                {
+                    await LoadAnimes(60, isBackgroundLoad: false);
+                    if (animes.Count > currentIndex + 1) currentIndex++;
+                }
+            }
+            else if (currentDragOffset > 0 && currentIndex > 0)
+            {
+                currentIndex--;
+            }
+        }
+
+        isTransitioning = true;
+        currentDragOffset = 0;
+        StateHasChanged();
+
+        await Task.Delay(250);
+        isTransitioning = false;
+        hasMoved = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  POPUP
+    // ═══════════════════════════════════════════════════════════════════════════
 
     private void HandleImageClick(AnimeCard anime)
     {
-        if (!hasMoved && !isDraggingCard)
-            ShowAnimeDetails(anime);
+        if (!hasMoved && !isDraggingCard) ShowAnimeDetails(anime);
     }
 
     private void HandleTitleClick(AnimeCard anime)
     {
-        if (!hasMoved && !isDraggingCard)
-            ShowAnimeDetails(anime);
+        if (!hasMoved && !isDraggingCard) ShowAnimeDetails(anime);
     }
 
     private void ShowAnimeDetails(AnimeCard anime)
@@ -577,6 +569,10 @@
         selectedAnime = null;
         StateHasChanged();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  NAV BAR STUBS
+    // ═══════════════════════════════════════════════════════════════════════════
 
     private void HandleSearchToggled() { }
     private void HandleListsClicked() { }

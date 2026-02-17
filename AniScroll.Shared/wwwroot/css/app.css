@@ -473,7 +473,6 @@ html, body {
 .description-scroll-wrapper {
     overflow-y: auto;
     overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
     cursor: grab;
     flex: 1 1 auto;
     min-height: 0;
@@ -547,21 +546,18 @@ html, body {
 }
 
 @media (min-width: 768px) {
-    .expand-btn,
-    .collapse-btn {
+    .expand-btn, .collapse-btn {
         font-size: 18px;
         padding: 14px 24px;
     }
 }
 
-.expand-btn:hover,
-.collapse-btn:hover {
+.expand-btn:hover, .collapse-btn:hover {
     color: #4169E1;
     background: transparent !important;
 }
 
-.expand-btn:active,
-.collapse-btn:active {
+.expand-btn:active, .collapse-btn:active {
     background: transparent !important;
 }
 
@@ -1019,7 +1015,6 @@ html, body {
     background: #0e0e16;
     width: 100%;
     max-width: 100%;
-    /* FIX: 100dvh accounts for mobile browser toolbars, prevents overflow */
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
@@ -1065,7 +1060,7 @@ html, body {
 /* ── Close button ── */
 .modal-close-btn {
     position: absolute;
-    top: 4px;
+    top: max(calc(env(safe-area-inset-top, 0px) + 10px), 16px);
     right: 14px;
     width: 38px;
     height: 38px;
@@ -1091,30 +1086,25 @@ html, body {
         transform: scale(0.9);
     }
 
-/* ── Scroll container ── */
+/* ── Scroll container — NO scrollbar ── */
 .modal-scroll-container {
-    /* FIX: 100dvh accounts for mobile browser toolbars */
     height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    /* Hide scrollbar on all platforms */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
+
+    .modal-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
 
 @media (min-width: 768px) {
     .modal-scroll-container {
         height: 90vh;
     }
-}
-
-.modal-scroll-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.modal-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
-    border-radius: 3px;
 }
 
 /* ── Banner ── */
@@ -1368,7 +1358,7 @@ html, body {
     }
 }
 
-/* ── Next episode banner — FIX: full width ── */
+/* ── Next episode banner ── */
 .next-ep-banner {
     display: flex;
     align-items: center;
@@ -1379,7 +1369,7 @@ html, body {
     padding: 7px 10px;
     color: rgb(0,220,0);
     font-size: 12px;
-    width: fit-content;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -1759,7 +1749,7 @@ html, body {
     }
 }
 
-/* ── Info chips (AniList, MAL…) ── */
+/* ── Info chips ── */
 .info-chip-row {
     display: flex;
     flex-wrap: wrap;
@@ -1795,42 +1785,4 @@ html, body {
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
-}
-
-/* ── Pull-to-close indicator ── */
-.pull-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 6px), 12px);
-    padding-bottom: 10px;
-    pointer-events: none;
-    z-index: 300;
-    /* opacity is driven inline by pullOffset */
-}
-
-.pull-handle {
-    width: 36px;
-    height: 4px;
-    background: rgba(255,255,255,0.5);
-    border-radius: 2px;
-}
-
-.pull-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.6);
-    letter-spacing: 0.04em;
-}
-
-@media (min-width: 768px) {
-    /* Pull-to-close only makes sense on mobile */
-    .pull-indicator {
-        display: none;
-    }
 }
