@@ -4,249 +4,239 @@
 @if (IsVisible && CurrentAnime != null)
 {
     <div class="anime-detail-overlay" @onclick="OnOverlayClick">
-        <div class="anime-detail-popup" @onclick:stopPropagation="true">
+        <div class="anime-detail-modal" @onclick:stopPropagation="true">
 
-            <!-- Header avec banner -->
-            <div class="popup-header" style="background-image: url('@CurrentAnime.BannerUrl');">
-                <div class="popup-header-gradient"></div>
-                <button class="popup-close-btn" @onclick="Close">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
+            <!-- Close Button -->
+            <button class="modal-close-btn" @onclick="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
 
-            <!-- Contenu scrollable -->
-            <div class="popup-content">
+            <!-- Scrollable Content -->
+            <div class="modal-scroll-container">
 
-                <!-- Section principale avec cover et infos -->
-                <div class="popup-main-section">
-                    <!-- Cover image centrée -->
-                    <div class="popup-cover-container">
-                        <div class="popup-cover-image"
-                             style="background-image: url('@CurrentAnime.ImageUrl');"></div>
-                    </div>
+                <!-- Header Section -->
+                <div class="modal-header">
+                    <!-- Top Banner -->
+                    <div class="modal-banner" style="background-image: url('@CurrentAnime.BannerUrl');"></div>
 
-                    <!-- Infos principales -->
-                    <div class="popup-primary-info">
-                        <h1 class="popup-title">@CurrentAnime.Title</h1>
-
-                        @if (!string.IsNullOrEmpty(CurrentAnime.Format))
-                        {
-                            <div class="popup-format-badge">@CurrentAnime.Format</div>
-                        }
-
-                        <!-- Genres tags -->
-                        @if (CurrentAnime.Genres?.Any() == true)
-                        {
-                            <div class="popup-genres-inline">
-                                @foreach (var genre in CurrentAnime.Genres)
-                                {
-                                    <span class="popup-genre-tag-small">@genre</span>
-                                }
+                    <!-- Content Container (Poster + Info) -->
+                    <div class="modal-header-content">
+                        <!-- Left: Cover Poster -->
+                        <div class="modal-poster-section">
+                            <div class="modal-poster" style="background-image: url('@CurrentAnime.ImageUrl');"></div>
+                            
+                            <!-- Action Buttons under poster -->
+                            <div class="modal-action-buttons">
+                                <button class="btn-add-to-list" @onclick="OnAddToList">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Add to List
+                                </button>
+                                <button class="btn-favorite" @onclick="OnFavorite">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                </button>
                             </div>
-                        }
+                        </div>
 
-                        <!-- Stats en grille compacte -->
-                        <div class="popup-stats-compact">
-                            <div class="popup-stat-compact">
-                                <div class="popup-stat-icon">⭐</div>
-                                <div class="popup-stat-data">
-                                    <div class="popup-stat-value-big">@CurrentAnime.Score</div>
-                                    <div class="popup-stat-label-small">Score</div>
-                                </div>
-                            </div>
+                        <!-- Right: Title and Info -->
+                        <div class="modal-info-section">
+                            <!-- Title -->
+                            <h1 class="modal-title">@CurrentAnime.Title</h1>
 
-                            <div class="popup-stat-compact">
-                                <div class="popup-stat-icon">📺</div>
-                                <div class="popup-stat-data">
-                                    <div class="popup-stat-value-big">@CurrentAnime.Episodes</div>
-                                    <div class="popup-stat-label-small">Episodes</div>
-                                </div>
-                            </div>
-
-                            @if (CurrentAnime.Duration.HasValue)
+                            <!-- Airing Info -->
+                            @if (!string.IsNullOrEmpty(CurrentAnime.Season) && CurrentAnime.Year.HasValue)
                             {
-                                <div class="popup-stat-compact">
-                                    <div class="popup-stat-icon">⏱️</div>
-                                    <div class="popup-stat-data">
-                                        <div class="popup-stat-value-big">@CurrentAnime.Duration min</div>
-                                        <div class="popup-stat-label-small">Duration</div>
-                                    </div>
-                                </div>
-                            }
-
-                            <div class="popup-stat-compact">
-                                <div class="popup-stat-icon">
+                                <div class="modal-airing-info">
                                     @if (CurrentAnime.Status == "RELEASING")
                                     {
-                                        <span class="status-dot releasing"></span>
+                                        <span class="status-indicator releasing"></span>
+                                        <span>Currently Airing • @CurrentAnime.Season @CurrentAnime.Year</span>
+                                    }
+                                    else if (CurrentAnime.Status == "FINISHED")
+                                    {
+                                        <span class="status-indicator finished"></span>
+                                        <span>Finished • @CurrentAnime.Season @CurrentAnime.Year</span>
                                     }
                                     else if (CurrentAnime.Status == "NOT_YET_RELEASED")
                                     {
-                                        <span class="status-dot upcoming"></span>
-                                    }
-                                    else
-                                    {
-                                        <span class="status-dot finished"></span>
+                                        <span class="status-indicator upcoming"></span>
+                                        <span>Coming Soon • @CurrentAnime.Season @CurrentAnime.Year</span>
                                     }
                                 </div>
-                                <div class="popup-stat-data">
-                                    <div class="popup-stat-value-big">@GetStatusText(CurrentAnime.Status)</div>
-                                    <div class="popup-stat-label-small">Status</div>
+                            }
+
+                            <!-- Info Fields -->
+                            <div class="modal-info-grid">
+                                <div class="info-field">
+                                    <span class="info-label">Score</span>
+                                    <span class="info-value score">⭐ @CurrentAnime.Score</span>
                                 </div>
+                                <div class="info-field">
+                                    <span class="info-label">Status</span>
+                                    <span class="info-value">@GetStatusText(CurrentAnime.Status)</span>
+                                </div>
+                                <div class="info-field">
+                                    <span class="info-label">Episodes</span>
+                                    <span class="info-value">@CurrentAnime.Episodes</span>
+                                </div>
+                                @if (CurrentAnime.Duration.HasValue)
+                                {
+                                    <div class="info-field">
+                                        <span class="info-label">Duration</span>
+                                        <span class="info-value">@CurrentAnime.Duration min</span>
+                                    </div>
+                                }
+                                @if (CurrentAnime.Favourites.HasValue)
+                                {
+                                    <div class="info-field">
+                                        <span class="info-label">Favorites</span>
+                                        <span class="info-value">@CurrentAnime.Favourites.Value.ToString("N0")</span>
+                                    </div>
+                                }
+                                @if (CurrentAnime.Studios?.Any() == true)
+                                {
+                                    <div class="info-field">
+                                        <span class="info-label">Studio</span>
+                                        <span class="info-value">@string.Join(", ", CurrentAnime.Studios.Select(s => s.Name))</span>
+                                    </div>
+                                }
                             </div>
-
-                            @if (CurrentAnime.Popularity.HasValue)
-                            {
-                                <div class="popup-stat-compact">
-                                    <div class="popup-stat-icon">🔥</div>
-                                    <div class="popup-stat-data">
-                                        <div class="popup-stat-value-big">#@CurrentAnime.Popularity.Value.ToString("N0")</div>
-                                        <div class="popup-stat-label-small">Popularity</div>
-                                    </div>
-                                </div>
-                            }
-
-                            @if (CurrentAnime.Favourites.HasValue)
-                            {
-                                <div class="popup-stat-compact">
-                                    <div class="popup-stat-icon">❤️</div>
-                                    <div class="popup-stat-data">
-                                        <div class="popup-stat-value-big">@CurrentAnime.Favourites.Value.ToString("N0")</div>
-                                        <div class="popup-stat-label-small">Favorites</div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Action buttons -->
-                        <div class="popup-action-row">
-                            <button class="popup-action-btn primary" @onclick="OnAddToList">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Add to List
-                            </button>
-                            @if (!string.IsNullOrEmpty(CurrentAnime.TrailerUrl))
-                            {
-                                <button class="popup-action-btn secondary" @onclick="OnWatchTrailer">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
-                                    </svg>
-                                    Trailer
-                                </button>
-                            }
-                            <button class="popup-action-btn secondary" @onclick="OnShare">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <circle cx="18" cy="5" r="3"></circle>
-                                    <circle cx="6" cy="12" r="3"></circle>
-                                    <circle cx="18" cy="19" r="3"></circle>
-                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                                </svg>
-                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Informations détaillées en grille -->
-                <div class="popup-info-grid">
-                    @if (!string.IsNullOrEmpty(CurrentAnime.Format))
+                <!-- Main Content -->
+                <div class="modal-content">
+
+                    <!-- Genres -->
+                    @if (CurrentAnime.Genres?.Any() == true)
                     {
-                        <div class="popup-info-item">
-                            <div class="popup-info-label">Format</div>
-                            <div class="popup-info-value">@CurrentAnime.Format</div>
+                        <div class="modal-section">
+                            <h3 class="section-title">Genres</h3>
+                            <div class="genres-container">
+                                @foreach (var genre in CurrentAnime.Genres)
+                                {
+                                    <span class="genre-pill">@genre</span>
+                                }
+                            </div>
                         </div>
                     }
 
-                    @if (!string.IsNullOrEmpty(CurrentAnime.Source))
+                    <!-- Relations -->
+                    @if (CurrentAnime.Relations?.Any() == true)
                     {
-                        <div class="popup-info-item">
-                            <div class="popup-info-label">Source</div>
-                            <div class="popup-info-value">@CurrentAnime.Source</div>
-                        </div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(CurrentAnime.Season) && CurrentAnime.Year.HasValue)
-                    {
-                        <div class="popup-info-item">
-                            <div class="popup-info-label">Season</div>
-                            <div class="popup-info-value">@CurrentAnime.Season @CurrentAnime.Year</div>
-                        </div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(CurrentAnime.StartDate))
-                    {
-                        <div class="popup-info-item">
-                            <div class="popup-info-label">Start Date</div>
-                            <div class="popup-info-value">@CurrentAnime.StartDate</div>
-                        </div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(CurrentAnime.EndDate))
-                    {
-                        <div class="popup-info-item">
-                            <div class="popup-info-label">End Date</div>
-                            <div class="popup-info-value">@CurrentAnime.EndDate</div>
-                        </div>
-                    }
-
-                    @if (CurrentAnime.Studios?.Any() == true)
-                    {
-                        <div class="popup-info-item popup-info-full-width">
-                            <div class="popup-info-label">Studio@(CurrentAnime.Studios.Count > 1 ? "s" : "")</div>
-                            <div class="popup-info-value">@string.Join(", ", CurrentAnime.Studios.Select(s => s.Name))</div>
-                        </div>
-                    }
-                </div>
-
-                <!-- Description -->
-                @if (!string.IsNullOrEmpty(CurrentAnime.Description))
-                {
-                    <div class="popup-section">
-                        <h3 class="popup-section-title">Synopsis</h3>
-                        <p class="popup-description">@CurrentAnime.Description</p>
-                    </div>
-                }
-
-                <!-- Relations -->
-                @if (CurrentAnime.Relations?.Any() == true)
-                {
-                    <div class="popup-section">
-                        <h3 class="popup-section-title">Relations</h3>
-                        <div class="popup-relations-grid">
-                            @foreach (var relation in CurrentAnime.Relations)
-                            {
-                                <div class="popup-relation-card">
-                                    <div class="popup-relation-image"
-                                         style="background-image: url('@relation.ImageUrl');"></div>
-                                    <div class="popup-relation-info">
-                                        <div class="popup-relation-type">@relation.RelationType</div>
-                                        <div class="popup-relation-title">@relation.Title</div>
-                                        <div class="popup-relation-meta">
-                                            @if (!string.IsNullOrEmpty(relation.Format))
-                                            {
-                                                <span>@relation.Format</span>
-                                            }
-                                            @if (!string.IsNullOrEmpty(relation.Status))
-                                            {
-                                                <span> • @GetStatusText(relation.Status)</span>
-                                            }
+                        <div class="modal-section">
+                            <h3 class="section-title">Relations</h3>
+                            <div class="relations-scroll">
+                                @foreach (var relation in CurrentAnime.Relations)
+                                {
+                                    <div class="relation-card">
+                                        <div class="relation-cover" style="background-image: url('@relation.ImageUrl');"></div>
+                                        <div class="relation-info">
+                                            <div class="relation-type">@relation.RelationType</div>
+                                            <div class="relation-title">@relation.Title</div>
                                         </div>
                                     </div>
-                                </div>
-                            }
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Synopsis -->
+                    @if (!string.IsNullOrEmpty(CurrentAnime.Description))
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Synopsis</h3>
+                            <p class="synopsis-text">@CurrentAnime.Description</p>
+                        </div>
+                    }
+
+                    <!-- Additional Info -->
+                    @if (!string.IsNullOrEmpty(CurrentAnime.Source) || !string.IsNullOrEmpty(CurrentAnime.Format))
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Additional Information</h3>
+                            <div class="additional-info-grid">
+                                @if (!string.IsNullOrEmpty(CurrentAnime.Format))
+                                {
+                                    <div class="info-item">
+                                        <span class="info-item-label">Format</span>
+                                        <span class="info-item-value">@CurrentAnime.Format</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.Source))
+                                {
+                                    <div class="info-item">
+                                        <span class="info-item-label">Source</span>
+                                        <span class="info-item-value">@CurrentAnime.Source</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.StartDate))
+                                {
+                                    <div class="info-item">
+                                        <span class="info-item-label">Start Date</span>
+                                        <span class="info-item-value">@CurrentAnime.StartDate</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.EndDate))
+                                {
+                                    <div class="info-item">
+                                        <span class="info-item-label">End Date</span>
+                                        <span class="info-item-value">@CurrentAnime.EndDate</span>
+                                    </div>
+                                }
+                                @if (CurrentAnime.Popularity.HasValue)
+                                {
+                                    <div class="info-item">
+                                        <span class="info-item-label">Popularity</span>
+                                        <span class="info-item-value">#@CurrentAnime.Popularity.Value.ToString("N0")</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Trailer -->
+                    @if (!string.IsNullOrEmpty(CurrentAnime.TrailerUrl))
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Trailer</h3>
+                            <div class="trailer-container">
+                                <a href="@CurrentAnime.TrailerUrl" target="_blank" class="trailer-link">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
+                                    </svg>
+                                    <span>Watch Trailer on YouTube</span>
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Streaming Links -->
+                    <div class="modal-section">
+                        <h3 class="section-title">Watch On</h3>
+                        <div class="streaming-links">
+                            <a href="https://anilist.co/anime/@CurrentAnime.Id" target="_blank" class="streaming-btn anilist">
+                                <span>AniList</span>
+                            </a>
+                            <a href="https://myanimelist.net/anime/@CurrentAnime.Id" target="_blank" class="streaming-btn mal">
+                                <span>MyAnimeList</span>
+                            </a>
                         </div>
                     </div>
-                }
 
+                </div>
             </div>
         </div>
     </div>
@@ -285,16 +275,8 @@
         System.Diagnostics.Debug.WriteLine($"📝 Add to list: {CurrentAnime?.Title}");
     }
 
-    private void OnWatchTrailer()
+    private void OnFavorite()
     {
-        if (!string.IsNullOrEmpty(CurrentAnime?.TrailerUrl))
-        {
-            System.Diagnostics.Debug.WriteLine($"▶️ Watch trailer: {CurrentAnime.TrailerUrl}");
-        }
-    }
-
-    private void OnShare()
-    {
-        System.Diagnostics.Debug.WriteLine($"📤 Share: {CurrentAnime?.Title}");
+        System.Diagnostics.Debug.WriteLine($"❤️ Favorite: {CurrentAnime?.Title}");
     }
 }
