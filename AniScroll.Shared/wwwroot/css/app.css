@@ -2088,7 +2088,8 @@ html, body {
     padding: 7px 10px;
     color: rgb(0,220,0);
     font-size: 12px;
-    max-width: 100%;
+    width: fit-content
+    max-width: fit-content;
 }
 
 .next-ep-ep {
