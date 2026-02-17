@@ -1065,7 +1065,7 @@ html, body {
 /* ── Close button ── */
 .modal-close-btn {
     position: absolute;
-    top: max(calc(env(safe-area-inset-top, 0px) + 10px), 20px);
+    top: 4px;
     right: 14px;
     width: 38px;
     height: 38px;
@@ -1379,7 +1379,7 @@ html, body {
     padding: 7px 10px;
     color: rgb(0,220,0);
     font-size: 12px;
-    width: 100%;
+    width: fit-content;
     box-sizing: border-box;
 }
 
