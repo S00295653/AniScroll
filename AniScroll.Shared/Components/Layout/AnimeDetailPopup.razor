@@ -114,7 +114,7 @@
                                     @foreach (var r in topRankings)
                                     {
                                         <span class="rank-badge @(r.Type == "RATED" ? "rank-rated" : "rank-popular")">
-                                            @(r.Type == "RATED" ? "⭐" : "🔥") #@r.Rank @(r.Type == "RATED" ? "Rated" : "Popular") All Time
+                                            @(r.Type == "RATED" ? "⭐" : "❤️") #@r.Rank @(r.Type == "RATED" ? "Rated" : "Popular") All Time
                                         </span>
                                     }
                                 </div>
@@ -126,13 +126,13 @@
                                 <div class="info-col">
                                     <div class="info-field">
                                         <span class="info-lbl">Score</span>
-                                        <span class="info-val score-val">⭐ @CurrentAnime.Score</span>
+                                        <span class="info-val score-val">@CurrentAnime.Score</span>
                                     </div>
                                     @if (CurrentAnime.Favourites.HasValue)
                                     {
                                         <div class="info-field">
                                             <span class="info-lbl">Favorites</span>
-                                            <span class="info-val">♥ @CurrentAnime.Favourites.Value.ToString("N0")</span>
+                                            <span class="info-val">@CurrentAnime.Favourites.Value.ToString("N0")</span>
                                         </div>
                                     }
                                     <div class="info-field">
@@ -150,7 +150,7 @@
                                     {
                                         <div class="info-field">
                                             <span class="info-lbl">Duration</span>
-                                            <span class="info-val">@CurrentAnime.Duration min/ep</span>
+                                            <span class="info-val">@CurrentAnime.Duration min</span>
                                         </div>
                                     }
                                     @if (!string.IsNullOrEmpty(CurrentAnime.Source))
@@ -283,9 +283,9 @@
                             <div class="details-grid">
                                 @if (!string.IsNullOrEmpty(CurrentAnime.NativeTitle))
                                 {
-                                    <div class="detail-row detail-full">
+                                    <div class="detail-row">
                                         <span class="detail-lbl">Native Title</span>
-                                        <span class="detail-val native-val">@CurrentAnime.NativeTitle</span>
+                                        <span class="detail-val">@CurrentAnime.NativeTitle</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(CurrentAnime.Format))
@@ -298,7 +298,7 @@
                                 @if (CurrentAnime.Popularity.HasValue)
                                 {
                                     <div class="detail-row">
-                                        <span class="detail-lbl">Members</span>
+                                        <span class="detail-lbl">Popularity</span>
                                         <span class="detail-val">@CurrentAnime.Popularity.Value.ToString("N0") users</span>
                                     </div>
                                 }
@@ -322,7 +322,7 @@
                                     {
                                         <div class="detail-row">
                                             <span class="detail-lbl">@(sr.Type == "RATED" ? "Seasonal Rating" : "Seasonal Popularity")</span>
-                                            <span class="detail-val">#@sr.Rank @sr.Season @sr.Year</span>
+                                            <span class="detail-val">#@sr.Rank • @sr.Season @sr.Year</span>
                                         </div>
                                     }
                                 }

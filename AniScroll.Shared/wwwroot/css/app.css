@@ -2125,9 +2125,9 @@ html, body {
 }
 
 .rank-popular {
-    background: rgba(249,115,22,0.12);
-    border: 1px solid rgba(249,115,22,0.3);
-    color: #fb923c;
+    background: rgba(232,93,117,0.12);
+    border: 1px solid rgba(232,93,117,0.3);
+    color: #e65d74;
 }
 
 /* ── INFO GRID — always 2 explicit columns ───────────────── */
@@ -2165,10 +2165,6 @@ html, body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.score-val {
-    color: #fbbf24;
 }
 
 @media (min-width: 768px) {
@@ -2355,12 +2351,6 @@ html, body {
     gap: 10px;
 }
 
-.detail-full {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-}
-
 .detail-lbl {
     font-size: 11px;
     color: #6b7280;
@@ -2375,15 +2365,6 @@ html, body {
     text-align: right;
 }
 
-.detail-full .detail-val {
-    text-align: left;
-}
-
-.native-val {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-}
 
 /* ── TAGS ────────────────────────────────────────────────── */
 .tags-wrap {
