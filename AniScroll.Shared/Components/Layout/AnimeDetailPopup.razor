@@ -4,7 +4,9 @@
 @if (IsVisible && CurrentAnime != null)
 {
     <div class="anime-detail-overlay" @onclick="OnOverlayClick">
-        <div class="anime-detail-modal" @onclick:stopPropagation="true">
+        <div class="anime-detail-modal"
+             @onclick:stopPropagation="true"
+             style="transform: translateY(@(pullOffset)px); transition: @(isPulling ? "none" : "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <button class="modal-close-btn" @onclick="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -14,7 +16,17 @@
                 </svg>
             </button>
 
-            <div class="modal-scroll-container">
+            @* Pull-to-close indicator *@
+            <div class="pull-indicator" style="opacity: @(Math.Min(pullOffset / 80.0, 1).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));">
+                <div class="pull-handle"></div>
+                <span class="pull-label">Release to close</span>
+            </div>
+
+            <div class="modal-scroll-container"
+                 @ref="scrollContainerRef"
+                 @ontouchstart="HandleModalTouchStart"
+                 @ontouchmove="HandleModalTouchMove"
+                 @ontouchend="HandleModalTouchEnd">
 
                 <div class="modal-header">
                     <div class="modal-banner" style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl) ? "background:linear-gradient(135deg,#1a1a2e,#16213e);" : $"background-image:url('{CurrentAnime.BannerUrl}');")"></div>
@@ -284,7 +296,7 @@
                                     {
                                         <div class="detail-row">
                                             <span class="detail-lbl">@(sr.Type == "RATED" ? "Seasonal Rating" : "Seasonal Popularity")</span>
-                                            <span class="detail-val">#@sr.Rank • @sr.Season @sr.Year</span>
+                                            <span class="detail-val">#@sr.Rank · @sr.Season @sr.Year</span>
                                         </div>
                                     }
                                 }
@@ -379,24 +391,89 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     private bool isFavorited = false;
-    // La variable 'trailerLoaded' a été supprimée car inutile ici (tout est chargé direct)
+    private int? _lastAnimeId = null;
+
+    // ─── Pull-to-close state ────────────────────────────────────────────────────
+    private ElementReference scrollContainerRef;
+    private double pullOffset = 0;
+    private double pullStartY = 0;
+    private bool isPulling = false;
+    private bool isPullTrackingActive = false;
+    private const double PULL_CLOSE_THRESHOLD = 110; // px to drag before releasing closes
 
     protected override void OnParametersSet()
     {
-        // Reset favorite state
         if (CurrentAnime?.Id != _lastAnimeId)
         {
             isFavorited = false;
+            pullOffset = 0;
             _lastAnimeId = CurrentAnime?.Id;
         }
     }
-    private int? _lastAnimeId = null;
 
-    private void Close()
+    // ─── Pull-to-close touch handlers ──────────────────────────────────────────
+
+    private async Task HandleModalTouchStart(TouchEventArgs e)
     {
-        OnClose.InvokeAsync();
+        if (e.Touches.Length == 0) return;
+
+        // Only start tracking if the scroll container is at the very top
+        bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
+        if (!atTop) return;
+
+        isPullTrackingActive = true;
+        isPulling = false;
+        pullStartY = e.Touches[0].ClientY;
+        pullOffset = 0;
     }
 
+    private void HandleModalTouchMove(TouchEventArgs e)
+    {
+        if (!isPullTrackingActive || e.Touches.Length == 0) return;
+
+        double delta = e.Touches[0].ClientY - pullStartY;
+
+        // Only drag downward
+        if (delta <= 0)
+        {
+            isPulling = false;
+            pullOffset = 0;
+            return;
+        }
+
+        isPulling = true;
+        // Apply rubber-band resistance: feels heavy as you pull further
+        pullOffset = Math.Sqrt(delta) * 7;
+        StateHasChanged();
+    }
+
+    private async Task HandleModalTouchEnd(TouchEventArgs e)
+    {
+        if (!isPullTrackingActive) return;
+
+        isPullTrackingActive = false;
+        isPulling = false;
+
+        if (pullOffset >= PULL_CLOSE_THRESHOLD)
+        {
+            // Animate off screen then close
+            pullOffset = 800;
+            StateHasChanged();
+            await Task.Delay(280);
+            pullOffset = 0;
+            await OnClose.InvokeAsync();
+        }
+        else
+        {
+            // Snap back
+            pullOffset = 0;
+            StateHasChanged();
+        }
+    }
+
+    // ─── Other handlers ─────────────────────────────────────────────────────────
+
+    private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
     private void OnAddToList() { }
     private void OnShare() { }
@@ -428,7 +505,7 @@
         {
             var uri = new Uri(url);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            if (query.AllKeys.Contains("v")) return query["v"];
+            if (query.AllKeys.Contains("v")) return query["v"] ?? "";
             if (uri.Segments.LastOrDefault() != null) return uri.Segments.Last();
         }
         catch

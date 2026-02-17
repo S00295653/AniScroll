@@ -1,25 +1,17 @@
 ﻿window.getViewportHeight = function () {
     const scrollSection = document.querySelector('.main-scroll');
-    if (scrollSection) {
-        return scrollSection.clientHeight;
-    }
+    if (scrollSection) return scrollSection.clientHeight;
     return window.innerHeight;
 };
 
-// Nouvelle fonction : retourne la hauteur réelle de la zone de scroll (sans la nav)
 window.getScrollSectionHeight = function () {
     const scrollSection = document.querySelector('.main-scroll');
-    if (scrollSection) {
-        return scrollSection.clientHeight;
-    }
+    if (scrollSection) return scrollSection.clientHeight;
     return window.innerHeight;
 };
 
 window.getScrollInfo = function (element) {
-    if (!element) {
-        return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
-    }
-
+    if (!element) return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
     return {
         scrollTop: element.scrollTop,
         scrollHeight: element.scrollHeight,
@@ -28,14 +20,11 @@ window.getScrollInfo = function (element) {
 };
 
 window.setScrollTop = function (element, value) {
-    if (element) {
-        element.scrollTop = value;
-    }
+    if (element) element.scrollTop = value;
 };
 
 window.isTouchingDescriptionZone = function (clientX, clientY) {
     const elements = document.elementsFromPoint(clientX, clientY);
-
     for (let element of elements) {
         if (element.classList.contains('description-scroll-zone') ||
             element.classList.contains('description-full') ||
@@ -44,38 +33,29 @@ window.isTouchingDescriptionZone = function (clientX, clientY) {
             return true;
         }
     }
-
     return false;
 };
 
 window.isDescriptionAtBottom = function () {
     const descWrapper = document.querySelector('.anime-card.active .description-scroll-wrapper');
-
-    if (!descWrapper) {
-        return false;
-    }
-
+    if (!descWrapper) return false;
     const tolerance = 5;
-    const isAtBottom = descWrapper.scrollTop + descWrapper.clientHeight >= descWrapper.scrollHeight - tolerance;
-
-    return isAtBottom;
+    return descWrapper.scrollTop + descWrapper.clientHeight >= descWrapper.scrollHeight - tolerance;
 };
 
 window.isDescriptionAtTop = function () {
     const descWrapper = document.querySelector('.anime-card.active .description-scroll-wrapper');
-
-    if (!descWrapper) {
-        return true;
-    }
-
+    if (!descWrapper) return true;
     const tolerance = 5;
-    const isAtTop = descWrapper.scrollTop <= tolerance;
-
-    return isAtTop;
+    return descWrapper.scrollTop <= tolerance;
 };
 
 window.focusElement = function (element) {
-    if (element) {
-        element.focus();
-    }
+    if (element) element.focus();
+};
+
+// Returns true if the modal scroll container is at the very top (for pull-to-close)
+window.isModalScrollAtTop = function (element) {
+    if (!element) return true;
+    return element.scrollTop <= 2;
 };

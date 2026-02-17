@@ -107,7 +107,7 @@
             <div class="loading-area">
                 <div class="loading-box">
                     <div class="spinner"></div>
-                    <p class="loading-title">🔍 Loading...</p>
+                    <p class="loading-title">Loading...</p>
                     <p class="loading-subtitle">Fetching 60 awesome animes</p>
                 </div>
             </div>
@@ -129,18 +129,22 @@
         <div class="counter">@animes.Count animes</div>
         @if (isPreloading)
         {
-            <div class="preload-badge">🔄 Loading more...</div>
+            <div class="preload-badge">Loading more...</div>
         }
         @if (isRateLimited)
         {
-            <div class="rate-limit-badge">🚫 Rate Limited</div>
+            <div class="rate-limit-badge">Rate Limited</div>
         }
     </div>
 
-    <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
-                                                      OnListsClicked="HandleListsClicked"
-                                                      OnProfileClicked="HandleProfileClicked"
-                                                      OnSearchQueryChanged="HandleSearchQueryChanged" />
+    @* Hide the nav bar when the detail popup is open *@
+    @if (!showDetailPopup)
+    {
+        <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
+                                                          OnListsClicked="HandleListsClicked"
+                                                          OnProfileClicked="HandleProfileClicked"
+                                                          OnSearchQueryChanged="HandleSearchQueryChanged" />
+    }
 
     <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
                                                          IsVisible="showDetailPopup"
@@ -174,19 +178,19 @@
     private const int THROTTLE_MS = 8;
     private System.Threading.Timer? rateLimitTimer;
 
+    // ─── Background loading ─────────────────────────────────────────────────────
+    // Trigger whenever the user is within PRELOAD_THRESHOLD cards of the end.
+    // No boolean "hasPreloaded" flag — isPreloading alone prevents concurrent
+    // loads, and the condition resets naturally each time new animes are appended.
     private const int PRELOAD_THRESHOLD = 40;
-    private bool hasPreloaded = false;
 
-    // Popup state
+    // Popup
     private bool showDetailPopup = false;
     private AnimeCard? selectedAnime = null;
 
-    // ─── Click detection ────────────────────────────────────────────────────────
-    // hasMoved is set true as soon as the pointer moves beyond clickThreshold.
-    // It is reset ONLY at the start of MouseDown / TouchStart so that the value
-    // is still valid when the @onclick event fires (which is AFTER MouseUp).
+    // Click detection
     private bool hasMoved = false;
-    private const double clickThreshold = 5; // pixels
+    private const double clickThreshold = 5;
 
     protected override async Task OnInitializedAsync()
     {
@@ -205,12 +209,13 @@
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error getting viewport height: {ex.Message}");
             }
         }
 
         if (previousIndex != currentIndex && previousIndex >= 0)
         {
+            // Collapse description of the card we just left
             if (previousIndex < animes.Count)
             {
                 var previousAnime = animes[previousIndex];
@@ -218,8 +223,15 @@
                     expandedAnimes.Remove(previousAnime.Id);
             }
 
-            if (currentIndex >= PRELOAD_THRESHOLD && !hasPreloaded && !isPreloading)
+            // ✅ Trigger background load whenever within PRELOAD_THRESHOLD of the end.
+            // Works for every batch, not just the first — no hasPreloaded flag needed.
+            if (animes.Count > 0 &&
+                currentIndex >= animes.Count - PRELOAD_THRESHOLD &&
+                !isPreloading &&
+                !AniListService.IsRateLimited())
+            {
                 _ = PreloadNextBatch();
+            }
         }
 
         previousIndex = currentIndex;
@@ -227,9 +239,8 @@
 
     private async Task PreloadNextBatch()
     {
-        if (isPreloading || hasPreloaded) return;
+        if (isPreloading) return;
         isPreloading = true;
-        hasPreloaded = true;
         StateHasChanged();
         await LoadAnimes(60, isBackgroundLoad: true);
         isPreloading = false;
@@ -339,7 +350,6 @@
         dragStartX = e.ClientX;
         currentDragOffset = 0;
         isTransitioning = false;
-        // ✅ Reset here — before the gesture begins
         hasMoved = false;
     }
 
@@ -387,13 +397,10 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
-        // ✅ Do NOT reset hasMoved here — @onclick fires after MouseUp
-        //    and still needs the correct hasMoved value.
         StateHasChanged();
 
         await Task.Delay(250);
         isTransitioning = false;
-        // Safe to reset now — all click handlers have already fired
         hasMoved = false;
     }
 
@@ -403,7 +410,6 @@
         if (e.Touches.Length > 0)
         {
             var touch = e.Touches[0];
-
             isTouchingDescription = await JS.InvokeAsync<bool>("isTouchingDescriptionZone", touch.ClientX, touch.ClientY);
 
             if (isTouchingDescription)
@@ -422,7 +428,6 @@
             dragStartX = touch.ClientX;
             currentDragOffset = 0;
             isTransitioning = false;
-            // ✅ Reset here — before the gesture begins
             hasMoved = false;
         }
     }
@@ -512,12 +517,10 @@
 
         isTransitioning = true;
         currentDragOffset = 0;
-        // ✅ Do NOT reset hasMoved here — tap handlers fire after TouchEnd
         StateHasChanged();
 
         await Task.Delay(250);
         isTransitioning = false;
-        // Safe to reset after all handlers have fired
         hasMoved = false;
     }
 
@@ -551,7 +554,6 @@
 
     private void HandleImageClick(AnimeCard anime)
     {
-        // Only open popup if the pointer did not move during the interaction
         if (!hasMoved && !isDraggingCard)
             ShowAnimeDetails(anime);
     }
