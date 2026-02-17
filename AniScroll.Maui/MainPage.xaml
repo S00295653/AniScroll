@@ -5,6 +5,10 @@
              x:Class="AniScroll.Maui.MainPage"
              BackgroundColor="Black">
 
+    <!--
+        x:Name="blazorWebView" is required so MainPage.xaml.cs can subscribe
+        to UrlLoading and redirect external links to the system browser.
+    -->
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type local:Main}" />

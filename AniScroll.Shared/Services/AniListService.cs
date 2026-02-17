@@ -20,648 +20,479 @@ namespace AniScroll.Shared.Services
 
         public bool IsRateLimited()
         {
-            if (_rateLimitedUntil == null)
-                return false;
-
-            if (DateTime.UtcNow >= _rateLimitedUntil)
-            {
-                _rateLimitedUntil = null;
-                return false;
-            }
-
+            if (_rateLimitedUntil == null) return false;
+            if (DateTime.UtcNow >= _rateLimitedUntil) { _rateLimitedUntil = null; return false; }
             return true;
         }
 
         public int GetRateLimitSecondsRemaining()
         {
-            if (_rateLimitedUntil == null)
-                return 0;
-
-            var remaining = (_rateLimitedUntil.Value - DateTime.UtcNow).TotalSeconds;
-            return Math.Max(0, (int)Math.Ceiling(remaining));
+            if (_rateLimitedUntil == null) return 0;
+            return Math.Max(0, (int)Math.Ceiling((_rateLimitedUntil.Value - DateTime.UtcNow).TotalSeconds));
         }
 
         private void SetRateLimited()
         {
             _rateLimitedUntil = DateTime.UtcNow.AddSeconds(RATE_LIMIT_DURATION_SECONDS);
-            System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited jusqu'à {_rateLimitedUntil}");
+            System.Diagnostics.Debug.WriteLine($"⏱️ Rate limited until {_rateLimitedUntil}");
         }
 
-        // Méthode optimisée : récupère des pools puis sélectionne exactement 61 animes
         public async Task<AnimeLoadResult> GetBulkAnimesAsync()
         {
             if (IsRateLimited())
-            {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = true
-                };
-            }
+                return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = true };
 
             try
             {
-                var query = @"
-                query {
-                    popular: Page(page: 1, perPage: 50) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    topScore: Page(page: 1, perPage: 50) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    hiddenGems: Page(page: 1, perPage: 50) {
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    ongoing: Page(page: 1, perPage: 50) {
-                        media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: TRENDING_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                    upcoming: Page(page: 1, perPage: 10) {
-                        media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {
-                            " + GetAnimeFields() + @"
-                        }
-                    }
-                }";
-
-                var request = new { query = query };
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                System.Diagnostics.Debug.WriteLine("📡 Envoi de la requête bulk...");
-
-                var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests");
-                    SetRateLimited();
-                    return new AnimeLoadResult
-                    {
-                        Animes = new List<AnimeCard>(),
-                        IsRateLimited = true
-                    };
-                }
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
-                    System.Diagnostics.Debug.WriteLine($"Détails: {errorContent}");
-                    return new AnimeLoadResult
-                    {
-                        Animes = new List<AnimeCard>(),
-                        IsRateLimited = false
-                    };
-                }
-
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                JObject data = JObject.Parse(jsonResponse);
-
-                // Extraire les pools
-                var popularPool = ExtractAnimePool(data["data"]?["popular"]?["media"]);
-                var topScorePool = ExtractAnimePool(data["data"]?["topScore"]?["media"]);
-                var hiddenGemsPool = ExtractAnimePool(data["data"]?["hiddenGems"]?["media"]);
-                var ongoingPool = ExtractAnimePool(data["data"]?["ongoing"]?["media"]);
-                var upcomingPool = ExtractAnimePool(data["data"]?["upcoming"]?["media"]);
-
-                System.Diagnostics.Debug.WriteLine($"📊 Pools récupérés:");
-                System.Diagnostics.Debug.WriteLine($"  - Popular: {popularPool.Count}");
-                System.Diagnostics.Debug.WriteLine($"  - Top Score: {topScorePool.Count}");
-                System.Diagnostics.Debug.WriteLine($"  - Hidden Gems: {hiddenGemsPool.Count}");
-                System.Diagnostics.Debug.WriteLine($"  - Ongoing: {ongoingPool.Count}");
-                System.Diagnostics.Debug.WriteLine($"  - Upcoming: {upcomingPool.Count}");
-
-                // Sélectionner EXACTEMENT 61 animes selon les proportions
-                var selectedAnimes = new List<AnimeCard>();
-
-                // 27 populaires (44%)
-                selectedAnimes.AddRange(SelectRandomAnimes(popularPool, 27));
-
-                // 12 top score (20%)
-                selectedAnimes.AddRange(SelectRandomAnimes(topScorePool, 12));
-
-                // 12 hidden gems (20%)
-                selectedAnimes.AddRange(SelectRandomAnimes(hiddenGemsPool, 12));
-
-                // 9 ongoing (15%)
-                selectedAnimes.AddRange(SelectRandomAnimes(ongoingPool, 9));
-
-                // 1 upcoming (1%)
-                selectedAnimes.AddRange(SelectRandomAnimes(upcomingPool, 1));
-
-                System.Diagnostics.Debug.WriteLine($"✅ Sélection: {selectedAnimes.Count} animes (27+12+12+9+1 = 61)");
-
-                // Mélanger le résultat final
-                selectedAnimes = selectedAnimes.OrderBy(x => _random.Next()).ToList();
-
-                System.Diagnostics.Debug.WriteLine($"🎉 {selectedAnimes.Count} animes finaux mélangés et prêts");
-
-                return new AnimeLoadResult
-                {
-                    Animes = selectedAnimes,
-                    IsRateLimited = false
-                };
-            }
-            catch (HttpRequestException ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur réseau: {ex.Message}");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = false
-                };
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur inattendue: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = false
-                };
-            }
-        }
-
-        private List<AnimeCard> ExtractAnimePool(JToken? mediaArray)
-        {
-            var pool = new List<AnimeCard>();
-
-            if (mediaArray == null || !mediaArray.HasValues)
-                return pool;
-
-            foreach (var media in mediaArray)
-            {
-                try
-                {
-                    var anime = ParseAnimeCard(media);
-                    if (anime != null)
-                    {
-                        pool.Add(anime);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Erreur parsing anime: {ex.Message}");
-                }
-            }
-
-            return pool;
-        }
-
-        private List<AnimeCard> SelectRandomAnimes(List<AnimeCard> pool, int count)
-        {
-            if (pool.Count == 0)
-            {
-                System.Diagnostics.Debug.WriteLine($"⚠️ Pool vide, impossible de sélectionner {count} animes");
-                return new List<AnimeCard>();
-            }
-
-            // Si on demande plus que disponible, retourner tout le pool
-            if (count >= pool.Count)
-            {
-                System.Diagnostics.Debug.WriteLine($"⚠️ Demande de {count} animes mais seulement {pool.Count} disponibles");
-                return new List<AnimeCard>(pool);
-            }
-
-            // Sélection aléatoire sans doublons
-            var selected = new List<AnimeCard>();
-            var poolCopy = new List<AnimeCard>(pool);
-
-            for (int i = 0; i < count; i++)
-            {
-                int randomIndex = _random.Next(poolCopy.Count);
-                selected.Add(poolCopy[randomIndex]);
-                poolCopy.RemoveAt(randomIndex);
-            }
-
-            return selected;
-        }
-
-        public async Task<AnimeCard?> GetRandomAnimeAsync()
-        {
-            if (IsRateLimited())
-            {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - requête ignorée");
-                return null;
-            }
-
-            try
-            {
-                int randomPage = _random.Next(1, 80);
-                int rand = _random.Next(0, 100);
-                string mediaFilter;
-
-                if (rand < 45)
-                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
-                else if (rand < 65)
-                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC";
-                else if (rand < 80)
-                    mediaFilter = "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC";
-                else if (rand < 95)
-                    mediaFilter = "type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC";
-                else
-                    mediaFilter = "type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
-
+                var fields = GetAnimeFields();
                 var query = $@"
-                query ($page: Int) {{
-                    Page(page: $page, perPage: 1) {{
-                        media({mediaFilter}) {{
-                            {GetAnimeFields()}
+                query {{
+                    popular: Page(page: 1, perPage: 50) {{
+                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {{
+                            {fields}
+                        }}
+                    }}
+                    topScore: Page(page: 1, perPage: 50) {{
+                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {{
+                            {fields}
+                        }}
+                    }}
+                    hiddenGems: Page(page: 1, perPage: 50) {{
+                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {{
+                            {fields}
+                        }}
+                    }}
+                    ongoing: Page(page: 1, perPage: 50) {{
+                        media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: TRENDING_DESC) {{
+                            {fields}
+                        }}
+                    }}
+                    upcoming: Page(page: 1, perPage: 10) {{
+                        media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {{
+                            {fields}
                         }}
                     }}
                 }}";
 
-                var request = new { query = query, variables = new { page = randomPage } };
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(request);
+                var response = await PostGraphQL(query);
+                if (response == null)
+                    return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = IsRateLimited() };
+
+                JObject data = JObject.Parse(response);
+
+                var popularPool = ExtractPool(data["data"]?["popular"]?["media"]);
+                var topScorePool = ExtractPool(data["data"]?["topScore"]?["media"]);
+                var hiddenGemsPool = ExtractPool(data["data"]?["hiddenGems"]?["media"]);
+                var ongoingPool = ExtractPool(data["data"]?["ongoing"]?["media"]);
+                var upcomingPool = ExtractPool(data["data"]?["upcoming"]?["media"]);
+
+                var result = new List<AnimeCard>();
+                result.AddRange(Pick(popularPool, 27));
+                result.AddRange(Pick(topScorePool, 12));
+                result.AddRange(Pick(hiddenGemsPool, 12));
+                result.AddRange(Pick(ongoingPool, 9));
+                result.AddRange(Pick(upcomingPool, 1));
+                result = result.OrderBy(_ => _random.Next()).ToList();
+
+                System.Diagnostics.Debug.WriteLine($"✅ Bulk loaded {result.Count} anime");
+                return new AnimeLoadResult { Animes = result, IsRateLimited = false };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ GetBulkAnimesAsync error: {ex.Message}");
+                return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = false };
+            }
+        }
+
+        private async Task<string?> PostGraphQL(string query, object? variables = null)
+        {
+            try
+            {
+                var payload = variables != null
+                    ? new { query, variables }
+                    : (object)new { query };
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.PostAsync("https://graphql.anilist.co", content);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    System.Diagnostics.Debug.WriteLine("🚫 429 Too Many Requests - Rate limit activé");
+                    System.Diagnostics.Debug.WriteLine("🚫 429 Rate limited");
                     SetRateLimited();
                     return null;
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ Erreur API: {response.StatusCode}");
+                    System.Diagnostics.Debug.WriteLine($"❌ HTTP {response.StatusCode}");
                     return null;
                 }
 
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                JObject data = JObject.Parse(jsonResponse);
-
-                var page = data["data"]?["Page"];
-                if (page == null)
-                    return null;
-
-                var mediaArray = page["media"];
-                if (mediaArray == null || !mediaArray.HasValues)
-                    return null;
-
-                var media = mediaArray[0];
-                if (media == null)
-                    return null;
-
-                return ParseAnimeCard(media);
-            }
-            catch (HttpRequestException ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur réseau: {ex.Message}");
-                return null;
+                return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erreur inattendue: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ HTTP error: {ex.Message}");
                 return null;
             }
         }
 
-        private string GetAnimeFields()
+        private List<AnimeCard> ExtractPool(JToken? arr)
         {
-            return @"
-                id
-                title { romaji english }
-                coverImage { extraLarge large }
-                bannerImage
-                format
-                averageScore
-                genres
-                episodes
-                duration
-                source
-                description
-                season
-                seasonYear
-                status
-                startDate { year month day }
-                endDate { year month day }
-                popularity
-                favourites
-                nextAiringEpisode { episode }
-                studios(isMain: true) {
-                    nodes {
-                        id
-                        name
-                    }
-                }
-                relations {
-                    edges {
-                        relationType
-                        node {
-                            id
-                            type
-                            title { romaji english }
-                            coverImage { large }
-                            format
-                            status
-                        }
-                    }
-                }
-                trailer {
-                    site
-                    id
-                }
-            ";
+            var pool = new List<AnimeCard>();
+            if (arr == null || !arr.HasValues) return pool;
+            foreach (var m in arr)
+            {
+                try { var a = ParseAnimeCard(m); if (a != null) pool.Add(a); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"⚠️ Parse error: {ex.Message}"); }
+            }
+            return pool;
         }
 
-        private AnimeCard ParseAnimeCard(JToken media)
+        private List<AnimeCard> Pick(List<AnimeCard> pool, int count)
         {
-            var titleObj = media["title"];
-            string displayTitle = (!string.IsNullOrEmpty(titleObj?["english"]?.ToString()))
-                ? titleObj!["english"]!.ToString()
-                : titleObj?["romaji"]?.ToString() ?? "Unknown";
-
-            var coverObj = media["coverImage"];
-            string imageUrl = coverObj?["extraLarge"]?.ToString() ?? coverObj?["large"]?.ToString() ?? "";
-
-            string score = media["averageScore"] != null && media["averageScore"]!.Type != JTokenType.Null
-                ? media["averageScore"]!.ToString()
-                : "N/A";
-
-            string description = media["description"]?.ToString() ?? "";
-            description = System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", string.Empty);
-
-            string season = media["season"]?.ToString() ?? "";
-            string yearStr = media["seasonYear"]?.ToString() ?? "";
-            int? year = int.TryParse(yearStr, out int y) ? y : null;
-            string status = media["status"]?.ToString() ?? "";
-
-            string epDisplay = "N/A";
-
-            if (status == "RELEASING")
+            if (pool.Count == 0) return new List<AnimeCard>();
+            if (count >= pool.Count) return new List<AnimeCard>(pool);
+            var copy = new List<AnimeCard>(pool);
+            var out2 = new List<AnimeCard>(count);
+            for (int i = 0; i < count; i++)
             {
-                int? totalEpisodes = media["episodes"] != null && media["episodes"]!.Type != JTokenType.Null ? (int?)media["episodes"] : null;
-                int? nextAiring = media["nextAiringEpisode"]?["episode"] != null && media["nextAiringEpisode"]!["episode"]!.Type != JTokenType.Null
-                    ? (int?)media["nextAiringEpisode"]!["episode"]
-                    : null;
-
-                if (nextAiring.HasValue)
-                {
-                    int releasedEpisodes = nextAiring.Value - 1;
-                    if (totalEpisodes.HasValue)
-                        epDisplay = $"{releasedEpisodes}/{totalEpisodes.Value}";
-                    else
-                        epDisplay = $"{releasedEpisodes}+";
-                }
-                else if (totalEpisodes.HasValue)
-                    epDisplay = totalEpisodes.Value.ToString();
+                int idx = _random.Next(copy.Count);
+                out2.Add(copy[idx]);
+                copy.RemoveAt(idx);
             }
-            else if (status == "FINISHED" || status == "NOT_YET_RELEASED")
-            {
-                if (media["episodes"] != null && media["episodes"]!.Type != JTokenType.Null)
-                    epDisplay = media["episodes"]!.ToString();
-            }
-
-            var genres = new List<string>();
-            var genresArray = media["genres"];
-            if (genresArray != null && genresArray.HasValues)
-            {
-                for (int i = 0; i < Math.Min(3, genresArray.Count()); i++)
-                    genres.Add(genresArray[i]!.ToString());
-            }
-
-            // Parse extended details
-            string format = FormatAnimeFormat(media["format"]?.ToString() ?? "");
-            string source = FormatSource(media["source"]?.ToString() ?? "");
-            int? duration = media["duration"] != null && media["duration"]!.Type != JTokenType.Null 
-                ? (int?)media["duration"] : null;
-
-            string startDate = FormatDate(media["startDate"]);
-            string endDate = FormatDate(media["endDate"]);
-
-            int? popularity = media["popularity"] != null && media["popularity"]!.Type != JTokenType.Null
-                ? (int?)media["popularity"] : null;
-            int? favourites = media["favourites"] != null && media["favourites"]!.Type != JTokenType.Null
-                ? (int?)media["favourites"] : null;
-
-            // Parse studios
-            var studios = new List<AnimeStudio>();
-            var studiosData = media["studios"]?["nodes"];
-            if (studiosData != null && studiosData.HasValues)
-            {
-                foreach (var studio in studiosData)
-                {
-                    studios.Add(new AnimeStudio
-                    {
-                        Id = studio["id"]?.Value<int>() ?? 0,
-                        Name = studio["name"]?.ToString() ?? ""
-                    });
-                }
-            }
-
-            // Parse relations
-            var relations = new List<AnimeRelation>();
-            var relationsData = media["relations"]?["edges"];
-            if (relationsData != null && relationsData.HasValues)
-            {
-                foreach (var edge in relationsData.Take(8))
-                {
-                    var node = edge["node"];
-                    if (node == null || node["type"]?.ToString() != "ANIME") continue;
-
-                    var relTitle = node["title"];
-                    string relDisplayTitle = (!string.IsNullOrEmpty(relTitle?["english"]?.ToString()))
-                        ? relTitle!["english"]!.ToString()
-                        : relTitle?["romaji"]?.ToString() ?? "";
-
-                    relations.Add(new AnimeRelation
-                    {
-                        Id = node["id"]?.Value<int>() ?? 0,
-                        Type = "ANIME",
-                        RelationType = FormatRelationType(edge["relationType"]?.ToString() ?? ""),
-                        Title = relDisplayTitle,
-                        ImageUrl = node["coverImage"]?["large"]?.ToString() ?? "",
-                        Format = FormatAnimeFormat(node["format"]?.ToString() ?? ""),
-                        Status = node["status"]?.ToString() ?? ""
-                    });
-                }
-            }
-
-            // Parse trailer
-            string trailerUrl = "";
-            var trailer = media["trailer"];
-            if (trailer != null)
-            {
-                string site = trailer["site"]?.ToString() ?? "";
-                string id = trailer["id"]?.ToString() ?? "";
-                if (site == "youtube" && !string.IsNullOrEmpty(id))
-                {
-                    trailerUrl = $"https://www.youtube.com/watch?v={id}";
-                }
-            }
-
-            return new AnimeCard
-            {
-                Id = media["id"]?.Value<int>() ?? 0,
-                Title = displayTitle,
-                ImageUrl = imageUrl,
-                BannerUrl = media["bannerImage"]?.ToString() ?? "",
-                Score = score,
-                Description = description,
-                Season = season,
-                Year = year,
-                Status = status,
-                Episodes = epDisplay,
-                Genres = genres,
-                Format = format,
-                Source = source,
-                Duration = duration,
-                StartDate = startDate,
-                EndDate = endDate,
-                Popularity = popularity,
-                Favourites = favourites,
-                Studios = studios,
-                Relations = relations,
-                TrailerUrl = trailerUrl
-            };
+            return out2;
         }
 
-        private string FormatDate(JToken? dateToken)
+        public async Task<AnimeCard?> GetRandomAnimeAsync()
         {
-            if (dateToken == null) return "";
+            if (IsRateLimited()) return null;
+            try
+            {
+                int randomPage = _random.Next(1, 80);
+                int rand = _random.Next(100);
+                string filter = rand < 45
+                    ? "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC"
+                    : rand < 65
+                    ? "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC"
+                    : rand < 80
+                    ? "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: SCORE_DESC"
+                    : rand < 95
+                    ? "type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC"
+                    : "type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
 
-            int? year = dateToken["year"]?.Value<int>();
-            int? month = dateToken["month"]?.Value<int>();
-            int? day = dateToken["day"]?.Value<int>();
+                var q = $@"query ($page: Int) {{
+                    Page(page: $page, perPage: 1) {{
+                        media({filter}) {{ {GetAnimeFields()} }}
+                    }}
+                }}";
 
-            if (!year.HasValue) return "";
+                var resp = await PostGraphQL(q, new { page = randomPage });
+                if (resp == null) return null;
 
+                var data = JObject.Parse(resp);
+                var arr = data["data"]?["Page"]?["media"];
+                if (arr == null || !arr.HasValues) return null;
+                return ParseAnimeCard(arr[0]!);
+            }
+            catch { return null; }
+        }
+
+        // NOTE: Only use confirmed AniList API v2 fields to avoid TypeError
+        private string GetAnimeFields() => @"
+            id
+            title { romaji english native }
+            coverImage { extraLarge large }
+            bannerImage
+            format
+            averageScore
+            genres
+            episodes
+            duration
+            source
+            description
+            season
+            seasonYear
+            status
+            startDate { year month day }
+            endDate   { year month day }
+            popularity
+            favourites
+            nextAiringEpisode { episode timeUntilAiring }
+            studios(isMain: true) { nodes { id name } }
+            relations {
+                edges {
+                    relationType
+                    node {
+                        id type
+                        title { romaji english }
+                        coverImage { large }
+                        format status
+                    }
+                }
+            }
+            trailer { site id }
+            tags { name rank isMediaSpoiler }
+            externalLinks { url site type color }
+            rankings { rank type context allTime season year }
+        ";
+
+        private AnimeCard? ParseAnimeCard(JToken m)
+        {
+            try
+            {
+                var titleObj = m["title"];
+                string title = !string.IsNullOrEmpty(titleObj?["english"]?.ToString())
+                    ? titleObj!["english"]!.ToString()
+                    : titleObj?["romaji"]?.ToString() ?? "Unknown";
+                string nativeTitle = titleObj?["native"]?.ToString() ?? "";
+
+                var cover = m["coverImage"];
+                string imageUrl = cover?["extraLarge"]?.ToString() ?? cover?["large"]?.ToString() ?? "";
+
+                string score = m["averageScore"] != null && m["averageScore"]!.Type != JTokenType.Null
+                    ? m["averageScore"]!.ToString() : "N/A";
+
+                string description = m["description"]?.ToString() ?? "";
+                description = System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", "");
+
+                string season = m["season"]?.ToString() ?? "";
+                int? year = m["seasonYear"] != null && m["seasonYear"]!.Type != JTokenType.Null
+                    ? m["seasonYear"]!.Value<int>() : null;
+                string status = m["status"]?.ToString() ?? "";
+
+                // Next airing
+                int? nextEp = null, timeUntil = null;
+                var nae = m["nextAiringEpisode"];
+                if (nae != null && nae.Type != JTokenType.Null)
+                {
+                    nextEp = nae["episode"]?.Value<int?>();
+                    timeUntil = nae["timeUntilAiring"]?.Value<int?>();
+                }
+
+                // Episode display
+                string epDisplay = "N/A";
+                if (status == "RELEASING")
+                {
+                    int? total = m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null ? m["episodes"]!.Value<int?>() : null;
+                    if (nextEp.HasValue)
+                    {
+                        int done = nextEp.Value - 1;
+                        epDisplay = total.HasValue ? $"{done}/{total.Value}" : $"{done}+";
+                    }
+                    else if (total.HasValue) epDisplay = total.Value.ToString();
+                }
+                else if (status is "FINISHED" or "NOT_YET_RELEASED")
+                {
+                    if (m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null)
+                        epDisplay = m["episodes"]!.ToString();
+                }
+
+                // Genres (top 3)
+                var genres = new List<string>();
+                var ga = m["genres"];
+                if (ga != null && ga.HasValues)
+                    for (int i = 0; i < Math.Min(3, ga.Count()); i++)
+                        genres.Add(ga[i]!.ToString());
+
+                // Studios
+                var studios = new List<AnimeStudio>();
+                var sn = m["studios"]?["nodes"];
+                if (sn != null && sn.HasValues)
+                    foreach (var s in sn)
+                        studios.Add(new AnimeStudio { Id = s["id"]?.Value<int>() ?? 0, Name = s["name"]?.ToString() ?? "" });
+
+                // Relations
+                var relations = new List<AnimeRelation>();
+                var re = m["relations"]?["edges"];
+                if (re != null && re.HasValues)
+                    foreach (var edge in re.Take(8))
+                    {
+                        var node = edge["node"];
+                        if (node == null || node["type"]?.ToString() != "ANIME") continue;
+                        var rt = node["title"];
+                        string relTitle = !string.IsNullOrEmpty(rt?["english"]?.ToString())
+                            ? rt!["english"]!.ToString() : rt?["romaji"]?.ToString() ?? "";
+                        relations.Add(new AnimeRelation
+                        {
+                            Id = node["id"]?.Value<int>() ?? 0,
+                            Type = "ANIME",
+                            RelationType = FormatRelationType(edge["relationType"]?.ToString() ?? ""),
+                            Title = relTitle,
+                            ImageUrl = node["coverImage"]?["large"]?.ToString() ?? "",
+                            Format = FormatFormat(node["format"]?.ToString() ?? ""),
+                            Status = node["status"]?.ToString() ?? ""
+                        });
+                    }
+
+                // Trailer
+                string trailerUrl = "";
+                var tr = m["trailer"];
+                if (tr != null && tr["site"]?.ToString() == "youtube")
+                    trailerUrl = $"https://www.youtube.com/watch?v={tr["id"]}";
+
+                // Tags
+                var tags = new List<AnimeTag>();
+                var ta = m["tags"];
+                if (ta != null && ta.HasValues)
+                    foreach (var t in ta)
+                        tags.Add(new AnimeTag
+                        {
+                            Name = t["name"]?.ToString() ?? "",
+                            Rank = t["rank"]?.Value<int>() ?? 0,
+                            IsMediaSpoiler = t["isMediaSpoiler"]?.Value<bool>() ?? false
+                        });
+
+                // External links — type only; icon generated in UI
+                var extLinks = new List<AnimeExternalLink>();
+                var el = m["externalLinks"];
+                if (el != null && el.HasValues)
+                    foreach (var link in el)
+                    {
+                        string ltype = link["type"]?.ToString() ?? "";
+                        extLinks.Add(new AnimeExternalLink
+                        {
+                            Url = link["url"]?.ToString() ?? "",
+                            Site = link["site"]?.ToString() ?? "",
+                            Type = ltype,
+                            Color = link["color"]?.ToString() ?? ""
+                        });
+                    }
+
+                // Rankings
+                var rankings = new List<AnimeRanking>();
+                var rk = m["rankings"];
+                if (rk != null && rk.HasValues)
+                    foreach (var r in rk)
+                        rankings.Add(new AnimeRanking
+                        {
+                            Rank = r["rank"]?.Value<int>() ?? 0,
+                            Type = r["type"]?.ToString() ?? "",
+                            Context = r["context"]?.ToString() ?? "",
+                            AllTime = r["allTime"]?.Value<bool>() ?? false,
+                            Season = r["season"]?.ToString() ?? "",
+                            Year = r["year"]?.Value<int?>()
+                        });
+
+                return new AnimeCard
+                {
+                    Id = m["id"]?.Value<int>() ?? 0,
+                    Title = title,
+                    NativeTitle = nativeTitle,
+                    ImageUrl = imageUrl,
+                    BannerUrl = m["bannerImage"]?.ToString() ?? "",
+                    Score = score,
+                    Description = description,
+                    Season = season,
+                    Year = year,
+                    Status = status,
+                    Episodes = epDisplay,
+                    Genres = genres,
+                    Format = FormatFormat(m["format"]?.ToString() ?? ""),
+                    Source = FormatSource(m["source"]?.ToString() ?? ""),
+                    Duration = m["duration"]?.Value<int?>(),
+                    StartDate = FormatDate(m["startDate"]),
+                    EndDate = FormatDate(m["endDate"]),
+                    Popularity = m["popularity"]?.Value<int?>(),
+                    Favourites = m["favourites"]?.Value<int?>(),
+                    Studios = studios,
+                    Relations = relations,
+                    TrailerUrl = trailerUrl,
+                    Tags = tags,
+                    ExternalLinks = extLinks,
+                    Rankings = rankings,
+                    NextAiringEpisodeNum = nextEp,
+                    NextAiringTimeUntil = timeUntil
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ ParseAnimeCard: {ex.Message}");
+                return null;
+            }
+        }
+
+        private string FormatDate(JToken? d)
+        {
+            if (d == null) return "";
+            int? y = d["year"]?.Value<int?>(), mo = d["month"]?.Value<int?>(), day = d["day"]?.Value<int?>();
+            if (!y.HasValue) return "";
             string[] months = { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-
-            if (month.HasValue && day.HasValue)
-                return $"{months[month.Value]} {day.Value}, {year.Value}";
-            else if (month.HasValue)
-                return $"{months[month.Value]} {year.Value}";
-            else
-                return year.Value.ToString();
+            if (mo.HasValue && day.HasValue) return $"{months[mo.Value]} {day.Value}, {y}";
+            if (mo.HasValue) return $"{months[mo.Value]} {y}";
+            return y.Value.ToString();
         }
 
-        private string FormatAnimeFormat(string format)
+        private string FormatFormat(string f) => f switch
         {
-            return format switch
-            {
-                "TV" => "TV Series",
-                "TV_SHORT" => "TV Short",
-                "MOVIE" => "Movie",
-                "SPECIAL" => "Special",
-                "OVA" => "OVA",
-                "ONA" => "ONA",
-                "MUSIC" => "Music",
-                _ => format
-            };
-        }
+            "TV" => "TV Series",
+            "TV_SHORT" => "TV Short",
+            "MOVIE" => "Movie",
+            "SPECIAL" => "Special",
+            "OVA" => "OVA",
+            "ONA" => "ONA",
+            "MUSIC" => "Music",
+            _ => f
+        };
 
-        private string FormatSource(string source)
+        private string FormatSource(string s) => s switch
         {
-            return source switch
-            {
-                "ORIGINAL" => "Original",
-                "MANGA" => "Manga",
-                "LIGHT_NOVEL" => "Light Novel",
-                "VISUAL_NOVEL" => "Visual Novel",
-                "VIDEO_GAME" => "Video Game",
-                "OTHER" => "Other",
-                "NOVEL" => "Novel",
-                "DOUJINSHI" => "Doujinshi",
-                "ANIME" => "Anime",
-                "WEB_NOVEL" => "Web Novel",
-                "LIVE_ACTION" => "Live Action",
-                "GAME" => "Game",
-                "COMIC" => "Comic",
-                "MULTIMEDIA_PROJECT" => "Multimedia Project",
-                "PICTURE_BOOK" => "Picture Book",
-                _ => source
-            };
-        }
+            "ORIGINAL" => "Original",
+            "MANGA" => "Manga",
+            "LIGHT_NOVEL" => "Light Novel",
+            "VISUAL_NOVEL" => "Visual Novel",
+            "VIDEO_GAME" => "Video Game",
+            "WEB_NOVEL" => "Web Novel",
+            "NOVEL" => "Novel",
+            "ANIME" => "Anime",
+            "GAME" => "Game",
+            "COMIC" => "Comic",
+            "PICTURE_BOOK" => "Picture Book",
+            "MULTIMEDIA_PROJECT" => "Multimedia Project",
+            "OTHER" => "Other",
+            _ => s
+        };
 
-        private string FormatRelationType(string relationType)
+        private string FormatRelationType(string rt) => rt switch
         {
-            return relationType switch
-            {
-                "ADAPTATION" => "Adaptation",
-                "PREQUEL" => "Prequel",
-                "SEQUEL" => "Sequel",
-                "PARENT" => "Parent",
-                "SIDE_STORY" => "Side Story",
-                "CHARACTER" => "Character",
-                "SUMMARY" => "Summary",
-                "ALTERNATIVE" => "Alternative",
-                "SPIN_OFF" => "Spin-off",
-                "OTHER" => "Other",
-                "SOURCE" => "Source",
-                "COMPILATION" => "Compilation",
-                "CONTAINS" => "Contains",
-                _ => relationType
-            };
-        }
+            "ADAPTATION" => "Adaptation",
+            "PREQUEL" => "Prequel",
+            "SEQUEL" => "Sequel",
+            "PARENT" => "Parent",
+            "SIDE_STORY" => "Side Story",
+            "CHARACTER" => "Character",
+            "SUMMARY" => "Summary",
+            "ALTERNATIVE" => "Alternative",
+            "SPIN_OFF" => "Spin-off",
+            "SOURCE" => "Source",
+            "COMPILATION" => "Compilation",
+            "CONTAINS" => "Contains",
+            "OTHER" => "Other",
+            _ => rt
+        };
 
         public async Task<AnimeLoadResult> GetMultipleAnimesAsync(int count)
         {
             if (IsRateLimited())
-            {
-                System.Diagnostics.Debug.WriteLine("⚠️ Rate limited - chargement annulé");
-                return new AnimeLoadResult
-                {
-                    Animes = new List<AnimeCard>(),
-                    IsRateLimited = true
-                };
-            }
+                return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = true };
 
-            // Pour de grandes quantités (> 10), utiliser la méthode bulk optimisée
             if (count > 10)
             {
-                var bulkResult = await GetBulkAnimesAsync();
-                
-                // Si on a récupéré plus que demandé, tronquer (mais normalement on a exactement 61)
-                if (bulkResult.Animes.Count > count)
-                {
-                    bulkResult.Animes = bulkResult.Animes.Take(count).ToList();
-                }
-                
-                return bulkResult;
+                var bulk = await GetBulkAnimesAsync();
+                if (bulk.Animes.Count > count) bulk.Animes = bulk.Animes.Take(count).ToList();
+                return bulk;
             }
 
-            // Pour de petites quantités, utiliser l'ancienne méthode
             var results = new List<AnimeCard>();
-
             for (int i = 0; i < count; i++)
             {
-                if (IsRateLimited())
-                {
-                    System.Diagnostics.Debug.WriteLine($"⚠️ Rate limited après {i} requêtes");
-                    break;
-                }
-
+                if (IsRateLimited()) break;
                 var anime = await GetRandomAnimeAsync();
-                if (anime != null)
-                {
-                    results.Add(anime);
-                }
-                else if (IsRateLimited())
-                {
-                    break;
-                }
-
+                if (anime != null) results.Add(anime);
                 await Task.Delay(100);
             }
-
-            return new AnimeLoadResult
-            {
-                Animes = results,
-                IsRateLimited = IsRateLimited()
-            };
+            return new AnimeLoadResult { Animes = results, IsRateLimited = IsRateLimited() };
         }
     }
 

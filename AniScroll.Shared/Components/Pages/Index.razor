@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v2.1.0</div>
+    <div class="build-version">v2.2.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -102,7 +102,6 @@
             </div>
         }
 
-        @* Popup de loading SEULEMENT pour le chargement initial *@
         @if (isLoading && !isInitialLoadComplete)
         {
             <div class="loading-area">
@@ -128,10 +127,9 @@
 
     <div class="overlay-controls">
         <div class="counter">@animes.Count animes</div>
-        @* Badge de preloading discret - n'interrompt pas le scroll *@
         @if (isPreloading)
         {
-            <div class="preload-badge">🔄 Preloading...</div>
+            <div class="preload-badge">🔄 Loading more...</div>
         }
         @if (isRateLimited)
         {
@@ -153,7 +151,7 @@
     private List<AnimeCard> animes = new List<AnimeCard>();
     private HashSet<int> expandedAnimes = new HashSet<int>();
     private bool isLoading = false;
-    private bool isInitialLoadComplete = false; // Nouveau flag pour savoir si le premier load est fait
+    private bool isInitialLoadComplete = false;
     private bool isPreloading = false;
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
@@ -163,6 +161,7 @@
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
     private bool isDraggingCard = false;
     private double dragStartY = 0;
+    private double dragStartX = 0;  // Track X axis for strict click detection
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
     private bool isTouchingDescription = false;
@@ -175,21 +174,19 @@
     private const int THROTTLE_MS = 8;
     private System.Threading.Timer? rateLimitTimer;
 
-    // Preloading
-    private const int PRELOAD_THRESHOLD = 40; // Commence le preload après avoir vu 40 animes
+    private const int PRELOAD_THRESHOLD = 40;
     private bool hasPreloaded = false;
 
     // Popup state
     private bool showDetailPopup = false;
     private AnimeCard? selectedAnime = null;
 
-    // Click detection
+    // Click detection — strict: no movement at all allowed
     private bool hasMoved = false;
-    private double clickThreshold = 10;
+    private const double clickThreshold = 5; // pixels, strict
 
     protected override async Task OnInitializedAsync()
     {
-        // Charger les 61 premiers animes
         await LoadAnimes(61, isBackgroundLoad: false);
         isInitialLoadComplete = true;
     }
@@ -215,17 +212,11 @@
             {
                 var previousAnime = animes[previousIndex];
                 if (expandedAnimes.Contains(previousAnime.Id))
-                {
                     expandedAnimes.Remove(previousAnime.Id);
-                }
             }
 
-            // PRELOADING INTELLIGENT : Si on a vu 40 animes et qu'on n'a pas encore preloadé
             if (currentIndex >= PRELOAD_THRESHOLD && !hasPreloaded && !isPreloading)
-            {
-                System.Diagnostics.Debug.WriteLine($"🔄 Seuil de preload atteint ({currentIndex} >= {PRELOAD_THRESHOLD})");
                 _ = PreloadNextBatch();
-            }
         }
 
         previousIndex = currentIndex;
@@ -233,25 +224,15 @@
 
     private async Task PreloadNextBatch()
     {
-        if (isPreloading || hasPreloaded)
-            return;
-
+        if (isPreloading || hasPreloaded) return;
         isPreloading = true;
         hasPreloaded = true;
         StateHasChanged();
-
-        System.Diagnostics.Debug.WriteLine("🔄 Début du preloading des 61 prochains animes EN ARRIÈRE-PLAN...");
-
-        // PRELOAD SILENCIEUX - ne bloque pas l'UI
         await LoadAnimes(61, isBackgroundLoad: true);
-
         isPreloading = false;
         StateHasChanged();
-
-        System.Diagnostics.Debug.WriteLine("✅ Preloading terminé ! L'utilisateur peut continuer à scroller.");
     }
 
-    // Méthode LoadAnimes avec paramètre isBackgroundLoad
     private async Task LoadAnimes(int count, bool isBackgroundLoad = false)
     {
         if (AniListService.IsRateLimited())
@@ -262,12 +243,7 @@
             return;
         }
 
-        // Afficher le popup de loading SEULEMENT si ce n'est PAS un background load
-        if (!isBackgroundLoad)
-        {
-            isLoading = true;
-            StateHasChanged();
-        }
+        if (!isBackgroundLoad) { isLoading = true; StateHasChanged(); }
 
         int startIndex = animes.Count;
         var result = await AniListService.GetMultipleAnimesAsync(count);
@@ -275,10 +251,7 @@
         if (result.IsRateLimited)
         {
             isRateLimited = true;
-            if (!isBackgroundLoad)
-            {
-                isLoading = false;
-            }
+            if (!isBackgroundLoad) isLoading = false;
             StartRateLimitCountdown();
             StateHasChanged();
             return;
@@ -286,17 +259,10 @@
 
         animes.AddRange(result.Animes);
 
-        System.Diagnostics.Debug.WriteLine($"✅ Chargé {result.Animes.Count} animes. Total: {animes.Count} (Background: {isBackgroundLoad})");
-
         for (int i = startIndex; i < animes.Count; i++)
-        {
             newlyCreatedCards.Add(i);
-        }
 
-        if (!isBackgroundLoad)
-        {
-            isLoading = false;
-        }
+        if (!isBackgroundLoad) isLoading = false;
         StateHasChanged();
 
         await Task.Delay(50);
@@ -306,111 +272,68 @@
     private void StartRateLimitCountdown()
     {
         rateLimitCountdown = AniListService.GetRateLimitSecondsRemaining();
-
         rateLimitTimer?.Dispose();
         rateLimitTimer = new System.Threading.Timer(async _ =>
         {
             rateLimitCountdown = AniListService.GetRateLimitSecondsRemaining();
-
-            if (rateLimitCountdown <= 0)
-            {
-                isRateLimited = false;
-                rateLimitTimer?.Dispose();
-            }
-
+            if (rateLimitCountdown <= 0) { isRateLimited = false; rateLimitTimer?.Dispose(); }
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
     private string GetLayoutMode(int animeId, string description)
     {
-        if (!IsExpanded(animeId))
-            return "normal";
-
+        if (!IsExpanded(animeId)) return "normal";
         int descLength = description?.Length ?? 0;
-
-        if (descLength < 300)
-            return "short";
-
-        if (descLength < 800)
-            return "medium";
-
+        if (descLength < 300) return "short";
+        if (descLength < 800) return "medium";
         return "long";
     }
 
     private string GetImageStyle(int animeId, string description)
     {
-        if (!IsExpanded(animeId))
-            return "";
-
+        if (!IsExpanded(animeId)) return "";
         string layoutMode = GetLayoutMode(animeId, description);
-
-        switch (layoutMode)
+        return layoutMode switch
         {
-            case "short":
-                return "width: 280px; height: 420px;";
-            case "medium":
-                return "width: 200px; height: 300px;";
-            case "long":
-                return "width: 140px; height: 210px;";
-            default:
-                return "";
-        }
+            "short" => "width: 280px; height: 420px;",
+            "medium" => "width: 200px; height: 300px;",
+            "long" => "width: 140px; height: 210px;",
+            _ => ""
+        };
     }
 
     private string GetDescriptionWrapperStyle(string description)
     {
-        if (string.IsNullOrEmpty(description))
-            return "max-height: 200px;";
-
+        if (string.IsNullOrEmpty(description)) return "max-height: 200px;";
         int descLength = description.Length;
-
-        if (descLength < 300)
-        {
-            return "max-height: min(200px, 50vh); overflow-y: auto;";
-        }
-        else if (descLength < 800)
-        {
-            return "max-height: min(350px, 50vh); overflow-y: auto;";
-        }
-        else
-        {
-            return "max-height: min(450px, 50vh); overflow-y: auto;";
-        }
+        if (descLength < 300) return "max-height: min(200px, 50vh); overflow-y: auto;";
+        else if (descLength < 800) return "max-height: min(350px, 50vh); overflow-y: auto;";
+        else return "max-height: min(450px, 50vh); overflow-y: auto;";
     }
 
     private string GetTitleClass(string title)
     {
         if (string.IsNullOrEmpty(title)) return "";
-
-        if (title.Length > 50)
-            return "title-very-long";
-        else if (title.Length > 30)
-            return "title-long";
-
+        if (title.Length > 50) return "title-very-long";
+        else if (title.Length > 30) return "title-long";
         return "";
     }
 
     private string GetCardTransitionClass(int index)
     {
-        if (newlyCreatedCards.Contains(index))
-            return "no-transition";
-
-        if (isDraggingCard)
-            return "no-transition";
-
-        if (isTransitioning)
-            return "with-transition";
-
+        if (newlyCreatedCards.Contains(index)) return "no-transition";
+        if (isDraggingCard) return "no-transition";
+        if (isTransitioning) return "with-transition";
         return "no-transition";
     }
 
     private void HandleCardMouseDown(MouseEventArgs e, int index)
     {
         if (index != currentIndex) return;
-
         isDraggingCard = true;
         dragStartY = e.ClientY;
+        dragStartX = e.ClientX;
         currentDragOffset = 0;
         isTransitioning = false;
         hasMoved = false;
@@ -420,16 +343,14 @@
     {
         if (!isDraggingCard) return;
 
+        // Track both axes for strict click detection
+        double deltaX = Math.Abs(e.ClientX - dragStartX);
         double deltaY = Math.Abs(e.ClientY - dragStartY);
-        if (deltaY > clickThreshold)
-        {
+        if (deltaX > clickThreshold || deltaY > clickThreshold)
             hasMoved = true;
-        }
 
         var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
-            return;
-
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
         lastRenderTime = now;
 
         currentDragOffset = e.ClientY - dragStartY;
@@ -439,7 +360,6 @@
     private async Task HandleCardMouseUp(MouseEventArgs e)
     {
         if (!isDraggingCard) return;
-
         isDraggingCard = false;
 
         double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
@@ -449,28 +369,16 @@
         {
             if (currentDragOffset < 0)
             {
-                if (currentIndex < animes.Count - 1)
+                if (currentIndex < animes.Count - 1) currentIndex++;
+                else if (!AniListService.IsRateLimited())
                 {
-                    currentIndex++;
-                }
-                else
-                {
-                    if (!AniListService.IsRateLimited())
-                    {
-                        await LoadAnimes(61, isBackgroundLoad: false);
-                        if (animes.Count > currentIndex + 1)
-                        {
-                            currentIndex++;
-                        }
-                    }
+                    await LoadAnimes(61, isBackgroundLoad: false);
+                    if (animes.Count > currentIndex + 1) currentIndex++;
                 }
             }
             else if (currentDragOffset > 0)
             {
-                if (currentIndex > 0)
-                {
-                    currentIndex--;
-                }
+                if (currentIndex > 0) currentIndex--;
             }
         }
 
@@ -486,16 +394,11 @@
     private async Task HandleCardTouchStart(TouchEventArgs e, int index)
     {
         if (index != currentIndex) return;
-
         if (e.Touches.Length > 0)
         {
             var touch = e.Touches[0];
 
-            isTouchingDescription = await JS.InvokeAsync<bool>(
-                "isTouchingDescriptionZone",
-                touch.ClientX,
-                touch.ClientY
-            );
+            isTouchingDescription = await JS.InvokeAsync<bool>("isTouchingDescriptionZone", touch.ClientX, touch.ClientY);
 
             if (isTouchingDescription)
             {
@@ -503,15 +406,14 @@
                 if (IsExpanded(currentAnime.Id))
                 {
                     isScrollingInDescription = true;
-                    descriptionScrolledToBottom = await JS.InvokeAsync<bool>(
-                        "isDescriptionAtBottom"
-                    );
+                    descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
                 }
                 return;
             }
 
             isDraggingCard = true;
             dragStartY = touch.ClientY;
+            dragStartX = touch.ClientX;
             currentDragOffset = 0;
             isTransitioning = false;
             hasMoved = false;
@@ -524,17 +426,15 @@
         {
             var touch = e.Touches[0];
 
+            double deltaX = Math.Abs(touch.ClientX - dragStartX);
             double deltaY = Math.Abs(touch.ClientY - dragStartY);
-            if (deltaY > clickThreshold)
-            {
+            if (deltaX > clickThreshold || deltaY > clickThreshold)
                 hasMoved = true;
-            }
 
             if (isScrollingInDescription)
             {
                 var isAtTop = await JS.InvokeAsync<bool>("isDescriptionAtTop");
                 descriptionScrolledToBottom = await JS.InvokeAsync<bool>("isDescriptionAtBottom");
-
                 double deltaYDir = touch.ClientY - dragStartY;
 
                 if (isAtTop && deltaYDir > 0)
@@ -543,6 +443,7 @@
                     {
                         isDraggingCard = true;
                         dragStartY = touch.ClientY;
+                        dragStartX = touch.ClientX;
                         currentDragOffset = 0;
                     }
                 }
@@ -552,22 +453,18 @@
                     {
                         isDraggingCard = true;
                         dragStartY = touch.ClientY;
+                        dragStartX = touch.ClientX;
                         currentDragOffset = 0;
                     }
                 }
-                else
-                {
-                    return;
-                }
+                else return;
             }
         }
 
         if (!isDraggingCard) return;
 
         var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS)
-            return;
-
+        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
         lastRenderTime = now;
 
         if (e.Touches.Length > 0)
@@ -584,7 +481,6 @@
         descriptionScrolledToBottom = false;
 
         if (!isDraggingCard) return;
-
         isDraggingCard = false;
 
         double swipeThreshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
@@ -594,28 +490,16 @@
         {
             if (currentDragOffset < 0)
             {
-                if (currentIndex < animes.Count - 1)
+                if (currentIndex < animes.Count - 1) currentIndex++;
+                else if (!AniListService.IsRateLimited())
                 {
-                    currentIndex++;
-                }
-                else
-                {
-                    if (!AniListService.IsRateLimited())
-                    {
-                        await LoadAnimes(61, isBackgroundLoad: false);
-                        if (animes.Count > currentIndex + 1)
-                        {
-                            currentIndex++;
-                        }
-                    }
+                    await LoadAnimes(61, isBackgroundLoad: false);
+                    if (animes.Count > currentIndex + 1) currentIndex++;
                 }
             }
             else if (currentDragOffset > 0)
             {
-                if (currentIndex > 0)
-                {
-                    currentIndex--;
-                }
+                if (currentIndex > 0) currentIndex--;
             }
         }
 
@@ -631,67 +515,42 @@
     private double GetCardTransform(int index)
     {
         double basePosition = (index - currentIndex) * CARD_HEIGHT;
-
-        if (isDraggingCard)
-        {
-            return basePosition + currentDragOffset;
-        }
-
+        if (isDraggingCard) return basePosition + currentDragOffset;
         return basePosition;
     }
 
-    private bool IsExpanded(int animeId)
-    {
-        return expandedAnimes.Contains(animeId);
-    }
+    private bool IsExpanded(int animeId) => expandedAnimes.Contains(animeId);
 
     private void ToggleExpand(int animeId)
     {
-        if (expandedAnimes.Contains(animeId))
-            expandedAnimes.Remove(animeId);
-        else
-            expandedAnimes.Add(animeId);
-
+        if (expandedAnimes.Contains(animeId)) expandedAnimes.Remove(animeId);
+        else expandedAnimes.Add(animeId);
         StateHasChanged();
     }
 
-    private bool NeedsExpansion(string description)
-    {
-        return description?.Length > 150;
-    }
+    private bool NeedsExpansion(string description) => description?.Length > 150;
 
     private string GetSafePreviewDescription(string description)
     {
-        if (string.IsNullOrEmpty(description))
-            return "";
-
+        if (string.IsNullOrEmpty(description)) return "";
         int maxChars = 110;
-
-        if (description.Length <= maxChars)
-            return description;
-
+        if (description.Length <= maxChars) return description;
         int cutPosition = description.LastIndexOf(' ', Math.Min(maxChars, description.Length - 1));
-
-        if (cutPosition == -1 || cutPosition < 50)
-            cutPosition = maxChars;
-
+        if (cutPosition == -1 || cutPosition < 50) cutPosition = maxChars;
         return description.Substring(0, cutPosition).TrimEnd() + "...";
     }
 
     private void HandleImageClick(AnimeCard anime)
     {
+        // Only open popup if user didn't move at all
         if (!hasMoved && !isDraggingCard)
-        {
             ShowAnimeDetails(anime);
-        }
     }
 
     private void HandleTitleClick(AnimeCard anime)
     {
         if (!hasMoved && !isDraggingCard)
-        {
             ShowAnimeDetails(anime);
-        }
     }
 
     private void ShowAnimeDetails(AnimeCard anime)
@@ -708,28 +567,10 @@
         StateHasChanged();
     }
 
-    private void HandleSearchToggled()
-    {
-        System.Diagnostics.Debug.WriteLine("🔍 Search toggled");
-    }
+    private void HandleSearchToggled() { }
+    private void HandleListsClicked() { }
+    private void HandleProfileClicked() { }
+    private void HandleSearchQueryChanged(string query) { }
 
-    private void HandleListsClicked()
-    {
-        System.Diagnostics.Debug.WriteLine("📝 Lists clicked");
-    }
-
-    private void HandleProfileClicked()
-    {
-        System.Diagnostics.Debug.WriteLine("👤 Profile clicked");
-    }
-
-    private void HandleSearchQueryChanged(string query)
-    {
-        System.Diagnostics.Debug.WriteLine($"🔎 Search query: {query}");
-    }
-
-    public void Dispose()
-    {
-        rateLimitTimer?.Dispose();
-    }
+    public void Dispose() => rateLimitTimer?.Dispose();
 }
