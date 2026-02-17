@@ -23,9 +23,9 @@
                     <!-- Top Banner -->
                     <div class="modal-banner" style="background-image: url('@CurrentAnime.BannerUrl');"></div>
 
-                    <!-- Content Container (Poster + Info) -->
+                    <!-- Content Container (Poster + Info) - Layout horizontal sur mobile -->
                     <div class="modal-header-content">
-                        <!-- Left: Cover Poster -->
+                        <!-- Left: Cover Poster + Buttons -->
                         <div class="modal-poster-section">
                             <div class="modal-poster" style="background-image: url('@CurrentAnime.ImageUrl');"></div>
                             
@@ -48,7 +48,7 @@
                             </div>
                         </div>
 
-                        <!-- Right: Title and Info -->
+                        <!-- Right: Title and Key Info -->
                         <div class="modal-info-section">
                             <!-- Title -->
                             <h1 class="modal-title">@CurrentAnime.Title</h1>
@@ -60,34 +60,34 @@
                                     @if (CurrentAnime.Status == "RELEASING")
                                     {
                                         <span class="status-indicator releasing"></span>
-                                        <span>Currently Airing • @CurrentAnime.Season @CurrentAnime.Year</span>
+                                        <span>@CurrentAnime.Season @CurrentAnime.Year</span>
                                     }
                                     else if (CurrentAnime.Status == "FINISHED")
                                     {
                                         <span class="status-indicator finished"></span>
-                                        <span>Finished • @CurrentAnime.Season @CurrentAnime.Year</span>
+                                        <span>@CurrentAnime.Season @CurrentAnime.Year</span>
                                     }
                                     else if (CurrentAnime.Status == "NOT_YET_RELEASED")
                                     {
                                         <span class="status-indicator upcoming"></span>
-                                        <span>Coming Soon • @CurrentAnime.Season @CurrentAnime.Year</span>
+                                        <span>@CurrentAnime.Season @CurrentAnime.Year</span>
                                     }
                                 </div>
                             }
 
-                            <!-- Info Fields -->
+                            <!-- Compact Info Grid -->
                             <div class="modal-info-grid">
                                 <div class="info-field">
                                     <span class="info-label">Score</span>
                                     <span class="info-value score">⭐ @CurrentAnime.Score</span>
                                 </div>
                                 <div class="info-field">
-                                    <span class="info-label">Status</span>
-                                    <span class="info-value">@GetStatusText(CurrentAnime.Status)</span>
-                                </div>
-                                <div class="info-field">
                                     <span class="info-label">Episodes</span>
                                     <span class="info-value">@CurrentAnime.Episodes</span>
+                                </div>
+                                <div class="info-field">
+                                    <span class="info-label">Status</span>
+                                    <span class="info-value">@GetStatusText(CurrentAnime.Status)</span>
                                 </div>
                                 @if (CurrentAnime.Duration.HasValue)
                                 {
@@ -103,11 +103,11 @@
                                         <span class="info-value">@CurrentAnime.Favourites.Value.ToString("N0")</span>
                                     </div>
                                 }
-                                @if (CurrentAnime.Studios?.Any() == true)
+                                @if (!string.IsNullOrEmpty(CurrentAnime.Source))
                                 {
                                     <div class="info-field">
-                                        <span class="info-label">Studio</span>
-                                        <span class="info-value">@string.Join(", ", CurrentAnime.Studios.Select(s => s.Name))</span>
+                                        <span class="info-label">Source</span>
+                                        <span class="info-value">@CurrentAnime.Source</span>
                                     </div>
                                 }
                             </div>
@@ -118,6 +118,15 @@
                 <!-- Main Content -->
                 <div class="modal-content">
 
+                    <!-- Synopsis -->
+                    @if (!string.IsNullOrEmpty(CurrentAnime.Description))
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Synopsis</h3>
+                            <p class="synopsis-text">@CurrentAnime.Description</p>
+                        </div>
+                    }
+
                     <!-- Genres -->
                     @if (CurrentAnime.Genres?.Any() == true)
                     {
@@ -127,6 +136,44 @@
                                 @foreach (var genre in CurrentAnime.Genres)
                                 {
                                     <span class="genre-pill">@genre</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Studios -->
+                    @if (CurrentAnime.Studios?.Any() == true)
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Studios</h3>
+                            <div class="studios-container">
+                                @foreach (var studio in CurrentAnime.Studios)
+                                {
+                                    <span class="studio-badge">@studio.Name</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Trailer avec embed YouTube -->
+                    @if (!string.IsNullOrEmpty(CurrentAnime.TrailerUrl))
+                    {
+                        <div class="modal-section">
+                            <h3 class="section-title">Trailer</h3>
+                            <div class="trailer-container">
+                                @{
+                                    var videoId = GetYouTubeVideoId(CurrentAnime.TrailerUrl);
+                                    if (!string.IsNullOrEmpty(videoId))
+                                    {
+                                        <div class="youtube-embed-wrapper">
+                                            <iframe 
+                                                src="https://www.youtube.com/embed/@videoId"
+                                                frameborder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowfullscreen>
+                                            </iframe>
+                                        </div>
+                                    }
                                 }
                             </div>
                         </div>
@@ -152,17 +199,8 @@
                         </div>
                     }
 
-                    <!-- Synopsis -->
-                    @if (!string.IsNullOrEmpty(CurrentAnime.Description))
-                    {
-                        <div class="modal-section">
-                            <h3 class="section-title">Synopsis</h3>
-                            <p class="synopsis-text">@CurrentAnime.Description</p>
-                        </div>
-                    }
-
                     <!-- Additional Info -->
-                    @if (!string.IsNullOrEmpty(CurrentAnime.Source) || !string.IsNullOrEmpty(CurrentAnime.Format))
+                    @if (!string.IsNullOrEmpty(CurrentAnime.Format) || !string.IsNullOrEmpty(CurrentAnime.StartDate) || !string.IsNullOrEmpty(CurrentAnime.EndDate) || CurrentAnime.Popularity.HasValue)
                     {
                         <div class="modal-section">
                             <h3 class="section-title">Additional Information</h3>
@@ -172,13 +210,6 @@
                                     <div class="info-item">
                                         <span class="info-item-label">Format</span>
                                         <span class="info-item-value">@CurrentAnime.Format</span>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(CurrentAnime.Source))
-                                {
-                                    <div class="info-item">
-                                        <span class="info-item-label">Source</span>
-                                        <span class="info-item-value">@CurrentAnime.Source</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(CurrentAnime.StartDate))
@@ -206,32 +237,15 @@
                         </div>
                     }
 
-                    <!-- Trailer -->
-                    @if (!string.IsNullOrEmpty(CurrentAnime.TrailerUrl))
-                    {
-                        <div class="modal-section">
-                            <h3 class="section-title">Trailer</h3>
-                            <div class="trailer-container">
-                                <a href="@CurrentAnime.TrailerUrl" target="_blank" class="trailer-link">
-                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="2">
-                                        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
-                                    </svg>
-                                    <span>Watch Trailer on YouTube</span>
-                                </a>
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Streaming Links -->
+                    <!-- External Links -->
                     <div class="modal-section">
-                        <h3 class="section-title">Watch On</h3>
-                        <div class="streaming-links">
-                            <a href="https://anilist.co/anime/@CurrentAnime.Id" target="_blank" class="streaming-btn anilist">
-                                <span>AniList</span>
+                        <h3 class="section-title">External Links</h3>
+                        <div class="external-links">
+                            <a href="https://anilist.co/anime/@CurrentAnime.Id" target="_blank" class="external-link anilist">
+                                <span>View on AniList</span>
                             </a>
-                            <a href="https://myanimelist.net/anime/@CurrentAnime.Id" target="_blank" class="streaming-btn mal">
-                                <span>MyAnimeList</span>
+                            <a href="https://myanimelist.net/anime/@CurrentAnime.Id" target="_blank" class="external-link mal">
+                                <span>View on MyAnimeList</span>
                             </a>
                         </div>
                     </div>
@@ -278,5 +292,33 @@
     private void OnFavorite()
     {
         System.Diagnostics.Debug.WriteLine($"❤️ Favorite: {CurrentAnime?.Title}");
+    }
+
+    private string GetYouTubeVideoId(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return string.Empty;
+
+        // Format: https://www.youtube.com/watch?v=VIDEO_ID
+        if (url.Contains("watch?v="))
+        {
+            var parts = url.Split("watch?v=");
+            if (parts.Length > 1)
+            {
+                var videoId = parts[1].Split('&')[0];
+                return videoId;
+            }
+        }
+        // Format: https://youtu.be/VIDEO_ID
+        else if (url.Contains("youtu.be/"))
+        {
+            var parts = url.Split("youtu.be/");
+            if (parts.Length > 1)
+            {
+                var videoId = parts[1].Split('?')[0];
+                return videoId;
+            }
+        }
+
+        return string.Empty;
     }
 }

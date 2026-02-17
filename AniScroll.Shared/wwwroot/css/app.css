@@ -984,20 +984,20 @@ html, body {
    ====================================================== */
 
 /* ======================================================
-   ANIME DETAIL MODAL - STYLE ANILIST
+   ANIME DETAIL MODAL - STYLE AMÉLIORÉ
    ====================================================== */
 
 .anime-detail-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 0;
     animation: fadeIn 0.2s ease;
 }
 
@@ -1011,26 +1011,28 @@ html, body {
 }
 
 .anime-detail-modal {
-    background: #1a1a2e;
-    border-radius: 16px;
+    background: #0e0e16;
+    border-radius: 0;
     width: 100%;
-    max-width: 900px;
-    max-height: 90vh;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
     position: relative;
     animation: slideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .anime-detail-modal {
-        max-width: 100%;
-        max-height: 100vh;
-        border-radius: 0;
+        max-width: 900px;
+        max-height: 90vh;
+        height: auto;
+        border-radius: 16px;
     }
 
     .anime-detail-overlay {
-        padding: 0;
+        padding: 20px;
     }
 }
 
@@ -1053,10 +1055,10 @@ html, body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
     display: flex;
     align-items: center;
@@ -1067,7 +1069,7 @@ html, body {
 }
 
 .modal-close-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     transform: scale(1.1);
 }
 
@@ -1077,16 +1079,16 @@ html, body {
 
 /* Scroll Container */
 .modal-scroll-container {
-    height: 90vh;
+    height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-scroll-container {
-        height: 100vh;
+        height: 90vh;
     }
 }
 
@@ -1112,16 +1114,16 @@ html, body {
 /* Top Banner */
 .modal-banner {
     width: 100%;
-    height: 250px;
+    height: 180px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     position: relative;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-banner {
-        height: 180px;
+        height: 250px;
     }
 }
 
@@ -1130,28 +1132,28 @@ html, body {
     position: absolute;
     inset: 0;
     background: linear-gradient(to bottom, 
-        rgba(26, 26, 46, 0) 0%, 
-        rgba(26, 26, 46, 0.3) 50%,
-        rgba(26, 26, 46, 1) 100%
+        rgba(14, 14, 22, 0) 0%, 
+        rgba(14, 14, 22, 0.5) 60%,
+        rgba(14, 14, 22, 1) 100%
     );
 }
 
-/* Header Content (Poster + Info) */
+/* Header Content - Layout horizontal sur mobile */
 .modal-header-content {
     display: flex;
-    gap: 24px;
-    padding: 0 32px 24px;
-    margin-top: -80px;
+    flex-direction: row;
+    gap: 16px;
+    padding: 0 20px 20px;
+    margin-top: -60px;
     position: relative;
     z-index: 10;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-header-content {
-        flex-direction: column;
-        padding: 0 20px 20px;
-        margin-top: -60px;
-        gap: 16px;
+        gap: 24px;
+        padding: 0 32px 24px;
+        margin-top: -80px;
     }
 }
 
@@ -1161,23 +1163,24 @@ html, body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .modal-poster {
-    width: 185px;
-    height: 265px;
+    width: 120px;
+    height: 170px;
     border-radius: 8px;
     background-size: cover;
     background-position: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-poster {
-        width: 140px;
-        height: 200px;
+        width: 185px;
+        height: 265px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
     }
 }
 
@@ -1187,14 +1190,21 @@ html, body {
     gap: 8px;
 }
 
+@media (max-width: 767px) {
+    .modal-action-buttons {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
 .btn-add-to-list {
     flex: 1;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 6px;
-    padding: 10px 16px;
-    font-size: 14px;
+    padding: 10px 12px;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -1203,6 +1213,14 @@ html, body {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .btn-add-to-list {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
 }
 
 .btn-add-to-list:hover {
@@ -1212,6 +1230,12 @@ html, body {
 
 .btn-add-to-list:active {
     transform: translateY(0);
+}
+
+@media (max-width: 767px) {
+    .btn-add-to-list {
+        width: 100%;
+    }
 }
 
 .btn-favorite {
@@ -1226,6 +1250,14 @@ html, body {
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+    .btn-favorite {
+        width: 100%;
+        height: 38px;
+    }
 }
 
 .btn-favorite:hover {
@@ -1245,37 +1277,65 @@ html, body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-top: 8px;
+    gap: 10px;
+    padding-top: 0;
+    min-width: 0;
+}
+
+@media (min-width: 768px) {
+    .modal-info-section {
+        gap: 12px;
+        padding-top: 8px;
+    }
 }
 
 .modal-title {
-    font-size: 28px;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     line-height: 1.2;
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-title {
-        font-size: 22px;
+        font-size: 28px;
+        -webkit-line-clamp: 2;
     }
 }
 
 .modal-airing-info {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 6px;
+    font-size: 12px;
     color: #9ca3af;
 }
 
+@media (min-width: 768px) {
+    .modal-airing-info {
+        gap: 8px;
+        font-size: 14px;
+    }
+}
+
 .status-indicator {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+    }
 }
 
 .status-indicator.releasing {
@@ -1292,39 +1352,61 @@ html, body {
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
-/* Info Grid */
+/* Info Grid - Compact sur mobile */
 .modal-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-    margin-top: 8px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 6px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-info-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
     }
 }
 
 .info-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+}
+
+@media (min-width: 768px) {
+    .info-field {
+        gap: 4px;
+    }
 }
 
 .info-label {
-    font-size: 11px;
+    font-size: 10px;
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
 }
 
+@media (min-width: 768px) {
+    .info-label {
+        font-size: 11px;
+    }
+}
+
 .info-value {
-    font-size: 15px;
+    font-size: 13px;
     color: white;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .info-value {
+        font-size: 15px;
+    }
 }
 
 .info-value.score {
@@ -1334,24 +1416,52 @@ html, body {
 /* ========== MAIN CONTENT ========== */
 
 .modal-content {
-    padding: 0 32px 32px;
+    padding: 0 20px 20px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .modal-content {
-        padding: 0 20px 20px;
+        padding: 0 32px 32px;
     }
 }
 
 .modal-section {
-    margin-bottom: 32px;
+    margin-bottom: 28px;
+}
+
+@media (min-width: 768px) {
+    .modal-section {
+        margin-bottom: 32px;
+    }
 }
 
 .section-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: bold;
     color: white;
-    margin: 0 0 16px 0;
+    margin: 0 0 14px 0;
+}
+
+@media (min-width: 768px) {
+    .section-title {
+        font-size: 18px;
+        margin: 0 0 16px 0;
+    }
+}
+
+/* ========== SYNOPSIS ========== */
+
+.synopsis-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #d1d5db;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .synopsis-text {
+        font-size: 15px;
+    }
 }
 
 /* ========== GENRES ========== */
@@ -1376,6 +1486,56 @@ html, body {
 .genre-pill:hover {
     background: rgba(239, 68, 68, 0.25);
     transform: translateY(-2px);
+}
+
+/* ========== STUDIOS ========== */
+
+.studios-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.studio-badge {
+    background: rgba(102, 126, 234, 0.15);
+    border: 1px solid rgba(102, 126, 234, 0.4);
+    color: #667eea;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.studio-badge:hover {
+    background: rgba(102, 126, 234, 0.25);
+    transform: translateY(-2px);
+}
+
+/* ========== TRAILER avec YouTube Embed ========== */
+
+.trailer-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.youtube-embed-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+}
+
+.youtube-embed-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 /* ========== RELATIONS ========== */
@@ -1452,27 +1612,18 @@ html, body {
     -webkit-box-orient: vertical;
 }
 
-/* ========== SYNOPSIS ========== */
-
-.synopsis-text {
-    font-size: 15px;
-    line-height: 1.7;
-    color: #d1d5db;
-    margin: 0;
-}
-
 /* ========== ADDITIONAL INFO ========== */
 
 .additional-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 12px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .additional-info-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
     }
 }
 
@@ -1498,50 +1649,15 @@ html, body {
     font-weight: 500;
 }
 
-/* ========== TRAILER ========== */
+/* ========== EXTERNAL LINKS ========== */
 
-.trailer-container {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 32px;
-    text-align: center;
-}
-
-.trailer-link {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    color: white;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.trailer-link svg {
-    color: #ef4444;
-    transition: all 0.2s ease;
-}
-
-.trailer-link:hover svg {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
-}
-
-.trailer-link span {
-    font-size: 15px;
-    font-weight: 600;
-}
-
-/* ========== STREAMING LINKS ========== */
-
-.streaming-links {
+.external-links {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
 }
 
-.streaming-btn {
+.external-link {
     flex: 1;
     min-width: 140px;
     padding: 14px 20px;
@@ -1554,23 +1670,23 @@ html, body {
     border: 1px solid transparent;
 }
 
-.streaming-btn.anilist {
+.external-link.anilist {
     background: #02a9ff;
     color: white;
 }
 
-.streaming-btn.anilist:hover {
+.external-link.anilist:hover {
     background: #0290d9;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(2, 169, 255, 0.3);
 }
 
-.streaming-btn.mal {
+.external-link.mal {
     background: #2e51a2;
     color: white;
 }
 
-.streaming-btn.mal:hover {
+.external-link.mal:hover {
     background: #244189;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(46, 81, 162, 0.3);
