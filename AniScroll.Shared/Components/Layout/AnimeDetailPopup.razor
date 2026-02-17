@@ -6,7 +6,6 @@
     <div class="anime-detail-overlay" @onclick="OnOverlayClick">
         <div class="anime-detail-modal" @onclick:stopPropagation="true">
 
-            <!-- Close Button - positioned below status bar -->
             <button class="modal-close-btn" @onclick="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -17,12 +16,10 @@
 
             <div class="modal-scroll-container">
 
-                <!-- Header -->
                 <div class="modal-header">
                     <div class="modal-banner" style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl) ? "background:linear-gradient(135deg,#1a1a2e,#16213e);" : $"background-image:url('{CurrentAnime.BannerUrl}');")"></div>
 
                     <div class="modal-header-content">
-                        <!-- Left: Poster + Buttons -->
                         <div class="modal-poster-section">
                             <div class="modal-poster" style="background-image: url('@CurrentAnime.ImageUrl');"></div>
 
@@ -58,11 +55,9 @@
                             </div>
                         </div>
 
-                        <!-- Right: Info -->
                         <div class="modal-info-section">
                             <h1 class="modal-title">@CurrentAnime.Title</h1>
 
-                            <!-- Status — NO indicator dot for FINISHED -->
                             @if (!string.IsNullOrEmpty(CurrentAnime.Season) && CurrentAnime.Year.HasValue)
                             {
                                 <div class="modal-airing-info">
@@ -83,7 +78,6 @@
                                 </div>
                             }
 
-                            <!-- Next episode countdown — RELEASING only -->
                             @if (CurrentAnime.Status == "RELEASING" && CurrentAnime.NextAiringEpisodeNum.HasValue)
                             {
                                 <div class="next-ep-banner">
@@ -100,7 +94,6 @@
                                 </div>
                             }
 
-                            <!-- All-time rankings -->
                             @{
                                 var topRankings = CurrentAnime.Rankings?
                                 .Where(r => r.AllTime)
@@ -120,9 +113,7 @@
                                 </div>
                             }
 
-                            <!-- Info grid — always 2 fixed columns -->
                             <div class="modal-info-grid">
-                                <!-- Col 1: Score, Favorites, Status -->
                                 <div class="info-col">
                                     <div class="info-field">
                                         <span class="info-lbl">Score</span>
@@ -140,7 +131,6 @@
                                         <span class="info-val">@GetStatusText(CurrentAnime.Status)</span>
                                     </div>
                                 </div>
-                                <!-- Col 2: Episodes, Duration, Source -->
                                 <div class="info-col">
                                     <div class="info-field">
                                         <span class="info-lbl">Episodes</span>
@@ -166,10 +156,8 @@
                     </div>
                 </div>
 
-                <!-- Main content -->
                 <div class="modal-content">
 
-                    <!-- Synopsis -->
                     @if (!string.IsNullOrEmpty(CurrentAnime.Description))
                     {
                         <div class="modal-section">
@@ -178,7 +166,6 @@
                         </div>
                     }
 
-                    <!-- Relations — between Synopsis and Genres -->
                     @if (CurrentAnime.Relations?.Any() == true)
                     {
                         <div class="modal-section">
@@ -198,7 +185,6 @@
                         </div>
                     }
 
-                    <!-- Genres -->
                     @if (CurrentAnime.Genres?.Any() == true)
                     {
                         <div class="modal-section">
@@ -212,7 +198,6 @@
                         </div>
                     }
 
-                    <!-- Studios -->
                     @if (CurrentAnime.Studios?.Any() == true)
                     {
                         <div class="modal-section">
@@ -226,7 +211,6 @@
                         </div>
                     }
 
-                    <!-- Trailer — click-to-load to prevent Google scripts from auto-executing -->
                     @{
                         var videoId = GetYouTubeVideoId(CurrentAnime.TrailerUrl ?? "");
                     }
@@ -235,38 +219,16 @@
                         <div class="modal-section">
                             <h3 class="section-title">Trailer</h3>
                             <div class="trailer-container">
-                                @if (trailerLoaded)
-                                {
-                                    <!-- Iframe injected only after user clicks — Google scripts load on demand -->
-                                    <div class="youtube-embed-wrapper">
-                                        <iframe src="https://www.youtube-nocookie.com/embed/@videoId?rel=0&autoplay=1&modestbranding=1"
-                                                frameborder="0"
-                                                allow="autoplay; picture-in-picture"
-                                                allowfullscreen></iframe>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <!-- Thumbnail placeholder — no scripts loaded until click -->
-                                    <div class="trailer-thumbnail" @onclick="LoadTrailer">
-                                        <img src="https://img.youtube.com/vi/@videoId/hqdefault.jpg"
-                                             alt="Trailer thumbnail"
-                                             class="trailer-thumb-img" />
-                                        <div class="trailer-play-overlay">
-                                            <div class="trailer-play-btn">
-                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-                                                    <polygon points="5,3 19,12 5,21"></polygon>
-                                                </svg>
-                                            </div>
-                                            <span class="trailer-play-label">Watch Trailer</span>
-                                        </div>
-                                    </div>
-                                }
+                                <div class="youtube-embed-wrapper">
+                                    <iframe src="https://www.youtube-nocookie.com/embed/@videoId?rel=0&autoplay=0&modestbranding=1"
+                                            frameborder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowfullscreen></iframe>
+                                </div>
                             </div>
                         </div>
                     }
 
-                    <!-- Details / Additional Information -->
                     @{
                         var seasonRankings = CurrentAnime.Rankings?.Where(r => !r.AllTime).Take(2).ToList();
                         bool hasDetails = !string.IsNullOrEmpty(CurrentAnime.NativeTitle)
@@ -330,7 +292,6 @@
                         </div>
                     }
 
-                    <!-- Tags — below Details -->
                     @{
                         var visibleTags = CurrentAnime.Tags?
                         .Where(t => !t.IsMediaSpoiler)
@@ -358,7 +319,6 @@
                         </div>
                     }
 
-                    <!-- Watch & External Links -->
                     @{
                         var streamingLinks = CurrentAnime.ExternalLinks?.Where(l => l.Type == "STREAMING").ToList();
                         var otherLinks = CurrentAnime.ExternalLinks?.Where(l => l.Type == "INFO" || l.Type == "SOCIAL").Take(4).ToList();
@@ -419,31 +379,28 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     private bool isFavorited = false;
-    // Trailer is NOT loaded automatically — Google scripts cause Permissions API errors in WebView
-    private bool trailerLoaded = false;
-    private int? _lastAnimeId = null;
+    // La variable 'trailerLoaded' a été supprimée car inutile ici (tout est chargé direct)
 
     protected override void OnParametersSet()
     {
-        // Reset trailer and favorite state whenever a new anime is shown
+        // Reset favorite state
         if (CurrentAnime?.Id != _lastAnimeId)
         {
-            trailerLoaded = false;
             isFavorited = false;
             _lastAnimeId = CurrentAnime?.Id;
         }
     }
+    private int? _lastAnimeId = null;
 
     private void Close()
     {
-        trailerLoaded = false; // Stop video when closing
         OnClose.InvokeAsync();
     }
+
     private void OnOverlayClick() => Close();
     private void OnAddToList() { }
     private void OnShare() { }
     private void OnFavorite() { isFavorited = !isFavorited; StateHasChanged(); }
-    private void LoadTrailer() { trailerLoaded = true; StateHasChanged(); }
 
     private string GetStatusText(string status) => status switch
     {
@@ -467,8 +424,18 @@
     private string GetYouTubeVideoId(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
-        if (url.Contains("watch?v=")) { var p = url.Split("watch?v="); return p.Length > 1 ? p[1].Split('&')[0] : ""; }
-        if (url.Contains("youtu.be/")) { var p = url.Split("youtu.be/"); return p.Length > 1 ? p[1].Split('?')[0] : ""; }
+        try
+        {
+            var uri = new Uri(url);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            if (query.AllKeys.Contains("v")) return query["v"];
+            if (uri.Segments.LastOrDefault() != null) return uri.Segments.Last();
+        }
+        catch
+        {
+            if (url.Contains("watch?v=")) { var p = url.Split("watch?v="); return p.Length > 1 ? p[1].Split('&')[0] : ""; }
+            if (url.Contains("youtu.be/")) { var p = url.Split("youtu.be/"); return p.Length > 1 ? p[1].Split('?')[0] : ""; }
+        }
         return string.Empty;
     }
 
@@ -496,25 +463,16 @@
 
     private MarkupString GetPlatformIconMarkup(string site)
     {
-        // Each returns a safe inline SVG with no external resources
         string svg = site switch
         {
-            "Crunchyroll" =>
-                @"<svg width='18' height='18' viewBox='0 0 50 50' fill='currentColor'><path d='M25 2C12.3 2 2 12.3 2 25s10.3 23 23 23 23-10.3 23-23S37.7 2 25 2zm0 5c9.9 0 18 8.1 18 18S34.9 43 25 43 7 34.9 7 25 15.1 7 25 7zm0 5c-7.2 0-13 5.8-13 13s5.8 13 13 13 13-5.8 13-13S32.2 12 25 12zm0 4c5 0 9 4 9 9s-4 9-9 9-9-4-9-9 4-9 9-9zm0 4c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5z'/></svg>",
-            "Netflix" =>
-                @"<svg width='18' height='18' viewBox='0 0 111 190' fill='currentColor'><path d='M0 0h29l52 136V0h30v190h-27L31 51v139H0z'/></svg>",
-            "YouTube" =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z'/></svg>",
-            "Funimation" =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><circle cx='12' cy='12' r='10'/><rect x='9' y='8' width='2.5' height='8' fill='#5B0BB5'/><rect x='12.5' y='8' width='2.5' height='8' fill='#5B0BB5'/></svg>",
-            "Amazon Prime Video" or "Prime Video" =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.3 13.8c-2.5 1.6-5.9 2-8.7.8-.3-.1-.1-.5.2-.4 2.5.8 5.6.7 7.9-.4.4-.1.7.3.6.7zm1-.8c-.2-.3-.4-.2-.7 0-.9.6-2.3.8-2.3.8s.5-1.2.4-1.7c-.1-.3-.4-.4-.6-.4s-.4.1-.5.4l-.4 1.7c0 .1 0 .2-.1.2-.7.2-1.4.2-2 0-.3-.1-.6-.1-.8.3-.1.3.1.7.4.8.8.3 1.6.3 2.4.1l.4-1.5c.1-.3.4-.5.8-.3.5.2.5.6.4 1l-.2 1c.5-.1 1.1-.3 1.6-.7.7-.5.8-1.2.4-1.7z'/></svg>",
-            "Disney Plus" or "Disney+" =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1 13.5V8.5l6 3.5-6 3.5z'/></svg>",
-            "HIDIVE" =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><rect x='2' y='2' width='20' height='20' rx='3'/><text x='12' y='16' text-anchor='middle' font-size='9' fill='#0e0e16' font-weight='bold'>HD</text></svg>",
-            _ =>
-                @"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='4'/><polygon points='10,8 16,12 10,16' fill='currentColor' stroke='none'/></svg>"
+            "Crunchyroll" => @"<svg width='18' height='18' viewBox='0 0 50 50' fill='currentColor'><path d='M25 2C12.3 2 2 12.3 2 25s10.3 23 23 23 23-10.3 23-23S37.7 2 25 2zm0 5c9.9 0 18 8.1 18 18S34.9 43 25 43 7 34.9 7 25 15.1 7 25 7zm0 5c-7.2 0-13 5.8-13 13s5.8 13 13 13 13-5.8 13-13S32.2 12 25 12zm0 4c5 0 9 4 9 9s-4 9-9 9-9-4-9-9 4-9 9-9zm0 4c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5z'/></svg>",
+            "Netflix" => @"<svg width='18' height='18' viewBox='0 0 111 190' fill='currentColor'><path d='M0 0h29l52 136V0h30v190h-27L31 51v139H0z'/></svg>",
+            "YouTube" => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z'/></svg>",
+            "Funimation" => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><circle cx='12' cy='12' r='10'/><rect x='9' y='8' width='2.5' height='8' fill='#5B0BB5'/><rect x='12.5' y='8' width='2.5' height='8' fill='#5B0BB5'/></svg>",
+            "Amazon Prime Video" or "Prime Video" => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.3 13.8c-2.5 1.6-5.9 2-8.7.8-.3-.1-.1-.5.2-.4 2.5.8 5.6.7 7.9-.4.4-.1.7.3.6.7zm1-.8c-.2-.3-.4-.2-.7 0-.9.6-2.3.8-2.3.8s.5-1.2.4-1.7c-.1-.3-.4-.4-.6-.4s-.4.1-.5.4l-.4 1.7c0 .1 0 .2-.1.2-.7.2-1.4.2-2 0-.3-.1-.6-.1-.8.3-.1.3.1.7.4.8.8.3 1.6.3 2.4.1l.4-1.5c.1-.3.4-.5.8-.3.5.2.5.6.4 1l-.2 1c.5-.1 1.1-.3 1.6-.7.7-.5.8-1.2.4-1.7z'/></svg>",
+            "Disney Plus" or "Disney+" => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><path d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1 13.5V8.5l6 3.5-6 3.5z'/></svg>",
+            "HIDIVE" => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor'><rect x='2' y='2' width='20' height='20' rx='3'/><text x='12' y='16' text-anchor='middle' font-size='9' fill='#0e0e16' font-weight='bold'>HD</text></svg>",
+            _ => @"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='4'/><polygon points='10,8 16,12 10,16' fill='currentColor' stroke='none'/></svg>"
         };
         return new MarkupString(svg);
     }

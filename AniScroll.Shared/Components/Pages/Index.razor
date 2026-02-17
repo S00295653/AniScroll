@@ -108,7 +108,7 @@
                 <div class="loading-box">
                     <div class="spinner"></div>
                     <p class="loading-title">🔍 Loading...</p>
-                    <p class="loading-subtitle">Fetching 61 awesome animes</p>
+                    <p class="loading-subtitle">Fetching 60 awesome animes</p>
                 </div>
             </div>
         }
@@ -187,7 +187,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnimes(61, isBackgroundLoad: false);
+        await LoadAnimes(60, isBackgroundLoad: false);
         isInitialLoadComplete = true;
     }
 
@@ -228,7 +228,7 @@
         isPreloading = true;
         hasPreloaded = true;
         StateHasChanged();
-        await LoadAnimes(61, isBackgroundLoad: true);
+        await LoadAnimes(60, isBackgroundLoad: true);
         isPreloading = false;
         StateHasChanged();
     }
@@ -372,7 +372,7 @@
                 if (currentIndex < animes.Count - 1) currentIndex++;
                 else if (!AniListService.IsRateLimited())
                 {
-                    await LoadAnimes(61, isBackgroundLoad: false);
+                    await LoadAnimes(60, isBackgroundLoad: false);
                     if (animes.Count > currentIndex + 1) currentIndex++;
                 }
             }
@@ -493,7 +493,7 @@
                 if (currentIndex < animes.Count - 1) currentIndex++;
                 else if (!AniListService.IsRateLimited())
                 {
-                    await LoadAnimes(61, isBackgroundLoad: false);
+                    await LoadAnimes(60, isBackgroundLoad: false);
                     if (animes.Count > currentIndex + 1) currentIndex++;
                 }
             }
