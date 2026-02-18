@@ -7,29 +7,19 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v2.4.0</div>
+    <div class="build-version">v2.3.0</div>
 
     <div class="main-scroll">
-
-        @* ── Windowed virtual rendering ──────────────────────────────────────────
-           Only ±RENDER_WINDOW cards are in the DOM at any time.
-           Cards outside the window are not rendered at all — no empty placeholder
-           divs, no DOM bloat. Positioning stays correct because each card uses
-           transform: translateY((i - currentIndex) * CARD_HEIGHT).
-        *@
-        @{
-            int renderStart = Math.Max(0, currentIndex - RENDER_WINDOW);
-            int renderEnd = Math.Min(animes.Count - 1, currentIndex + RENDER_WINDOW);
-        }
-        @for (int i = renderStart; i <= renderEnd; i++)
+        @for (int i = 0; i < animes.Count; i++)
         {
             var index = i;
             var anime = animes[i];
             var isVisible = index == currentIndex;
-            var layoutMode = GetLayoutMode(anime.Id, anime.Description);
+            var distance = Math.Abs(index - currentIndex);
+            var layoutMode = distance <= RENDER_WINDOW ? GetLayoutMode(anime.Id, anime.Description) : "normal";
 
-            <div class="anime-card @(isVisible ? "active" : "") @(GetCardTransitionClass(index))"
-                 style="transform: translateY(@(GetCardTransform(index).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px); height: @(CARD_HEIGHT)px;"
+            <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
+                 style="transform: translateY(@GetCardTransform(index)px); height: @(CARD_HEIGHT)px;"
                  @onmousedown="(e) => HandleCardMouseDown(e, index)"
                  @onmousemove="HandleCardMouseMove"
                  @onmouseup="HandleCardMouseUp"
@@ -38,78 +28,86 @@
                  @ontouchmove="HandleCardTouchMove"
                  @ontouchend="HandleCardTouchEnd">
 
-                <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
-                <div class="gradient-overlay"></div>
+                @* ── Virtual rendering: only render content for nearby cards ─────────── *@
+                @* Cards further than RENDER_WINDOW are kept as invisible placeholders,   *@
+                @* which avoids DOM bloat while preserving correct scroll positions.      *@
+                @if (distance <= RENDER_WINDOW)
+                {
+                    <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
+                    <div class="gradient-overlay"></div>
 
-                <div class="content-wrapper layout-@layoutMode">
-                    <div class="image-section">
-                        <div class="anime-image"
-                             style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"
-                             @onclick="() => HandleImageClick(anime)"></div>
-                    </div>
-
-                    <div class="info-section">
-                        <h1 class="title @GetTitleClass(anime.Title)"
-                            @onclick="() => HandleTitleClick(anime)">
-                            @anime.Title
-                        </h1>
-
-                        @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
-                        {
-                            <div class="season-info">
-                                @if (anime.Status == "RELEASING")
-                                {
-                                    <span class="status-dot releasing"></span>
-                                }
-                                else if (anime.Status == "NOT_YET_RELEASED")
-                                {
-                                    <span class="status-dot upcoming"></span>
-                                }
-                                <span>@anime.Season @anime.Year</span>
-                            </div>
-                        }
-
-                        @if (anime.Genres?.Any() == true)
-                        {
-                            <p class="genres">@string.Join(" • ", anime.Genres)</p>
-                        }
-
-                        <div class="stats">
-                            <div class="badge badge-score">★ @anime.Score</div>
-                            <div class="badge badge-episodes">@anime.Episodes EP</div>
+                    <div class="content-wrapper layout-@layoutMode">
+                        <div class="image-section">
+                            <div class="anime-image"
+                                 style="background-image: url('@anime.ImageUrl'); @GetImageStyle(anime.Id, anime.Description)"
+                                 @onclick="() => HandleImageClick(anime)"></div>
                         </div>
 
-                        @if (!string.IsNullOrEmpty(anime.Description))
-                        {
-                            <div class="description-container">
-                                @if (!IsExpanded(anime.Id))
-                                {
-                                    <p class="description-preview">@GetSafePreviewDescription(anime.Description)</p>
-                                    @if (NeedsExpansion(anime.Description))
+                        <div class="info-section">
+                            <h1 class="title @GetTitleClass(anime.Title)"
+                                @onclick="() => HandleTitleClick(anime)">
+                                @anime.Title
+                            </h1>
+
+                            @if (!string.IsNullOrEmpty(anime.Season) && anime.Year.HasValue)
+                            {
+                                <div class="season-info">
+                                    @if (anime.Status == "RELEASING")
                                     {
-                                        <button class="expand-btn" @onclick="() => ToggleExpand(anime.Id)">
-                                            Read More
+                                        <span class="status-dot releasing"></span>
+                                    }
+                                    else if (anime.Status == "NOT_YET_RELEASED")
+                                    {
+                                        <span class="status-dot upcoming"></span>
+                                    }
+                                    <span>@anime.Season @anime.Year</span>
+                                </div>
+                            }
+
+                            @if (anime.Genres?.Any() == true)
+                            {
+                                <p class="genres">@string.Join(" • ", anime.Genres)</p>
+                            }
+
+                            <div class="stats">
+                                <div class="badge badge-score">★ @anime.Score</div>
+                                <div class="badge badge-episodes">@anime.Episodes EP</div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(anime.Description))
+                            {
+                                <div class="description-container">
+                                    @if (!IsExpanded(anime.Id))
+                                    {
+                                        <p class="description-preview">@GetSafePreviewDescription(anime.Description)</p>
+                                        @if (NeedsExpansion(anime.Description))
+                                        {
+                                            <button class="expand-btn" @onclick="() => ToggleExpand(anime.Id)">
+                                                Read More
+                                            </button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="description-scroll-wrapper description-scroll-zone"
+                                             style="@GetDescriptionWrapperStyle(anime.Description)"
+                                             @ref="descScrollRef"
+                                             data-anime-id="@anime.Id">
+                                            <div class="description-full">
+                                                <p>@anime.Description</p>
+                                            </div>
+                                        </div>
+                                        <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
+                                            See Less
                                         </button>
                                     }
-                                }
-                                else
-                                {
-                                    <div class="description-scroll-wrapper description-scroll-zone"
-                                         style="@GetDescriptionWrapperStyle(anime.Description)"
-                                         @ref="descScrollRef"
-                                         data-anime-id="@anime.Id">
-                                        <div class="description-full">
-                                            <p>@anime.Description</p>
-                                        </div>
-                                    </div>
-                                    <button class="collapse-btn" @onclick="() => ToggleExpand(anime.Id)">
-                                        See Less
-                                    </button>
-                                }
-                            </div>
-                        }
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
+                }
+                @* else: empty placeholder div — CSS gives it correct height via inline style above *@
+
             </div>
         }
 
@@ -137,7 +135,7 @@
     </div>
 
     <div class="overlay-controls">
-        <div class="counter">@(animeOffset + currentIndex) / @(animeOffset + animes.Count)</div>
+        <div class="counter">@currentIndex / @animes.Count</div>
         @if (isPreloading)
         {
             <div class="preload-badge">Loading more...</div>
@@ -163,20 +161,16 @@
 
 @code {
     // ─── Data ───────────────────────────────────────────────────────────────────
+    // animes list grows indefinitely — we NEVER remove items so back-navigation works.
+    // DOM is kept lean by RENDER_WINDOW: only ±5 cards around currentIndex are rendered.
     private List<AnimeCard> animes = new();
     private HashSet<int> expandedAnimes = new();
 
     // ─── Virtualization ─────────────────────────────────────────────────────────
-    // Only ±RENDER_WINDOW card divs exist in the DOM.
-    // Max DOM nodes = 2 * RENDER_WINDOW + 1 = 7.
-    private const int RENDER_WINDOW = 3;
-
-    // ─── Memory management ──────────────────────────────────────────────────────
-    // Cards far behind the current index are evicted to prevent memory growth.
-    // animeOffset tracks how many were evicted so the counter stays correct.
-    private int animeOffset = 0;
-    private const int MAX_CARDS_BEHIND = 20;  // trigger trim when this many behind
-    private const int TRIM_TO_BEHIND = 8;   // keep this many behind after trim
+    // Cards outside this window from currentIndex render as empty placeholder divs.
+    // The card's height + transform are still applied via inline style, so positions
+    // stay correct. Content (images, text) is simply not in the DOM.
+    private const int RENDER_WINDOW = 5;
 
     // ─── Loading ─────────────────────────────────────────────────────────────────
     private bool isLoading = false;
@@ -184,7 +178,7 @@
     private bool isPreloading = false;
     private bool isRateLimited = false;
     private int rateLimitCountdown = 0;
-    private const int PRELOAD_THRESHOLD = 30;
+    private const int PRELOAD_THRESHOLD = 40;
     private System.Threading.Timer? rateLimitTimer;
 
     // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -206,6 +200,7 @@
     // ─── Misc ────────────────────────────────────────────────────────────────────
     private ElementReference descScrollRef;
     private ElementReference appContainer;
+    private HashSet<int> newlyCreatedCards = new();
     private DateTime lastRenderTime = DateTime.Now;
     private const int THROTTLE_MS = 8;
     private bool hasMoved = false;
@@ -242,14 +237,15 @@
 
         if (previousIndex != currentIndex && previousIndex >= 0)
         {
-            // Collapse description of the card we left
+            // Collapse description of the card we just left
             if (previousIndex < animes.Count)
             {
                 var prev = animes[previousIndex];
-                expandedAnimes.Remove(prev.Id);
+                if (expandedAnimes.Contains(prev.Id))
+                    expandedAnimes.Remove(prev.Id);
             }
 
-            // Background preload when approaching the end
+            // Background load when approaching the end
             if (animes.Count > 0 &&
                 currentIndex >= animes.Count - PRELOAD_THRESHOLD &&
                 !isPreloading &&
@@ -263,31 +259,6 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  MEMORY MANAGEMENT
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Evicts cards far behind currentIndex to keep the animes list bounded.
-    /// Called after every navigation step.
-    /// </summary>
-    private void TrimAnimesList()
-    {
-        if (currentIndex <= MAX_CARDS_BEHIND) return;
-
-        int trimCount = currentIndex - TRIM_TO_BEHIND;
-        if (trimCount <= 0) return;
-
-        // Remove leading items and clean up associated state
-        animes.RemoveRange(0, trimCount);
-        currentIndex -= trimCount;
-        previousIndex = Math.Max(0, previousIndex - trimCount);
-        animeOffset += trimCount;
-
-        System.Diagnostics.Debug.WriteLine(
-            $"✂️ Trimmed {trimCount} cards. List: {animes.Count}, offset: {animeOffset}");
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     //  DATA LOADING
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -295,11 +266,10 @@
     {
         if (isPreloading) return;
         isPreloading = true;
-        // Only update badge — avoid full re-render during preload start
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
         await LoadAnimes(60, isBackgroundLoad: true);
         isPreloading = false;
-        await InvokeAsync(StateHasChanged);
+        StateHasChanged();
     }
 
     private async Task LoadAnimes(int count, bool isBackgroundLoad = false)
@@ -314,9 +284,7 @@
 
         if (!isBackgroundLoad) { isLoading = true; StateHasChanged(); }
 
-        // Yield so the loading spinner renders before the synchronous JSON parse
-        await Task.Yield();
-
+        int startIndex = animes.Count;
         var result = await AniListService.GetMultipleAnimesAsync(count);
 
         if (result.IsRateLimited)
@@ -330,8 +298,14 @@
 
         animes.AddRange(result.Animes);
 
+        for (int i = startIndex; i < animes.Count; i++)
+            newlyCreatedCards.Add(i);
+
         if (!isBackgroundLoad) isLoading = false;
         StateHasChanged();
+
+        await Task.Delay(50);
+        newlyCreatedCards.Clear();
     }
 
     private void StartRateLimitCountdown()
@@ -390,9 +364,8 @@
 
     private string GetCardTransitionClass(int index)
     {
-        // During drag: no transition on any card (follow finger directly)
+        if (newlyCreatedCards.Contains(index)) return "no-transition";
         if (isDraggingCard) return "no-transition";
-        // After releasing: transition on all windowed cards to snap into place
         if (isTransitioning) return "with-transition";
         return "no-transition";
     }
@@ -547,9 +520,7 @@
             if (currentDragOffset < 0)
             {
                 if (currentIndex < animes.Count - 1)
-                {
                     currentIndex++;
-                }
                 else if (!AniListService.IsRateLimited())
                 {
                     await LoadAnimes(60, isBackgroundLoad: false);
@@ -561,9 +532,6 @@
                 currentIndex--;
             }
         }
-
-        // Trim cards far behind to free memory
-        TrimAnimesList();
 
         isTransitioning = true;
         currentDragOffset = 0;

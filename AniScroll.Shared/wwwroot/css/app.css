@@ -1082,19 +1082,16 @@ html, body {
         background: rgba(50,50,50,0.95);
     }
 
-    .modal-close-btn:active {
-        transform: scale(0.9);
-    }
-
 /* ── Scroll container — NO scrollbar ── */
 .modal-scroll-container {
     height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    /* Hide scrollbar on all platforms */
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
 }
 
     .modal-scroll-container::-webkit-scrollbar {
