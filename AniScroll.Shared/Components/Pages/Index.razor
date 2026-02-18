@@ -7,7 +7,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
-    <div class="build-version">v2.3.0</div>
+    <div class="build-version">v1.6.0</div>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -138,7 +138,7 @@
         <div class="counter">@currentIndex / @animes.Count</div>
         @if (isPreloading)
         {
-            <div class="preload-badge">Loading more...</div>
+            <div class="preload-badge">🔄️</div>
         }
         @if (isRateLimited)
         {
