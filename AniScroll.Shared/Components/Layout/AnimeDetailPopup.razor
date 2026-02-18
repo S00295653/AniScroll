@@ -387,16 +387,16 @@
     private bool isFavorited = false;
     private int? _lastAnimeId = null;
 
-    // ─── Swipe-UP-to-close state ────────────────────────────────────────────────
-    // When the user is already at the top of the scroll and swipes upward
-    // (finger moves UP = deltaY negative), we translate the modal upward.
-    // No visual indicator is shown — the modal itself moves.
+    // ─── Swipe-DOWN-to-close state ───────────────────────────────────────────────
+    // When the user is at the top of the scroll and swipes DOWNWARD
+    // (finger moves DOWN = deltaY positive), we translate the modal downward.
+    // Releasing past the threshold dismisses the modal.
     private ElementReference scrollContainerRef;
-    private double pullOffset = 0;      // negative = modal moves up
+    private double pullOffset = 0;      // positive = modal moves down
     private double pullStartY = 0;
     private bool isPulling = false;
     private bool isPullTrackingActive = false;
-    private const double PULL_CLOSE_THRESHOLD = 80; // px upward movement to trigger close
+    private const double PULL_CLOSE_THRESHOLD = 80; // px downward movement to trigger close
 
     protected override void OnParametersSet()
     {
@@ -416,7 +416,7 @@
     {
         if (e.Touches.Length == 0) return;
 
-        // Only activate if scroll is already at the very top
+        // Only activate swipe-to-close when scroll is at the very top
         bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
         if (!atTop) return;
 
@@ -430,10 +430,10 @@
     {
         if (!isPullTrackingActive || e.Touches.Length == 0) return;
 
-        double delta = e.Touches[0].ClientY - pullStartY; // negative = finger moved up
+        double delta = e.Touches[0].ClientY - pullStartY; // positive = finger moved DOWN
 
-        // Only track upward movement (delta < 0)
-        if (delta >= 0)
+        // Only track downward movement (delta > 0) to dismiss
+        if (delta <= 0)
         {
             isPulling = false;
             pullOffset = 0;
@@ -441,8 +441,8 @@
         }
 
         isPulling = true;
-        // Rubber-band: modal moves up but with resistance
-        pullOffset = -Math.Sqrt(-delta) * 6; // negative = translateY upward
+        // Rubber-band: modal moves down with resistance
+        pullOffset = Math.Sqrt(delta) * 6; // positive = translateY downward
         StateHasChanged();
     }
 
@@ -453,11 +453,10 @@
         isPullTrackingActive = false;
         isPulling = false;
 
-        // pullOffset is negative; check absolute value against threshold
-        if (Math.Abs(pullOffset) >= PULL_CLOSE_THRESHOLD)
+        if (pullOffset >= PULL_CLOSE_THRESHOLD)
         {
-            // Fly off screen upward then close
-            pullOffset = -900;
+            // Fly off screen downward then close
+            pullOffset = 900;
             StateHasChanged();
             await Task.Delay(260);
             pullOffset = 0;
@@ -465,7 +464,7 @@
         }
         else
         {
-            // Snap back to center
+            // Snap back to original position
             pullOffset = 0;
             StateHasChanged();
         }
