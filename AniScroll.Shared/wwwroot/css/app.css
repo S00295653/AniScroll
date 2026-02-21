@@ -100,7 +100,7 @@ html, body {
     background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ========== BLUR OVERLAYS ========== */
+/* ========== BLUR EDGES ========== */
 .anime-card::before,
 .anime-card::after {
     content: '';
@@ -123,16 +123,19 @@ html, body {
 }
 
 /* ========== CONTENT WRAPPER ========== */
+/*
+  Layout: flex column filling the full card height.
+  - image-section: flex 1 — takes all remaining space, shrinks naturally
+  - info-section: flex 0 — always full height needed, never shrinks
+  This prevents any overlap: if screen is short, image shrinks, info stays.
+*/
 .content-wrapper {
     position: relative;
     z-index: 3;
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-height: 100vh;
-    max-height: 100dvh;
-    padding: 20px 20px 110px;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 16px 20px 110px; /* bottom: nav bar */
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -141,163 +144,116 @@ html, body {
     .content-wrapper {
         max-width: 600px;
         margin: 0 auto;
-        padding: 30px 30px 40px;
+        padding: 30px 30px 30px;
     }
 }
 
 @media (min-width: 1025px) {
     .content-wrapper {
-        max-width: 700px;
-        padding: 40px 40px 50px;
+        max-width: 680px;
+        padding: 40px 40px 40px;
     }
 }
 
 /* ========== IMAGE SECTION ========== */
 .image-section {
+    flex: 1 1 0;
+    min-height: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex: 1 1 auto;
-    min-height: 200px;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-    padding: 10px 0;
+    padding: 6px 0;
+    overflow: hidden;
 }
 
 /* ========== ANIME IMAGE ========== */
+/*
+  Always 2:3 poster aspect ratio.
+  height: 100% fills the flex section; aspect-ratio derives width.
+  max-* caps prevent oversizing; min-height ensures always visible.
+*/
 .anime-image {
-    width: min(280px, 85vw);
-    height: calc(min(280px, 85vw) * 1.5);
-    max-height: 55vh;
+    height: 100%;
+    max-height: min(52vh, 420px);
+    max-width: min(75vw, 280px);
+    min-height: 90px;
+    aspect-ratio: 2 / 3;
     border-radius: 8px;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
+    cursor: pointer;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-.content-wrapper.layout-short .anime-image,
-.content-wrapper.layout-medium .anime-image,
-.content-wrapper.layout-long .anime-image {
-    width: 180px;
-    height: 270px;
-    max-height: 35vh;
+    flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
     .anime-image {
-        width: 360px;
-        height: 540px;
-        max-height: 60vh;
+        max-height: min(58vh, 500px);
+        max-width: min(65vw, 340px);
+        min-height: 120px;
     }
 
-    .content-wrapper.layout-short .anime-image,
-    .content-wrapper.layout-medium .anime-image,
-    .content-wrapper.layout-long .anime-image {
-        width: 240px;
-        height: 360px;
-        max-height: 40vh;
-    }
+        .anime-image:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
 }
 
 @media (min-width: 1025px) {
     .anime-image {
-        width: 400px;
-        height: 600px;
-        max-height: 65vh;
-    }
-
-    .content-wrapper.layout-short .anime-image,
-    .content-wrapper.layout-medium .anime-image,
-    .content-wrapper.layout-long .anime-image {
-        width: 280px;
-        height: 420px;
-        max-height: 45vh;
-    }
-
-    .anime-image:hover {
-        transform: scale(1.02);
+        max-height: min(62vh, 560px);
+        max-width: min(55vw, 380px);
+        min-height: 140px;
     }
 }
 
 /* ========== INFO SECTION ========== */
+/*
+  flex: 0 0 auto — never grows or shrinks.
+  Its height is determined purely by its content.
+  If image-section runs out of flex space, it shrinks — info never does.
+*/
 .info-section {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    overflow: visible;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    overflow: hidden;
 }
 
 /* ========== TITLE ========== */
+/*
+  Max 2 lines, then ellipsis. This guarantees a fixed height regardless of title length.
+  font-size uses clamp() for smooth scaling.
+*/
 .title {
-    font-size: 24px;
+    font-size: clamp(16px, 5.5vw, 24px);
     font-weight: bold;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     line-height: 1.2;
-    transition: all 0.3s ease;
-    max-width: 100%;
-    word-wrap: break-word;
-    flex-shrink: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
     cursor: pointer;
-}
-
-    .title.title-long {
-        font-size: 20px;
-        margin-bottom: 6px;
-    }
-
-    .title.title-very-long {
-        font-size: 16px;
-        margin-bottom: 5px;
-        line-height: 1.3;
-    }
-
-.content-wrapper.layout-short .title,
-.content-wrapper.layout-medium .title,
-.content-wrapper.layout-long .title {
-    font-size: 18px;
+    flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
     .title {
-        font-size: 32px;
-        margin-bottom: 10px;
-    }
-
-        .title.title-long {
-            font-size: 26px;
-        }
-
-        .title.title-very-long {
-            font-size: 22px;
-        }
-
-    .content-wrapper.layout-short .title,
-    .content-wrapper.layout-medium .title,
-    .content-wrapper.layout-long .title {
-        font-size: 24px;
+        font-size: clamp(20px, 3vw, 32px);
+        margin-bottom: 8px;
     }
 }
 
 @media (min-width: 1025px) {
     .title {
-        font-size: 36px;
-        margin-bottom: 12px;
+        font-size: clamp(24px, 2.5vw, 36px);
+        margin-bottom: 10px;
     }
-
-        .title.title-long {
-            font-size: 30px;
-        }
-
-        .title.title-very-long {
-            font-size: 24px;
-        }
 }
 
 /* ========== SEASON INFO ========== */
@@ -305,46 +261,39 @@ html, body {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 12px;
     color: #b4b4b4;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
     .season-info {
-        font-size: 16px;
+        font-size: 15px;
         gap: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 }
 
-/* ========== STATUS DOT (card) ========== */
+/* ========== STATUS DOT ========== */
 .status-dot {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-@media (min-width: 768px) {
-    .status-dot {
-        width: 12px;
-        height: 12px;
+    .status-dot.releasing {
+        background: rgb(0, 230, 0);
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+        animation: pulse-green 2s ease-in-out infinite;
     }
-}
 
-.status-dot.releasing {
-    background: rgb(0, 230, 0);
-    box-shadow: 0 0 8px rgba(0, 255, 0, 1);
-    animation: pulse-green 2s ease-in-out infinite;
-}
-
-.status-dot.upcoming {
-    background: rgb(230, 0, 0);
-    box-shadow: 0 0 8px rgba(255, 0, 0, 1);
-    animation: pulse-red 2s ease-in-out infinite;
-}
+    .status-dot.upcoming {
+        background: rgb(230, 0, 0);
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+        animation: pulse-red 2s ease-in-out infinite;
+    }
 
 @keyframes pulse-green {
     0%, 100% {
@@ -366,20 +315,22 @@ html, body {
     }
 }
 
-/* ========== GENRES (card) ========== */
+/* ========== GENRES ========== */
 .genres {
-    font-size: 13px;
+    font-size: 12px;
     color: #E94560;
     font-weight: 600;
-    margin-bottom: 8px;
-    word-wrap: break-word;
+    margin-bottom: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
     .genres {
-        font-size: 16px;
-        margin-bottom: 10px;
+        font-size: 15px;
+        margin-bottom: 8px;
     }
 }
 
@@ -387,29 +338,28 @@ html, body {
 .stats {
     display: flex;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
     flex-shrink: 0;
 }
 
 .badge {
-    padding: 4px 8px;
+    padding: 3px 8px;
     border-radius: 5px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     white-space: nowrap;
 }
 
 @media (min-width: 768px) {
     .stats {
-        gap: 12px;
-        margin-bottom: 14px;
+        gap: 10px;
+        margin-bottom: 10px;
     }
 
     .badge {
-        padding: 6px 12px;
-        font-size: 16px;
-        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 14px;
     }
 }
 
@@ -430,135 +380,67 @@ html, body {
     }
 
 /* ========== DESCRIPTION CONTAINER ========== */
+/*
+  Always shows exactly 2 lines of description, then "Read More" button.
+  Height is fixed and predictable — no absolute positioning tricks.
+*/
 .description-container {
-    position: relative;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    min-height: 80px;
-    max-height: 80px;
-    flex-shrink: 0;
-    overflow: visible;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.content-wrapper.layout-short .description-container,
-.content-wrapper.layout-medium .description-container,
-.content-wrapper.layout-long .description-container {
-    max-height: 50vh;
-    min-height: 150px;
-}
-
-/* ========== DESCRIPTION PREVIEW ========== */
 .description-preview {
-    font-size: 13px;
+    font-size: 12px;
     color: #c8c8c8;
-    line-height: 1.4;
-    margin-bottom: 0;
-    max-width: 100%;
-    word-wrap: break-word;
+    line-height: 1.5;
+    /* Always exactly 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    flex-shrink: 1;
-    padding-bottom: 50px;
+    margin: 0;
 }
 
 @media (min-width: 768px) {
     .description-preview {
-        font-size: 16px;
-        line-height: 1.5;
-        padding-bottom: 60px;
+        font-size: 14px;
+        -webkit-line-clamp: 3;
     }
 }
 
-/* ========== DESCRIPTION SCROLL WRAPPER ========== */
-.description-scroll-wrapper {
-    overflow-y: auto;
-    overflow-x: hidden;
-    cursor: grab;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: calc(100% - 60px);
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    touch-action: pan-y !important;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: auto;
-    margin-bottom: 60px;
-}
-
-    .description-scroll-wrapper::-webkit-scrollbar {
-        display: none;
-    }
-
-    .description-scroll-wrapper:active {
-        cursor: grabbing;
-    }
-
-@media (max-width: 767px) {
-    .description-scroll-wrapper {
-        cursor: default;
-    }
-}
-
-/* ========== DESCRIPTION FULL ========== */
-.description-full {
-    font-size: 13px;
-    color: #dcdcdc;
-    line-height: 1.4;
-    max-width: 100%;
-    word-wrap: break-word;
-    padding-bottom: 10px;
-}
-
-    .description-full p {
-        margin: 0 0 10px 0;
-    }
-
-@media (min-width: 768px) {
-    .description-full {
-        font-size: 16px;
-        line-height: 1.5;
-    }
-}
-
-/* ========== BUTTONS ========== */
-.expand-btn,
-.collapse-btn {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background: transparent !important;
+/* ========== READ MORE BUTTON ========== */
+/*
+  Always just below the clamped description. Consistent position.
+*/
+.read-more-btn {
+    background: transparent;
     border: none;
     color: #6495ED;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
     cursor: pointer;
-    padding: 12px 20px;
-    margin: 0;
+    padding: 5px 0 0 0;
+    /* Centered horizontally within the info-section */
     text-align: center;
-    display: inline-block;
-    width: auto !important;
-    min-height: auto;
-    z-index: 10;
-    white-space: nowrap;
-    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
-    box-shadow: none;
+    align-self: center;
+    width: 100%;
+    transition: color 0.2s ease;
 }
+
+    .read-more-btn:hover {
+        color: #4169E1;
+    }
+
+    .read-more-btn:active {
+        opacity: 0.7;
+    }
 
 @media (min-width: 768px) {
-    .expand-btn, .collapse-btn {
-        font-size: 18px;
-        padding: 14px 24px;
+    .read-more-btn {
+        font-size: 15px;
+        padding: 6px 0 0 0;
     }
-}
-
-.expand-btn:hover, .collapse-btn:hover {
-    color: #4169E1;
-    background: transparent !important;
-}
-
-.expand-btn:active, .collapse-btn:active {
-    background: transparent !important;
 }
 
 /* ========== LOADING ========== */
@@ -588,14 +470,6 @@ html, body {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
 }
 
-@media (min-width: 768px) {
-    .loading-box {
-        width: 450px;
-        padding: 40px 30px;
-        border-radius: 20px;
-    }
-}
-
 .rate-limit-box {
     border: 1px solid #FF6B6B;
     background: rgba(255, 107, 107, 0.2);
@@ -604,13 +478,6 @@ html, body {
 .rate-limit-icon {
     font-size: 50px;
     margin-bottom: 15px;
-}
-
-@media (min-width: 768px) {
-    .rate-limit-icon {
-        font-size: 70px;
-        margin-bottom: 20px;
-    }
 }
 
 .spinner {
@@ -623,12 +490,14 @@ html, body {
     animation: spin 1.5s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
 }
 
-@media (min-width: 768px) {
-    .spinner {
-        width: 70px;
-        height: 70px;
-        border-width: 4px;
-    }
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top: 2px solid #E94560;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
 }
 
 @keyframes spin {
@@ -651,17 +520,6 @@ html, body {
 .loading-subtitle {
     font-size: 12px;
     color: #888888;
-}
-
-@media (min-width: 768px) {
-    .loading-title {
-        font-size: 20px;
-        margin-bottom: 10px;
-    }
-
-    .loading-subtitle {
-        font-size: 16px;
-    }
 }
 
 /* ========== OVERLAY CONTROLS ========== */
@@ -689,14 +547,6 @@ html, body {
     font-family: 'Courier New', monospace;
 }
 
-@media (min-width: 768px) {
-    .build-version {
-        font-size: 12px;
-        padding: 6px 12px;
-        border-radius: 10px;
-    }
-}
-
 .counter {
     background: rgba(0, 0, 0, 0.63);
     border-radius: 12px;
@@ -705,14 +555,6 @@ html, body {
     font-size: 10px;
     font-weight: bold;
     text-align: center;
-}
-
-@media (min-width: 768px) {
-    .counter {
-        font-size: 14px;
-        padding: 6px 12px;
-        border-radius: 14px;
-    }
 }
 
 .rate-limit-badge {
@@ -724,14 +566,6 @@ html, body {
     font-weight: bold;
     text-align: center;
     animation: pulse-red-badge 2s ease-in-out infinite;
-}
-
-@media (min-width: 768px) {
-    .rate-limit-badge {
-        font-size: 14px;
-        padding: 6px 12px;
-        border-radius: 14px;
-    }
 }
 
 @keyframes pulse-red-badge {
@@ -746,9 +580,147 @@ html, body {
     }
 }
 
+.preload-badge {
+    background: rgba(0,0,0,0.6);
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 12px;
+    text-align: center;
+}
+
 /* ========== HIDE BLAZOR ERROR UI ========== */
 #blazor-error-ui {
     display: none !important;
+}
+
+/* ======================================================
+   SEARCH RESULTS PANEL
+   ====================================================== */
+
+.search-results-panel {
+    position: fixed;
+    /*
+      Nav bar full height when search is open:
+        - Buttons row:  ~80px  (56px button + 12px top/bottom padding + safe area)
+        - Search row:    66px  (only shown when search is open)
+        - Total:        ~148px
+      We use 150px to sit just above the search pill.
+    */
+    bottom: 150px;
+    left: 0;
+    right: 0;
+    /* Cap at 60% of screen height, leaving the card partially visible above */
+    max-height: min(60vh, calc(100dvh - 150px - 16px));
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: rgba(10, 10, 18, 0.98);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    /* 1100 = above nav bar (1000) and all cards (10) */
+    z-index: 1100;
+    /* CRITICAL: allow native scroll within this panel on mobile */
+    touch-action: auto;
+    pointer-events: all;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    animation: searchPanelSlideUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+    .search-results-panel::-webkit-scrollbar {
+        display: none;
+    }
+
+@keyframes searchPanelSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:active,
+    .search-result-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+.search-result-thumb {
+    width: 38px;
+    height: 56px;
+    border-radius: 5px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.search-result-meta {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 3px;
+}
+
+.search-results-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 16px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 13px;
+}
+
+.search-results-updating {
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+}
+
+/* Overlay while fetching AniList details after clicking a result */
+.search-fetch-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1600;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ======================================================
@@ -843,7 +815,8 @@ html, body {
 
 .search-pill-icon {
     flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.38);
+    color: white;
+    opacity: 0.42;
 }
 
 .search-field {
@@ -897,7 +870,8 @@ html, body {
 .nav-btn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.42);
+    color: white;
+    opacity: 0.42;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -906,14 +880,13 @@ html, body {
     gap: 3px;
     padding: 6px 18px;
     border-radius: 12px;
-    transition: color 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     flex: 1;
     min-width: 0;
+    transition: opacity 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
     .nav-btn:active {
-        transform: scale(0.88);
-        color: rgba(255, 255, 255, 0.85);
+        opacity: 0.85;
     }
 
 .nav-btn-icon {
@@ -923,10 +896,6 @@ html, body {
     align-items: center;
     justify-content: center;
 }
-
-    .nav-btn-icon svg {
-        mix-blend-mode: normal;
-    }
 
 .nav-btn-label {
     font-size: 10px;
@@ -952,10 +921,6 @@ html, body {
     box-shadow: 0 0 0 6px rgba(200, 37, 63, 0.12), 0 4px 18px rgba(200, 37, 63, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
     transition: background 0.38s ease, box-shadow 0.38s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-
-    .nav-center-btn svg {
-        mix-blend-mode: normal;
-    }
 
     .nav-center-btn::before {
         content: '';
@@ -1082,7 +1047,7 @@ html, body {
         background: rgba(50,50,50,0.95);
     }
 
-/* ── Scroll container — NO scrollbar ── */
+/* ── Scroll container ── */
 .modal-scroll-container {
     height: 100dvh;
     overflow-y: auto;
@@ -1098,10 +1063,27 @@ html, body {
         display: none;
     }
 
+/* On PC, show a thin scrollbar in the modal */
 @media (min-width: 768px) {
     .modal-scroll-container {
         height: 90vh;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.18) transparent;
     }
+
+        .modal-scroll-container::-webkit-scrollbar {
+            display: block;
+            width: 4px;
+        }
+
+        .modal-scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .modal-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.18);
+            border-radius: 2px;
+        }
 }
 
 /* ── Banner ── */
@@ -1208,13 +1190,6 @@ html, body {
         transform: scale(0.96);
         opacity: 0.85;
     }
-
-@media (min-width: 768px) {
-    .btn-add-to-list {
-        font-size: 13px;
-        padding: 11px 10px;
-    }
-}
 
 .modal-secondary-btns {
     display: flex;
@@ -1367,7 +1342,6 @@ html, body {
     color: rgb(0,220,0);
     font-size: 12px;
     width: fit-content;
-    box-sizing: border-box;
 }
 
 .next-ep-ep {
@@ -1446,16 +1420,6 @@ html, body {
     white-space: nowrap;
 }
 
-@media (min-width: 768px) {
-    .info-lbl {
-        font-size: 10px;
-    }
-
-    .info-val {
-        font-size: 14px;
-    }
-}
-
 /* ── Main content ── */
 .modal-content {
     padding: 0 16px 24px;
@@ -1505,12 +1469,42 @@ html, body {
     gap: 12px;
     overflow-x: auto;
     padding-bottom: 6px;
+    /* Mobile: hide scrollbar */
     scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
     .relations-scroll::-webkit-scrollbar {
         display: none;
     }
+
+/* PC: show a thin scrollbar for relations when overflowing */
+@media (min-width: 768px) {
+    .relations-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.25) transparent;
+        padding-bottom: 10px;
+    }
+
+        .relations-scroll::-webkit-scrollbar {
+            display: block;
+            height: 4px;
+        }
+
+        .relations-scroll::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.04);
+            border-radius: 2px;
+        }
+
+        .relations-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.25);
+            border-radius: 2px;
+        }
+
+            .relations-scroll::-webkit-scrollbar-thumb:hover {
+                background: rgba(255,255,255,0.4);
+            }
+}
 
 .relation-card {
     flex-shrink: 0;
@@ -1738,12 +1732,6 @@ html, body {
     flex: 1;
     font-size: 13px;
     font-weight: 600;
-}
-
-@media (min-width: 768px) {
-    .platform-name-label {
-        font-size: 14px;
-    }
 }
 
 /* ── Info chips ── */

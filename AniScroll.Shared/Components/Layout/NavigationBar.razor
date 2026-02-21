@@ -16,9 +16,8 @@
                     <input type="text"
                            class="search-field"
                            placeholder="Search anime..."
-                           @bind="SearchQuery"
-                           @bind:event="oninput"
-                           @onchange="OnSearchChanged"
+                           value="@SearchQuery"
+                           @oninput="OnSearchInput"
                            @ref="searchInputRef" />
                     @if (!string.IsNullOrEmpty(SearchQuery))
                     {
@@ -56,7 +55,6 @@
                     @onclick="ToggleSearch">
                 @if (IsSearchOpen)
                 {
-                    <!-- Play in box icon -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" stroke-linejoin="round">
@@ -66,7 +64,6 @@
                 }
                 else
                 {
-                    <!-- Search icon -->
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.2"
                          stroke-linecap="round" stroke-linejoin="round">
@@ -114,6 +111,7 @@
         }
         else
         {
+            // Closing search — clear query and notify parent
             SearchQuery = string.Empty;
             await OnSearchQueryChanged.InvokeAsync(string.Empty);
         }
@@ -121,16 +119,22 @@
         await OnSearchToggled.InvokeAsync();
     }
 
-    private void ClearSearch()
-    {
-        SearchQuery = string.Empty;
-        OnSearchQueryChanged.InvokeAsync(string.Empty);
-    }
-
-    private void OnSearchChanged(ChangeEventArgs e)
+    // Fires on EVERY keystroke via @oninput
+    private async Task OnSearchInput(ChangeEventArgs e)
     {
         SearchQuery = e.Value?.ToString() ?? string.Empty;
-        OnSearchQueryChanged.InvokeAsync(SearchQuery);
+        await OnSearchQueryChanged.InvokeAsync(SearchQuery);
+        // Force re-render so clear button appears/disappears
+        StateHasChanged();
+    }
+
+    private async Task ClearSearch()
+    {
+        SearchQuery = string.Empty;
+        await OnSearchQueryChanged.InvokeAsync(string.Empty);
+        try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
+        catch { }
+        StateHasChanged();
     }
 
     private void OnListsClick() => OnListsClicked.InvokeAsync();
