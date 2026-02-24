@@ -54,8 +54,25 @@ window.focusElement = function (element) {
     if (element) element.focus();
 };
 
-// Returns true if the modal scroll container is at the very top (for pull-to-close)
+// Returns true if the modal scroll container is at the very top (for pull-to-close).
 window.isModalScrollAtTop = function (element) {
     if (!element) return true;
     return element.scrollTop <= 2;
+};
+
+// ─── Image preloader ──────────────────────────────────────────────────────────
+// Creates hidden Image() objects so the browser fetches and caches the URLs.
+// The popup banner / cover then appears instantly when opened.
+// Called from Blazor with an array of URL strings.
+
+const _preloadedUrls = new Set();
+
+window.preloadImages = function (urls) {
+    if (!urls || !urls.length) return;
+    for (const url of urls) {
+        if (!url || _preloadedUrls.has(url)) continue;
+        _preloadedUrls.add(url);
+        const img = new Image();
+        img.src = url;
+    }
 };
