@@ -172,7 +172,7 @@
                         </div>
                     }
 
-                    @if (CurrentAnime.Relations?.Any() == true)
+                    @if (CurrentAnime.Relations?.Any() == true && CurrentAnime.Relations != null)
                     {
                         <div class="modal-section">
                             <h3 class="section-title">Related</h3>
