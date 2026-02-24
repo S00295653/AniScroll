@@ -208,7 +208,7 @@ namespace AniScroll.Shared.Services
                 var result = await response.Content.ReadAsStringAsync();
 
                 // Check for null Media in response (AniList returns 200 with errors)
-                if (result.Contains(""Media":null"))
+                if (result.Contains("'Media':null"))
                     LastError = "AniList returned Media:null — " + result.Substring(0, Math.Min(300, result.Length));
 
                 return result;
