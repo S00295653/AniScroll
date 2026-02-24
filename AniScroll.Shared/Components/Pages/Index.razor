@@ -600,7 +600,19 @@
         isLoadingSelectedAnime = true;
         StateHasChanged();
 
-        var anime = await AniListService.GetAnimeByMalIdAsync(result.MalId);
+        AnimeCard? anime = null;
+
+        // 1st attempt: AniList by MAL ID
+        if (result.MalId > 0)
+            anime = await AniListService.GetAnimeByMalIdAsync(result.MalId);
+
+        // 2nd attempt (fallback): AniList search by title
+        if (anime == null && !string.IsNullOrEmpty(result.Title))
+        {
+            System.Diagnostics.Debug.WriteLine("MAL ID lookup failed, trying title: " + result.Title);
+            anime = await AniListService.GetAnimeByTitleAsync(result.Title);
+        }
+
         isLoadingSelectedAnime = false;
 
         if (anime != null)
@@ -609,7 +621,8 @@
         }
         else
         {
-            // Fallback with basic Jikan data
+            // Final fallback: minimal Jikan data
+            System.Diagnostics.Debug.WriteLine("Both AniList lookups failed, using Jikan fallback");
             ShowAnimeDetails(new AnimeCard
             {
                 Title = result.Title,

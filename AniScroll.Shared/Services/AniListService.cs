@@ -8,7 +8,6 @@ namespace AniScroll.Shared.Services
     {
         private readonly HttpClient _httpClient;
         private readonly Random _random;
-
         private DateTime? _rateLimitedUntil = null;
         private const int RATE_LIMIT_DURATION_SECONDS = 60;
         private const string ANILIST_ENDPOINT = "https://graphql.anilist.co";
@@ -37,37 +36,24 @@ namespace AniScroll.Shared.Services
             _rateLimitedUntil = DateTime.UtcNow.AddSeconds(RATE_LIMIT_DURATION_SECONDS);
         }
 
-        // ─── Jikan Search (MAL API) ──────────────────────────────────────────────────
-        // Lightweight search preview — no AniList quota consumed.
         public async Task<List<JikanSearchResult>> SearchJikanAsync(string query)
         {
             try
             {
-                var url = $"https://api.jikan.moe/v4/anime?q={Uri.EscapeDataString(query)}&limit=8&sfw=true";
-
+                var url = "https://api.jikan.moe/v4/anime?q=" + Uri.EscapeDataString(query) + "&limit=8&sfw=true";
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
                 var response = await _httpClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Jikan {response.StatusCode}");
-                    return new List<JikanSearchResult>();
-                }
-
+                if (!response.IsSuccessStatusCode) return new List<JikanSearchResult>();
                 var json = await response.Content.ReadAsStringAsync();
                 var data = JObject.Parse(json);
                 var results = new List<JikanSearchResult>();
-
                 var items = data["data"];
                 if (items == null || !items.HasValues) return results;
-
                 foreach (var item in items)
                 {
                     var scoreToken = item["score"];
-                    string score = (scoreToken != null && scoreToken.Type != JTokenType.Null)
-                        ? scoreToken.ToString() : "N/A";
-
+                    string score = (scoreToken != null && scoreToken.Type != JTokenType.Null) ? scoreToken.ToString() : "N/A";
                     results.Add(new JikanSearchResult
                     {
                         MalId = item["mal_id"]?.Value<int>() ?? 0,
@@ -78,52 +64,73 @@ namespace AniScroll.Shared.Services
                         Episodes = item["episodes"]?.Value<int?>()
                     });
                 }
-
                 return results;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Jikan search error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("Jikan search error: " + ex.Message);
                 return new List<JikanSearchResult>();
             }
         }
 
-        // ─── Get full anime details from AniList by MAL ID ──────────────────────────
-        // idMal is inlined in the query string (no GraphQL variables) to avoid
-        // the serialization/CORS issues that affected SendAsync in Blazor WASM.
+        // Get full anime details from AniList by MAL ID
         public async Task<AnimeCard?> GetAnimeByMalIdAsync(int malId)
         {
             if (IsRateLimited()) return null;
             try
             {
-                // Inline the integer directly — safe because malId is always a number
                 var fields = GetAnimeFields();
-                var query = $@"query {{
-                    Media(idMal: {malId}, type: ANIME) {{
-                        {fields}
-                    }}
-                }}";
-
+                var query = "query { Media(idMal: " + malId + ", type: ANIME) { " + fields + " } }";
+                System.Diagnostics.Debug.WriteLine("AniList lookup MAL ID: " + malId);
                 var resp = await PostGraphQL(query);
-                if (resp == null) return null;
-
+                if (resp == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("GetAnimeByMalIdAsync: null response for MAL ID " + malId);
+                    return null;
+                }
                 var data = JObject.Parse(resp);
-
-                // AniList may return errors array alongside data
                 var errors = data["errors"];
                 if (errors != null && errors.HasValues)
-                {
-                    System.Diagnostics.Debug.WriteLine($"AniList errors: {errors}");
-                }
-
+                    System.Diagnostics.Debug.WriteLine("AniList errors for MAL ID " + malId + ": " + errors.ToString());
                 var media = data["data"]?["Media"];
-                if (media == null || media.Type == JTokenType.Null) return null;
-
-                return ParseAnimeCard(media);
+                if (media == null || media.Type == JTokenType.Null)
+                {
+                    System.Diagnostics.Debug.WriteLine("AniList null Media for MAL ID " + malId + " | Response: " + resp.Substring(0, Math.Min(500, resp.Length)));
+                    return null;
+                }
+                var card = ParseAnimeCard(media);
+                System.Diagnostics.Debug.WriteLine("AniList found: " + card?.Title + " status=" + card?.Status + " ep=" + card?.Episodes);
+                return card;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"GetAnimeByMalIdAsync error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("GetAnimeByMalIdAsync exception: " + ex.Message);
+                return null;
+            }
+        }
+
+        // NEW: Search AniList by title — fallback when MAL ID lookup fails
+        public async Task<AnimeCard?> GetAnimeByTitleAsync(string title)
+        {
+            if (IsRateLimited()) return null;
+            try
+            {
+                var safeTitle = title.Replace("\"", "\\\"");
+                var fields = GetAnimeFields();
+                var query = "query { Media(search: \"" + safeTitle + "\", type: ANIME) { " + fields + " } }";
+                System.Diagnostics.Debug.WriteLine("AniList title fallback: " + title);
+                var resp = await PostGraphQL(query);
+                if (resp == null) return null;
+                var data = JObject.Parse(resp);
+                var media = data["data"]?["Media"];
+                if (media == null || media.Type == JTokenType.Null) return null;
+                var card = ParseAnimeCard(media);
+                System.Diagnostics.Debug.WriteLine("AniList title match: " + card?.Title);
+                return card;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("GetAnimeByTitleAsync exception: " + ex.Message);
                 return null;
             }
         }
@@ -132,51 +139,25 @@ namespace AniScroll.Shared.Services
         {
             if (IsRateLimited())
                 return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = true };
-
             try
             {
                 var fields = GetAnimeFields();
-                var query = $@"
-                query {{
-                    popular: Page(page: 1, perPage: 50) {{
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {{
-                            {fields}
-                        }}
-                    }}
-                    topScore: Page(page: 1, perPage: 50) {{
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {{
-                            {fields}
-                        }}
-                    }}
-                    hiddenGems: Page(page: 1, perPage: 50) {{
-                        media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) {{
-                            {fields}
-                        }}
-                    }}
-                    ongoing: Page(page: 1, perPage: 50) {{
-                        media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: TRENDING_DESC) {{
-                            {fields}
-                        }}
-                    }}
-                    upcoming: Page(page: 1, perPage: 10) {{
-                        media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) {{
-                            {fields}
-                        }}
-                    }}
-                }}";
-
+                var query = @"query {
+                    popular: Page(page: 1, perPage: 50) { media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) { " + fields + @" } }
+                    topScore: Page(page: 1, perPage: 50) { media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) { " + fields + @" } }
+                    hiddenGems: Page(page: 1, perPage: 50) { media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"", ""Ecchi""], sort: SCORE_DESC) { " + fields + @" } }
+                    ongoing: Page(page: 1, perPage: 50) { media(type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"", ""Ecchi""], sort: TRENDING_DESC) { " + fields + @" } }
+                    upcoming: Page(page: 1, perPage: 10) { media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"", ""Ecchi""], sort: POPULARITY_DESC) { " + fields + @" } }
+                }";
                 var response = await PostGraphQL(query);
                 if (response == null)
                     return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = IsRateLimited() };
-
                 JObject data = JObject.Parse(response);
-
                 var popularPool = ExtractPool(data["data"]?["popular"]?["media"]);
                 var topScorePool = ExtractPool(data["data"]?["topScore"]?["media"]);
                 var hiddenGemsPool = ExtractPool(data["data"]?["hiddenGems"]?["media"]);
                 var ongoingPool = ExtractPool(data["data"]?["ongoing"]?["media"]);
                 var upcomingPool = ExtractPool(data["data"]?["upcoming"]?["media"]);
-
                 var result = new List<AnimeCard>();
                 result.AddRange(Pick(popularPool, 27));
                 result.AddRange(Pick(topScorePool, 12));
@@ -184,20 +165,16 @@ namespace AniScroll.Shared.Services
                 result.AddRange(Pick(ongoingPool, 9));
                 result.AddRange(Pick(upcomingPool, 1));
                 result = result.OrderBy(_ => _random.Next()).ToList();
-
-                System.Diagnostics.Debug.WriteLine($"✅ Bulk loaded {result.Count} anime");
+                System.Diagnostics.Debug.WriteLine("Bulk loaded " + result.Count + " anime");
                 return new AnimeLoadResult { Animes = result, IsRateLimited = false };
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ GetBulkAnimesAsync error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("GetBulkAnimesAsync error: " + ex.Message);
                 return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = false };
             }
         }
 
-        // PostGraphQL: uses the simple PostAsync pattern that works reliably in
-        // Blazor WASM. Variables are NOT passed here; callers inline them in the
-        // query string to avoid serialization/CORS edge-cases with SendAsync.
         private async Task<string?> PostGraphQL(string query)
         {
             try
@@ -205,28 +182,24 @@ namespace AniScroll.Shared.Services
                 var payload = new { query };
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-
                 var response = await _httpClient.PostAsync(ANILIST_ENDPOINT, content);
-
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    System.Diagnostics.Debug.WriteLine("🚫 429 Rate limited");
+                    System.Diagnostics.Debug.WriteLine("429 Rate limited");
                     SetRateLimited();
                     return null;
                 }
-
                 if (!response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"❌ HTTP {(int)response.StatusCode}: {body[..Math.Min(300, body.Length)]}");
+                    System.Diagnostics.Debug.WriteLine("HTTP " + (int)response.StatusCode + ": " + body.Substring(0, Math.Min(300, body.Length)));
                     return null;
                 }
-
                 return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ PostGraphQL error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("PostGraphQL error: " + ex.Message);
                 return null;
             }
         }
@@ -238,7 +211,7 @@ namespace AniScroll.Shared.Services
             foreach (var m in arr)
             {
                 try { var a = ParseAnimeCard(m); if (a != null) pool.Add(a); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"⚠️ Parse error: {ex.Message}"); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Parse error: " + ex.Message); }
             }
             return pool;
         }
@@ -274,16 +247,9 @@ namespace AniScroll.Shared.Services
                     : rand < 95
                     ? "type: ANIME, status: RELEASING, isAdult: false, averageScore_greater: 0, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: TRENDING_DESC"
                     : "type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [\"Hentai\", \"Ecchi\"], sort: POPULARITY_DESC";
-
-                var q = $@"query {{
-                    Page(page: {randomPage}, perPage: 1) {{
-                        media({filter}) {{ {GetAnimeFields()} }}
-                    }}
-                }}";
-
+                var q = "query { Page(page: " + randomPage + ", perPage: 1) { media(" + filter + ") { " + GetAnimeFields() + " } } }";
                 var resp = await PostGraphQL(q);
                 if (resp == null) return null;
-
                 var data = JObject.Parse(resp);
                 var arr = data["data"]?["Page"]?["media"];
                 if (arr == null || !arr.HasValues) return null;
@@ -339,16 +305,12 @@ namespace AniScroll.Shared.Services
                     ? titleObj!["english"]!.ToString()
                     : titleObj?["romaji"]?.ToString() ?? "Unknown";
                 string nativeTitle = titleObj?["native"]?.ToString() ?? "";
-
                 var cover = m["coverImage"];
                 string imageUrl = cover?["extraLarge"]?.ToString() ?? cover?["large"]?.ToString() ?? "";
-
                 string score = m["averageScore"] != null && m["averageScore"]!.Type != JTokenType.Null
                     ? m["averageScore"]!.ToString() : "N/A";
-
                 string description = m["description"]?.ToString() ?? "";
                 description = System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", "");
-
                 string season = m["season"]?.ToString() ?? "";
                 int? year = m["seasonYear"] != null && m["seasonYear"]!.Type != JTokenType.Null
                     ? m["seasonYear"]!.Value<int>() : null;
@@ -366,14 +328,10 @@ namespace AniScroll.Shared.Services
                 if (status == "RELEASING")
                 {
                     int? total = m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null ? m["episodes"]!.Value<int?>() : null;
-                    if (nextEp.HasValue)
-                    {
-                        int done = nextEp.Value - 1;
-                        epDisplay = total.HasValue ? $"{done}/{total.Value}" : $"{done}+";
-                    }
+                    if (nextEp.HasValue) { int done = nextEp.Value - 1; epDisplay = total.HasValue ? done + "/" + total.Value : done + "+"; }
                     else if (total.HasValue) epDisplay = total.Value.ToString();
                 }
-                else if (status is "FINISHED" or "NOT_YET_RELEASED")
+                else if (status == "FINISHED" || status == "NOT_YET_RELEASED")
                 {
                     if (m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null)
                         epDisplay = m["episodes"]!.ToString();
@@ -416,7 +374,7 @@ namespace AniScroll.Shared.Services
                 string trailerUrl = "";
                 var tr = m["trailer"];
                 if (tr != null && tr["site"]?.ToString() == "youtube")
-                    trailerUrl = $"https://www.youtube.com/watch?v={tr["id"]}";
+                    trailerUrl = "https://www.youtube.com/watch?v=" + tr["id"];
 
                 var tags = new List<AnimeTag>();
                 var ta = m["tags"];
@@ -488,7 +446,7 @@ namespace AniScroll.Shared.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ ParseAnimeCard: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("ParseAnimeCard: " + ex.Message);
                 return null;
             }
         }
@@ -499,8 +457,8 @@ namespace AniScroll.Shared.Services
             int? y = d["year"]?.Value<int?>(), mo = d["month"]?.Value<int?>(), day = d["day"]?.Value<int?>();
             if (!y.HasValue) return "";
             string[] months = { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-            if (mo.HasValue && day.HasValue) return $"{months[mo.Value]} {day.Value}, {y}";
-            if (mo.HasValue) return $"{months[mo.Value]} {y}";
+            if (mo.HasValue && day.HasValue) return months[mo.Value] + " " + day.Value + ", " + y;
+            if (mo.HasValue) return months[mo.Value] + " " + y;
             return y.Value.ToString();
         }
 
@@ -556,14 +514,12 @@ namespace AniScroll.Shared.Services
         {
             if (IsRateLimited())
                 return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = true };
-
             if (count > 10)
             {
                 var bulk = await GetBulkAnimesAsync();
                 if (bulk.Animes.Count > count) bulk.Animes = bulk.Animes.Take(count).ToList();
                 return bulk;
             }
-
             var results = new List<AnimeCard>();
             for (int i = 0; i < count; i++)
             {
