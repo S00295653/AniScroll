@@ -1,47 +1,72 @@
 ﻿@using AniScroll.Shared.Models
+@using AniScroll.Shared.Services
 @inject HttpClient Http
+@inject AniListService AniListService
 
 @if (IsVisible)
 {
-    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:9999;overflow-y:auto;padding:16px;font-family:monospace;font-size:12px;">
+    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:9999;overflow-y:auto;padding:16px;font-family:monospace;font-size:11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel</span>
+            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v2</span>
             <button @onclick="Hide" style="background:#333;border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;">Close</button>
         </div>
 
-        <div style="margin-bottom:10px;">
-            <div style="color:#888;margin-bottom:4px;">Test MAL ID lookup:</div>
-            <div style="display:flex;gap:8px;">
-                <input @bind="testMalId" style="flex:1;background:#1a1a2e;border:1px solid #444;color:white;padding:8px;border-radius:6px;font-family:monospace;" placeholder="e.g. 21 (One Piece)" />
-                <button @onclick="TestMalId" disabled="@isTesting" style="background:#0ea5e9;border:none;color:white;padding:8px 14px;border-radius:6px;cursor:pointer;">
-                    @(isTesting ? "..." : "Test")
-                </button>
+        @* Rate limit status *@
+        <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="color:#ffd43b;font-weight:bold;margin-bottom:6px;">SERVICE STATUS</div>
+            <div style="color:@(AniListService.IsRateLimited() ? "#ff6b6b" : "#51cf66");">
+                Rate limited: @AniListService.IsRateLimited()
+                @if (AniListService.IsRateLimited())
+                {
+                    <span> — @AniListService.GetRateLimitSecondsRemaining()s restantes</span>
+                }
             </div>
         </div>
 
-        <div style="margin-bottom:10px;">
-            <div style="color:#888;margin-bottom:4px;">Test Title search:</div>
-            <div style="display:flex;gap:8px;">
-                <input @bind="testTitle" style="flex:1;background:#1a1a2e;border:1px solid #444;color:white;padding:8px;border-radius:6px;font-family:monospace;" placeholder="e.g. One Piece" />
-                <button @onclick="TestTitle" disabled="@isTesting" style="background:#7c3aed;border:none;color:white;padding:8px 14px;border-radius:6px;cursor:pointer;">
-                    @(isTesting ? "..." : "Test")
+        @* Test with full fields via AniListService *@
+        <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="color:#ffd43b;font-weight:bold;margin-bottom:6px;">TEST VIA AniListService (full fields)</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <input @bind="testMalId" style="flex:1;background:#0d0d1a;border:1px solid #444;color:white;padding:6px;border-radius:5px;font-family:monospace;" placeholder="MAL ID (e.g. 21)" />
+                <button @onclick="TestViaService" disabled="@isTesting" style="background:#E94560;border:none;color:white;padding:6px 12px;border-radius:5px;cursor:pointer;">
+                    @(isTesting ? "..." : "Test Service")
                 </button>
             </div>
+            <div style="color:#888;font-size:10px;">Appelle GetAnimeByMalIdAsync() exactement comme le vrai code</div>
         </div>
 
-        @foreach (var log in logs)
-        {
-            var color = log.StartsWith("ERROR") || log.StartsWith("null") ? "#ff6b6b"
-            : log.StartsWith("OK") || log.StartsWith("FOUND") ? "#51cf66"
-            : log.StartsWith("---") ? "#ffd43b"
-            : "#c8c8c8";
-            <div style="color:@color;padding:3px 0;border-bottom:1px solid #1a1a2e;word-break:break-all;">@log</div>
-        }
+        @* Test with full fields query directly *@
+        <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="color:#ffd43b;font-weight:bold;margin-bottom:6px;">TEST HTTP DIRECT (full fields query)</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <input @bind="testMalId2" style="flex:1;background:#0d0d1a;border:1px solid #444;color:white;padding:6px;border-radius:5px;font-family:monospace;" placeholder="MAL ID (e.g. 21)" />
+                <button @onclick="TestFullQuery" disabled="@isTesting" style="background:#0ea5e9;border:none;color:white;padding:6px 12px;border-radius:5px;cursor:pointer;">
+                    @(isTesting ? "..." : "Test Full Query")
+                </button>
+            </div>
+            <div style="color:#888;font-size:10px;">Envoie la meme requete GraphQL complete que le service</div>
+        </div>
 
-        @if (!logs.Any())
-        {
-            <div style="color:#555;text-align:center;margin-top:40px;">Run a test to see raw API output here</div>
-        }
+        @* Logs *@
+        <div style="background:#0a0a0f;border:1px solid #222;border-radius:8px;padding:10px;min-height:120px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="color:#888;font-size:10px;">LOGS</span>
+                <button @onclick="() => logs.Clear()" style="background:transparent;border:1px solid #333;color:#666;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:10px;">Clear</button>
+            </div>
+            @foreach (var log in logs)
+            {
+                var color = log.StartsWith("ERROR") || log.StartsWith("NULL") || log.StartsWith("FAIL") ? "#ff6b6b"
+                : log.StartsWith("OK") || log.StartsWith("FOUND") || log.StartsWith("SUCCESS") ? "#51cf66"
+                : log.StartsWith("---") || log.StartsWith("===") ? "#ffd43b"
+                : log.StartsWith("RATE") ? "#ff922b"
+                : "#c8c8c8";
+                <div style="color:@color;padding:2px 0;border-bottom:1px solid #111;word-break:break-all;line-height:1.5;">@log</div>
+            }
+            @if (!logs.Any())
+            {
+                <div style="color:#444;text-align:center;padding:20px;">Clique sur un bouton de test</div>
+            }
+        </div>
     </div>
 }
 
@@ -50,85 +75,138 @@
     [Parameter] public EventCallback OnHide { get; set; }
 
     private string testMalId = "21";
-    private string testTitle = "One Piece";
+    private string testMalId2 = "21";
     private bool isTesting = false;
     private List<string> logs = new();
 
     private void Hide() => OnHide.InvokeAsync();
 
-    private async Task TestMalId()
+    // Test 1: appelle directement le vrai service
+    private async Task TestViaService()
     {
-        if (!int.TryParse(testMalId, out int malId)) { logs.Insert(0, "ERROR: Invalid MAL ID"); return; }
         logs.Clear();
         isTesting = true;
         StateHasChanged();
 
-        logs.Add($"--- Testing MAL ID: {malId} ---");
-        await RunGraphQL($"query {{ Media(idMal: {malId}, type: ANIME) {{ id title {{ romaji english }} status episodes averageScore }} }}");
+        logs.Add("=== TEST VIA AniListService.GetAnimeByMalIdAsync ===");
+        logs.Add($"IsRateLimited = {AniListService.IsRateLimited()}");
 
-        isTesting = false;
-        StateHasChanged();
-    }
+        if (!int.TryParse(testMalId, out int malId))
+        {
+            logs.Add("ERROR: MAL ID invalide");
+            isTesting = false;
+            StateHasChanged();
+            return;
+        }
 
-    private async Task TestTitle()
-    {
-        if (string.IsNullOrWhiteSpace(testTitle)) { logs.Insert(0, "ERROR: Empty title"); return; }
-        logs.Clear();
-        isTesting = true;
-        StateHasChanged();
+        logs.Add($"Calling GetAnimeByMalIdAsync({malId})...");
 
-        var safe = testTitle.Replace("\"", "\\\"");
-        logs.Add($"--- Testing title search: \"{testTitle}\" ---");
-        await RunGraphQL($"query {{ Media(search: \"{safe}\", type: ANIME) {{ id title {{ romaji english }} status episodes averageScore }} }}");
-
-        isTesting = false;
-        StateHasChanged();
-    }
-
-    private async Task RunGraphQL(string query)
-    {
-        const string endpoint = "https://graphql.anilist.co";
         try
         {
-            logs.Add($"POST {endpoint}");
-            var payload = System.Text.Json.JsonSerializer.Serialize(new { query });
-            logs.Add($"Payload: {payload[..Math.Min(200, payload.Length)]}");
+            var result = await AniListService.GetAnimeByMalIdAsync(malId);
+            if (result == null)
+            {
+                logs.Add("NULL: GetAnimeByMalIdAsync returned null");
+                logs.Add($"IsRateLimited apres appel = {AniListService.IsRateLimited()}");
+            }
+            else
+            {
+                logs.Add($"SUCCESS: Title={result.Title}");
+                logs.Add($"  Status={result.Status}");
+                logs.Add($"  Episodes={result.Episodes}");
+                logs.Add($"  Score={result.Score}");
+                logs.Add($"  Description length={result.Description?.Length ?? 0}");
+                logs.Add($"  Genres=[{string.Join(", ", result.Genres)}]");
+                logs.Add($"  Studios count={result.Studios?.Count ?? 0}");
+                logs.Add($"  AniList ID={result.Id}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logs.Add($"ERROR EXCEPTION: {ex.GetType().Name}");
+            logs.Add($"  Message: {ex.Message}");
+            if (ex.InnerException != null)
+                logs.Add($"  Inner: {ex.InnerException.Message}");
+        }
 
+        isTesting = false;
+        StateHasChanged();
+    }
+
+    // Test 2: envoie la meme requete complete via HttpClient direct
+    private async Task TestFullQuery()
+    {
+        logs.Clear();
+        isTesting = true;
+        StateHasChanged();
+
+        if (!int.TryParse(testMalId2, out int malId))
+        {
+            logs.Add("ERROR: MAL ID invalide");
+            isTesting = false;
+            StateHasChanged();
+            return;
+        }
+
+        logs.Add("=== TEST HTTP DIRECT FULL FIELDS ===");
+
+        var fields = @"id title { romaji english native } coverImage { extraLarge large } bannerImage format averageScore genres episodes duration source description season seasonYear status startDate { year month day } endDate { year month day } popularity favourites nextAiringEpisode { episode timeUntilAiring } studios(isMain: true) { nodes { id name } } relations { edges { relationType node { id type title { romaji english } coverImage { large } format status } } } trailer { site id } tags { name rank isMediaSpoiler } externalLinks { url site type color } rankings { rank type context allTime season year }";
+
+        var query = $"query {{ Media(idMal: {malId}, type: ANIME) {{ {fields} }} }}";
+
+        logs.Add($"Query length: {query.Length} chars");
+
+        try
+        {
+            var payload = System.Text.Json.JsonSerializer.Serialize(new { query });
             var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-            var response = await Http.PostAsync(endpoint, content);
+            var response = await Http.PostAsync("https://graphql.anilist.co", content);
 
             logs.Add($"HTTP Status: {(int)response.StatusCode} {response.StatusCode}");
 
             var body = await response.Content.ReadAsStringAsync();
             logs.Add($"Response length: {body.Length} chars");
 
-            // Print response in 200-char chunks
-            for (int i = 0; i < body.Length; i += 200)
-                logs.Add(body.Substring(i, Math.Min(200, body.Length - i)));
+            if (body.Length > 0)
+            {
+                // Print first 400 chars
+                logs.Add("Response (first 400 chars):");
+                logs.Add(body.Length > 400 ? body.Substring(0, 400) + "..." : body);
+            }
 
             if (response.IsSuccessStatusCode)
             {
                 var json = Newtonsoft.Json.Linq.JObject.Parse(body);
-                var media = json["data"]?["Media"];
-                if (media != null && media.Type != Newtonsoft.Json.Linq.JTokenType.Null)
-                    logs.Add($"FOUND: id={media["id"]} title={media["title"]?["english"] ?? media["title"]?["romaji"]} status={media["status"]} ep={media["episodes"]}");
-                else
-                    logs.Add($"ERROR: data.Media is null — AniList dit que ca n'existe pas avec ce filtre");
-
                 var errors = json["errors"];
-                if (errors != null)
-                    logs.Add($"AniList errors: {errors}");
+                if (errors != null && errors.HasValues)
+                    logs.Add($"FAIL: AniList errors = {errors.ToString()}");
+
+                var media = json["data"]?["Media"];
+                if (media == null || media.Type == Newtonsoft.Json.Linq.JTokenType.Null)
+                    logs.Add("NULL: data.Media est null dans la reponse");
+                else
+                {
+                    logs.Add($"FOUND: id={media["id"]} title={media["title"]?["english"] ?? media["title"]?["romaji"]}");
+                    logs.Add($"  status={media["status"]} episodes={media["episodes"]} score={media["averageScore"]}");
+                    logs.Add($"  description length={media["description"]?.ToString()?.Length ?? 0}");
+                    logs.Add($"  genres count={media["genres"]?.Count() ?? 0}");
+                }
             }
             else
             {
-                logs.Add($"ERROR: HTTP {(int)response.StatusCode}");
+                logs.Add($"FAIL: HTTP {(int)response.StatusCode}");
+                logs.Add($"Body: {body.Substring(0, Math.Min(300, body.Length))}");
             }
         }
         catch (Exception ex)
         {
-            logs.Add($"ERROR EXCEPTION: {ex.GetType().Name}: {ex.Message}");
+            logs.Add($"ERROR EXCEPTION: {ex.GetType().Name}");
+            logs.Add($"  Message: {ex.Message}");
             if (ex.InnerException != null)
-                logs.Add($"INNER: {ex.InnerException.Message}");
+                logs.Add($"  Inner: {ex.InnerException.Message}");
         }
+
+        isTesting = false;
+        StateHasChanged();
     }
 }
