@@ -8,6 +8,9 @@ namespace AniScroll.Shared.Services
     {
         private readonly HttpClient _httpClient;
         private readonly Random _random;
+        // Exposed for debug panel
+        public string LastError { get; private set; } = string.Empty;
+
         private DateTime? _rateLimitedUntil = null;
         private const int RATE_LIMIT_DURATION_SECONDS = 60;
         private const string ANILIST_ENDPOINT = "https://graphql.anilist.co";
@@ -177,29 +180,45 @@ namespace AniScroll.Shared.Services
 
         private async Task<string?> PostGraphQL(string query)
         {
+            LastError = string.Empty;
             try
             {
                 var payload = new { query };
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                System.Diagnostics.Debug.WriteLine("PostGraphQL: sending request, query length=" + query.Length + " HttpClient hash=" + _httpClient.GetHashCode());
+
                 var response = await _httpClient.PostAsync(ANILIST_ENDPOINT, content);
+
+                System.Diagnostics.Debug.WriteLine("PostGraphQL: HTTP " + (int)response.StatusCode);
+
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    System.Diagnostics.Debug.WriteLine("429 Rate limited");
+                    LastError = "429 Rate Limited";
                     SetRateLimited();
                     return null;
                 }
                 if (!response.IsSuccessStatusCode)
                 {
                     var body = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine("HTTP " + (int)response.StatusCode + ": " + body.Substring(0, Math.Min(300, body.Length)));
+                    LastError = "HTTP " + (int)response.StatusCode + ": " + body.Substring(0, Math.Min(200, body.Length));
                     return null;
                 }
-                return await response.Content.ReadAsStringAsync();
+                var result = await response.Content.ReadAsStringAsync();
+
+                // Check for null Media in response (AniList returns 200 with errors)
+                if (result.Contains(""Media":null"))
+                    LastError = "AniList returned Media:null — " + result.Substring(0, Math.Min(300, result.Length));
+
+                return result;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("PostGraphQL error: " + ex.Message);
+                var inner = ex.InnerException;
+                LastError = "EXCEPTION " + ex.GetType().Name + ": " + ex.Message
+                    + (inner != null ? " | Inner: " + inner.GetType().Name + ": " + inner.Message : "");
+                System.Diagnostics.Debug.WriteLine("PostGraphQL error: " + LastError);
                 return null;
             }
         }
