@@ -2,12 +2,18 @@
 @using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
 @inject AniListService AniListService
+@inject HttpClient Http
 @inject IJSRuntime JS
 
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app" @ref="appContainer">
     <div class="build-version">v1.7.0</div>
+
+    <button @onclick="() => showDebugPanel = true"
+            style="position:fixed;top:30px;left:10px;z-index:200;background:rgba(233,69,96,0.8);border:none;color:white;font-size:9px;padding:3px 6px;border-radius:5px;cursor:pointer;font-family:monospace;">
+        DEBUG
+    </button>
 
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
@@ -82,6 +88,9 @@
                         </div>
                     </div>
                 }
+
+                <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
+                                                               OnHide="@(() => showDebugPanel = false)" />
 
             </div>
         }
@@ -202,6 +211,8 @@
 </div>
 
 @code {
+    private bool showDebugPanel = false;
+
     // ─── Data ────────────────────────────────────────────────────────────────
     private List<AnimeCard> animes = new();
 
