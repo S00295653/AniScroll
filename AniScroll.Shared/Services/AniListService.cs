@@ -53,32 +53,59 @@ namespace AniScroll.Shared.Services
         {
             try
             {
-                var url = "https://api.jikan.moe/v4/anime?q=" + Uri.EscapeDataString(query) + "&limit=8&sfw=true";
+                // On récupère 20 résultats bruts pour avoir de la matière à filtrer
+                var url = "https://api.jikan.moe/v4/anime?q="
+                        + Uri.EscapeDataString(query)
+                        + "&limit=20&sfw=true";
+
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Accept.Add(
+                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
                 var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode) return new List<JikanSearchResult>();
+
                 var json = await response.Content.ReadAsStringAsync();
                 var data = JObject.Parse(json);
-                var results = new List<JikanSearchResult>();
                 var items = data["data"];
-                if (items == null || !items.HasValues) return results;
+                if (items == null || !items.HasValues) return new List<JikanSearchResult>();
+
+                var queryNorm = query.Trim().ToLowerInvariant();
+                var raw = new List<JikanSearchResult>();
+
                 foreach (var item in items)
                 {
                     if (item == null || item.Type == JTokenType.Null) continue;
+
                     var scoreToken = item["score"];
-                    string score = (scoreToken != null && scoreToken.Type != JTokenType.Null) ? scoreToken.ToString() : "N/A";
-                    results.Add(new JikanSearchResult
+                    double numericScore = (scoreToken != null && scoreToken.Type != JTokenType.Null)
+                        ? scoreToken.Value<double>() : 0;
+                    string scoreStr = numericScore > 0 ? numericScore.ToString() : "N/A";
+
+                    var titleRaw = item["title"]?.ToString() ?? "";
+                    var titleEnglish = item["title_english"]?.ToString() ?? "";
+
+                    var result = new JikanSearchResult
                     {
-                        MalId = item["mal_id"]?.Value<int>() ?? 0,
-                        Title = item["title"]?.ToString() ?? "",
+                        MalId    = item["mal_id"]?.Value<int>() ?? 0,
+                        Title    = titleRaw,
                         ImageUrl = item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
-                        Score = score,
-                        Type = item["type"]?.ToString() ?? "",
-                        Episodes = item["episodes"]?.Value<int?>()
-                    });
+                        Score    = scoreStr,
+                        Type     = item["type"]?.ToString() ?? "",
+                        Episodes = item["episodes"]?.Value<int?>(),
+                        RelevanceScore = ComputeRelevance(queryNorm, titleRaw, titleEnglish, numericScore)
+                    };
+
+                    raw.Add(result);
                 }
-                return results;
+
+                // Trier par pertinence décroissante
+                raw.Sort((a, b) => b.RelevanceScore.CompareTo(a.RelevanceScore));
+
+                // Nombre de résultats variable selon la qualité du meilleur match
+                int displayCount = DetermineDisplayCount(raw, queryNorm);
+
+                return raw.Take(displayCount).ToList();
             }
             catch (Exception ex)
             {
@@ -87,7 +114,78 @@ namespace AniScroll.Shared.Services
             }
         }
 
-        // ─── Single anime lookups (WITH relations) ────────────────────────────────
+        // ─── Calcul du score de pertinence ────────────────────────────────────────────
+
+        private static double ComputeRelevance(
+            string queryNorm, string title, string titleEnglish, double animeScore)
+        {
+            double score = 0;
+
+            var t1 = title.Trim().ToLowerInvariant();
+            var t2 = titleEnglish.Trim().ToLowerInvariant();
+
+            // Correspondance exacte (titre JP ou EN) → très fort signal
+            if (t1 == queryNorm || t2 == queryNorm)
+                score += 60;
+            // Commence par la requête
+            else if (t1.StartsWith(queryNorm) || t2.StartsWith(queryNorm))
+                score += 40;
+            // Contient la requête comme mot entier
+            else if (ContainsWholeWord(t1, queryNorm) || ContainsWholeWord(t2, queryNorm))
+                score += 25;
+            // Contient simplement la requête
+            else if (t1.Contains(queryNorm) || t2.Contains(queryNorm))
+                score += 12;
+
+            // Bonus de longueur : plus le titre est proche en longueur de la requête, mieux c'est
+            double lenRatio = queryNorm.Length / Math.Max(1.0, t1.Length);
+            score += lenRatio * 10;
+
+            // Bonus score AniList (max +10 pour un score de 10/10)
+            score += animeScore; // Jikan renvoie des scores sur 10
+
+            return score;
+        }
+
+        private static bool ContainsWholeWord(string text, string word)
+        {
+            int idx = text.IndexOf(word, StringComparison.Ordinal);
+            if (idx < 0) return false;
+            bool beforeOk = idx == 0 || !char.IsLetterOrDigit(text[idx - 1]);
+            int end = idx + word.Length;
+            bool afterOk  = end >= text.Length || !char.IsLetterOrDigit(text[end]);
+            return beforeOk && afterOk;
+        }
+
+        // ─── Nombre affiché variable selon pertinence ─────────────────────────────────
+        //
+        //  Score du meilleur résultat   → Nbre de résultats affichés
+        //  ≥ 60  (match exact)          → 3–4  (très ciblé)
+        //  ≥ 40  (commence par…)        → 4–6  (assez précis)
+        //  ≥ 20  (mot entier)           → 6–8  (pertinence correcte)
+        //  < 20  (faible correspondance)→ 8–10 (on montre plus car on est moins sûr)
+
+        private static int DetermineDisplayCount(List<JikanSearchResult> sorted, string query)
+        {
+            if (sorted.Count == 0) return 0;
+
+            double best = sorted[0].RelevanceScore;
+
+            // Compter combien ont un score "acceptable" (> seuil minimum de qualité)
+            double threshold = best * 0.45; // on garde ce qui dépasse 45% du meilleur score
+            int qualified = sorted.Count(r => r.RelevanceScore >= threshold);
+
+            int max;
+            if (best >= 60) max = 4;       // match exact → peu de résultats, très pertinents
+            else if (best >= 40) max = 6;  // bon match → quelques résultats
+            else if (best >= 20) max = 8;  // match moyen
+            else max = 10;                  // match faible → on étale plus
+
+            // On ne dépasse pas le nombre qualifié ni le maximum calculé
+            return Math.Min(qualified, max);
+        }
+        
+         // ─── Single anime lookups (WITH relations) ────────────────────────────────
 
         public async Task<AnimeCard?> GetAnimeByMalIdAsync(int malId)
         {

@@ -79,13 +79,17 @@
     }
 
     // Used for Jikan API search preview results
-    public class JikanSearchResult
-    {
-        public int MalId { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string ImageUrl { get; set; } = string.Empty;
-        public string Score { get; set; } = "N/A";
-        public string Type { get; set; } = string.Empty;
-        public int? Episodes { get; set; }
-    }
+    // Used for Jikan API search preview results
+public class JikanSearchResult
+{
+    public int MalId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
+    public string Score { get; set; } = "N/A";
+    public string Type { get; set; } = string.Empty;
+    public int? Episodes { get; set; }
+
+    // Score de pertinence interne (non affiché, utilisé pour le tri/filtre)
+    public double RelevanceScore { get; set; } = 0;
+}
 }
