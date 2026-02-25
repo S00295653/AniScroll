@@ -89,7 +89,10 @@ namespace AniScroll.Shared.Services
                     {
                         MalId    = item["mal_id"]?.Value<int>() ?? 0,
                         Title    = titleRaw,
-                        ImageUrl = item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
+                        ImageUrl = item["images"]?["webp"]?["large_image_url"]?.ToString()
+        ?? item["images"]?["jpg"]?["large_image_url"]?.ToString()
+        ?? item["images"]?["jpg"]?["image_url"]?.ToString()
+        ?? "",
                         Score    = scoreStr,
                         Type     = item["type"]?.ToString() ?? "",
                         Episodes = item["episodes"]?.Value<int?>(),
