@@ -7,7 +7,7 @@
 
 <PageTitle>AnimeScroll</PageTitle>
 
-<div class="anime-scroll-app" @ref="appContainer">
+<div class="anime-scroll-app @(isSearchActive ? "search-is-active" : "")" @ref="appContainer">
     <div class="build-version">v1.7.2</div>
 
     <button @onclick="() => showDebugPanel = true"

@@ -770,10 +770,16 @@ html, body {
     pointer-events: all;
 }
 
-.search-results-panel.visible ~ .main-nav-bar search-open {
+.search-is-active .nav-section {
     border-radius: 0;
     transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-is-active .main-nav-bar {
+    border-radius: 0;
     border-top-color: transparent;
+    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                border-top-color 0.22s ease;
 }
 
 
