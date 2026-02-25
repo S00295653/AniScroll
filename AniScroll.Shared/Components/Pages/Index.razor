@@ -136,7 +136,7 @@
     ───────────────────────────────────────────────────────────────────────── *@
     @if (isSearchActive)
     {
-        <div class="search-nav-extension @(searchResults.Any() ? "has-results" : isSearchLoading ? "is-loading" : "no-results")"></div>
+        <div class="search-nav-extension" style="height: @(searchExtensionHeight.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))px"></div>
     }
 
     @* ─────────────────────────────────────────────────────────────────────────
@@ -286,6 +286,9 @@
 
     // ─── Banner preload tracking ──────────────────────────────────────────────
     private HashSet<int> preloadedIndices = new();
+
+    // ─── Search extension height (dynamic, measured via JS) ──────────────────
+    private double searchExtensionHeight = 156; // nav height par défaut
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  LIFECYCLE
@@ -599,6 +602,7 @@
             searchResults.Clear();
             isSearchActive = false;
             isSearchLoading = false;
+            searchExtensionHeight = 156;
             StateHasChanged();
             return;
         }
@@ -606,6 +610,7 @@
         isSearchActive = true;
         isSearchLoading = true;
         StateHasChanged();
+        _ = UpdateSearchExtensionHeight();
 
         try { await Task.Delay(350, cts.Token); }
         catch (OperationCanceledException) { return; }
@@ -618,6 +623,7 @@
         searchResults = results;
         isSearchLoading = false;
         StateHasChanged();
+        _ = UpdateSearchExtensionHeight();
     }
 
     private async Task HandleSearchResultClick(JikanSearchResult result)
@@ -626,6 +632,7 @@
         isSearchActive = false;
         isSearchLoading = false;
         isLoadingSelectedAnime = true;
+        searchExtensionHeight = 156;
         StateHasChanged();
 
         AnimeCard? anime = null;
@@ -664,11 +671,29 @@
         searchResults.Clear();
         isSearchActive = false;
         isSearchLoading = false;
+        searchExtensionHeight = 156;
         StateHasChanged();
     }
 
     private void HandleListsClicked() { }
     private void HandleProfileClicked() { }
+
+    // ─── Met à jour la hauteur de l'extension nav dynamiquement ────────────────
+    // Appelé après chaque changement d'état de la recherche.
+    // Laisse le DOM se mettre à jour (Task.Yield), mesure la vraie hauteur
+    // du panel, puis ajuste l'extension pour l'envelopper exactement.
+    private async Task UpdateSearchExtensionHeight()
+    {
+        await Task.Yield(); // laisser Blazor mettre à jour le DOM
+        try
+        {
+            var panelH = await JS.InvokeAsync<double>("getElementScrollHeight", ".search-results-panel");
+            // 150 = bottom de la nav, on ajoute 6px de marge en haut
+            searchExtensionHeight = panelH > 0 ? 150 + panelH + 6 : 156;
+        }
+        catch { }
+        StateHasChanged();
+    }
 
     public void Dispose() => rateLimitTimer?.Dispose();
 }

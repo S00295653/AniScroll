@@ -61,10 +61,6 @@ window.isModalScrollAtTop = function (element) {
 };
 
 // ─── Image preloader ──────────────────────────────────────────────────────────
-// Creates hidden Image() objects so the browser fetches and caches the URLs.
-// The popup banner / cover then appears instantly when opened.
-// Called from Blazor with an array of URL strings.
-
 const _preloadedUrls = new Set();
 
 window.preloadImages = function (urls) {
@@ -75,4 +71,13 @@ window.preloadImages = function (urls) {
         const img = new Image();
         img.src = url;
     }
+};
+
+// ─── Dynamic height measurement ───────────────────────────────────────────────
+// Returns the scrollHeight (full content height) of the first element matching
+// the given CSS selector. Used by the search-nav-extension to size itself
+// exactly to the content of .search-results-panel.
+window.getElementScrollHeight = function (selector) {
+    const el = document.querySelector(selector);
+    return el ? el.scrollHeight : 0;
 };
