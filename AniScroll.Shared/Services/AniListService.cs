@@ -435,7 +435,7 @@ namespace AniScroll.Shared.Services
                         });
                     }
 
-                // Relations: only parsed when explicitly requested
+                // Relations: all media types included (ANIME, MANGA, NOVEL, etc.)
                 var relations = new List<AnimeRelation>();
                 if (includeRelations)
                 {
@@ -446,15 +446,15 @@ namespace AniScroll.Shared.Services
                             if (edge == null || edge.Type == JTokenType.Null) continue;
                             var node = edge["node"];
                             if (node == null || node.Type == JTokenType.Null) continue;
-                            if (node["type"]?.ToString() != "ANIME") continue;
                             var rt = node["title"];
                             string relTitle = !string.IsNullOrEmpty(rt?["english"]?.ToString())
                                 ? rt!["english"]!.ToString()
                                 : rt?["romaji"]?.ToString() ?? "";
+                            string mediaType = node["type"]?.ToString() ?? "";
                             relations.Add(new AnimeRelation
                             {
                                 Id = node["id"]?.Value<int>() ?? 0,
-                                Type = "ANIME",
+                                Type = mediaType,
                                 RelationType = FormatRelationType(edge["relationType"]?.ToString() ?? ""),
                                 Title = relTitle,
                                 ImageUrl = node["coverImage"]?["large"]?.ToString() ?? "",
