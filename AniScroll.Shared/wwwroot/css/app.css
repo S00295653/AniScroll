@@ -587,11 +587,10 @@ html, body {
     background: rgba(14, 14, 22, 0.96);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border-radius: 22px 22px 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    /* Pas de border-radius ni border-top : la nav (z-index 1000) est au-dessus
+       et fournit déjà l'arrondi visible. L'extension est un simple rectangle
+       qui remonte derrière les résultats sans créer un second "chapeau". */
     pointer-events: none;
-    /* Hauteur de base (nav seule). La vraie hauteur est fixée dynamiquement
-       via style inline depuis Blazor après mesure JS du panel. */
     height: 156px;
     transition: height 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
@@ -633,14 +632,7 @@ html, body {
         display: none;
     }
 
-/* ── Séparateur entre extension et panel ── */
-.search-results-panel::before {
-    content: '';
-    display: block;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 0 16px 4px;
-}
+/* Séparateur supprimé — pas de ligne entre l'extension et les items */
 
 @keyframes searchPanelSlideUp {
     from {
