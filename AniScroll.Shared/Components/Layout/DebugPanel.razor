@@ -7,7 +7,7 @@
 {
     <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:9999;overflow-y:auto;padding:16px;font-family:monospace;font-size:11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v3</span>
+            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v5</span>
             <button @onclick="Hide" style="background:#333;border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;">Close</button>
         </div>
 
@@ -15,6 +15,23 @@
             <div style="color:#ffd43b;font-weight:bold;margin-bottom:4px;">SERVICE STATUS</div>
             <div style="color:@(AniListService.IsRateLimited() ? "#ff6b6b" : "#51cf66");">
                 Rate limited: @AniListService.IsRateLimited()
+            </div>
+            <div style="margin-top:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="color:#aaa;font-size:10px;">Requêtes AniList</span>
+                    <span style="color:@GetCounterColor();font-weight:bold;font-size:12px;">
+                        @AniListService.RequestCount / @AniListService.RequestLimit
+                    </span>
+                </div>
+                <div style="background:#0d0d1a;border-radius:4px;height:6px;overflow:hidden;">
+                    <div style="height:100%;width:@GetCounterPercent()%;background:@GetCounterColor();border-radius:4px;transition:width 0.3s ease;"></div>
+                </div>
+                @if (AniListService.IsRateLimited())
+                {
+                    <div style="color:#ff6b6b;font-size:10px;margin-top:3px;">
+                        ⏱️ Reset dans @AniListService.GetRateLimitSecondsRemaining()s
+                    </div>
+                }
             </div>
             @if (!string.IsNullOrEmpty(AniListService.LastError))
             {
@@ -43,7 +60,7 @@
                 </button>
             </div>
             <div style="color:#888;font-size:10px;margin-top:4px;">
-                Reproduit exactement ce que fait PostGraphQL() avec le meme HttpClient injectable
+                Reproduit exactement ce que fait PostGraphQL() avec le même HttpClient injectable
             </div>
         </div>
 
@@ -54,9 +71,10 @@
             </div>
             @foreach (var log in logs)
             {
-                var color = log.StartsWith("ERROR") || log.StartsWith("NULL") || log.StartsWith("FAIL") || log.StartsWith("EXCEPTION") ? "#ff6b6b"
+                var color = log.StartsWith("ERROR") || log.StartsWith("NULL") || log.StartsWith("FAIL") || log.StartsWith("EXCEPTION") || log.StartsWith("PARSE ERR") ? "#ff6b6b"
                 : log.StartsWith("OK") || log.StartsWith("FOUND") || log.StartsWith("SUCCESS") ? "#51cf66"
                 : log.StartsWith("===") || log.StartsWith("---") ? "#ffd43b"
+                : log.StartsWith("WARN") ? "#ff9f43"
                 : "#c8c8c8";
                 <div style="color:@color;padding:2px 0;border-bottom:1px solid #111;word-break:break-all;line-height:1.5;">@log</div>
             }
@@ -73,9 +91,21 @@
     private bool isTesting = false;
     private List<string> logs = new();
 
+    private string GetCounterColor()
+    {
+        double pct = (double)AniListService.RequestCount / AniListService.RequestLimit;
+        if (pct >= 1.0) return "#ff6b6b";
+        if (pct >= 0.7) return "#ffd43b";
+        return "#51cf66";
+    }
+
+    private double GetCounterPercent()
+        => Math.Min(100, (double)AniListService.RequestCount / AniListService.RequestLimit * 100);
+
     private void Hide() => OnHide.InvokeAsync();
 
-    // Test 1: appelle le vrai service
+    // ── Test 1: via le vrai service ───────────────────────────────────────────
+
     private async Task TestViaService()
     {
         logs.Clear();
@@ -84,6 +114,7 @@
 
         logs.Add("=== TEST AniListService.GetAnimeByMalIdAsync ===");
         logs.Add($"IsRateLimited = {AniListService.IsRateLimited()}");
+        logs.Add($"Requêtes = {AniListService.RequestCount}/{AniListService.RequestLimit}");
 
         if (!int.TryParse(testMalId, out int malId))
         {
@@ -96,8 +127,9 @@
         try
         {
             var result = await AniListService.GetAnimeByMalIdAsync(malId);
-
-            logs.Add($"LastError = {(string.IsNullOrEmpty(AniListService.LastError) ? "(aucun)" : AniListService.LastError)}");
+            var lastErr = AniListService.LastError;
+            logs.Add($"LastError = {(string.IsNullOrEmpty(lastErr) ? "(aucun)" : lastErr)}");
+            logs.Add($"Requêtes après = {AniListService.RequestCount}/{AniListService.RequestLimit}");
 
             if (result == null)
                 logs.Add("NULL: returned null — voir LastError ci-dessus");
@@ -107,6 +139,8 @@
                 logs.Add($"  Status={result.Status} Episodes={result.Episodes} Score={result.Score}");
                 logs.Add($"  Description={result.Description?.Length ?? 0} chars");
                 logs.Add($"  Genres=[{string.Join(", ", result.Genres)}]");
+                logs.Add($"  Studios=[{string.Join(", ", result.Studios.Select(s => s.Name))}]");
+                logs.Add($"  Tags={result.Tags.Count}  Links={result.ExternalLinks.Count}  Rankings={result.Rankings.Count}");
             }
         }
         catch (Exception ex)
@@ -118,7 +152,8 @@
         StateHasChanged();
     }
 
-    // Test 2: reproduit exactement PostGraphQL() mais avec logging complet
+    // ── Test 2: clone direct de PostGraphQL() ────────────────────────────────
+
     private async Task TestPostGraphQLClone()
     {
         logs.Clear();
@@ -135,85 +170,96 @@
 
         logs.Add("=== CLONE DE PostGraphQL() ===");
         logs.Add($"HttpClient hash: {Http.GetHashCode()}");
-        logs.Add($"HttpClient BaseAddress: {Http.BaseAddress?.ToString() ?? "(null)"}");
-        logs.Add($"HttpClient Timeout: {Http.Timeout}");
+        logs.Add($"Timeout: {Http.Timeout}");
+        logs.Add($"Requêtes actuelles: {AniListService.RequestCount}/{AniListService.RequestLimit}");
 
-        var fields = GetAnimeFields();
+        var fields = GetAnimeFieldsNoRelations();
         var query = $"query {{\n    Media(idMal: {malId}, type: ANIME) {{\n        {fields}\n    }}\n}}";
-
         logs.Add($"Query length: {query.Length} chars");
-        logs.Add($"Query preview: {query.Substring(0, Math.Min(100, query.Length))}...");
 
         try
         {
-            // Exact same code as PostGraphQL
             var payload = new { query };
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
-            logs.Add($"JSON payload length: {json.Length} chars");
-
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
             logs.Add("Calling Http.PostAsync...");
             var response = await Http.PostAsync("https://graphql.anilist.co", content);
-
             logs.Add($"HTTP Status: {(int)response.StatusCode} {response.StatusCode}");
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            {
-                logs.Add("FAIL: 429 Rate Limited!");
-                isTesting = false;
-                StateHasChanged();
-                return;
-            }
+            { logs.Add("FAIL: 429 Rate Limited!"); isTesting = false; StateHasChanged(); return; }
 
             if (!response.IsSuccessStatusCode)
             {
-                var errBody = await response.Content.ReadAsStringAsync();
-                logs.Add($"FAIL: HTTP error body: {errBody.Substring(0, Math.Min(300, errBody.Length))}");
-                isTesting = false;
-                StateHasChanged();
-                return;
+                var eb = await response.Content.ReadAsStringAsync();
+                logs.Add($"FAIL: {eb.Substring(0, Math.Min(300, eb.Length))}");
+                isTesting = false; StateHasChanged(); return;
             }
 
             var body = await response.Content.ReadAsStringAsync();
             logs.Add($"Response length: {body.Length} chars");
+            logs.Add($"Raw preview: {body.Substring(0, Math.Min(300, body.Length))}");
 
-            // Parse
-            var data = Newtonsoft.Json.Linq.JObject.Parse(body);
+            Newtonsoft.Json.Linq.JObject data;
+            try { data = Newtonsoft.Json.Linq.JObject.Parse(body); }
+            catch (Exception ex)
+            { logs.Add($"PARSE ERR JSON: {ex.Message}"); isTesting = false; StateHasChanged(); return; }
+
             var errors = data["errors"];
             if (errors != null && errors.HasValues)
-                logs.Add($"AniList errors: {errors.ToString()}");
+                logs.Add($"WARN AniList errors: {errors.ToString().Substring(0, Math.Min(200, errors.ToString().Length))}");
 
             var media = data["data"]?["Media"];
             if (media == null || media.Type == Newtonsoft.Json.Linq.JTokenType.Null)
             {
                 logs.Add("NULL: data.Media est null");
-                logs.Add($"Raw data keys: {string.Join(", ", data.Properties().Select(p => p.Name))}");
+                logs.Add($"data keys: {string.Join(", ", data.Properties().Select(p => p.Name))}");
             }
             else
             {
                 logs.Add($"FOUND: id={media["id"]} title={media["title"]?["english"] ?? media["title"]?["romaji"]}");
                 logs.Add($"  status={media["status"]} ep={media["episodes"]} score={media["averageScore"]}");
                 logs.Add($"  description={media["description"]?.ToString()?.Length ?? 0} chars");
+
+                // ── Inspecte chaque tableau pour détecter les nulls ──────────
+                CheckArrayField(media, "tags", logs);
+                CheckArrayField(media, "externalLinks", logs);
+                CheckArrayField(media, "rankings", logs);
+                var stuNodes = media["studios"]?["nodes"];
+                if (stuNodes != null) CheckArray(stuNodes, "studios.nodes", logs);
+
                 logs.Add("SUCCESS: PostGraphQL clone fonctionne!");
-                logs.Add("=> Le bug est dans le HttpClient specifique de AniListService");
+                logs.Add("=> Si Test Service échoue toujours : regarder LastError du service ci-dessus");
             }
         }
         catch (Exception ex)
         {
-            logs.Add($"EXCEPTION: {ex.GetType().Name}");
-            logs.Add($"  Message: {ex.Message}");
+            logs.Add($"EXCEPTION: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
-                logs.Add($"  InnerException: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-            var inner2 = ex.InnerException?.InnerException;
-            if (inner2 != null)
-                logs.Add($"  Inner2: {inner2.Message}");
+                logs.Add($"  Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
         }
 
         isTesting = false;
         StateHasChanged();
     }
 
-    private string GetAnimeFields() =>
-        "id title { romaji english native } coverImage { extraLarge large } bannerImage format averageScore genres episodes duration source description season seasonYear status startDate { year month day } endDate { year month day } popularity favourites nextAiringEpisode { episode timeUntilAiring } studios(isMain: true) { nodes { id name } } relations { edges { relationType node { id type title { romaji english } coverImage { large } format status } } } trailer { site id } tags { name rank isMediaSpoiler } externalLinks { url site type color } rankings { rank type context allTime season year }";
+    private void CheckArrayField(Newtonsoft.Json.Linq.JToken parent, string field, List<string> log)
+    {
+        var arr = parent[field];
+        if (arr == null) { log.Add($"  {field}: absent"); return; }
+        CheckArray(arr, field, log);
+    }
+
+    private void CheckArray(Newtonsoft.Json.Linq.JToken arr, string name, List<string> log)
+    {
+        if (!arr.HasValues) { log.Add($"  {name}: vide []"); return; }
+        int nullCount = arr.Count(t => t.Type == Newtonsoft.Json.Linq.JTokenType.Null);
+        log.Add($"  {name}: {arr.Count()} items, {nullCount} nulls"
+            + (nullCount > 0 ? " ← CAUSE PROBABLE DU CRASH" : ""));
+    }
+
+    // Champs sans relations — miroir de AniListService.GetAnimeFields()
+    private string GetAnimeFieldsNoRelations() =>
+        "id title { romaji english native } coverImage { extraLarge large } bannerImage format averageScore genres episodes duration source description season seasonYear status startDate { year month day } endDate { year month day } popularity favourites nextAiringEpisode { episode timeUntilAiring } studios(isMain: true) { nodes { id name } } trailer { site id } tags { name rank isMediaSpoiler } externalLinks { url site type color } rankings { rank type context allTime season year }";
 }
