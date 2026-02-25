@@ -768,8 +768,14 @@ html, body {
     align-items: center;
     overflow: hidden;
     pointer-events: all;
+    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                border-top-color 0.22s ease;
 }
 
+.search-results-panel.visible ~ .nav-section .main-nav-bar {
+    border-radius: 0;
+    border-top-color: transparent;
+}
 /* ── Search row ── */
 .search-row {
     width: 100%;
