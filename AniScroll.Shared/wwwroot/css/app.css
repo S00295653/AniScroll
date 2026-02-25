@@ -770,7 +770,7 @@ html, body {
     pointer-events: all;
 }
 
-.search-results-panel.visible ~ .main-nav-bar {
+.search-results-panel.visible ~ .main-nav-bar search-open {
     border-radius: 0;
     transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     border-top-color: transparent;
