@@ -559,8 +559,17 @@
         if (!hasMoved && !isDraggingCard) ShowAnimeDetails(anime);
     }
 
-    private void ShowAnimeDetails(AnimeCard anime)
+    private async Task ShowAnimeDetails(AnimeCard anime)
     {
+        // Les cartes du scroller sont chargées sans relations → on fetch le détail complet
+        if (anime.Relations.Count == 0 && anime.Id > 0)
+        {
+            isLoadingSelectedAnime = true;
+            StateHasChanged();
+            var full = await AniListService.GetAnimeByAniListIdAsync(anime.Id);
+            isLoadingSelectedAnime = false;
+            if (full != null) anime = full;
+        }
         selectedAnime = anime;
         showDetailPopup = true;
         StateHasChanged();

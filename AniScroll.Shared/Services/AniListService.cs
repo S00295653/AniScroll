@@ -89,10 +89,7 @@ namespace AniScroll.Shared.Services
                     {
                         MalId    = item["mal_id"]?.Value<int>() ?? 0,
                         Title    = titleRaw,
-                        ImageUrl = item["images"]?["webp"]?["large_image_url"]?.ToString()
-        ?? item["images"]?["jpg"]?["large_image_url"]?.ToString()
-        ?? item["images"]?["jpg"]?["image_url"]?.ToString()
-        ?? "",
+                        ImageUrl = item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
                         Score    = scoreStr,
                         Type     = item["type"]?.ToString() ?? "",
                         Episodes = item["episodes"]?.Value<int?>(),
@@ -249,6 +246,32 @@ namespace AniScroll.Shared.Services
             catch (Exception ex)
             {
                 LastError = "GetAnimeByTitleAsync exception: " + ex.Message;
+                System.Diagnostics.Debug.WriteLine(LastError);
+                return null;
+            }
+        }
+
+        public async Task<AnimeCard?> GetAnimeByAniListIdAsync(int aniListId)
+        {
+            if (IsRateLimited()) return null;
+            try
+            {
+                var fields = GetAnimeFieldsWithRelations();
+                var query = "query { Media(id: " + aniListId + ", type: ANIME) { " + fields + " } }";
+                System.Diagnostics.Debug.WriteLine("AniList lookup by AniList ID: " + aniListId);
+                var resp = await PostGraphQL(query);
+                if (resp == null) return null;
+                var data = JObject.Parse(resp);
+                var media = data["data"]?["Media"];
+                if (media == null || media.Type == JTokenType.Null) return null;
+                var card = ParseAnimeCard(media, includeRelations: true);
+                if (card == null && string.IsNullOrEmpty(LastError))
+                    LastError = "ParseAnimeCard returned null for AniList ID " + aniListId;
+                return card;
+            }
+            catch (Exception ex)
+            {
+                LastError = "GetAnimeByAniListIdAsync exception: " + ex.Message;
                 System.Diagnostics.Debug.WriteLine(LastError);
                 return null;
             }
@@ -568,7 +591,11 @@ namespace AniScroll.Shared.Services
                 string trailerUrl = "";
                 var tr = m["trailer"];
                 if (tr != null && tr.Type != JTokenType.Null && tr["site"]?.ToString() == "youtube")
-                    trailerUrl = "https://www.youtube.com/watch?v=" + tr["id"];
+                {
+                    var trailerId = tr["id"]?.ToString();
+                    if (!string.IsNullOrEmpty(trailerId))
+                        trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
+}
 
                 var tags = new List<AnimeTag>();
                 var ta = m["tags"];

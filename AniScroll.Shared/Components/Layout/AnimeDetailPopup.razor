@@ -332,40 +332,66 @@
                     {
                         <div class="modal-section">
                             <h3 class="section-title">Tags</h3>
-                            <div class="tags-wrap">
-                                @foreach (var tag in visibleTags ?? new())
-                                {
-                                    <span class="tag-pill">
-                                        @tag.Name<span class="tag-pct">@tag.Rank%</span>
-                                    </span>
-                                }
+
+                            @if (!showSpoilers)
+                            {
+                                <div class="tags-wrap">
+                                    @foreach (var tag in visibleTags ?? new())
+                                    {
+                                        <span class="tag-pill">
+                                            @tag.Name<span class="tag-pct">@tag.Rank%</span>
+                                        </span>
+                                    }
+                                </div>
 
                                 @if (spoilerCount > 0)
                                 {
-                                    @if (!showSpoilers)
-                                    {
+                                    <div style="display:flex;justify-content:center;margin-top:10px;">
                                         <button class="tag-pill tag-spoiler tag-spoiler-btn"
                                                 @onclick="() => showSpoilers = true">
                                             🔒 @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") — tap to reveal
                                         </button>
-                                    }
-                                    else
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                {
+                                    var allTagsSorted = (visibleTags ?? new())
+                                        .Select(t => (tag: t, isSpoiler: false))
+                                        .Concat((spoilerTags ?? new())
+                                            .Select(t => (tag: t, isSpoiler: true)))
+                                        .OrderByDescending(x => x.tag.Rank)
+                                        .ToList();
+                                }
+                                <div class="tags-wrap">
+                                    @foreach (var entry in allTagsSorted)
                                     {
-                                        @foreach (var tag in spoilerTags ?? new())
+                                        @if (!entry.isSpoiler)
                                         {
-                                            <span class="tag-pill tag-pill-spoiler-revealed">
-                                                ⚠️ @tag.Name<span class="tag-pct">@tag.Rank%</span>
+                                            <span class="tag-pill">
+                                                @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
                                             </span>
                                         }
-                                        <button class="tag-pill tag-spoiler tag-spoiler-btn tag-spoiler-hide-btn"
-                                                @onclick="() => showSpoilers = false">
-                                            🔒 Hide spoilers
-                                        </button>
+                                        else
+                                        {
+                                            <span class="tag-pill tag-pill-spoiler-revealed">
+                                                ⚠️ @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
+                                            </span>
+                                        }
                                     }
-                                }
-                            </div>
+                                </div>
+
+                                <div style="display:flex;justify-content:center;margin-top:10px;">
+                                    <button class="tag-pill tag-spoiler tag-spoiler-btn tag-spoiler-hide-btn"
+                                            @onclick="() => showSpoilers = false">
+                                        🔒 Hide spoilers
+                                    </button>
+                                </div>
+                            }
                         </div>
                     }
+                                        
 
                     @{
                         var streamingLinks = CurrentAnime.ExternalLinks?.Where(l => l.Type == "STREAMING").ToList();
