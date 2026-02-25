@@ -30,7 +30,7 @@ namespace AniScroll.Shared.Services
             if (DateTime.UtcNow >= _rateLimitedUntil)
             {
                 _rateLimitedUntil = null;
-                RequestCount = 0; // Reset counter when rate limit expires
+                RequestCount = 0;
                 return false;
             }
             return true;
@@ -65,6 +65,7 @@ namespace AniScroll.Shared.Services
                 if (items == null || !items.HasValues) return results;
                 foreach (var item in items)
                 {
+                    if (item == null || item.Type == JTokenType.Null) continue;
                     var scoreToken = item["score"];
                     string score = (scoreToken != null && scoreToken.Type != JTokenType.Null) ? scoreToken.ToString() : "N/A";
                     results.Add(new JikanSearchResult
@@ -112,11 +113,15 @@ namespace AniScroll.Shared.Services
                     System.Diagnostics.Debug.WriteLine("AniList null Media for MAL ID " + malId);
                     return null;
                 }
-                return ParseAnimeCard(media, includeRelations: true);
+                var card = ParseAnimeCard(media, includeRelations: true);
+                if (card == null && string.IsNullOrEmpty(LastError))
+                    LastError = "ParseAnimeCard returned null — exception silencieuse dans le parsing JSON";
+                return card;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("GetAnimeByMalIdAsync exception: " + ex.Message);
+                LastError = "GetAnimeByMalIdAsync exception: " + ex.Message;
+                System.Diagnostics.Debug.WriteLine(LastError);
                 return null;
             }
         }
@@ -135,16 +140,20 @@ namespace AniScroll.Shared.Services
                 var data = JObject.Parse(resp);
                 var media = data["data"]?["Media"];
                 if (media == null || media.Type == JTokenType.Null) return null;
-                return ParseAnimeCard(media, includeRelations: true);
+                var card = ParseAnimeCard(media, includeRelations: true);
+                if (card == null && string.IsNullOrEmpty(LastError))
+                    LastError = "ParseAnimeCard returned null — exception silencieuse dans le parsing JSON";
+                return card;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("GetAnimeByTitleAsync exception: " + ex.Message);
+                LastError = "GetAnimeByTitleAsync exception: " + ex.Message;
+                System.Diagnostics.Debug.WriteLine(LastError);
                 return null;
             }
         }
 
-        // ─── Bulk / Random (WITHOUT relations — too large for 50+ anime at once) ──
+        // ─── Bulk / Random (WITHOUT relations) ───────────────────────────────────
 
         public async Task<AnimeLoadResult> GetBulkAnimesAsync()
         {
@@ -230,7 +239,6 @@ namespace AniScroll.Shared.Services
 
         // ─── Field sets ──────────────────────────────────────────────────────────
 
-        /// <summary>Full fields WITH relations — for single-anime detail lookups only.</summary>
         private string GetAnimeFieldsWithRelations() => @"
             id
             title { romaji english native }
@@ -269,7 +277,6 @@ namespace AniScroll.Shared.Services
             rankings { rank type context allTime season year }
         ";
 
-        /// <summary>Compact fields WITHOUT relations — for bulk/random queries (50+ anime at once).</summary>
         private string GetAnimeFieldsNoRelations() => @"
             id
             title { romaji english native }
@@ -305,6 +312,7 @@ namespace AniScroll.Shared.Services
             if (arr == null || !arr.HasValues) return pool;
             foreach (var m in arr)
             {
+                if (m == null || m.Type == JTokenType.Null) continue;
                 try
                 {
                     var a = ParseAnimeCard(m, includeRelations);
@@ -390,8 +398,13 @@ namespace AniScroll.Shared.Services
                 string epDisplay = "N/A";
                 if (status == "RELEASING")
                 {
-                    int? total = m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null ? m["episodes"]!.Value<int?>() : null;
-                    if (nextEp.HasValue) { int done = nextEp.Value - 1; epDisplay = total.HasValue ? done + "/" + total.Value : done + "+"; }
+                    int? total = m["episodes"] != null && m["episodes"]!.Type != JTokenType.Null
+                        ? m["episodes"]!.Value<int?>() : null;
+                    if (nextEp.HasValue)
+                    {
+                        int done = nextEp.Value - 1;
+                        epDisplay = total.HasValue ? done + "/" + total.Value : done + "+";
+                    }
                     else if (total.HasValue) epDisplay = total.Value.ToString();
                 }
                 else if (status == "FINISHED" || status == "NOT_YET_RELEASED")
@@ -404,15 +417,25 @@ namespace AniScroll.Shared.Services
                 var ga = m["genres"];
                 if (ga != null && ga.HasValues)
                     for (int i = 0; i < Math.Min(3, ga.Count()); i++)
+                    {
+                        if (ga[i] == null || ga[i]!.Type == JTokenType.Null) continue;
                         genres.Add(ga[i]!.ToString());
+                    }
 
                 var studios = new List<AnimeStudio>();
                 var sn = m["studios"]?["nodes"];
                 if (sn != null && sn.HasValues)
                     foreach (var s in sn)
-                        studios.Add(new AnimeStudio { Id = s["id"]?.Value<int>() ?? 0, Name = s["name"]?.ToString() ?? "" });
+                    {
+                        if (s == null || s.Type == JTokenType.Null) continue;
+                        studios.Add(new AnimeStudio
+                        {
+                            Id = s["id"]?.Value<int>() ?? 0,
+                            Name = s["name"]?.ToString() ?? ""
+                        });
+                    }
 
-                // Relations: only parsed when explicitly requested (single-anime lookups)
+                // Relations: only parsed when explicitly requested
                 var relations = new List<AnimeRelation>();
                 if (includeRelations)
                 {
@@ -420,11 +443,14 @@ namespace AniScroll.Shared.Services
                     if (re != null && re.HasValues)
                         foreach (var edge in re)
                         {
+                            if (edge == null || edge.Type == JTokenType.Null) continue;
                             var node = edge["node"];
-                            if (node == null || node["type"]?.ToString() != "ANIME") continue;
+                            if (node == null || node.Type == JTokenType.Null) continue;
+                            if (node["type"]?.ToString() != "ANIME") continue;
                             var rt = node["title"];
                             string relTitle = !string.IsNullOrEmpty(rt?["english"]?.ToString())
-                                ? rt!["english"]!.ToString() : rt?["romaji"]?.ToString() ?? "";
+                                ? rt!["english"]!.ToString()
+                                : rt?["romaji"]?.ToString() ?? "";
                             relations.Add(new AnimeRelation
                             {
                                 Id = node["id"]?.Value<int>() ?? 0,
@@ -440,24 +466,29 @@ namespace AniScroll.Shared.Services
 
                 string trailerUrl = "";
                 var tr = m["trailer"];
-                if (tr != null && tr["site"]?.ToString() == "youtube")
+                if (tr != null && tr.Type != JTokenType.Null && tr["site"]?.ToString() == "youtube")
                     trailerUrl = "https://www.youtube.com/watch?v=" + tr["id"];
 
                 var tags = new List<AnimeTag>();
                 var ta = m["tags"];
                 if (ta != null && ta.HasValues)
                     foreach (var t in ta)
+                    {
+                        if (t == null || t.Type == JTokenType.Null) continue;
                         tags.Add(new AnimeTag
                         {
                             Name = t["name"]?.ToString() ?? "",
                             Rank = t["rank"]?.Value<int>() ?? 0,
                             IsMediaSpoiler = t["isMediaSpoiler"]?.Value<bool>() ?? false
                         });
+                    }
 
                 var extLinks = new List<AnimeExternalLink>();
                 var el = m["externalLinks"];
                 if (el != null && el.HasValues)
                     foreach (var link in el)
+                    {
+                        if (link == null || link.Type == JTokenType.Null) continue;
                         extLinks.Add(new AnimeExternalLink
                         {
                             Url = link["url"]?.ToString() ?? "",
@@ -465,11 +496,14 @@ namespace AniScroll.Shared.Services
                             Type = link["type"]?.ToString() ?? "",
                             Color = link["color"]?.ToString() ?? ""
                         });
+                    }
 
                 var rankings = new List<AnimeRanking>();
                 var rk = m["rankings"];
                 if (rk != null && rk.HasValues)
                     foreach (var r in rk)
+                    {
+                        if (r == null || r.Type == JTokenType.Null) continue;
                         rankings.Add(new AnimeRanking
                         {
                             Rank = r["rank"]?.Value<int>() ?? 0,
@@ -479,6 +513,7 @@ namespace AniScroll.Shared.Services
                             Season = r["season"]?.ToString() ?? "",
                             Year = r["year"]?.Value<int?>()
                         });
+                    }
 
                 return new AnimeCard
                 {
@@ -513,7 +548,8 @@ namespace AniScroll.Shared.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("ParseAnimeCard: " + ex.Message);
+                LastError = "ParseAnimeCard exception: " + ex.GetType().Name + ": " + ex.Message;
+                System.Diagnostics.Debug.WriteLine(LastError);
                 return null;
             }
         }

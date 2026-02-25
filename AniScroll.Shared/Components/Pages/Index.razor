@@ -89,9 +89,6 @@
                     </div>
                 }
 
-                <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
-                                                               OnHide="@(() => showDebugPanel = false)" />
-
             </div>
         }
 
@@ -208,6 +205,10 @@
     <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
                                                          IsVisible="showDetailPopup"
                                                          OnClose="CloseDetailPopup" />
+
+
+    <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
+                                                   OnHide="@(() => showDebugPanel = false)" />
 </div>
 
 @code {
