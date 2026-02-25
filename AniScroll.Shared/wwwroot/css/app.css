@@ -578,47 +578,37 @@ html, body {
      • état .has-results: s'étend jusqu'en haut des search-result-items
 
    La nav réelle (z-index 1000) reste parfaitement fixe au-dessus.          */
-.search-nav-extension {
+/* ── Panneau de résultats ────────────────────────────────────────────────────
+   Même fond/border-radius que la nav. Positionné à bottom:0 avec z:999
+   (< nav z:1000) → la nav repose dessus et masque son bas, créant UNE SEULE
+   boîte visuelle unifiée. padding-bottom pousse le contenu au-dessus de la nav.
+   search-nav-extension supprimé : ce panel EST visuellement la nav étendue.  */
+.search-results-panel {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 990;
+    max-height: min(70vh, calc(100dvh - 20px));
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Identique à .main-nav-bar */
     background: rgba(14, 14, 22, 0.96);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    /* Pas de border-radius ni border-top : la nav (z-index 1000) est au-dessus
-       et fournit déjà l'arrondi visible. L'extension est un simple rectangle
-       qui remonte derrière les résultats sans créer un second "chapeau". */
-    pointer-events: none;
-    height: 156px;
-    transition: height 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-    /* La hauteur est gérée dynamiquement via style inline (JS measurement).
-       Ces classes ne sont plus utilisées pour les hauteurs. */
-
-/* ── Panneau de résultats ───────────────────────────────────────────────────
-   - Toujours rendu quand isSearchActive (via .visible pour l'animation)
-   - z-index 1100 → au-dessus de l'extension (990) et de la nav (1000)     */
-.search-results-panel {
-    position: fixed;
-    bottom: 150px;
-    left: 0;
-    right: 0;
-    max-height: min(60vh, calc(100dvh - 150px - 16px));
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: transparent;              /* fond assuré par .search-nav-extension */
-    z-index: 1100;
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    /* En dessous de la nav (1000) → la nav recouvre le bas du panel */
+    z-index: 999;
     touch-action: auto;
     pointer-events: all;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* Masqué par défaut, visible quand .visible est ajouté */
+    /* Espace pour laisser passer la nav par-dessus (nav search-open ~135px) */
+    padding-bottom: 148px;
+    /* Masqué par défaut */
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px);
+    transform: translateY(16px);
     transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
@@ -631,8 +621,6 @@ html, body {
     .search-results-panel::-webkit-scrollbar {
         display: none;
     }
-
-/* Séparateur supprimé — pas de ligne entre l'extension et les items */
 
 @keyframes searchPanelSlideUp {
     from {
