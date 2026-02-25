@@ -570,6 +570,39 @@ html, body {
    SEARCH RESULTS PANEL
    ====================================================== */
 
+/* ── Extension visuelle de la nav-bar ──────────────────────────────────────
+   Ce div se place sous la nav (z-index 990) et imite exactement son apparence
+   (mêmes coins arrondis, même fond, même bordure). Sa hauteur transite entre
+   deux états :
+     • état par défaut  : ~156px → couvre juste la nav ouverte (search-row incluse)
+     • état .has-results: s'étend jusqu'en haut des search-result-items
+
+   La nav réelle (z-index 1000) reste parfaitement fixe au-dessus.          */
+.search-nav-extension {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 990;
+    background: rgba(14, 14, 22, 0.96);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    pointer-events: none;
+    /* État initial : juste la hauteur de la nav avec search-row ouverte */
+    height: 156px;
+    transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+    /* État avec résultats ou chargement : s'étend pour couvrir tout le panel */
+    .search-nav-extension.has-results {
+        height: min(calc(60vh + 156px), calc(100dvh - 20px));
+    }
+
+/* ── Panneau de résultats ───────────────────────────────────────────────────
+   - Toujours rendu quand isSearchActive (via .visible pour l'animation)
+   - z-index 1100 → au-dessus de l'extension (990) et de la nav (1000)     */
 .search-results-panel {
     position: fixed;
     bottom: 150px;
@@ -578,48 +611,36 @@ html, body {
     max-height: min(60vh, calc(100dvh - 150px - 16px));
     overflow-y: auto;
     overflow-x: hidden;
-    background: rgba(10, 10, 18, 0.98);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    /* border-bottom supprimé : .search-nav-extension assure la continuité visuelle */
+    background: transparent;              /* fond assuré par .search-nav-extension */
     z-index: 1100;
     touch-action: auto;
     pointer-events: all;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    animation: searchPanelSlideUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Masqué par défaut, visible quand .visible est ajouté */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+
+    .search-results-panel.visible {
+        opacity: 1;
+        pointer-events: all;
+        transform: translateY(0);
+    }
 
     .search-results-panel::-webkit-scrollbar {
         display: none;
     }
 
-/* ── Extension du fond nav derrière les résultats ───────────────────────────
-   z-index 980 → sous la nav (1000) et le panel de résultats (1100).
-   La hauteur grandit depuis bottom:0 vers le haut avec animation, donnant
-   l'impression que la barre de navigation s'étend derrière les résultats.
-   La search-morphing-pill (dans la nav) reste à sa position habituelle.  */
-.search-nav-extension {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 980;
-    background: rgba(10, 10, 18, 0.98);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    pointer-events: none;
-    animation: navBgExtend 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-@keyframes navBgExtend {
-    from {
-        height: 130px;   /* hauteur approximative de la nav seule */
-    }
-    to {
-        height: min(calc(60vh + 160px), 95dvh);   /* nav + zone résultats */
-    }
+/* ── Séparateur entre extension et panel ── */
+.search-results-panel::before {
+    content: '';
+    display: block;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0 16px 4px;
 }
 
 @keyframes searchPanelSlideUp {
@@ -632,6 +653,26 @@ html, body {
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+/* ── Message "aucun résultat" ───────────────────────────────────────────── */
+.search-no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 16px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.search-no-results-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.18);
 }
 
 .search-result-item {
