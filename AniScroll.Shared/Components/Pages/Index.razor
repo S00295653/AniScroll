@@ -128,6 +128,17 @@
     </div>
 
     @* ─────────────────────────────────────────────────────────────────────────
+       Extension du fond de la nav-bar derrière les résultats de recherche.
+       z-index 980 → derrière la nav (1000) et le panel (1100).
+       L'animation fait "grandir" le fond depuis le bas, donnant l'impression
+       que la barre de navigation s'étend vers le haut derrière les résultats.
+    ───────────────────────────────────────────────────────────────────────── *@
+    @if (isSearchActive && (searchResults.Any() || isSearchLoading))
+    {
+        <div class="search-nav-extension"></div>
+    }
+
+    @* ─────────────────────────────────────────────────────────────────────────
        Search results panel
        - stopPropagation on all events so the card below never receives them
        - z-index 1100 in CSS to sit above the nav bar (1000)
@@ -308,9 +319,6 @@
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  IMAGE PRELOADING
-    //  Preloads cover image + banner for current card and the 3 cards ahead.
-    //  Using Image() objects in JS, the browser caches them so the popup
-    //  banner appears instantly when opened.
     // ═══════════════════════════════════════════════════════════════════════════
 
     private async Task PreloadNearbyImages()
@@ -325,9 +333,7 @@
             if (preloadedIndices.Contains(idx)) continue;
 
             var anime = animes[idx];
-            // Cover image (already in DOM, but preloads for popup if not yet cached)
             if (!string.IsNullOrEmpty(anime.ImageUrl)) urls.Add(anime.ImageUrl);
-            // Banner — only loaded when popup opens, so preloading saves ~1s
             if (!string.IsNullOrEmpty(anime.BannerUrl)) urls.Add(anime.BannerUrl);
 
             preloadedIndices.Add(idx);
@@ -336,7 +342,7 @@
         if (urls.Count > 0)
         {
             try { await JS.InvokeVoidAsync("preloadImages", (object)urls.ToArray()); }
-            catch { /* Silently ignore — preload is best-effort */ }
+            catch { }
         }
     }
 
@@ -572,7 +578,6 @@
 
     private async Task HandleSearchQueryChanged(string query)
     {
-        // Cancel previous in-flight search
         searchCts?.Cancel();
         searchCts = new CancellationTokenSource();
         var cts = searchCts;
@@ -590,7 +595,6 @@
         isSearchLoading = true;
         StateHasChanged();
 
-        // 350ms debounce — avoids firing on every keystroke
         try { await Task.Delay(350, cts.Token); }
         catch (OperationCanceledException) { return; }
 
@@ -614,11 +618,9 @@
 
         AnimeCard? anime = null;
 
-        // 1st attempt: AniList by MAL ID
         if (result.MalId > 0)
             anime = await AniListService.GetAnimeByMalIdAsync(result.MalId);
 
-        // 2nd attempt (fallback): AniList search by title
         if (anime == null && !string.IsNullOrEmpty(result.Title))
         {
             System.Diagnostics.Debug.WriteLine("MAL ID lookup failed, trying title: " + result.Title);
@@ -633,7 +635,6 @@
         }
         else
         {
-            // Final fallback: minimal Jikan data
             System.Diagnostics.Debug.WriteLine("Both AniList lookups failed, using Jikan fallback");
             ShowAnimeDetails(new AnimeCard
             {

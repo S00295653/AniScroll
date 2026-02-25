@@ -123,13 +123,6 @@ html, body {
 }
 
 /* ========== CONTENT WRAPPER ========== */
-/*
-  FIX: overflow changed from "hidden" to "visible" so that the
-  status-dot glow (box-shadow) is not clipped on the left edge.
-  The .anime-card parent still has overflow:hidden which contains
-  everything. Child elements manage their own text overflow via
-  -webkit-line-clamp / text-overflow: ellipsis.
-*/
 .content-wrapper {
     position: relative;
     z-index: 3;
@@ -252,7 +245,6 @@ html, body {
     color: #b4b4b4;
     margin-bottom: 4px;
     flex-shrink: 0;
-    /* Ensure the glow extends freely in all directions */
     overflow: visible;
 }
 
@@ -590,7 +582,7 @@ html, body {
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    /* border-bottom supprimé : .search-nav-extension assure la continuité visuelle */
     z-index: 1100;
     touch-action: auto;
     pointer-events: all;
@@ -602,6 +594,33 @@ html, body {
     .search-results-panel::-webkit-scrollbar {
         display: none;
     }
+
+/* ── Extension du fond nav derrière les résultats ───────────────────────────
+   z-index 980 → sous la nav (1000) et le panel de résultats (1100).
+   La hauteur grandit depuis bottom:0 vers le haut avec animation, donnant
+   l'impression que la barre de navigation s'étend derrière les résultats.
+   La search-morphing-pill (dans la nav) reste à sa position habituelle.  */
+.search-nav-extension {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 980;
+    background: rgba(10, 10, 18, 0.98);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    pointer-events: none;
+    animation: navBgExtend 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes navBgExtend {
+    from {
+        height: 130px;   /* hauteur approximative de la nav seule */
+    }
+    to {
+        height: min(calc(60vh + 160px), 95dvh);   /* nav + zone résultats */
+    }
+}
 
 @keyframes searchPanelSlideUp {
     from {
@@ -1518,7 +1537,6 @@ html, body {
     margin-bottom: 2px;
 }
 
-/* Format badge (MANGA, OVA, Movie, etc.) under relation type */
 .relation-format {
     font-size: 9px;
     color: #6b7280;
@@ -1658,7 +1676,6 @@ html, body {
     font-weight: 600;
 }
 
-/* Clickable spoiler toggle button */
 .tag-spoiler-btn {
     cursor: pointer;
     border: none;
@@ -1679,7 +1696,6 @@ html, body {
         transform: scale(0.96);
     }
 
-/* Hide spoilers button (shown when spoilers are revealed) */
 .tag-spoiler-hide-btn {
     background: rgba(255,100,100,0.07);
     border-color: rgba(255,100,100,0.2);
@@ -1692,7 +1708,6 @@ html, body {
         color: rgba(255,130,130,0.95);
     }
 
-/* Revealed spoiler tag — amber warning style */
 .tag-pill-spoiler-revealed {
     background: rgba(245,158,11,0.1);
     border: 1px solid rgba(245,158,11,0.25);
@@ -1760,6 +1775,14 @@ html, body {
     justify-content: center;
     flex-shrink: 0;
     color: var(--pc, white);
+}
+
+/* Image icons from the AniList API: contain within the icon box */
+.platform-icon-box img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 2px;
 }
 
 .platform-name-label {

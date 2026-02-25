@@ -273,7 +273,7 @@ namespace AniScroll.Shared.Services
             }
             trailer { site id }
             tags { name rank isMediaSpoiler }
-            externalLinks { url site type color }
+            externalLinks { url site type color icon }
             rankings { rank type context allTime season year }
         ";
 
@@ -300,7 +300,7 @@ namespace AniScroll.Shared.Services
             studios(isMain: true) { nodes { id name } }
             trailer { site id }
             tags { name rank isMediaSpoiler }
-            externalLinks { url site type color }
+            externalLinks { url site type color icon }
             rankings { rank type context allTime season year }
         ";
 
@@ -494,7 +494,8 @@ namespace AniScroll.Shared.Services
                             Url = link["url"]?.ToString() ?? "",
                             Site = link["site"]?.ToString() ?? "",
                             Type = link["type"]?.ToString() ?? "",
-                            Color = link["color"]?.ToString() ?? ""
+                            Color = link["color"]?.ToString() ?? "",
+                            Icon = link["icon"]?.ToString() ?? ""    // ← nouveau champ
                         });
                     }
 
