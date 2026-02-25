@@ -136,7 +136,7 @@
     ───────────────────────────────────────────────────────────────────────── *@
     @if (isSearchActive)
     {
-        <div class="search-nav-extension @((searchResults.Any() || isSearchLoading) ? "has-results" : "")"></div>
+        <div class="search-nav-extension @(searchResults.Any() ? "has-results" : isSearchLoading ? "is-loading" : "no-results")"></div>
     }
 
     @* ─────────────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@
     ───────────────────────────────────────────────────────────────────────── *@
     @if (isSearchActive)
     {
-        <div class="search-results-panel @((searchResults.Any() || isSearchLoading) ? "visible" : "")"
+        <div class="search-results-panel visible"
              @onclick:stopPropagation="true"
              @onmousedown:stopPropagation="true"
              @ontouchstart:stopPropagation="true"

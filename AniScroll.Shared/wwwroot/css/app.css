@@ -590,12 +590,22 @@ html, body {
     border-radius: 22px 22px 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     pointer-events: none;
-    /* État initial : juste la hauteur de la nav avec search-row ouverte */
+    /* État par défaut : hauteur de la nav seule (sans résultats) */
     height: 156px;
     transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-    /* État avec résultats ou chargement : s'étend pour couvrir tout le panel */
+    /* Recherche en cours : juste au-dessus du spinner "Searching..." */
+    .search-nav-extension.is-loading {
+        height: 230px;
+    }
+
+    /* Message "rien trouvé" : même hauteur mini que le spinner */
+    .search-nav-extension.no-results {
+        height: 230px;
+    }
+
+    /* Résultats présents : s'étend jusqu'en haut de la liste */
     .search-nav-extension.has-results {
         height: min(calc(60vh + 156px), calc(100dvh - 20px));
     }
