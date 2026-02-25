@@ -774,12 +774,9 @@ html, body {
 .search-results-panel.visible ~ .nav-section {
     border-radius: 0;
     transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-results-panel.visible ~ .nav-section .main-nav-bar {
-    border-radius: 0;
     border-top-color: transparent;
 }
+
 
 /* ── Search row ── */
 .search-row {
