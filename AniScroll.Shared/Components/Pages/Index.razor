@@ -8,7 +8,7 @@
 <PageTitle>AnimeScroll</PageTitle>
 
 <div class="anime-scroll-app @(isSearchActive ? "search-is-active" : "")" @ref="appContainer">
-    <div class="build-version">v1.7.2</div>
+    <div class="build-version">v1.7.3</div>
 
     <button @onclick="() => showDebugPanel = true"
             style="position:fixed;top:30px;left:10px;z-index:200;background:rgba(233,69,96,0.8);border:none;color:white;font-size:9px;padding:3px 6px;border-radius:5px;cursor:pointer;font-family:monospace;">
@@ -42,12 +42,12 @@
                         <div class="image-section">
                             <div class="anime-image"
                                  style="background-image: url('@anime.ImageUrl');"
-                                 @onclick="() => HandleImageClick(anime)"></div>
+                                 @onclick="async () => await HandleImageClick(anime)"></div>
                         </div>
 
                         <div class="info-section">
                             <h1 class="title @GetTitleClass(anime.Title)"
-                                @onclick="() => HandleTitleClick(anime)">
+                                @onclick="async () => await HandleTitleClick(anime)">
                                 @anime.Title
                             </h1>
 
@@ -80,7 +80,7 @@
                             {
                                 <div class="description-container">
                                     <p class="description-preview">@anime.Description</p>
-                                    <button class="read-more-btn" @onclick="() => ShowAnimeDetails(anime)">
+                                    <button class="read-more-btn" @onclick="async () => await ShowAnimeDetails(anime)">
                                         Read More
                                     </button>
                                 </div>
@@ -127,10 +127,6 @@
         }
     </div>
 
-    @* ─────────────────────────────────────────────────────────────────────────
-       Search results panel — toujours rendu quand isSearchActive.
-       Affiche : spinner, résultats, message "rien trouvé", ou mise à jour.
-    ───────────────────────────────────────────────────────────────────────── *@
     @if (isSearchActive)
     {
         <div class="search-results-panel visible"
@@ -195,7 +191,6 @@
         </div>
     }
 
-    @* Spinner overlay while AniList fetches details for a clicked search result *@
     @if (isLoadingSelectedAnime)
     {
         <div class="search-fetch-overlay"
@@ -216,7 +211,6 @@
     <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
                                                          IsVisible="showDetailPopup"
                                                          OnClose="CloseDetailPopup" />
-
 
     <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
                                                    OnHide="@(() => showDebugPanel = false)" />
@@ -301,7 +295,6 @@
             }
         }
 
-        // Preload images for current + next 3 cards (non-blocking)
         _ = PreloadNearbyImages();
 
         if (previousIndex != currentIndex && previousIndex >= 0)
@@ -549,14 +542,14 @@
     //  POPUP
     // ═══════════════════════════════════════════════════════════════════════════
 
-    private void HandleImageClick(AnimeCard anime)
+    private async Task HandleImageClick(AnimeCard anime)
     {
-        if (!hasMoved && !isDraggingCard) ShowAnimeDetails(anime);
+        if (!hasMoved && !isDraggingCard) await ShowAnimeDetails(anime);
     }
 
-    private void HandleTitleClick(AnimeCard anime)
+    private async Task HandleTitleClick(AnimeCard anime)
     {
-        if (!hasMoved && !isDraggingCard) ShowAnimeDetails(anime);
+        if (!hasMoved && !isDraggingCard) await ShowAnimeDetails(anime);
     }
 
     private async Task ShowAnimeDetails(AnimeCard anime)
@@ -641,19 +634,23 @@
 
         if (anime != null)
         {
-            ShowAnimeDetails(anime);
+            selectedAnime = anime;
+            showDetailPopup = true;
+            StateHasChanged();
         }
         else
         {
             System.Diagnostics.Debug.WriteLine("Both AniList lookups failed, using Jikan fallback");
-            ShowAnimeDetails(new AnimeCard
+            selectedAnime = new AnimeCard
             {
                 Title = result.Title,
                 ImageUrl = result.ImageUrl,
                 Score = result.Score,
                 Episodes = result.Episodes?.ToString() ?? "N/A",
                 Format = result.Type
-            });
+            };
+            showDetailPopup = true;
+            StateHasChanged();
         }
     }
 
