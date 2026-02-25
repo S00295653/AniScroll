@@ -748,6 +748,7 @@ html, body {
     overflow: hidden;
     z-index: 1000;
     pointer-events: none;
+    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1); /* ← ajoute ça */
 }
 
 @media (min-width: 768px) {
@@ -770,10 +771,16 @@ html, body {
                 border-top-color 0.22s ease;
 }
 
+.search-results-panel.visible ~ .nav-section {
+    border-radius: 0;
+    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .search-results-panel.visible ~ .nav-section .main-nav-bar {
     border-radius: 0;
     border-top-color: transparent;
 }
+
 /* ── Search row ── */
 .search-row {
     width: 100%;
