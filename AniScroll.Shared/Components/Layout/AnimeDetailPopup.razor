@@ -355,9 +355,9 @@
                                 @if (spoilerCount > 0)
                                 {
                                     <div style="display:flex;justify-content:center;margin-top:10px;">
-                                        <button class="tag-pill tag-spoiler tag-spoiler-btn"
+                                        <button class="tag-spoiler tag-spoiler-btn"
                                                 @onclick="() => showSpoilers = true">
-                                            🔒 @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") — tap to reveal
+                                            @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") - tap to reveal
                                         </button>
                                     </div>
                                 }
@@ -377,7 +377,7 @@
                                         else
                                         {
                                             <span class="tag-pill tag-pill-spoiler-revealed">
-                                                ⚠️ @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
+                                                @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
                                             </span>
                                         }
                                     }
@@ -385,9 +385,9 @@
 
                                 @* Bouton hide centré *@
                                 <div style="display:flex;justify-content:center;margin-top:10px;">
-                                    <button class="tag-pill tag-spoiler tag-spoiler-btn tag-spoiler-hide-btn"
+                                    <button class="tag-spoiler tag-spoiler-btn tag-spoiler-hide-btn"
                                             @onclick="() => showSpoilers = false">
-                                        🔒 Hide spoilers
+                                        Hide spoilers
                                     </button>
                                 </div>
                             }
