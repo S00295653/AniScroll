@@ -590,11 +590,16 @@ namespace AniScroll.Shared.Services
 
                 string trailerUrl = "";
                 var tr = m["trailer"];
-                if (tr != null && tr.Type != JTokenType.Null && tr["site"]?.ToString() == "youtube")
+                if (tr != null && tr.Type != JTokenType.Null)
                 {
-                    var trailerId = tr["id"]?.ToString();
-                    if (!string.IsNullOrEmpty(trailerId))
-                        trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
+                    var site = tr["site"]?.ToString() ?? "";
+                    // Accepter youtube, youtube_pl, youtube_short, etc.
+                    if (site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var trailerId = tr["id"]?.ToString();
+                        if (!string.IsNullOrEmpty(trailerId))
+                            trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
+                    }
 }
 
                 var tags = new List<AnimeTag>();
