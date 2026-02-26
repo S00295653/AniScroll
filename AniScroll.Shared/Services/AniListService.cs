@@ -590,19 +590,33 @@ namespace AniScroll.Shared.Services
 
                 string trailerUrl = "";
                 var tr = m["trailer"];
-                System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Trailer token: {tr?.ToString() ?? "null"}");
+                System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Trailer raw: {tr}");
                 if (tr != null && tr.Type != JTokenType.Null)
                 {
                     var site = tr["site"]?.ToString() ?? "";
                     var trailerId = tr["id"]?.ToString() ?? "";
-                    System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Trailer site='{site}', id='{trailerId}'");
-                    // Accepter youtube, youtube_pl, youtube_short, etc.
-                    if (!string.IsNullOrEmpty(trailerId) && site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
+                    System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Site='{site}', ID='{trailerId}'");
+                    if (!string.IsNullOrEmpty(trailerId))
                     {
-                        trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
-                        System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Trailer URL built: {trailerUrl}");
+                        if (site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
+                        {
+                            trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
+                            System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] YouTube URL: {trailerUrl}");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Site inconnu: {site}");
+                        }
                     }
-}
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] ID manquant !");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] PAS DE TRAILER dans la réponse API");
+                }
 
                 var tags = new List<AnimeTag>();
                 var ta = m["tags"];
