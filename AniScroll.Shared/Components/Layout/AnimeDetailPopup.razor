@@ -558,12 +558,25 @@
             var uri = new Uri(url);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             if (query.AllKeys.Contains("v")) return query["v"] ?? "";
-            if (uri.Segments.LastOrDefault() != null) return uri.Segments.Last();
+            // Gestion des shorts et autres formats
+            var path = uri.AbsolutePath;
+            if (path.Contains("/shorts/"))
+            {
+                var parts = path.Split("/shorts/", StringSplitOptions.RemoveEmptyEntries);
+                return parts.Length > 0 ? parts[0].TrimEnd('/') : "";
+            }
+            if (uri.Segments.Length > 1)
+            {
+                var last = uri.Segments.LastOrDefault()?.TrimEnd('/');
+                if (!string.IsNullOrEmpty(last) && last != "embed")
+                    return last;
+            }
         }
         catch
         {
             if (url.Contains("watch?v=")) { var p = url.Split("watch?v="); return p.Length > 1 ? p[1].Split('&')[0] : ""; }
             if (url.Contains("youtu.be/")) { var p = url.Split("youtu.be/"); return p.Length > 1 ? p[1].Split('?')[0] : ""; }
+            if (url.Contains("/shorts/")) { var p = url.Split("/shorts/"); return p.Length > 1 ? p[1].Split('?')[0] : ""; }
         }
         return string.Empty;
     }

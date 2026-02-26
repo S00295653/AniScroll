@@ -1736,14 +1736,17 @@ html, body {
     }
 
 .tag-pill-spoiler-revealed {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.45);
     font-style: italic;
-    border-color: rgba(255, 215, 0, 0.52);
-    color: rgba(255, 255, 255, 0.72);
+    font-size: 10px;
 }
 
     .tag-pill-spoiler-revealed:hover {
-        color: white;
-        border-color: rgba(255, 215, 0, 0.26);
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.65);
     }
 
 .tag-spoiler {
