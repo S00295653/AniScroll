@@ -472,6 +472,7 @@
             isPulling = false;
             isPullTrackingActive = false;
             _lastAnimeId = CurrentAnime?.Id;
+            Console.WriteLine($"[DEBUG Popup] Anime: {CurrentAnime?.Title}, Trailer: '{CurrentAnime?.TrailerUrl ?? "null"}'");
         }
     }
 
