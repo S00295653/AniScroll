@@ -590,32 +590,32 @@ namespace AniScroll.Shared.Services
 
                 string trailerUrl = "";
                 var tr = m["trailer"];
-                System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Trailer raw: {tr}");
+                Console.WriteLine($"[ParseAnimeCard] Trailer raw: {tr}");
                 if (tr != null && tr.Type != JTokenType.Null)
                 {
                     var site = tr["site"]?.ToString() ?? "";
                     var trailerId = tr["id"]?.ToString() ?? "";
-                    System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Site='{site}', ID='{trailerId}'");
+                    Console.WriteLine($"[ParseAnimeCard] Site='{site}', ID='{trailerId}'");
                     if (!string.IsNullOrEmpty(trailerId))
                     {
                         if (site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
                         {
                             trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
-                            System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] YouTube URL: {trailerUrl}");
+                            Console.WriteLine($"[ParseAnimeCard] YouTube URL: {trailerUrl}");
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] Site inconnu: {site}");
+                            Console.WriteLine($"[ParseAnimeCard] Site inconnu: {site}");
                         }
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] ID manquant !");
+                        Console.WriteLine($"[ParseAnimeCard] ID manquant !");
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[ParseAnimeCard] PAS DE TRAILER dans la réponse API");
+                    Console.WriteLine($"[ParseAnimeCard] PAS DE TRAILER dans la réponse API");
                 }
 
                 var tags = new List<AnimeTag>();
