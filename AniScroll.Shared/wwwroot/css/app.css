@@ -1711,56 +1711,78 @@ html, body {
 
 .tag-spoiler-btn {
     cursor: pointer;
-    border: 1px solid rgba(220, 80, 80, 0.4);
-    background: rgba(180, 60, 60, 0.15);
-    color: rgba(255, 160, 160, 0.85);
+    border: 1px dashed rgba(180, 55, 65, 0.42);
+    background: rgba(35, 6, 10, 0.28);
+    color: rgba(210, 100, 110, 0.62);
     font-family: inherit;
     font-size: 11px;
-    padding: 6px 14px;
-    border-radius: 12px;
-    transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-style: italic;
+    letter-spacing: 0.025em;
+    transition: all 0.22s ease;
 }
 
     .tag-spoiler-btn:hover {
-        background: rgba(200, 70, 70, 0.25);
-        border-color: rgba(240, 100, 100, 0.6);
-        color: rgba(255, 200, 200, 1);
-        box-shadow: 0 0 10px rgba(220, 80, 80, 0.25);
+        background: rgba(65, 12, 18, 0.38);
+        border-style: solid;
+        border-color: rgba(210, 75, 85, 0.55);
+        color: rgba(240, 140, 148, 0.85);
     }
 
     .tag-spoiler-btn:active {
         transform: scale(0.96);
     }
 
+/* Hide spoilers button: even quieter, neutral tone */
 .tag-spoiler-hide-btn {
-    border: 1px solid rgba(150, 150, 180, 0.4);
-    background: rgba(100, 100, 120, 0.15);
-    color: rgba(200, 200, 220, 0.85);
+    border: 1px dashed rgba(110, 110, 145, 0.32);
+    background: rgba(18, 18, 32, 0.3);
+    color: rgba(148, 148, 180, 0.52);
+    font-style: normal;
+    letter-spacing: normal;
 }
 
     .tag-spoiler-hide-btn:hover {
-        background: rgba(120, 120, 140, 0.25);
-        border-color: rgba(170, 170, 200, 0.6);
-        color: rgba(230, 230, 255, 1);
-        box-shadow: 0 0 10px rgba(150, 150, 180, 0.2);
+        background: rgba(32, 32, 52, 0.42);
+        border-style: solid;
+        border-color: rgba(145, 145, 185, 0.45);
+        color: rgba(185, 185, 215, 0.82);
+        box-shadow: none;
     }
 
+/* Revealed spoiler tag pills: warm ember glow, italic, muted */
 .tag-pill-spoiler-revealed {
-    background: rgba(180, 60, 60, 0.25);
-    border: 1px solid rgba(220, 80, 80, 0.5);
-    color: rgba(255, 180, 180, 0.9);
+    background: rgba(60, 8, 14, 0.32);
+    border: 1px solid rgba(155, 42, 52, 0.32);
+    color: rgba(220, 112, 120, 0.62);
     font-style: italic;
-    font-size: 10px;
-    box-shadow: 0 0 8px rgba(220, 80, 80, 0.2);
+    font-size: 10.5px;
+    letter-spacing: 0.012em;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-    .tag-pill-spoiler-revealed:hover {
-        background: rgba(200, 70, 70, 0.35);
-        border-color: rgba(240, 100, 100, 0.7);
-        color: rgba(255, 200, 200, 1);
-        box-shadow: 0 0 12px rgba(220, 80, 80, 0.35);
+    /* ⊘ marker before the tag name — renders as a flex item */
+    .tag-pill-spoiler-revealed::before {
+        content: '⊘';
+        font-size: 9px;
+        opacity: 0.55;
+        font-style: normal;
+        flex-shrink: 0;
     }
 
+    .tag-pill-spoiler-revealed:hover {
+        background: rgba(88, 14, 22, 0.42);
+        border-color: rgba(188, 62, 72, 0.48);
+        color: rgba(242, 145, 152, 0.85);
+    }
+
+/* Percentage label inside a revealed spoiler pill — even more muted */
+.tag-pill-spoiler-revealed .tag-pct {
+    color: rgba(215, 108, 115, 0.36);
+}
+
+/* Legacy utility class kept for backward compat */
 .tag-spoiler {
     font-style: italic;
 }
@@ -1815,7 +1837,7 @@ html, body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--pc, white);
+    color: var(--pc-icon, white);   /* ← was: var(--pc, white) */
 }
 
 /* Image icons from the AniList API: contain within the icon box */
@@ -1825,6 +1847,7 @@ html, body {
     object-fit: contain;
     border-radius: 2px;
 }
+
 
 .platform-name-label {
     flex: 1;

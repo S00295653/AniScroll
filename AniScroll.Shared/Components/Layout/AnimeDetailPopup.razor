@@ -254,7 +254,7 @@
 
                     @{
                         var seasonRankings = CurrentAnime.Rankings?.Where(r => !r.AllTime).Take(2).ToList();
-                        bool hasDetails = !string.IsNullOrEmpty(CurrentAnime.NativeTitle)
+                        bool hasDetails = ContainsNonLatinScript(CurrentAnime.NativeTitle)
                             || !string.IsNullOrEmpty(CurrentAnime.Format)
                             || !string.IsNullOrEmpty(CurrentAnime.StartDate)
                             || !string.IsNullOrEmpty(CurrentAnime.EndDate)
@@ -266,7 +266,7 @@
                         <div class="modal-section">
                             <h3 class="section-title">Details</h3>
                             <div class="details-grid">
-                                @if (!string.IsNullOrEmpty(CurrentAnime.NativeTitle))
+                                @if (ContainsNonLatinScript(CurrentAnime.NativeTitle))
                                 {
                                     <div class="detail-row">
                                         <span class="detail-lbl">Native Title</span>
@@ -327,7 +327,6 @@
                             .ToList();
                         int spoilerCount = spoilerTags?.Count ?? 0;
 
-                        // Pré-calcul de la liste fusionnée (accessible dans if et else)
                         var allTagsSorted = (visibleTags ?? new())
                             .Select(t => (tag: t, isSpoiler: false))
                             .Concat((spoilerTags ?? new()).Select(t => (tag: t, isSpoiler: true)))
@@ -341,7 +340,6 @@
 
                             @if (!showSpoilers)
                             {
-                                @* Tags normaux *@
                                 <div class="tags-wrap">
                                     @foreach (var tag in visibleTags ?? new())
                                     {
@@ -351,20 +349,18 @@
                                     }
                                 </div>
 
-                                @* Bouton spoiler centré sous les tags *@
                                 @if (spoilerCount > 0)
                                 {
                                     <div style="display:flex;justify-content:center;margin-top:10px;">
-                                        <button class="tag-spoiler tag-spoiler-btn"
+                                        <button class="tag-spoiler-btn"
                                                 @onclick="() => showSpoilers = true">
-                                            @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") - tap to reveal
+                                            @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") hidden — tap to reveal
                                         </button>
                                     </div>
                                 }
                             }
                             else
                             {
-                                @* Tous les tags fusionnés triés par rang décroissant *@
                                 <div class="tags-wrap">
                                     @foreach (var entry in allTagsSorted)
                                     {
@@ -383,9 +379,8 @@
                                     }
                                 </div>
 
-                                @* Bouton hide centré *@
                                 <div style="display:flex;justify-content:center;margin-top:10px;">
-                                    <button class="tag-spoiler tag-spoiler-btn tag-spoiler-hide-btn"
+                                    <button class="tag-spoiler-btn tag-spoiler-hide-btn"
                                             @onclick="() => showSpoilers = false">
                                         Hide spoilers
                                     </button>
@@ -408,7 +403,8 @@
                                 @foreach (var link in streamingLinks)
                                 {
                                     var pc = GetPlatformColor(link.Site, link.Color);
-                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
+                                    var pcIcon = GetPlatformIconColor(link.Site);
+                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc; --pc-icon: @pcIcon;">
                                         <span class="platform-icon-box">
                                             @GetPlatformIconMarkup(link.Site, link.Icon)
                                         </span>
@@ -551,6 +547,23 @@
         return $"{m}m";
     }
 
+    /// <summary>
+    /// Returns true if the string contains characters from a non-Latin script
+    /// (Japanese, Chinese, Korean, Arabic, Cyrillic, etc.).
+    /// Used to decide whether to display the "Native Title" field.
+    /// </summary>
+    private static bool ContainsNonLatinScript(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return false;
+        foreach (char c in s)
+        {
+            // CJK symbols, Hiragana, Katakana, CJK Unified Ideographs, Hangul, Arabic,
+            // Hebrew, Devanagari, Cyrillic (basic), Greek extended, etc.
+            if (c >= 0x0370) return true;
+        }
+        return false;
+    }
+
     private string GetYouTubeVideoId(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
@@ -559,7 +572,6 @@
             var uri = new Uri(url);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             if (query.AllKeys.Contains("v")) return query["v"] ?? "";
-            // Gestion des shorts et autres formats
             var path = uri.AbsolutePath;
             if (path.Contains("/shorts/"))
             {
@@ -603,6 +615,28 @@
             _ => "#7c7c99"
         };
     }
+
+    /// <summary>
+    /// Returns the brand color used specifically for the icon/logo glyph inside the icon box.
+    /// Always uses the hardcoded brand color (never the API color which may be white/black).
+    /// Disney+ is the exception: its logo is intentionally white on a blue background.
+    /// </summary>
+    private string GetPlatformIconColor(string site) => site switch
+    {
+        "Disney Plus" or "Disney+"         => "rgba(255,255,255,0.92)",   // white logo on blue bg — by design
+        "Crunchyroll"                       => "#f88b25",
+        "Netflix"                           => "#E50914",
+        "Funimation"                        => "#9b59e8",
+        "Amazon Prime Video" or "Prime Video" => "#00A8E0",
+        "HIDIVE"                            => "#00B2FF",
+        "Hulu"                              => "#1CE783",
+        "YouTube"                           => "#FF0000",
+        "VRV"                               => "#FFCC00",
+        "Wakanim"                           => "#E40001",
+        "Bilibili"                          => "#FB7299",
+        "ADN" or "Anime Digital Network"    => "#3d7fff",
+        _                                   => "rgba(255,255,255,0.75)"
+    };
 
     private MarkupString GetPlatformIconMarkup(string site, string iconUrl = "")
     {
