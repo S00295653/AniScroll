@@ -254,8 +254,6 @@
 
                     @{
                         var seasonRankings = CurrentAnime.Rankings?.Where(r => !r.AllTime).Take(2).ToList();
-                        // Native title: only show if it exists and contains only Latin/standard characters
-                        // (non-Latin characters such as Japanese/Korean/Arabic may render as empty boxes)
                         bool showNativeTitle = !string.IsNullOrWhiteSpace(CurrentAnime.NativeTitle)
                                               && !ContainsNonLatinScript(CurrentAnime.NativeTitle);
                         bool hasDetails = showNativeTitle
@@ -406,10 +404,12 @@
                             <div class="platform-list">
                                 @foreach (var link in streamingLinks)
                                 {
-                                    var pc = GetPlatformColor(link.Site, link.Color);
+                                    // Utilise directement la couleur de l'API (jamais #000000 → fallback neutre)
+                                    var pc = (!string.IsNullOrEmpty(link.Color) && link.Color != "#000000" && link.Color.StartsWith("#"))
+                                        ? link.Color : "#7c7c99";
                                     <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
                                         <span class="platform-icon-box">
-                                            @GetPlatformIconMarkup(link.Icon, pc)
+                                            @GetPlatformIconMarkup(link.Icon, link.Color, link.Site)
                                         </span>
                                         <span class="platform-name-label">@link.Site</span>
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -429,7 +429,8 @@
                             {
                                 @foreach (var ol in otherLinks)
                                 {
-                                    var c = GetPlatformColor(ol.Site, ol.Color);
+                                    var c = (!string.IsNullOrEmpty(ol.Color) && ol.Color != "#000000" && ol.Color.StartsWith("#"))
+                                        ? ol.Color : "#7c7c99";
                                     <a href="@ol.Url" target="_blank" class="info-chip">
                                         <span class="chip-dot" style="background:@c;"></span>@ol.Site
                                     </a>
@@ -549,28 +550,22 @@
         return $"{m}m";
     }
 
-    /// <summary>
-    /// Returns true if the string contains characters from a non-Latin script
-    /// (Japanese, Chinese, Korean, Arabic, Cyrillic, etc.).
-    /// When true, the native title is hidden because these characters may
-    /// render as empty boxes on devices without the required fonts.
-    /// </summary>
     private static bool ContainsNonLatinScript(string? s)
     {
         if (string.IsNullOrWhiteSpace(s)) return false;
         foreach (char c in s)
         {
             if (
-                (c >= 0x0400 && c <= 0x04FF) || // Cyrillic
-                (c >= 0x0600 && c <= 0x06FF) || // Arabic
-                (c >= 0x0590 && c <= 0x05FF) || // Hebrew
-                (c >= 0x0900 && c <= 0x097F) || // Devanagari
-                (c >= 0x0E00 && c <= 0x0E7F) || // Thai
-                (c >= 0x3040 && c <= 0x309F) || // Hiragana
-                (c >= 0x30A0 && c <= 0x30FF) || // Katakana
-                (c >= 0x4E00 && c <= 0x9FFF) || // CJK Unified Ideographs
-                (c >= 0x3400 && c <= 0x4DBF) || // CJK Extension A
-                (c >= 0xAC00 && c <= 0xD7AF)    // Hangul syllables
+                (c >= 0x0400 && c <= 0x04FF) ||
+                (c >= 0x0600 && c <= 0x06FF) ||
+                (c >= 0x0590 && c <= 0x05FF) ||
+                (c >= 0x0900 && c <= 0x097F) ||
+                (c >= 0x0E00 && c <= 0x0E7F) ||
+                (c >= 0x3040 && c <= 0x309F) ||
+                (c >= 0x30A0 && c <= 0x30FF) ||
+                (c >= 0x4E00 && c <= 0x9FFF) ||
+                (c >= 0x3400 && c <= 0x4DBF) ||
+                (c >= 0xAC00 && c <= 0xD7AF)
             ) return true;
         }
         return false;
@@ -606,42 +601,60 @@
         return string.Empty;
     }
 
-    private string GetPlatformColor(string site, string apiColor)
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  PLATFORM ICON RENDERING
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Platforms whose icons are already colorful (not white) → no CSS filter applied.
+    /// The icon is rendered as-is directly from the API.
+    /// </summary>
+    private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
-        if (!string.IsNullOrEmpty(apiColor) && apiColor != "#000000" && apiColor.StartsWith("#"))
-            return apiColor;
-        return site switch
-        {
-            _ => "#7c7c99"
-        };
-    }
+        "Star+",
+    };
+
+    /// <summary>
+    /// Platforms that must NEVER have a color filter applied, regardless of their icon style.
+    /// Disney+ uses a specific branded gradient that must not be altered.
+    /// </summary>
+    private static readonly HashSet<string> _neverRecolorSites = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Disney+",
+    };
 
     /// <summary>
     /// Renders the platform icon.
-    /// If the API provides an icon image URL, it is assumed to be white and a CSS filter
-    /// is computed (via the SPSA algorithm, ported from https://codepen.io/sosuke/pen/Pjoqqp)
-    /// to recolour it to the platform's brand colour.
-    /// Falls back to a generic SVG play icon coloured with the brand colour.
+    /// - If the site has a colorful icon or is in the never-recolor list → rendered as-is.
+    /// - Otherwise (white/monochrome icon) → CSS filter applied to recolor it to the brand color.
+    /// - Falls back to a generic SVG if no icon URL is provided.
     /// </summary>
-    private MarkupString GetPlatformIconMarkup(string iconUrl, string brandColor)
+    private MarkupString GetPlatformIconMarkup(string iconUrl, string brandColor, string site)
     {
+        bool shouldRecolor = !_colorfulIconSites.Contains(site)
+                             && !_neverRecolorSites.Contains(site)
+                             && !string.IsNullOrEmpty(brandColor)
+                             && brandColor != "#000000"
+                             && brandColor.StartsWith("#");
+
         if (!string.IsNullOrEmpty(iconUrl))
         {
-            // Icon from the API is white — convert it to the brand colour using CSS filters.
-            // brightness(0) normalises any white pixels to black first, then the computed
-            // invert/sepia/saturate/hue-rotate chain brings it to the target colour.
-            var filterStyle = GetWhiteToColorFilter(brandColor);
+            string styleAttr = shouldRecolor
+                ? $"object-fit:contain;border-radius:2px;{GetWhiteToColorFilter(brandColor)}"
+                : "object-fit:contain;border-radius:2px;";
+
             return new MarkupString(
                 $"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" " +
-                $"style=\"object-fit:contain;border-radius:2px;{filterStyle}\" />");
+                $"style=\"{styleAttr}\" />");
         }
 
-        // Fallback generic SVG — colour it directly with the brand colour.
+        // Fallback generic SVG
+        string svgColor = shouldRecolor ? brandColor : "rgba(255,255,255,0.6)";
         return new MarkupString(
             $"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' " +
-            $"stroke='{brandColor}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
+            $"stroke='{svgColor}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
             $"<rect x='2' y='2' width='20' height='20' rx='4'/>" +
-            $"<polygon points='10,8 16,12 10,16' fill='{brandColor}' stroke='none'/></svg>");
+            $"<polygon points='10,8 16,12 10,16' fill='{svgColor}' stroke='none'/></svg>");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -651,7 +664,6 @@
     //  Prepend "brightness(0) saturate(100%)" to normalise a WHITE icon to black first.
     // ═══════════════════════════════════════════════════════════════════════════
 
-    // Cache: hex colour → inline style string (computed once per unique colour)
     private static readonly Dictionary<string, string> _filterCache = new();
 
     private static string GetWhiteToColorFilter(string hex)
@@ -670,7 +682,6 @@
         }
 
         var colorFilter = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
-        // brightness(0) → normalise white icon to black; then apply colour filters
         var result = $"filter:brightness(0) saturate(100%) {colorFilter};";
         _filterCache[hex] = result;
         return result;
@@ -693,16 +704,14 @@
         catch { return null; }
     }
 
-    /// <summary>Runs the SPSA optimiser and returns a CSS filter string.</summary>
     private static string ComputeColorFilter(int tr, int tg, int tb)
     {
         var (th, ts, tl) = RgbToHsl(tr, tg, tb);
-        var rng = new Random(42); // fixed seed → deterministic output
+        var rng = new Random(42);
 
         double[] best = Array.Empty<double>();
         double bestLoss = double.MaxValue;
 
-        // Wide search (up to 3 attempts until loss < 25)
         for (int attempt = 0; attempt < 3 && bestLoss > 25; attempt++)
         {
             var r = RunSpsa(
@@ -713,7 +722,6 @@
             if (r.loss < bestLoss) { best = r.values; bestLoss = r.loss; }
         }
 
-        // Narrow refinement
         {
             double A1 = bestLoss + 1;
             var r = RunSpsa(
@@ -777,28 +785,21 @@
              + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
     }
 
-    /// <summary>Simulates the CSS filter chain on a starting black (0,0,0) pixel.</summary>
     private static (double r, double g, double b) ApplyFilters(double[] f)
     {
         double r = 0, g = 0, b = 0;
 
-        // invert
         double inv = f[0] / 100.0;
         r = Cl((inv + r / 255.0 * (1 - 2 * inv)) * 255);
         g = Cl((inv + g / 255.0 * (1 - 2 * inv)) * 255);
         b = Cl((inv + b / 255.0 * (1 - 2 * inv)) * 255);
 
-        // sepia
         (r, g, b) = MatMul(r, g, b, SepiaMatrix(f[1] / 100.0));
-        // saturate
         (r, g, b) = MatMul(r, g, b, SaturateMatrix(f[2] / 100.0));
-        // hue-rotate
         (r, g, b) = MatMul(r, g, b, HueRotateMatrix(f[3] * 3.6));
-        // brightness
         r = Cl(r * (f[4] / 100.0));
         g = Cl(g * (f[4] / 100.0));
         b = Cl(b * (f[4] / 100.0));
-        // contrast
         double con = f[5] / 100.0;
         double ic = (-0.5 * con + 0.5) * 255;
         r = Cl(r * con + ic);
@@ -841,11 +842,10 @@
         };
     }
 
-    /// <summary>Clamps a filter parameter to its valid range.</summary>
     private static double ClampFilterParam(double v, int idx)
     {
         double max = idx == 2 ? 7500 : (idx == 4 || idx == 5) ? 200 : 100;
-        if (idx == 3) // hue-rotate wraps
+        if (idx == 3)
         {
             if (v > max) v %= max;
             else if (v < 0) v = max + v % max;
