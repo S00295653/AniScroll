@@ -254,7 +254,11 @@
 
                     @{
                         var seasonRankings = CurrentAnime.Rankings?.Where(r => !r.AllTime).Take(2).ToList();
-                        bool hasDetails = ContainsNonLatinScript(CurrentAnime.NativeTitle)
+                        // Native title: only show if it exists and contains only Latin/standard characters
+                        // (non-Latin characters such as Japanese/Korean/Arabic may render as empty boxes)
+                        bool showNativeTitle = !string.IsNullOrWhiteSpace(CurrentAnime.NativeTitle)
+                                              && !ContainsNonLatinScript(CurrentAnime.NativeTitle);
+                        bool hasDetails = showNativeTitle
                             || !string.IsNullOrEmpty(CurrentAnime.Format)
                             || !string.IsNullOrEmpty(CurrentAnime.StartDate)
                             || !string.IsNullOrEmpty(CurrentAnime.EndDate)
@@ -266,7 +270,7 @@
                         <div class="modal-section">
                             <h3 class="section-title">Details</h3>
                             <div class="details-grid">
-                                @if (ContainsNonLatinScript(CurrentAnime.NativeTitle))
+                                @if (showNativeTitle)
                                 {
                                     <div class="detail-row">
                                         <span class="detail-lbl">Native Title</span>
@@ -403,10 +407,9 @@
                                 @foreach (var link in streamingLinks)
                                 {
                                     var pc = GetPlatformColor(link.Site, link.Color);
-                                    var pcIconColor = GetPlatformIconColor(link.Site);
                                     <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
-                                        <span class="platform-icon-box" style="color: @pcIconColor;">
-                                            @GetPlatformIconMarkup(link.Site, link.Icon)
+                                        <span class="platform-icon-box">
+                                            @GetPlatformIconMarkup(link.Icon, pc)
                                         </span>
                                         <span class="platform-name-label">@link.Site</span>
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -468,7 +471,6 @@
             isPulling = false;
             isPullTrackingActive = false;
             _lastAnimeId = CurrentAnime?.Id;
-
         }
     }
 
@@ -550,37 +552,25 @@
     /// <summary>
     /// Returns true if the string contains characters from a non-Latin script
     /// (Japanese, Chinese, Korean, Arabic, Cyrillic, etc.).
-    /// Used to decide whether to display the "Native Title" field.
+    /// When true, the native title is hidden because these characters may
+    /// render as empty boxes on devices without the required fonts.
     /// </summary>
     private static bool ContainsNonLatinScript(string? s)
     {
         if (string.IsNullOrWhiteSpace(s)) return false;
         foreach (char c in s)
         {
-            // Only recognise characters from well-known non-Latin script blocks.
-            // This avoids false-positives from Unicode symbols, box-drawing chars,
-            // mathematical glyphs, private-use area, etc.
             if (
-                // Cyrillic
-                (c >= 0x0400 && c <= 0x04FF) ||
-                // Arabic
-                (c >= 0x0600 && c <= 0x06FF) ||
-                // Hebrew
-                (c >= 0x0590 && c <= 0x05FF) ||
-                // Devanagari
-                (c >= 0x0900 && c <= 0x097F) ||
-                // Thai
-                (c >= 0x0E00 && c <= 0x0E7F) ||
-                // Hiragana
-                (c >= 0x3040 && c <= 0x309F) ||
-                // Katakana
-                (c >= 0x30A0 && c <= 0x30FF) ||
-                // CJK Unified Ideographs (common Kanji/Hanzi/Hanja)
-                (c >= 0x4E00 && c <= 0x9FFF) ||
-                // CJK Extension A
-                (c >= 0x3400 && c <= 0x4DBF) ||
-                // Hangul syllables
-                (c >= 0xAC00 && c <= 0xD7AF)
+                (c >= 0x0400 && c <= 0x04FF) || // Cyrillic
+                (c >= 0x0600 && c <= 0x06FF) || // Arabic
+                (c >= 0x0590 && c <= 0x05FF) || // Hebrew
+                (c >= 0x0900 && c <= 0x097F) || // Devanagari
+                (c >= 0x0E00 && c <= 0x0E7F) || // Thai
+                (c >= 0x3040 && c <= 0x309F) || // Hiragana
+                (c >= 0x30A0 && c <= 0x30FF) || // Katakana
+                (c >= 0x4E00 && c <= 0x9FFF) || // CJK Unified Ideographs
+                (c >= 0x3400 && c <= 0x4DBF) || // CJK Extension A
+                (c >= 0xAC00 && c <= 0xD7AF)    // Hangul syllables
             ) return true;
         }
         return false;
@@ -622,49 +612,268 @@
             return apiColor;
         return site switch
         {
-            "Crunchyroll" => "#f88b25",
-            "Netflix" => "#E50914",
-            "Funimation" => "#5B0BB5",
-            "Amazon Prime Video" or "Prime Video" => "#00A8E0",
-            "HIDIVE" => "#00B2FF",
-            "Disney Plus" or "Disney+" => "#1137BF",
-            "Hulu" => "#1CE783",
-            "YouTube" => "#FF0000",
-            "VRV" => "#FFCC00",
-            "Wakanim" => "#E40001",
-            "Bilibili" => "#FB7299",
-            "ADN" or "Anime Digital Network" => "#004BFF",
             _ => "#7c7c99"
         };
     }
 
     /// <summary>
-    /// Returns a CSS filter string that colorizes a white SVG icon to the platform's brand color.
-    /// Technique: brightness(0) normalizes to black, then invert/sepia/saturate/hue-rotate
-    /// push it to the target hue. Disney+ keeps its white logo by design.
-    /// Returns the brand color for the SVG icon glyph.
-    /// All our SVGs use fill='currentColor' — setting color here is enough.
-    /// Disney+ keeps white intentionally (its logo is white on blue background).
-    /// Unknown sites: API img icons don't need color; fallback SVG stays neutral.
+    /// Renders the platform icon.
+    /// If the API provides an icon image URL, it is assumed to be white and a CSS filter
+    /// is computed (via the SPSA algorithm, ported from https://codepen.io/sosuke/pen/Pjoqqp)
+    /// to recolour it to the platform's brand colour.
+    /// Falls back to a generic SVG play icon coloured with the brand colour.
     /// </summary>
-    private static string GetPlatformIconColor(string site) => site switch
+    private MarkupString GetPlatformIconMarkup(string iconUrl, string brandColor)
     {
-        _                                     => "rgba(255,255,255,0.60)"
+        if (!string.IsNullOrEmpty(iconUrl))
+        {
+            // Icon from the API is white — convert it to the brand colour using CSS filters.
+            // brightness(0) normalises any white pixels to black first, then the computed
+            // invert/sepia/saturate/hue-rotate chain brings it to the target colour.
+            var filterStyle = GetWhiteToColorFilter(brandColor);
+            return new MarkupString(
+                $"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" " +
+                $"style=\"object-fit:contain;border-radius:2px;{filterStyle}\" />");
+        }
+
+        // Fallback generic SVG — colour it directly with the brand colour.
+        return new MarkupString(
+            $"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' " +
+            $"stroke='{brandColor}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
+            $"<rect x='2' y='2' width='20' height='20' rx='4'/>" +
+            $"<polygon points='10,8 16,12 10,16' fill='{brandColor}' stroke='none'/></svg>");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  CSS FILTER SOLVER
+    //  Port of https://codepen.io/sosuke/pen/Pjoqqp (0-clause BSD licence)
+    //  Computes a CSS filter chain that converts a black pixel to a target colour.
+    //  Prepend "brightness(0) saturate(100%)" to normalise a WHITE icon to black first.
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Cache: hex colour → inline style string (computed once per unique colour)
+    private static readonly Dictionary<string, string> _filterCache = new();
+
+    private static string GetWhiteToColorFilter(string hex)
+    {
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#'))
+            return string.Empty;
+
+        if (_filterCache.TryGetValue(hex, out var cached))
+            return cached;
+
+        var rgb = ParseHexColor(hex);
+        if (rgb == null)
+        {
+            _filterCache[hex] = string.Empty;
+            return string.Empty;
+        }
+
+        var colorFilter = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
+        // brightness(0) → normalise white icon to black; then apply colour filters
+        var result = $"filter:brightness(0) saturate(100%) {colorFilter};";
+        _filterCache[hex] = result;
+        return result;
+    }
+
+    private static (int r, int g, int b)? ParseHexColor(string hex)
+    {
+        hex = hex.TrimStart('#');
+        if (hex.Length == 3)
+            hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
+        if (hex.Length != 6) return null;
+        try
+        {
+            return (
+                Convert.ToInt32(hex[0..2], 16),
+                Convert.ToInt32(hex[2..4], 16),
+                Convert.ToInt32(hex[4..6], 16)
+            );
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Runs the SPSA optimiser and returns a CSS filter string.</summary>
+    private static string ComputeColorFilter(int tr, int tg, int tb)
+    {
+        var (th, ts, tl) = RgbToHsl(tr, tg, tb);
+        var rng = new Random(42); // fixed seed → deterministic output
+
+        double[] best = Array.Empty<double>();
+        double bestLoss = double.MaxValue;
+
+        // Wide search (up to 3 attempts until loss < 25)
+        for (int attempt = 0; attempt < 3 && bestLoss > 25; attempt++)
+        {
+            var r = RunSpsa(
+                tr, tg, tb, th, ts, tl,
+                new double[] { 50, 20, 3750, 50, 100, 100 },
+                A: 5, a: new double[] { 60, 180, 18000, 600, 1.2, 1.2 },
+                c: 15, iterations: 1000, rng);
+            if (r.loss < bestLoss) { best = r.values; bestLoss = r.loss; }
+        }
+
+        // Narrow refinement
+        {
+            double A1 = bestLoss + 1;
+            var r = RunSpsa(
+                tr, tg, tb, th, ts, tl,
+                best,
+                A: bestLoss, a: new double[] { 0.25 * A1, 0.25 * A1, A1, 0.25 * A1, 0.2 * A1, 0.2 * A1 },
+                c: 2, iterations: 500, rng);
+            if (r.loss < bestLoss) { best = r.values; }
+        }
+
+        static int R(double v) => (int)Math.Round(v);
+        return $"invert({R(best[0])}%) sepia({R(best[1])}%) " +
+               $"saturate({R(best[2])}%) hue-rotate({R(best[3] * 3.6)}deg) " +
+               $"brightness({R(best[4])}%) contrast({R(best[5])}%)";
+    }
+
+    private static (double[] values, double loss) RunSpsa(
+        int tr, int tg, int tb, double th, double ts, double tl,
+        double[] initial, double A, double[] a, double c, int iterations, Random rng)
+    {
+        var v = (double[])initial.Clone();
+        double[] best = null!;
+        double bestLoss = double.MaxValue;
+        var deltas = new double[6];
+        var hi = new double[6];
+        var lo = new double[6];
+
+        for (int k = 0; k < iterations; k++)
+        {
+            double ck = c / Math.Pow(k + 1, 1.0 / 6.0);
+            for (int i = 0; i < 6; i++)
+            {
+                deltas[i] = rng.NextDouble() > 0.5 ? 1 : -1;
+                hi[i] = v[i] + ck * deltas[i];
+                lo[i] = v[i] - ck * deltas[i];
+            }
+
+            double lossDiff = FilterLoss(hi, tr, tg, tb, th, ts, tl)
+                            - FilterLoss(lo, tr, tg, tb, th, ts, tl);
+
+            for (int i = 0; i < 6; i++)
+            {
+                double g = lossDiff / (2 * ck) * deltas[i];
+                double ak = a[i] / Math.Pow(A + k + 1, 1.0);
+                v[i] = ClampFilterParam(v[i] - ak * g, i);
+            }
+
+            double l = FilterLoss(v, tr, tg, tb, th, ts, tl);
+            if (l < bestLoss) { best = (double[])v.Clone(); bestLoss = l; }
+        }
+
+        return (best ?? v, bestLoss);
+    }
+
+    private static double FilterLoss(
+        double[] f, int tr, int tg, int tb, double th, double ts, double tl)
+    {
+        var (r, g, b) = ApplyFilters(f);
+        var (h, s, l) = RgbToHsl((int)r, (int)g, (int)b);
+        return Math.Abs(r - tr) + Math.Abs(g - tg) + Math.Abs(b - tb)
+             + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
+    }
+
+    /// <summary>Simulates the CSS filter chain on a starting black (0,0,0) pixel.</summary>
+    private static (double r, double g, double b) ApplyFilters(double[] f)
+    {
+        double r = 0, g = 0, b = 0;
+
+        // invert
+        double inv = f[0] / 100.0;
+        r = Cl((inv + r / 255.0 * (1 - 2 * inv)) * 255);
+        g = Cl((inv + g / 255.0 * (1 - 2 * inv)) * 255);
+        b = Cl((inv + b / 255.0 * (1 - 2 * inv)) * 255);
+
+        // sepia
+        (r, g, b) = MatMul(r, g, b, SepiaMatrix(f[1] / 100.0));
+        // saturate
+        (r, g, b) = MatMul(r, g, b, SaturateMatrix(f[2] / 100.0));
+        // hue-rotate
+        (r, g, b) = MatMul(r, g, b, HueRotateMatrix(f[3] * 3.6));
+        // brightness
+        r = Cl(r * (f[4] / 100.0));
+        g = Cl(g * (f[4] / 100.0));
+        b = Cl(b * (f[4] / 100.0));
+        // contrast
+        double con = f[5] / 100.0;
+        double ic = (-0.5 * con + 0.5) * 255;
+        r = Cl(r * con + ic);
+        g = Cl(g * con + ic);
+        b = Cl(b * con + ic);
+
+        return (r, g, b);
+    }
+
+    private static double Cl(double v) => Math.Max(0, Math.Min(255, v));
+
+    private static (double r, double g, double b) MatMul(double r, double g, double b, double[] m) =>
+        (Cl(r * m[0] + g * m[1] + b * m[2]),
+         Cl(r * m[3] + g * m[4] + b * m[5]),
+         Cl(r * m[6] + g * m[7] + b * m[8]));
+
+    private static double[] SepiaMatrix(double v) => new[]
+    {
+        0.393 + 0.607*(1-v), 0.769 - 0.769*(1-v), 0.189 - 0.189*(1-v),
+        0.349 - 0.349*(1-v), 0.686 + 0.314*(1-v), 0.168 - 0.168*(1-v),
+        0.272 - 0.272*(1-v), 0.534 - 0.534*(1-v), 0.131 + 0.869*(1-v)
     };
 
-    private MarkupString GetPlatformIconMarkup(string site, string iconUrl = "")
+    private static double[] SaturateMatrix(double v) => new[]
     {
-        string svg = site switch
+        0.213 + 0.787*v, 0.715 - 0.715*v, 0.072 - 0.072*v,
+        0.213 - 0.213*v, 0.715 + 0.285*v, 0.072 - 0.072*v,
+        0.213 - 0.213*v, 0.715 - 0.715*v, 0.072 + 0.928*v
+    };
+
+    private static double[] HueRotateMatrix(double deg)
+    {
+        double rad = deg / 180.0 * Math.PI;
+        double sin = Math.Sin(rad), cos = Math.Cos(rad);
+        return new[]
         {
-            _ => ""
+            0.213 + cos*0.787 - sin*0.213, 0.715 - cos*0.715 - sin*0.715, 0.072 - cos*0.072 + sin*0.928,
+            0.213 - cos*0.213 + sin*0.143, 0.715 + cos*0.285 + sin*0.140, 0.072 - cos*0.072 - sin*0.283,
+            0.213 - cos*0.213 - sin*0.787, 0.715 - cos*0.715 + sin*0.715, 0.072 + cos*0.928 + sin*0.072
         };
+    }
 
-        if (!string.IsNullOrEmpty(svg))
-            return new MarkupString(svg);
+    /// <summary>Clamps a filter parameter to its valid range.</summary>
+    private static double ClampFilterParam(double v, int idx)
+    {
+        double max = idx == 2 ? 7500 : (idx == 4 || idx == 5) ? 200 : 100;
+        if (idx == 3) // hue-rotate wraps
+        {
+            if (v > max) v %= max;
+            else if (v < 0) v = max + v % max;
+        }
+        else
+        {
+            v = Math.Max(0, Math.Min(max, v));
+        }
+        return v;
+    }
 
-        if (!string.IsNullOrEmpty(iconUrl))
-            return new MarkupString($"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" style=\"object-fit:contain;border-radius:2px;\" />");
+    private static (double h, double s, double l) RgbToHsl(int r, int g, int b)
+    {
+        double rf = r / 255.0, gf = g / 255.0, bf = b / 255.0;
+        double max = Math.Max(rf, Math.Max(gf, bf));
+        double min = Math.Min(rf, Math.Min(gf, bf));
+        double l = (max + min) / 2.0, h = 0, s = 0;
 
-        return new MarkupString(@"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='4'/><polygon points='10,8 16,12 10,16' fill='currentColor' stroke='none'/></svg>");
+        if (max != min)
+        {
+            double d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            if (max == rf) h = (gf - bf) / d + (gf < bf ? 6 : 0);
+            else if (max == gf) h = (bf - rf) / d + 2;
+            else h = (rf - gf) / d + 4;
+            h /= 6;
+        }
+
+        return (h * 100, s * 100, l * 100);
     }
 }
