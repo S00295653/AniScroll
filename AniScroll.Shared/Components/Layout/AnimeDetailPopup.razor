@@ -403,10 +403,12 @@
                                 @foreach (var link in streamingLinks)
                                 {
                                     var pc = GetPlatformColor(link.Site, link.Color);
-                                    var pcIcon = GetPlatformIconColor(link.Site);
-                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc; --pc-icon: @pcIcon;">
+                                    var pcFilter = GetPlatformIconFilter(link.Site);
+                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
                                         <span class="platform-icon-box">
-                                            @GetPlatformIconMarkup(link.Site, link.Icon)
+                                            <span style="filter: @pcFilter; display:flex; align-items:center; justify-content:center;">
+                                                @GetPlatformIconMarkup(link.Site, link.Icon)
+                                            </span>
                                         </span>
                                         <span class="platform-name-label">@link.Site</span>
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -554,12 +556,12 @@
     /// </summary>
     private static bool ContainsNonLatinScript(string? s)
     {
-        if (string.IsNullOrEmpty(s)) return false;
+        if (string.IsNullOrWhiteSpace(s)) return false;
         foreach (char c in s)
         {
-            // CJK symbols, Hiragana, Katakana, CJK Unified Ideographs, Hangul, Arabic,
-            // Hebrew, Devanagari, Cyrillic (basic), Greek extended, etc.
-            if (c >= 0x0370) return true;
+            // Must be an actual letter or digit (excludes Unicode spaces like U+3000,
+            // punctuation, etc.) AND outside the Latin range.
+            if (c >= 0x0370 && char.IsLetterOrDigit(c)) return true;
         }
         return false;
     }
@@ -617,25 +619,63 @@
     }
 
     /// <summary>
-    /// Returns the brand color for the icon glyph.
-    /// Always hardcoded — ignores API color which can be white/black.
-    /// Disney+ exception: white logo on blue bg is the brand identity.
+    /// Returns a CSS filter string that colorizes a white SVG icon to the platform's brand color.
+    /// Technique: brightness(0) normalizes to black, then invert/sepia/saturate/hue-rotate
+    /// push it to the target hue. Disney+ keeps its white logo by design.
+    /// API-provided img icons (unknown sites) get "none" — they're already colored.
     /// </summary>
-    private string GetPlatformIconColor(string site) => site switch
+    private static string GetPlatformIconFilter(string site) => site switch
     {
-        "Disney Plus" or "Disney+"           => "rgba(255,255,255,0.92)",
-        "Crunchyroll"                         => "#f88b25",
-        "Netflix"                             => "#E50914",
-        "Funimation"                          => "#9b59e8",
-        "Amazon Prime Video" or "Prime Video" => "#00A8E0",
-        "HIDIVE"                              => "#00B2FF",
-        "Hulu"                                => "#1CE783",
-        "YouTube"                             => "#FF0000",
-        "VRV"                                 => "#FFCC00",
-        "Wakanim"                             => "#E40001",
-        "Bilibili"                            => "#FB7299",
-        "ADN" or "Anime Digital Network"      => "#3d7fff",
-        _                                     => "rgba(255,255,255,0.72)"
+        // Disney+: intentionally white logo — no filter
+        "Disney Plus" or "Disney+"
+            => "none",
+
+        // Crunchyroll #F88B25 (orange)
+        "Crunchyroll"
+            => "brightness(0) saturate(100%) invert(63%) sepia(64%) saturate(726%) hue-rotate(349deg) brightness(105%)",
+
+        // Netflix #E50914 (red)
+        "Netflix"
+            => "brightness(0) saturate(100%) invert(15%) sepia(100%) saturate(700%) hue-rotate(355deg) brightness(100%)",
+
+        // Funimation #5B0BB5 (purple)
+        "Funimation"
+            => "brightness(0) saturate(100%) invert(16%) sepia(95%) saturate(1000%) hue-rotate(267deg) brightness(85%)",
+
+        // Amazon Prime Video #00A8E0 (sky blue)
+        "Amazon Prime Video" or "Prime Video"
+            => "brightness(0) saturate(100%) invert(44%) sepia(84%) saturate(500%) hue-rotate(175deg) brightness(103%)",
+
+        // HIDIVE #00B2FF (light blue)
+        "HIDIVE"
+            => "brightness(0) saturate(100%) invert(48%) sepia(95%) saturate(600%) hue-rotate(183deg) brightness(108%)",
+
+        // Hulu #1CE783 (green)
+        "Hulu"
+            => "brightness(0) saturate(100%) invert(67%) sepia(90%) saturate(400%) hue-rotate(112deg) brightness(100%)",
+
+        // YouTube #FF0000 (red)
+        "YouTube"
+            => "brightness(0) saturate(100%) invert(19%) sepia(100%) saturate(800%) hue-rotate(354deg) brightness(115%)",
+
+        // VRV #FFCC00 (yellow)
+        "VRV"
+            => "brightness(0) saturate(100%) invert(85%) sepia(100%) saturate(600%) hue-rotate(8deg) brightness(103%)",
+
+        // Wakanim #E40001 (red)
+        "Wakanim"
+            => "brightness(0) saturate(100%) invert(14%) sepia(100%) saturate(700%) hue-rotate(354deg) brightness(100%)",
+
+        // Bilibili #FB7299 (pink)
+        "Bilibili"
+            => "brightness(0) saturate(100%) invert(56%) sepia(88%) saturate(500%) hue-rotate(307deg) brightness(108%)",
+
+        // ADN / Anime Digital Network #004BFF (deep blue)
+        "ADN" or "Anime Digital Network"
+            => "brightness(0) saturate(100%) invert(16%) sepia(100%) saturate(800%) hue-rotate(222deg) brightness(95%)",
+
+        // Unknown sites: API img icon is already colored, SVG fallback stays white
+        _ => "none"
     };
 
     private MarkupString GetPlatformIconMarkup(string site, string iconUrl = "")
