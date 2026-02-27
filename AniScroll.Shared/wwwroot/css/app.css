@@ -1711,9 +1711,9 @@ html, body {
 
 .tag-spoiler-btn {
     cursor: pointer;
-    border: 1px dashed rgba(180, 145, 60, 0.38);
-    background: rgba(28, 22, 4, 0.32);
-    color: rgba(195, 155, 72, 0.60);
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.40);
     font-family: inherit;
     font-size: 11px;
     padding: 5px 14px;
@@ -1724,34 +1724,32 @@ html, body {
 }
 
     .tag-spoiler-btn:hover {
-        background: rgba(42, 32, 4, 0.42);
+        background: rgba(255, 255, 255, 0.07);
         border-style: solid;
-        border-color: rgba(210, 168, 80, 0.50);
-        color: rgba(225, 182, 90, 0.82);
+        border-color: rgba(255, 255, 255, 0.30);
+        color: rgba(255, 255, 255, 0.62);
     }
 
     .tag-spoiler-btn:active {
         transform: scale(0.96);
     }
 
-/* Hide spoilers button: muted neutral */
 .tag-spoiler-hide-btn {
-    border: 1px dashed rgba(110, 108, 98, 0.30);
-    background: rgba(18, 18, 16, 0.28);
-    color: rgba(148, 145, 128, 0.48);
-    font-style: normal;
-    letter-spacing: normal;
+    border: 1px dashed rgba(180, 145, 60, 0.38);
+    background: rgba(28, 22, 4, 0.32);
+    color: rgba(195, 155, 72, 0.60);
+    font-style: italic;
+    letter-spacing: 0.025em;
 }
 
     .tag-spoiler-hide-btn:hover {
-        background: rgba(32, 30, 22, 0.40);
+        background: rgba(42, 32, 4, 0.42);
         border-style: solid;
-        border-color: rgba(160, 155, 130, 0.42);
-        color: rgba(185, 180, 158, 0.78);
+        border-color: rgba(210, 168, 80, 0.50);
+        color: rgba(225, 182, 90, 0.82);
         box-shadow: none;
     }
 
-/* Revealed spoiler pills: amber tint, italic, ⊘ prefix */
 .tag-pill-spoiler-revealed {
     background: rgba(42, 32, 4, 0.28);
     border: 1px solid rgba(165, 130, 48, 0.28);
@@ -1764,7 +1762,7 @@ html, body {
 
     .tag-pill-spoiler-revealed::before {
         font-size: 9px;
-        opacity: 0.55;
+        opacity: 0.45;
         font-style: normal;
         flex-shrink: 0;
     }
@@ -1779,7 +1777,6 @@ html, body {
     color: rgba(195, 155, 72, 0.32);
 }
 
-/* Legacy utility class */
 .tag-spoiler {
     font-style: italic;
 }
@@ -1829,21 +1826,21 @@ html, body {
     width: 30px;
     height: 30px;
     border-radius: 7px;
-    background: var(--pc-bg, rgba(255,255,255,0.08));
+    background: rgba(255,255,255,0.08);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: white;   /* icon always white — brand color shown as background */
+    color: var(--pc-icon, rgba(255,255,255,0.75));
 }
 
-/* Image icons from the AniList API: contain within the icon box */
 .platform-icon-box img {
     width: 20px;
     height: 20px;
     object-fit: contain;
     border-radius: 2px;
 }
+
 
 
 .platform-name-label {
