@@ -640,7 +640,10 @@
 
     private MarkupString GetPlatformIconMarkup(string site, string iconUrl = "")
     {
-        
+        string svg = site switch
+        {
+            _ => ""
+        };
 
         if (!string.IsNullOrEmpty(svg))
             return new MarkupString(svg);
