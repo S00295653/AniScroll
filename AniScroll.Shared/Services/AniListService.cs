@@ -590,32 +590,15 @@ namespace AniScroll.Shared.Services
 
                 string trailerUrl = "";
                 var tr = m["trailer"];
-                Console.WriteLine($"[ParseAnimeCard] Trailer raw: {tr}");
                 if (tr != null && tr.Type != JTokenType.Null)
                 {
                     var site = tr["site"]?.ToString() ?? "";
                     var trailerId = tr["id"]?.ToString() ?? "";
-                    Console.WriteLine($"[ParseAnimeCard] Site='{site}', ID='{trailerId}'");
-                    if (!string.IsNullOrEmpty(trailerId))
+                    if (!string.IsNullOrEmpty(trailerId) &&
+                        site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (site.StartsWith("youtube", StringComparison.OrdinalIgnoreCase))
-                        {
-                            trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
-                            Console.WriteLine($"[ParseAnimeCard] YouTube URL: {trailerUrl}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[ParseAnimeCard] Site inconnu: {site}");
-                        }
+                        trailerUrl = "https://www.youtube.com/watch?v=" + trailerId;
                     }
-                    else
-                    {
-                        Console.WriteLine($"[ParseAnimeCard] ID manquant !");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"[ParseAnimeCard] PAS DE TRAILER dans la réponse API");
                 }
 
                 var tags = new List<AnimeTag>();

@@ -403,8 +403,8 @@
                                 @foreach (var link in streamingLinks)
                                 {
                                     var pc = GetPlatformColor(link.Site, link.Color);
-                                    var pcIcon = GetPlatformIconColor(link.Site);
-                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc; --pc-icon: @pcIcon;">
+                                    var pcBg = GetPlatformIconBg(link.Site, link.Color);
+                                    <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc; --pc-bg: @pcBg;">
                                         <span class="platform-icon-box">
                                             @GetPlatformIconMarkup(link.Site, link.Icon)
                                         </span>
@@ -468,7 +468,7 @@
             isPulling = false;
             isPullTrackingActive = false;
             _lastAnimeId = CurrentAnime?.Id;
-            Console.WriteLine($"[DEBUG Popup] Anime: {CurrentAnime?.Title}, Trailer: '{CurrentAnime?.TrailerUrl ?? "null"}'");
+
         }
     }
 
@@ -617,26 +617,32 @@
     }
 
     /// <summary>
-    /// Returns the brand color used specifically for the icon/logo glyph inside the icon box.
-    /// Always uses the hardcoded brand color (never the API color which may be white/black).
-    /// Disney+ is the exception: its logo is intentionally white on a blue background.
+    /// Returns a semi-transparent brand-color background for the icon box.
+    /// The icon itself always renders white for contrast.
+    /// Disney+ is excluded — it uses a neutral background (its logo is already iconic).
     /// </summary>
-    private string GetPlatformIconColor(string site) => site switch
+    private string GetPlatformIconBg(string site, string apiColor)
     {
-        "Disney Plus" or "Disney+"         => "rgba(255,255,255,0.92)",   // white logo on blue bg — by design
-        "Crunchyroll"                       => "#f88b25",
-        "Netflix"                           => "#E50914",
-        "Funimation"                        => "#9b59e8",
-        "Amazon Prime Video" or "Prime Video" => "#00A8E0",
-        "HIDIVE"                            => "#00B2FF",
-        "Hulu"                              => "#1CE783",
-        "YouTube"                           => "#FF0000",
-        "VRV"                               => "#FFCC00",
-        "Wakanim"                           => "#E40001",
-        "Bilibili"                          => "#FB7299",
-        "ADN" or "Anime Digital Network"    => "#3d7fff",
-        _                                   => "rgba(255,255,255,0.75)"
-    };
+        // Disney+: keep neutral background, white logo is the brand identity
+        if (site is "Disney Plus" or "Disney+")
+            return "rgba(17, 55, 191, 0.55)";
+
+        string brand = GetPlatformColor(site, apiColor);
+        // Convert hex brand color to a semi-transparent background
+        // We parse the hex and return rgba with low-to-medium opacity
+        if (brand.StartsWith("#") && brand.Length == 7)
+        {
+            try
+            {
+                int r = Convert.ToInt32(brand.Substring(1, 2), 16);
+                int g = Convert.ToInt32(brand.Substring(3, 2), 16);
+                int b = Convert.ToInt32(brand.Substring(5, 2), 16);
+                return $"rgba({r},{g},{b},0.18)";
+            }
+            catch { }
+        }
+        return "rgba(255,255,255,0.08)";
+    }
 
     private MarkupString GetPlatformIconMarkup(string site, string iconUrl = "")
     {
