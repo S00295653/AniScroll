@@ -6,7 +6,7 @@
     <div class="anime-detail-overlay" @onclick="OnOverlayClick">
         <div class="anime-detail-modal"
              @onclick:stopPropagation="true"
-             style="transform: translateY(@(pullOffset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px) translateX(@(edgeSwipeOffset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px); transition: @(isPulling || isEdgeSwiping ? "none" : "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)");">
+             style="transform: translateX(@(edgeSwipeOffset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px) translateY(@((isEdgeSwiping || isEdgeSwipeTrackingActive ? 0 : pullOffset).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px); transition: @(GetModalTransition());">
 
             <button class="modal-close-btn" @onclick="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -453,7 +453,7 @@
     private bool showSpoilers = false;
     private int? _lastAnimeId = null;
 
-    // ─── Swipe-DOWN-to-close ─────────────────────────────────────────────────────
+    // ─── Swipe-DOWN-to-close state ───────────────────────────────────────────────
     private ElementReference scrollContainerRef;
     private double pullOffset = 0;
     private double pullStartY = 0;
@@ -461,14 +461,14 @@
     private bool isPullTrackingActive = false;
     private const double PULL_CLOSE_THRESHOLD = 80;
 
-    // ─── Swipe-LEFT-EDGE-to-close ────────────────────────────────────────────────
-    private double edgeSwipeOffset = 0;
+    // ─── Swipe-LEFT-EDGE-to-close state ──────────────────────────────────────────
     private double edgeSwipeStartX = 0;
     private double edgeSwipeStartY = 0;
+    private double edgeSwipeOffset = 0;
     private bool isEdgeSwiping = false;
     private bool isEdgeSwipeTrackingActive = false;
-    private const double EDGE_TRIGGER_ZONE = 28;    // px from left edge to activate
-    private const double EDGE_CLOSE_THRESHOLD = 90; // px of rightward drag to dismiss
+    private const double EDGE_ZONE_WIDTH = 40;       // px from left edge to trigger
+    private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90; // px to swipe right to close
 
     protected override void OnParametersSet()
     {
@@ -486,15 +486,23 @@
         }
     }
 
+    // ─── Transition helper ───────────────────────────────────────────────────────
+    private string GetModalTransition()
+    {
+        if (isPulling || isEdgeSwiping) return "none";
+        return "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)";
+    }
+
     // ─── Touch handlers ──────────────────────────────────────────────────────────
 
     private async Task HandleModalTouchStart(TouchEventArgs e)
     {
         if (e.Touches.Length == 0) return;
+
         var touch = e.Touches[0];
 
-        // Left-edge swipe takes priority: finger starts within EDGE_TRIGGER_ZONE
-        if (touch.ClientX <= EDGE_TRIGGER_ZONE)
+        // Left-edge swipe: starts within EDGE_ZONE_WIDTH px from left
+        if (touch.ClientX <= EDGE_ZONE_WIDTH)
         {
             isEdgeSwipeTrackingActive = true;
             isEdgeSwiping = false;
@@ -504,7 +512,7 @@
             return;
         }
 
-        // Pull-down only when the scroll container is at the top
+        // Pull-down-to-close: only when scrolled to top
         bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
         if (!atTop) return;
         isPullTrackingActive = true;
@@ -518,36 +526,40 @@
         if (e.Touches.Length == 0) return;
         var touch = e.Touches[0];
 
-        // ── Left-edge horizontal swipe ────────────────────────────────────────
+        // ── Edge swipe ──────────────────────────────────────────────────────
         if (isEdgeSwipeTrackingActive)
         {
             double dx = touch.ClientX - edgeSwipeStartX;
             double dy = touch.ClientY - edgeSwipeStartY;
 
-            // Cancel if the user is clearly scrolling vertically
+            // Cancel if the gesture is more vertical than horizontal
             if (!isEdgeSwiping && Math.Abs(dy) > Math.Abs(dx) + 10)
             {
                 isEdgeSwipeTrackingActive = false;
-                edgeSwipeOffset = 0;
                 return;
             }
 
             if (dx > 0)
             {
                 isEdgeSwiping = true;
-                // Full-speed up to threshold, rubber-band beyond it
-                edgeSwipeOffset = dx <= EDGE_CLOSE_THRESHOLD
+                // Rubber-band: full movement up to threshold, dampened beyond
+                edgeSwipeOffset = dx <= EDGE_SWIPE_CLOSE_THRESHOLD
                     ? dx
-                    : EDGE_CLOSE_THRESHOLD + Math.Sqrt(dx - EDGE_CLOSE_THRESHOLD) * 5;
+                    : EDGE_SWIPE_CLOSE_THRESHOLD + (dx - EDGE_SWIPE_CLOSE_THRESHOLD) * 0.25;
                 StateHasChanged();
             }
             return;
         }
 
-        // ── Pull-down vertical swipe ──────────────────────────────────────────
+        // ── Pull down ───────────────────────────────────────────────────────
         if (!isPullTrackingActive) return;
         double delta = touch.ClientY - pullStartY;
-        if (delta <= 0) { isPulling = false; pullOffset = 0; return; }
+        if (delta <= 0)
+        {
+            isPulling = false;
+            pullOffset = 0;
+            return;
+        }
         isPulling = true;
         pullOffset = Math.Sqrt(delta) * 6;
         StateHasChanged();
@@ -555,15 +567,16 @@
 
     private async Task HandleModalTouchEnd(TouchEventArgs e)
     {
-        // ── Edge swipe release ────────────────────────────────────────────────
+        // ── Edge swipe end ──────────────────────────────────────────────────
         if (isEdgeSwipeTrackingActive)
         {
             isEdgeSwipeTrackingActive = false;
             isEdgeSwiping = false;
 
-            if (edgeSwipeOffset >= EDGE_CLOSE_THRESHOLD)
+            if (edgeSwipeOffset >= EDGE_SWIPE_CLOSE_THRESHOLD)
             {
-                edgeSwipeOffset = 600; // fly off to the right
+                // Fly off to the right
+                edgeSwipeOffset = 500;
                 StateHasChanged();
                 await Task.Delay(260);
                 edgeSwipeOffset = 0;
@@ -577,7 +590,7 @@
             return;
         }
 
-        // ── Pull-down release ─────────────────────────────────────────────────
+        // ── Pull down end ───────────────────────────────────────────────────
         if (!isPullTrackingActive) return;
         isPullTrackingActive = false;
         isPulling = false;
@@ -597,7 +610,7 @@
         }
     }
 
-    // ─── UI helpers ──────────────────────────────────────────────────────────────
+    // ─── Helpers ─────────────────────────────────────────────────────────────────
 
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
@@ -628,12 +641,20 @@
     {
         if (string.IsNullOrWhiteSpace(s)) return false;
         foreach (char c in s)
-            if ((c >= 0x0400 && c <= 0x04FF) || (c >= 0x0600 && c <= 0x06FF) ||
-                (c >= 0x0590 && c <= 0x05FF) || (c >= 0x0900 && c <= 0x097F) ||
-                (c >= 0x0E00 && c <= 0x0E7F) || (c >= 0x3040 && c <= 0x309F) ||
-                (c >= 0x30A0 && c <= 0x30FF) || (c >= 0x4E00 && c <= 0x9FFF) ||
-                (c >= 0x3400 && c <= 0x4DBF) || (c >= 0xAC00 && c <= 0xD7AF))
-                return true;
+        {
+            if (
+                (c >= 0x0400 && c <= 0x04FF) ||
+                (c >= 0x0600 && c <= 0x06FF) ||
+                (c >= 0x0590 && c <= 0x05FF) ||
+                (c >= 0x0900 && c <= 0x097F) ||
+                (c >= 0x0E00 && c <= 0x0E7F) ||
+                (c >= 0x3040 && c <= 0x309F) ||
+                (c >= 0x30A0 && c <= 0x30FF) ||
+                (c >= 0x4E00 && c <= 0x9FFF) ||
+                (c >= 0x3400 && c <= 0x4DBF) ||
+                (c >= 0xAC00 && c <= 0xD7AF)
+            ) return true;
+        }
         return false;
     }
 
@@ -646,8 +667,17 @@
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             if (query.AllKeys.Contains("v")) return query["v"] ?? "";
             var path = uri.AbsolutePath;
-            if (path.Contains("/shorts/")) { var parts = path.Split("/shorts/", StringSplitOptions.RemoveEmptyEntries); return parts.Length > 0 ? parts[0].TrimEnd('/') : ""; }
-            if (uri.Segments.Length > 1) { var last = uri.Segments.LastOrDefault()?.TrimEnd('/'); if (!string.IsNullOrEmpty(last) && last != "embed") return last; }
+            if (path.Contains("/shorts/"))
+            {
+                var parts = path.Split("/shorts/", StringSplitOptions.RemoveEmptyEntries);
+                return parts.Length > 0 ? parts[0].TrimEnd('/') : "";
+            }
+            if (uri.Segments.Length > 1)
+            {
+                var last = uri.Segments.LastOrDefault()?.TrimEnd('/');
+                if (!string.IsNullOrEmpty(last) && last != "embed")
+                    return last;
+            }
         }
         catch
         {
@@ -661,7 +691,7 @@
     // ═══════════════════════════════════════════════════════════════════════════
     //  PLATFORM ICON RENDERING
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
         "Alpha Manga", "AlphaPolis", "Asacomi", "Bandai Channel", "Carlsen Manga!",
@@ -691,7 +721,10 @@
             string styleAttr = shouldRecolor
                 ? $"object-fit:contain;border-radius:2px;{GetWhiteToColorFilter(brandColor)}"
                 : "object-fit:contain;border-radius:2px;";
-            return new MarkupString($"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" style=\"{styleAttr}\" />");
+
+            return new MarkupString(
+                $"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" " +
+                $"style=\"{styleAttr}\" />");
         }
 
         string svgColor = shouldRecolor ? brandColor : "rgba(255,255,255,0.6)";
@@ -703,18 +736,28 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  CSS FILTER SOLVER (white-icon → brand-color recoloring)
+    //  CSS FILTER SOLVER
     // ═══════════════════════════════════════════════════════════════════════════
 
     private static readonly Dictionary<string, string> _filterCache = new();
 
     private static string GetWhiteToColorFilter(string hex)
     {
-        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#')) return string.Empty;
-        if (_filterCache.TryGetValue(hex, out var cached)) return cached;
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#'))
+            return string.Empty;
+
+        if (_filterCache.TryGetValue(hex, out var cached))
+            return cached;
+
         var rgb = ParseHexColor(hex);
-        if (rgb == null) { _filterCache[hex] = string.Empty; return string.Empty; }
-        var result = $"filter:brightness(0) saturate(100%) {ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b)};";
+        if (rgb == null)
+        {
+            _filterCache[hex] = string.Empty;
+            return string.Empty;
+        }
+
+        var colorFilter = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
+        var result = $"filter:brightness(0) saturate(100%) {colorFilter};";
         _filterCache[hex] = result;
         return result;
     }
@@ -722,9 +765,17 @@
     private static (int r, int g, int b)? ParseHexColor(string hex)
     {
         hex = hex.TrimStart('#');
-        if (hex.Length == 3) hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
+        if (hex.Length == 3)
+            hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
         if (hex.Length != 6) return null;
-        try { return (Convert.ToInt32(hex[0..2], 16), Convert.ToInt32(hex[2..4], 16), Convert.ToInt32(hex[4..6], 16)); }
+        try
+        {
+            return (
+                Convert.ToInt32(hex[0..2], 16),
+                Convert.ToInt32(hex[2..4], 16),
+                Convert.ToInt32(hex[4..6], 16)
+            );
+        }
         catch { return null; }
     }
 
@@ -732,46 +783,172 @@
     {
         var (th, ts, tl) = RgbToHsl(tr, tg, tb);
         var rng = new Random(42);
-        double[] best = Array.Empty<double>(); double bestLoss = double.MaxValue;
+
+        double[] best = Array.Empty<double>();
+        double bestLoss = double.MaxValue;
+
         for (int attempt = 0; attempt < 3 && bestLoss > 25; attempt++)
-        { var r = RunSpsa(tr,tg,tb,th,ts,tl,new double[]{50,20,3750,50,100,100},5,new double[]{60,180,18000,600,1.2,1.2},15,1000,rng); if(r.loss<bestLoss){best=r.values;bestLoss=r.loss;} }
-        { double A1=bestLoss+1; var r=RunSpsa(tr,tg,tb,th,ts,tl,best,bestLoss,new double[]{0.25*A1,0.25*A1,A1,0.25*A1,0.2*A1,0.2*A1},2,500,rng); if(r.loss<bestLoss)best=r.values; }
-        static int R(double v)=>(int)Math.Round(v);
-        return $"invert({R(best[0])}%) sepia({R(best[1])}%) saturate({R(best[2])}%) hue-rotate({R(best[3]*3.6)}deg) brightness({R(best[4])}%) contrast({R(best[5])}%)";
-    }
-
-    private static (double[] values, double loss) RunSpsa(int tr,int tg,int tb,double th,double ts,double tl,double[] initial,double A,double[] a,double c,int iterations,Random rng)
-    {
-        var v=(double[])initial.Clone(); double[] best=null!; double bestLoss=double.MaxValue;
-        var deltas=new double[6]; var hi=new double[6]; var lo=new double[6];
-        for(int k=0;k<iterations;k++){
-            double ck=c/Math.Pow(k+1,1.0/6.0);
-            for(int i=0;i<6;i++){deltas[i]=rng.NextDouble()>0.5?1:-1;hi[i]=v[i]+ck*deltas[i];lo[i]=v[i]-ck*deltas[i];}
-            double lossDiff=FilterLoss(hi,tr,tg,tb,th,ts,tl)-FilterLoss(lo,tr,tg,tb,th,ts,tl);
-            for(int i=0;i<6;i++){double g=lossDiff/(2*ck)*deltas[i];double ak=a[i]/Math.Pow(A+k+1,1.0);v[i]=ClampFilterParam(v[i]-ak*g,i);}
-            double l=FilterLoss(v,tr,tg,tb,th,ts,tl); if(l<bestLoss){best=(double[])v.Clone();bestLoss=l;}
+        {
+            var r = RunSpsa(
+                tr, tg, tb, th, ts, tl,
+                new double[] { 50, 20, 3750, 50, 100, 100 },
+                A: 5, a: new double[] { 60, 180, 18000, 600, 1.2, 1.2 },
+                c: 15, iterations: 1000, rng);
+            if (r.loss < bestLoss) { best = r.values; bestLoss = r.loss; }
         }
-        return (best??v, bestLoss);
+
+        {
+            double A1 = bestLoss + 1;
+            var r = RunSpsa(
+                tr, tg, tb, th, ts, tl,
+                best,
+                A: bestLoss, a: new double[] { 0.25 * A1, 0.25 * A1, A1, 0.25 * A1, 0.2 * A1, 0.2 * A1 },
+                c: 2, iterations: 500, rng);
+            if (r.loss < bestLoss) { best = r.values; }
+        }
+
+        static int R(double v) => (int)Math.Round(v);
+        return $"invert({R(best[0])}%) sepia({R(best[1])}%) " +
+               $"saturate({R(best[2])}%) hue-rotate({R(best[3] * 3.6)}deg) " +
+               $"brightness({R(best[4])}%) contrast({R(best[5])}%)";
     }
 
-    private static double FilterLoss(double[] f,int tr,int tg,int tb,double th,double ts,double tl)
-    { var(r,g,b)=ApplyFilters(f); var(h,s,l)=RgbToHsl((int)r,(int)g,(int)b); return Math.Abs(r-tr)+Math.Abs(g-tg)+Math.Abs(b-tb)+Math.Abs(h-th)+Math.Abs(s-ts)+Math.Abs(l-tl); }
-
-    private static (double r,double g,double b) ApplyFilters(double[] f)
+    private static (double[] values, double loss) RunSpsa(
+        int tr, int tg, int tb, double th, double ts, double tl,
+        double[] initial, double A, double[] a, double c, int iterations, Random rng)
     {
-        double r=0,g=0,b=0;
-        double inv=f[0]/100.0; r=Cl((inv+r/255.0*(1-2*inv))*255); g=Cl((inv+g/255.0*(1-2*inv))*255); b=Cl((inv+b/255.0*(1-2*inv))*255);
-        (r,g,b)=MatMul(r,g,b,SepiaMatrix(f[1]/100.0)); (r,g,b)=MatMul(r,g,b,SaturateMatrix(f[2]/100.0)); (r,g,b)=MatMul(r,g,b,HueRotateMatrix(f[3]*3.6));
-        r=Cl(r*(f[4]/100.0)); g=Cl(g*(f[4]/100.0)); b=Cl(b*(f[4]/100.0));
-        double con=f[5]/100.0; double ic=(-0.5*con+0.5)*255; r=Cl(r*con+ic); g=Cl(g*con+ic); b=Cl(b*con+ic);
-        return (r,g,b);
+        var v = (double[])initial.Clone();
+        double[] best = null!;
+        double bestLoss = double.MaxValue;
+        var deltas = new double[6];
+        var hi = new double[6];
+        var lo = new double[6];
+
+        for (int k = 0; k < iterations; k++)
+        {
+            double ck = c / Math.Pow(k + 1, 1.0 / 6.0);
+            for (int i = 0; i < 6; i++)
+            {
+                deltas[i] = rng.NextDouble() > 0.5 ? 1 : -1;
+                hi[i] = v[i] + ck * deltas[i];
+                lo[i] = v[i] - ck * deltas[i];
+            }
+
+            double lossDiff = FilterLoss(hi, tr, tg, tb, th, ts, tl)
+                            - FilterLoss(lo, tr, tg, tb, th, ts, tl);
+
+            for (int i = 0; i < 6; i++)
+            {
+                double g = lossDiff / (2 * ck) * deltas[i];
+                double ak = a[i] / Math.Pow(A + k + 1, 1.0);
+                v[i] = ClampFilterParam(v[i] - ak * g, i);
+            }
+
+            double l = FilterLoss(v, tr, tg, tb, th, ts, tl);
+            if (l < bestLoss) { best = (double[])v.Clone(); bestLoss = l; }
+        }
+
+        return (best ?? v, bestLoss);
     }
 
-    private static double Cl(double v)=>Math.Max(0,Math.Min(255,v));
-    private static (double r,double g,double b) MatMul(double r,double g,double b,double[] m)=>(Cl(r*m[0]+g*m[1]+b*m[2]),Cl(r*m[3]+g*m[4]+b*m[5]),Cl(r*m[6]+g*m[7]+b*m[8]));
-    private static double[] SepiaMatrix(double v)=>new[]{0.393+0.607*(1-v),0.769-0.769*(1-v),0.189-0.189*(1-v),0.349-0.349*(1-v),0.686+0.314*(1-v),0.168-0.168*(1-v),0.272-0.272*(1-v),0.534-0.534*(1-v),0.131+0.869*(1-v)};
-    private static double[] SaturateMatrix(double v)=>new[]{0.213+0.787*v,0.715-0.715*v,0.072-0.072*v,0.213-0.213*v,0.715+0.285*v,0.072-0.072*v,0.213-0.213*v,0.715-0.715*v,0.072+0.928*v};
-    private static double[] HueRotateMatrix(double deg){double rad=deg/180.0*Math.PI;double sin=Math.Sin(rad),cos=Math.Cos(rad);return new[]{0.213+cos*0.787-sin*0.213,0.715-cos*0.715-sin*0.715,0.072-cos*0.072+sin*0.928,0.213-cos*0.213+sin*0.143,0.715+cos*0.285+sin*0.140,0.072-cos*0.072-sin*0.283,0.213-cos*0.213-sin*0.787,0.715-cos*0.715+sin*0.715,0.072+cos*0.928+sin*0.072};}
-    private static double ClampFilterParam(double v,int idx){double max=idx==2?7500:(idx==4||idx==5)?200:100;if(idx==3){if(v>max)v%=max;else if(v<0)v=max+v%max;}else{v=Math.Max(0,Math.Min(max,v));}return v;}
-    private static (double h,double s,double l) RgbToHsl(int r,int g,int b){double rf=r/255.0,gf=g/255.0,bf=b/255.0;double max=Math.Max(rf,Math.Max(gf,bf));double min=Math.Min(rf,Math.Min(gf,bf));double l=(max+min)/2.0,h=0,s=0;if(max!=min){double d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max==rf)h=(gf-bf)/d+(gf<bf?6:0);else if(max==gf)h=(bf-rf)/d+2;else h=(rf-gf)/d+4;h/=6;}return(h*100,s*100,l*100);}
+    private static double FilterLoss(
+        double[] f, int tr, int tg, int tb, double th, double ts, double tl)
+    {
+        var (r, g, b) = ApplyFilters(f);
+        var (h, s, l) = RgbToHsl((int)r, (int)g, (int)b);
+        return Math.Abs(r - tr) + Math.Abs(g - tg) + Math.Abs(b - tb)
+             + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
+    }
+
+    private static (double r, double g, double b) ApplyFilters(double[] f)
+    {
+        double r = 0, g = 0, b = 0;
+
+        double inv = f[0] / 100.0;
+        r = Cl((inv + r / 255.0 * (1 - 2 * inv)) * 255);
+        g = Cl((inv + g / 255.0 * (1 - 2 * inv)) * 255);
+        b = Cl((inv + b / 255.0 * (1 - 2 * inv)) * 255);
+
+        (r, g, b) = MatMul(r, g, b, SepiaMatrix(f[1] / 100.0));
+        (r, g, b) = MatMul(r, g, b, SaturateMatrix(f[2] / 100.0));
+        (r, g, b) = MatMul(r, g, b, HueRotateMatrix(f[3] * 3.6));
+        r = Cl(r * (f[4] / 100.0));
+        g = Cl(g * (f[4] / 100.0));
+        b = Cl(b * (f[4] / 100.0));
+        double con = f[5] / 100.0;
+        double ic = (-0.5 * con + 0.5) * 255;
+        r = Cl(r * con + ic);
+        g = Cl(g * con + ic);
+        b = Cl(b * con + ic);
+
+        return (r, g, b);
+    }
+
+    private static double Cl(double v) => Math.Max(0, Math.Min(255, v));
+
+    private static (double r, double g, double b) MatMul(double r, double g, double b, double[] m) =>
+        (Cl(r * m[0] + g * m[1] + b * m[2]),
+         Cl(r * m[3] + g * m[4] + b * m[5]),
+         Cl(r * m[6] + g * m[7] + b * m[8]));
+
+    private static double[] SepiaMatrix(double v) => new[]
+    {
+        0.393 + 0.607*(1-v), 0.769 - 0.769*(1-v), 0.189 - 0.189*(1-v),
+        0.349 - 0.349*(1-v), 0.686 + 0.314*(1-v), 0.168 - 0.168*(1-v),
+        0.272 - 0.272*(1-v), 0.534 - 0.534*(1-v), 0.131 + 0.869*(1-v)
+    };
+
+    private static double[] SaturateMatrix(double v) => new[]
+    {
+        0.213 + 0.787*v, 0.715 - 0.715*v, 0.072 - 0.072*v,
+        0.213 - 0.213*v, 0.715 + 0.285*v, 0.072 - 0.072*v,
+        0.213 - 0.213*v, 0.715 - 0.715*v, 0.072 + 0.928*v
+    };
+
+    private static double[] HueRotateMatrix(double deg)
+    {
+        double rad = deg / 180.0 * Math.PI;
+        double sin = Math.Sin(rad), cos = Math.Cos(rad);
+        return new[]
+        {
+            0.213 + cos*0.787 - sin*0.213, 0.715 - cos*0.715 - sin*0.715, 0.072 - cos*0.072 + sin*0.928,
+            0.213 - cos*0.213 + sin*0.143, 0.715 + cos*0.285 + sin*0.140, 0.072 - cos*0.072 - sin*0.283,
+            0.213 - cos*0.213 - sin*0.787, 0.715 - cos*0.715 + sin*0.715, 0.072 + cos*0.928 + sin*0.072
+        };
+    }
+
+    private static double ClampFilterParam(double v, int idx)
+    {
+        double max = idx == 2 ? 7500 : (idx == 4 || idx == 5) ? 200 : 100;
+        if (idx == 3)
+        {
+            if (v > max) v %= max;
+            else if (v < 0) v = max + v % max;
+        }
+        else
+        {
+            v = Math.Max(0, Math.Min(max, v));
+        }
+        return v;
+    }
+
+    private static (double h, double s, double l) RgbToHsl(int r, int g, int b)
+    {
+        double rf = r / 255.0, gf = g / 255.0, bf = b / 255.0;
+        double max = Math.Max(rf, Math.Max(gf, bf));
+        double min = Math.Min(rf, Math.Min(gf, bf));
+        double l = (max + min) / 2.0, h = 0, s = 0;
+
+        if (max != min)
+        {
+            double d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            if (max == rf) h = (gf - bf) / d + (gf < bf ? 6 : 0);
+            else if (max == gf) h = (bf - rf) / d + 2;
+            else h = (rf - gf) / d + 4;
+            h /= 6;
+        }
+
+        return (h * 100, s * 100, l * 100);
+    }
 }
