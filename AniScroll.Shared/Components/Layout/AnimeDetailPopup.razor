@@ -270,7 +270,7 @@
                                 {
                                     <div class="detail-row">
                                         <span class="detail-lbl">Native Title</span>
-                                        <span class="detail-val">@CurrentAnime.NativeTitle</span>
+                                        <span class="detail-val detail-val-native">@CurrentAnime.NativeTitle</span>
                                     </div>
                                 }
                                 @if (!string.IsNullOrEmpty(CurrentAnime.Format))
@@ -405,10 +405,8 @@
                                     var pc = GetPlatformColor(link.Site, link.Color);
                                     var pcIconColor = GetPlatformIconColor(link.Site);
                                     <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
-                                        <span class="platform-icon-box">
-                                            <span style="color: @pcIconColor; display:flex; align-items:center; justify-content:center;">
-                                                @GetPlatformIconMarkup(link.Site, link.Icon)
-                                            </span>
+                                        <span class="platform-icon-box" style="color: @pcIconColor;">
+                                            @GetPlatformIconMarkup(link.Site, link.Icon)
                                         </span>
                                         <span class="platform-name-label">@link.Site</span>
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"

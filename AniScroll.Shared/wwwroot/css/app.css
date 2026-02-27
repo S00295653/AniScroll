@@ -1,4 +1,6 @@
-﻿/* ========== BASE ========== */
+﻿@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&display=swap');
+
+/* ========== BASE ========== */
 * {
     margin: 0;
     padding: 0;
@@ -1831,7 +1833,6 @@ html, body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--pc-icon, rgba(255,255,255,0.75));
 }
 
 .platform-icon-box img {
@@ -1885,4 +1886,9 @@ html, body {
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
+}
+
+.detail-val-native {
+    font-family: 'Segoe UI', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC',
+                 Tahoma, Geneva, Verdana, sans-serif;
 }
