@@ -535,21 +535,6 @@
                     @if (statusDropdownOpen)
                     {
                         <div class="le-dd-list">
-                            @{
-                                var noneSelected = !editStatus.HasValue;
-                            }
-                            <button class="le-dd-option @(noneSelected ? "selected le-opt-none" : "")"
-                                    @onclick="async () => { editStatus = null; statusDropdownOpen = false; await AutoSave(); StateHasChanged(); }">
-                                <span class="le-dd-dot le-dd-dot-none"></span>
-                                <span class="le-dd-option-text">None</span>
-                                @if (noneSelected)
-                                {
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                }
-                            </button>
                             @foreach (var s in _allStatuses)
                             {
                                 var sk = GetStatusCssKey(s);
@@ -601,28 +586,43 @@
                     <div class="list-editor-field">
                         <span class="list-editor-label">Episode Progress</span>
                         @{
+                            // Robustly extract total episodes from strings like "24", "12/24", "12+", "N/A"
                             int totalEp = 0;
-                            int.TryParse(CurrentAnime.Episodes?.Split('/').Last().Trim(), out totalEp);
-                            string epDisplay = totalEp > 0 ? $"{editEpisodes}/{totalEp}" : editEpisodes.ToString();
+                            var epRaw = CurrentAnime.Episodes ?? "";
+                            // Try last segment after '/' first (handles "12/24"), then whole string
+                            var parts = epRaw.Split('/');
+                            foreach (var part in parts.Reverse())
+                            {
+                                var cleaned = new string(part.Trim().TakeWhile(char.IsDigit).ToArray());
+                                if (int.TryParse(cleaned, out int parsed) && parsed > 0)
+                                {
+                                    totalEp = parsed;
+                                    break;
+                                }
+                            }
+                            string epInputVal = totalEp > 0
+                                ? $"{editEpisodes}/{totalEp}"
+                                : editEpisodes.ToString();
+                            int epPct = totalEp > 0
+                                ? Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100))
+                                : 0;
                         }
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">−</button>
                             <input type="text"
                                    class="le-score-input le-ep-input"
-                                   value="@epDisplay"
+                                   value="@epInputVal"
                                    placeholder="0"
                                    @onchange="HandleEpTextChange" />
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">+</button>
                         </div>
-                        @if (totalEp > 0)
-                        {
-                            <div class="list-editor-ep-bar le-ep-bar-clickable" @ref="epBarRef" @onclick="HandleEpBarClick">
-                                <div class="list-editor-ep-fill"
-                                     style="width: @(Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100)))%;"></div>
-                            </div>
-                        }
+                        <!-- Always show bar; when total unknown it stays empty -->
+                        <div class="list-editor-ep-bar le-ep-bar-clickable" @ref="epBarRef" @onclick="HandleEpBarClick">
+                            <div class="list-editor-ep-fill"
+                                 style="width: @epPct%;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -665,7 +665,7 @@
 
                     <!-- Total Rewatches -->
                     <div class="list-editor-field">
-                        <span class="list-editor-label">Total Rewatches</span>
+                        <span class="list-editor-label">Rewatches</span>
                         <div class="list-editor-number-input">
                             <span class="list-editor-num-display">@editRewatches</span>
                             <div class="list-editor-arrows">
@@ -1008,7 +1008,12 @@
     {
         if (CurrentAnime == null) return;
         int totalEp = 0;
-        int.TryParse(CurrentAnime.Episodes?.Split('/').Last().Trim(), out totalEp);
+        var epRaw = CurrentAnime.Episodes ?? "";
+        foreach (var part in epRaw.Split('/').Reverse())
+        {
+            var cleaned = new string(part.Trim().TakeWhile(char.IsDigit).ToArray());
+            if (int.TryParse(cleaned, out int parsed) && parsed > 0) { totalEp = parsed; break; }
+        }
         if (totalEp <= 0) return;
         try
         {
@@ -1018,7 +1023,7 @@
             editEpisodes = (int)Math.Round(pct * totalEp);
             await AutoSave();
         }
-        catch { /* JS interop may fail in some contexts */ }
+        catch { }
     }
 
     private static string GetScoreHexColor(double s) => s switch

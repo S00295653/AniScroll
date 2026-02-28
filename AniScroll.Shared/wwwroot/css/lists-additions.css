@@ -887,11 +887,14 @@
 
 /* ── Episode progress bar ── */
 .list-editor-ep-bar {
-    height: 3px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 2px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
     overflow: hidden;
-    margin-top: 2px;
+    cursor: pointer;
+    position: relative;
+    margin-top: 4px;
+    transition: background 0.15s;
 }
 
 .list-editor-ep-fill {
@@ -1186,13 +1189,13 @@
 
 /* ── Clickable score progress bar ── */
 .le-score-bar-click {
-    height: 7px;
+    height: 8px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 999px;
     overflow: hidden;
     cursor: pointer;
     position: relative;
-    margin-top: 2px;
+    margin-top: 4px;
     transition: background 0.15s;
 }
 
