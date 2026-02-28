@@ -512,27 +512,43 @@
             <!-- Body -->
             <div class="list-editor-body">
 
-                <!-- ── Status Picker ── -->
-                <div class="list-editor-field">
+                <!-- ── Status Dropdown ── -->
+                <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">Status</span>
-                    <div class="list-editor-status-grid">
-                        @foreach (var s in _allStatuses)
-                        {
-                            var sKey = GetStatusCssKey(s);
-                            <button class="list-editor-status-btn @(editStatus == s ? "active" : "") status-btn-@sKey"
-                                    @onclick="() => { editStatus = s; StateHasChanged(); }">
-                                <span class="status-btn-indicator"></span>
-                                <span class="status-btn-text">@GetStatusLabel(s)</span>
-                                @if (editStatus == s)
-                                {
-                                    <svg class="status-btn-check" width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                }
-                            </button>
-                        }
-                    </div>
+                    <!-- trigger -->
+                    <button class="le-dd-trigger le-dd-trigger-@GetStatusCssKey(editStatus)"
+                            @onclick="() => { statusDropdownOpen = !statusDropdownOpen; StateHasChanged(); }">
+                        <span class="le-dd-dot le-dd-dot-@GetStatusCssKey(editStatus)"></span>
+                        <span class="le-dd-trigger-text">@GetStatusLabel(editStatus)</span>
+                        <svg class="le-dd-chevron @(statusDropdownOpen ? "open" : "")"
+                             width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <!-- dropdown list -->
+                    @if (statusDropdownOpen)
+                    {
+                        <div class="le-dd-list">
+                            @foreach (var s in _allStatuses)
+                            {
+                                var sk = GetStatusCssKey(s);
+                                var isSel = editStatus == s;
+                                <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
+                                        @onclick="() => { editStatus = s; statusDropdownOpen = false; StateHasChanged(); }">
+                                    <span class="le-dd-dot le-dd-dot-@sk"></span>
+                                    <span class="le-dd-option-text">@GetStatusLabel(s)</span>
+                                    @if (isSel)
+                                    {
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <!-- ── Score & Episode Progress ── -->
@@ -540,33 +556,33 @@
 
                     <!-- Score -->
                     <div class="list-editor-field">
-                        <span class="list-editor-label">Score</span>
-                        <div class="list-editor-score-row">
-                            <button class="list-editor-score-arrow-btn" @onclick="() => ChangeScore(-0.5)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <input type="text"
-                                   class="list-editor-score-text"
-                                   value="@FormatScore(editScore)"
-                                   @onchange="HandleScoreTextChange"
-                                   placeholder="—" />
-                            <button class="list-editor-score-arrow-btn" @onclick="() => ChangeScore(0.5)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                        </div>
-                        @if (editScore > 0)
-                        {
-                            <div class="list-editor-score-bar-wrap">
-                                <div class="list-editor-score-bar-fill @GetScoreColorClass(editScore)"
-                                     style="width: @((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                        <div class="le-score-header-row">
+                            <span class="list-editor-label">Score</span>
+                            <div class="le-score-badge-wrap">
+                                @if (editScore > 0)
+                                {
+                                    <span class="le-score-val le-score-val-@GetScoreColorClass(editScore)">@FormatScore(editScore)</span>
+                                    <span class="le-score-sublabel">@GetScoreLabel(editScore)</span>
+                                }
+                                else
+                                {
+                                    <span class="le-score-val le-score-val-empty">—</span>
+                                }
                             </div>
-                            <span class="list-editor-score-label">@GetScoreLabel(editScore)</span>
-                        }
+                        </div>
+                        <!-- slider — 0 to 20 steps = 0 to 10 by 0.5 -->
+                        <div class="le-slider-wrap">
+                            <input type="range"
+                                   class="le-score-slider"
+                                   min="0" max="20" step="1"
+                                   value="@((int)(editScore * 2))"
+                                   @oninput="HandleSliderInput"
+                                   style="--pct:@((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;
+                                          --fill:@GetScoreHexColor(editScore);" />
+                        </div>
+                        <div class="le-slider-scale">
+                            <span>0</span><span>5</span><span>10</span>
+                        </div>
                     </div>
 
                     <!-- Episode Progress -->
@@ -749,6 +765,7 @@
     // ─── List Editor state ────────────────────────────────────────────────────
     private bool showListEditor = false;
     private bool showDeleteConfirm = false;
+    private bool statusDropdownOpen = false;
 
     // Edit form fields
     private ListStatus editStatus = ListStatus.Planning;
@@ -859,6 +876,7 @@
     private void CloseListEditor()
     {
         showListEditor = false;
+        statusDropdownOpen = false;
         StateHasChanged();
     }
 
@@ -919,6 +937,23 @@
         editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
         StateHasChanged();
     }
+
+    private void HandleSliderInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int v))
+            editScore = v / 2.0;
+        StateHasChanged();
+    }
+
+    private static string GetScoreHexColor(double s) => s switch
+    {
+        <= 0 => "#3f3f58",
+        <= 2 => "#ef4444",
+        <= 4 => "#f97316",
+        <= 6 => "#eab308",
+        <= 8 => "#84cc16",
+        _    => "#22c55e"
+    };
 
     private void HandleScoreTextChange(ChangeEventArgs e)
     {
