@@ -112,3 +112,22 @@ window.setAndSelectInput = function (element, value) {
         }, 0);
     }
 };
+
+// --- Direct bar fill update (bypass Blazor re-render for smooth drag) ---------
+// containerElement: the bar container (@ref)
+// fillSelector: CSS selector for the fill div inside it
+// widthPct: 0..100
+// bgColor: optional hex/css color (null to skip)
+window.setBarWidth = function (containerElement, fillSelector, widthPct, bgColor) {
+    if (!containerElement) return;
+    var fill = containerElement.querySelector(fillSelector);
+    if (!fill) return;
+    fill.style.transition = 'none';
+    fill.style.width = Math.max(0, Math.min(100, widthPct)).toFixed(2) + '%';
+    if (bgColor) fill.style.background = bgColor;
+};
+
+// --- Direct input value update (for score/ep display during drag) -------------
+window.setInputValue = function (element, value) {
+    if (element) element.value = (value != null) ? value : '';
+};

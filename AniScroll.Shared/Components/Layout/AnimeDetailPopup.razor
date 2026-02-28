@@ -472,7 +472,7 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
-    <div class="list-editor-overlay" @onclick="CloseListEditor">
+    <div class="list-editor-overlay" @onclick="async () => await CloseListEditor()">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
             <!-- Header: banner + poster + title + fav + save -->
@@ -655,7 +655,12 @@
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
                                     @onclick="async () => { editRewatches = Math.Max(0, editRewatches - 1); await AutoSave(); }">−</button>
-                            <div class="le-score-input le-rewatch-display">@editRewatches</div>
+                            <input type="text"
+                                   @ref="rewatchInputRef"
+                                   class="le-score-input le-rewatch-input"
+                                   value="@editRewatches"
+                                   @onfocus="HandleRewatchInputFocus"
+                                   @onchange="HandleRewatchTextChange" />
                             <button class="le-score-step-btn"
                                     @onclick="async () => { editRewatches = Math.Max(0, editRewatches + 1); await AutoSave(); }">+</button>
                         </div>
@@ -704,6 +709,10 @@
                             Remove from list
                         </button>
                     </div>
+                }
+                else
+                {
+                    <div style="height:28px;flex-shrink:0;"></div>
                 }
 
             </div>
@@ -779,10 +788,19 @@
     private ElementReference epBarRef;
     private ElementReference scoreInputRef;
     private ElementReference epInputRef;
+    private ElementReference rewatchInputRef;
 
     // Slider drag state
     private bool _scoreBarDragging = false;
     private bool _epBarDragging = false;
+
+    // Cached bar bounds for smooth drag (fetched once at pointerdown)
+    private ElementBounds? _cachedScoreBounds;
+    private ElementBounds? _cachedEpBounds;
+
+    // Original editor state for close-without-save auto-save logic
+    private ListStatus? _originalStatus = null;
+    private int _originalEpisodes = 0;
 
     // Swipe-DOWN-to-close state (main detail popup only)
     private ElementReference scrollContainerRef;
@@ -916,16 +934,45 @@
             editHideFromLists = false;
         }
 
+        // Track original values for auto-save-on-close logic
+        _originalStatus   = editStatus;
+        _originalEpisodes = editEpisodes;
+
         showListEditor = true;
         StateHasChanged();
     }
 
-    private void CloseListEditor()
+    private async Task CloseListEditor()
     {
+        // Auto-save if user modified data but never picked a status
+        bool hasData = editScore > 0
+                    || editEpisodes > 0
+                    || editRewatches > 0
+                    || !string.IsNullOrEmpty(editNotes.Trim())
+                    || editStartDate.HasValue
+                    || editFinishDate.HasValue;
+
+        if (hasData)
+        {
+            if (!editStatus.HasValue)
+            {
+                // Episodes changed with no prior status → Watching
+                // Otherwise → Planning
+                if (editEpisodes != _originalEpisodes && !_originalStatus.HasValue)
+                    editStatus = ListStatus.Watching;
+                else if (!_originalStatus.HasValue)
+                    editStatus = ListStatus.Planning;
+            }
+            if (editStatus.HasValue)
+                await AutoSave();
+        }
+
         showListEditor = false;
         statusDropdownOpen = false;
         _scoreBarDragging = false;
         _epBarDragging = false;
+        _cachedScoreBounds = null;
+        _cachedEpBounds = null;
         StateHasChanged();
     }
 
@@ -1001,53 +1048,59 @@
         if (string.IsNullOrWhiteSpace(raw))
         {
             editScore = 0;
-            await AutoSave();
-            StateHasChanged();
-            return;
         }
-        if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out double v))
+        else if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out double v)
+            && v >= 0 && v <= 10)
         {
             editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
         }
+        // else: invalid input (non-numeric or out of range) → editScore unchanged → reverts
         await AutoSave();
         StateHasChanged();
     }
 
-    // Score bar slider
+    // Score bar slider — smooth: cache bounds at pointerdown, update DOM directly on move
 
     private async Task HandleScoreBarPointerDown(PointerEventArgs e)
     {
         _scoreBarDragging = true;
-        await UpdateScoreFromPointer(e.ClientX);
-        try { await JS.InvokeVoidAsync("capturePointer", scoreBarRef, e.PointerId); } catch { }
+        try
+        {
+            _cachedScoreBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef);
+            await JS.InvokeVoidAsync("capturePointer", scoreBarRef, e.PointerId);
+        }
+        catch { }
+        ApplyScoreFromX(e.ClientX);
+        // One re-render at start so input & bar update visually
+        StateHasChanged();
     }
 
-    private async Task HandleScoreBarPointerMove(PointerEventArgs e)
+    private void HandleScoreBarPointerMove(PointerEventArgs e)
     {
-        if (!_scoreBarDragging) return;
-        await UpdateScoreFromPointer(e.ClientX);
+        if (!_scoreBarDragging || _cachedScoreBounds == null) return;
+        ApplyScoreFromX(e.ClientX);
+        // Update DOM directly — no Blazor re-render → silky smooth
+        JS.InvokeVoidAsync("setBarWidth", scoreBarRef, ".le-score-bar-fill-click",
+            editScore / 10.0 * 100, GetScoreHexColor(editScore));
+        JS.InvokeVoidAsync("setInputValue", scoreInputRef,
+            editScore > 0 ? ((int)editScore).ToString() : "");
     }
 
     private async Task HandleScoreBarPointerUp(PointerEventArgs e)
     {
         if (!_scoreBarDragging) return;
         _scoreBarDragging = false;
+        _cachedScoreBounds = null;
         await AutoSave();
         StateHasChanged();
     }
 
-    private async Task UpdateScoreFromPointer(double clientX)
+    private void ApplyScoreFromX(double clientX)
     {
-        try
-        {
-            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef);
-            if (bounds.Width <= 0) return;
-            double pct = Math.Clamp((clientX - bounds.Left) / bounds.Width, 0, 1);
-            editScore = Math.Round(pct * 10 * 2) / 2;
-            StateHasChanged();
-        }
-        catch { }
+        if (_cachedScoreBounds == null || _cachedScoreBounds.Width <= 0) return;
+        double pct = Math.Clamp((clientX - _cachedScoreBounds.Left) / _cachedScoreBounds.Width, 0, 1);
+        editScore = Math.Round(pct * 10); // integers only during drag
     }
 
     // Episode helpers
@@ -1074,12 +1127,12 @@
         StateHasChanged();
     }
 
-    // FIX: On focus, show only the number (not "N/total") so user can type a fresh value
+    // FIX: On focus, just select all (keep "N/total" displayed, user types to replace)
     private async Task HandleEpInputFocus()
     {
         try
         {
-            await JS.InvokeVoidAsync("setAndSelectInput", epInputRef, editEpisodes.ToString());
+            await JS.InvokeVoidAsync("selectInputContent", epInputRef);
         }
         catch { }
     }
@@ -1092,52 +1145,76 @@
         if (int.TryParse(part, out int v))
         {
             int totalEp = GetTotalEpisodes();
-            // Validate: must be >= 0 and <= total (if total is known)
+            // Valid: >= 0 and within total (if known); otherwise revert (don't update)
             if (v >= 0 && (totalEp <= 0 || v <= totalEp))
                 editEpisodes = v;
+            // else: > max → editEpisodes unchanged → Blazor reverts on re-render
         }
+        // else: not a number → editEpisodes unchanged → reverts
         await AutoSave();
-        StateHasChanged(); // Re-render so input shows "N/total" format
+        StateHasChanged(); // Re-render shows correct "N/total" format
     }
 
-    // Episode bar slider
+    // Rewatch handlers
+
+    private async Task HandleRewatchInputFocus()
+    {
+        try { await JS.InvokeVoidAsync("selectInputContent", rewatchInputRef); } catch { }
+    }
+
+    private async Task HandleRewatchTextChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        if (int.TryParse(raw.Trim(), out int v) && v >= 0)
+            editRewatches = v;
+        // else: invalid → reverts on re-render
+        await AutoSave();
+        StateHasChanged();
+    }
+
+    // Episode bar slider — smooth: same cached-bounds pattern
 
     private async Task HandleEpBarPointerDown(PointerEventArgs e)
     {
         int totalEp = GetTotalEpisodes();
         if (totalEp <= 0) return;
         _epBarDragging = true;
-        await UpdateEpFromPointer(e.ClientX, totalEp);
-        try { await JS.InvokeVoidAsync("capturePointer", epBarRef, e.PointerId); } catch { }
+        try
+        {
+            _cachedEpBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
+            await JS.InvokeVoidAsync("capturePointer", epBarRef, e.PointerId);
+        }
+        catch { }
+        ApplyEpFromX(e.ClientX, totalEp);
+        StateHasChanged();
     }
 
-    private async Task HandleEpBarPointerMove(PointerEventArgs e)
+    private void HandleEpBarPointerMove(PointerEventArgs e)
     {
-        if (!_epBarDragging) return;
+        if (!_epBarDragging || _cachedEpBounds == null) return;
         int totalEp = GetTotalEpisodes();
         if (totalEp <= 0) return;
-        await UpdateEpFromPointer(e.ClientX, totalEp);
+        ApplyEpFromX(e.ClientX, totalEp);
+        double fillPct = (double)editEpisodes / totalEp * 100;
+        JS.InvokeVoidAsync("setBarWidth", epBarRef, ".list-editor-ep-fill", fillPct, null);
+        JS.InvokeVoidAsync("setInputValue", epInputRef,
+            $"{editEpisodes}/{totalEp}");
     }
 
     private async Task HandleEpBarPointerUp(PointerEventArgs e)
     {
         if (!_epBarDragging) return;
         _epBarDragging = false;
+        _cachedEpBounds = null;
         await AutoSave();
         StateHasChanged();
     }
 
-    private async Task UpdateEpFromPointer(double clientX, int totalEp)
+    private void ApplyEpFromX(double clientX, int totalEp)
     {
-        try
-        {
-            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
-            if (bounds.Width <= 0) return;
-            double pct = Math.Clamp((clientX - bounds.Left) / bounds.Width, 0, 1);
-            editEpisodes = (int)Math.Round(pct * totalEp);
-            StateHasChanged();
-        }
-        catch { }
+        if (_cachedEpBounds == null || _cachedEpBounds.Width <= 0) return;
+        double pct = Math.Clamp((clientX - _cachedEpBounds.Left) / _cachedEpBounds.Width, 0, 1);
+        editEpisodes = (int)Math.Round(pct * totalEp);
     }
 
     // Transition helper

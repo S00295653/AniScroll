@@ -370,7 +370,7 @@
 .list-editor-modal {
     background: #0d0d18;
     width: 100%;
-    max-width: 560px;
+    max-width: 700px;
     max-height: 94dvh;
     border-radius: 22px 22px 0 0;
     overflow: hidden;
@@ -405,7 +405,9 @@
 /* Header */
 .list-editor-header {
     position: relative;
-    overflow: hidden;
+    /* Use clip-path instead of overflow:hidden so the bottom gradient can bleed
+       40px into the body area for a seamless image→background fade */
+    clip-path: inset(0 0 -40px 0);
     flex-shrink: 0;
     min-height: 100px;
 }
@@ -413,8 +415,8 @@
 .list-editor-banner {
     position: absolute;
     inset: 0;
-    /* extend slightly below so gradient reaches into body */
-    bottom: -24px;
+    /* extend 40px below header so gradient bleeds into body area */
+    bottom: -40px;
     background-size: cover;
     background-position: center;
     filter: brightness(0.22) blur(5px) saturate(1.6);
@@ -422,12 +424,12 @@
 }
 
 /* Gradient: transparent at top → full body-bg (#0d0d18) at bottom,
-   with an extended soft fade that bleeds into the list-editor-body */
+   bleeds 40px into body for a seamless cover→background fade */
 .list-editor-header::after {
     content: '';
     position: absolute;
     inset: 0;
-    bottom: -24px; /* match the banner extension */
+    bottom: -40px; /* match banner extension + clip-path allowance */
     background: linear-gradient(
         to bottom,
         rgba(13,13,24,0.05)  0%,
@@ -545,7 +547,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 11px;
 }
-@media (min-width: 480px) {
+@media (min-width: 700) {
     .list-editor-grid {
         grid-template-columns: 1.4fr 1fr 1fr auto;
     }
@@ -760,16 +762,10 @@
 /* Episode input shows "7/24" */
 .le-ep-input { font-size: 15px !important; }
 
-/* Rewatch display (non-editable, same look) */
-.le-rewatch-display {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
+/* Rewatch input — same look as score/ep inputs */
+.le-rewatch-input {
     color: rgba(255,255,255,0.9) !important;
     font-size: 20px !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
 }
 
 /* Clickable / draggable score bar */
@@ -793,7 +789,7 @@
     height: 100%;
     border-radius: 999px;
     min-width: 0;
-    transition: width 0.1s ease, background 0.22s ease;
+    transition: background 0.22s ease;
     pointer-events: none;
 }
 
@@ -818,7 +814,7 @@
     height: 100%;
     background: #0ea5e9;
     border-radius: 2px;
-    transition: width 0.1s ease;
+    transition: none;
     pointer-events: none;
 }
 
