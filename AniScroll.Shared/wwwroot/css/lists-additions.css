@@ -1051,32 +1051,3 @@
 }
 .delete-confirm-delete:hover  { opacity: 0.9; }
 .delete-confirm-delete:active { transform: scale(0.96); }
-
-/* ======================================================
-   TAG SPOILER BUTTONS — unified style (show = hide)
-   ====================================================== */
-
-.tag-spoiler-btn {
-    background: rgba(250,204,21,0.08);
-    border: 1px dashed rgba(250,204,21,0.45);
-    border-radius: 20px;
-    color: rgba(250,204,21,0.75);
-    font-size: 12px;
-    font-weight: 500;
-    padding: 6px 14px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.18s, color 0.18s, border-color 0.18s, border-style 0.18s, transform 0.13s;
-    letter-spacing: 0.02em;
-}
-
-.tag-spoiler-btn:hover {
-    background: rgba(250,204,21,0.13);
-    color: rgba(250,204,21,0.95);
-    border-color: rgba(250,204,21,0.7);
-    border-style: solid;
-}
-
-.tag-spoiler-btn:active {
-    transform: scale(0.96);
-}
