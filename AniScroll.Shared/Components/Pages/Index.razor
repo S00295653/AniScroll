@@ -554,16 +554,28 @@
 
     private async Task ShowAnimeDetails(AnimeCard anime)
     {
-        // Les cartes du scroller sont chargées sans relations → on fetch le détail complet
-        if (anime.Relations.Count == 0 && anime.Id > 0)
+        // Bulk load already fetches relations — only do an extra call as a fallback
+        // for cards loaded via GetRandomAnimeAsync that somehow lack them, or
+        // for cards that came from search results (which are Jikan stubs).
+        bool isJikanStub = anime.Id == 0;
+        bool missingData = !isJikanStub && anime.Relations.Count == 0
+                           && string.IsNullOrEmpty(anime.Format)
+                           && anime.Tags.Count == 0;
+
+        if (isJikanStub || missingData)
         {
             isLoadingSelectedAnime = true;
             StateHasChanged();
-            var full = await AniListService.GetAnimeByAniListIdAsync(anime.Id);
+
+            AnimeCard? full = null;
+            if (anime.Id > 0)
+                full = await AniListService.GetAnimeByAniListIdAsync(anime.Id);
+
             isLoadingSelectedAnime = false;
             if (full != null) anime = full;
         }
-        selectedAnime = anime;
+
+        selectedAnime   = anime;
         showDetailPopup = true;
         StateHasChanged();
     }
@@ -571,10 +583,10 @@
     private void CloseDetailPopup()
     {
         showDetailPopup = false;
-        selectedAnime = null;
+        selectedAnime   = null;
         StateHasChanged();
     }
-
+    
     // ═══════════════════════════════════════════════════════════════════════════
     //  SEARCH
     // ═══════════════════════════════════════════════════════════════════════════

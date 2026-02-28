@@ -165,8 +165,8 @@ html, body {
 /* ========== ANIME IMAGE ========== */
 .anime-image {
     height: 100%;
-    max-height: min(52vh, 420px);
-    max-width: min(75vw, 280px);
+    max-height: min(55vh, 440px);    /* was min(52vh, 420px) */
+    max-width: min(78vw, 300px);     /* was min(75vw, 280px) */
     min-height: 90px;
     aspect-ratio: 2 / 3;
     border-radius: 8px;
@@ -175,31 +175,33 @@ html, body {
     background-repeat: no-repeat;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
     cursor: pointer;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    image-rendering: auto;           /* smooth interpolation for photos */
+    -webkit-image-rendering: auto;
     flex-shrink: 0;
+    will-change: transform;
 }
 
 @media (min-width: 768px) {
     .anime-image {
-        max-height: min(58vh, 500px);
-        max-width: min(65vw, 340px);
+        max-height: min(60vh, 520px);  /* was min(58vh, 500px) */
+        max-width: min(68vw, 360px);   /* was min(65vw, 340px) */
         min-height: 120px;
     }
 
-        .anime-image:hover {
-            transform: scale(1.02);
-            transition: transform 0.2s ease;
-        }
+    .anime-image:hover {
+        transform: scale(1.02);
+        transition: transform 0.2s ease;
+    }
 }
 
 @media (min-width: 1025px) {
     .anime-image {
-        max-height: min(62vh, 560px);
-        max-width: min(55vw, 380px);
+        max-height: min(64vh, 580px);  /* was min(62vh, 560px) */
+        max-width: min(58vw, 400px);   /* was min(55vw, 380px) */
         min-height: 140px;
     }
 }
+
 
 /* ========== INFO SECTION ========== */
 .info-section {
@@ -676,13 +678,15 @@ html, body {
     }
 
 .search-result-thumb {
-    width: 38px;
-    height: 56px;
+    width: 40px;    /* was 38px */
+    height: 58px;   /* was 56px */
     border-radius: 5px;
     background-size: cover;
-    background-position: center;
+    background-position: center top;  /* was "center" */
     background-color: rgba(255,255,255,0.05);
     flex-shrink: 0;
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
 }
 
 .search-result-info {
@@ -1164,18 +1168,21 @@ html, body {
 }
 
 .modal-poster {
-    width: 110px;
-    height: 158px;
+    width: 120px;     /* was 110px */
+    height: 174px;    /* was 158px — keeps 2:3 ratio */
     border-radius: 8px;
     background-size: cover;
-    background-position: center;
+    background-position: center top;  /* show faces/top of artwork */
+    background-repeat: no-repeat;
     box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
 }
 
 @media (min-width: 768px) {
     .modal-poster {
-        width: 170px;
-        height: 245px;
+        width: 180px;   /* was 170px */
+        height: 260px;  /* was 245px */
     }
 }
 
@@ -1556,8 +1563,10 @@ html, body {
     width: 100%;
     height: 170px;
     background-size: cover;
-    background-position: center;
+    background-position: center top;  /* was just "center" */
     background-color: rgba(255,255,255,0.04);
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
 }
 
 .relation-info {
