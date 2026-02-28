@@ -1702,25 +1702,41 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    color: rgba(255,255,255,0.72);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.72);
     padding: 4px 9px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
+    font-style: normal;          /* ← prevents italic bleed from parent */
     transition: background 0.15s;
 }
 
-    .tag-pill:hover {
-        background: rgba(255,255,255,0.09);
-        color: white;
-    }
+.tag-pill:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: white;
+}
 
 .tag-pct {
-    font-size: 9px;
-    color: rgba(255,255,255,0.38);
-    font-weight: 600;
+    color: rgba(255, 255, 255, 0.38);
+}
+
+/* ── Spoiler pill — COMPOUND selector (higher specificity) ── */
+.tag-pill.tag-pill-spoiler-revealed {
+    color: rgba(245, 197, 24, 0.85);
+    background: rgba(245, 197, 24, 0.10);
+    border-color: rgba(245, 197, 24, 0.22);
+    font-style: italic;
+}
+
+.tag-pill.tag-pill-spoiler-revealed .tag-pct {
+    color: rgba(245, 197, 24, 0.55);
+}
+
+.tag-pill.tag-pill-spoiler-revealed:hover {
+    background: rgba(245, 197, 24, 0.18);
+    color: rgba(245, 197, 24, 1);
 }
 
 .tag-spoiler-btn {
@@ -1901,20 +1917,4 @@ html, body {
 .detail-val-native {
     font-family: 'Segoe UI', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC',
                  Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.tag-pill:not(.tag-pill-spoiler-revealed) {
-    color: rgba(255, 255, 255, 0.72) !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 255, 255, 0.09) !important;
-    font-style: normal !important;
-}
-
-.tag-pill:not(.tag-pill-spoiler-revealed) .tag-pct {
-    color: rgba(255, 255, 255, 0.38) !important;
-}
-
-.tag-pill:not(.tag-pill-spoiler-revealed):hover {
-    background: rgba(255, 255, 255, 0.09) !important;
-    color: white !important;
 }

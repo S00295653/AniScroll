@@ -518,6 +518,7 @@
 .list-editor-body {
     flex: 1;
     overflow: hidden;
+    min-height: 0; /* FIX: flex children default to min-height:auto which ignores overflow:hidden */
     padding: 10px 14px 0;
     display: flex;
     flex-direction: column;

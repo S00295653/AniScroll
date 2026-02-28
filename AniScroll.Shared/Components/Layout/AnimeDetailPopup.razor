@@ -474,11 +474,15 @@
 {
     <!-- FIX: stop touch events from reaching the underlying info popup scroll container -->
     <div class="list-editor-overlay"
-         @onclick="async () => await CloseAndSave()"
+         @onpointerdown="() => _pointerDownOnModal = false"
+         @onclick="async () => { if (!_pointerDownOnModal) await CloseAndSave(); _pointerDownOnModal = false; }"
          @ontouchstart:stopPropagation="true"
          @ontouchmove:stopPropagation="true"
          @ontouchend:stopPropagation="true">
-        <div class="list-editor-modal" @onclick:stopPropagation="true">
+        <div class="list-editor-modal"
+             @onpointerdown="() => _pointerDownOnModal = true"
+             @onpointerdown:stopPropagation="true"
+             @onclick:stopPropagation="true">
 
             <!-- Header: banner + poster + title + fav + save -->
             <div class="list-editor-header">
@@ -646,8 +650,9 @@
                         <span class="list-editor-label">Start Date</span>
                         <div class="list-editor-date-wrapper">
                             <input type="date" class="list-editor-date-input"
+                                   min="1900-01-01" max="2099-12-31"
                                    value="@(editStartDate.HasValue ? editStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   @onchange="async e => { editStartDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!); await AutoSave(); }" />
+                                   @onchange="async e => { var s = e.Value?.ToString(); editStartDate = (!string.IsNullOrEmpty(s) && DateTime.TryParse(s, out var d)) ? d : null; await AutoSave(); }" />
                         </div>
                     </div>
 
@@ -656,8 +661,9 @@
                         <span class="list-editor-label">Finish Date</span>
                         <div class="list-editor-date-wrapper">
                             <input type="date" class="list-editor-date-input"
+                                   min="1900-01-01" max="2099-12-31"
                                    value="@(editFinishDate.HasValue ? editFinishDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   @onchange="async e => { editFinishDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!); await AutoSave(); }" />
+                                   @onchange="async e => { var s = e.Value?.ToString(); editFinishDate = (!string.IsNullOrEmpty(s) && DateTime.TryParse(s, out var d)) ? d : null; await AutoSave(); }" />
                         </div>
                     </div>
 
@@ -799,6 +805,7 @@
     private bool showDeleteConfirm = false;
     private bool _deleteAnimVisible = false;
     private bool statusDropdownOpen = false;
+    private bool _pointerDownOnModal = false; // FIX: track if pointerdown started inside modal
 
     // Edit form fields
     private ListStatus? editStatus = null;
