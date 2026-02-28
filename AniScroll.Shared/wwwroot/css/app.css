@@ -1191,14 +1191,17 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 7px;
-    width: 110px;
+    width: 120px;   /* was 110px — matches .modal-poster */
 }
 
 @media (min-width: 768px) {
     .modal-action-buttons {
-        width: 170px;
+        width: 180px;   /* was 170px — matches .modal-poster at 768px+ */
     }
 }
+
+
+
 
 .btn-add-to-list {
     width: 100%;

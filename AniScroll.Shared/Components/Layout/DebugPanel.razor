@@ -9,7 +9,7 @@
 {
     <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:9999;overflow-y:auto;padding:16px;font-family:monospace;font-size:11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v7</span>
+            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v8</span>
             <button @onclick="Hide" style="background:#333;border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;">Close</button>
         </div>
 
@@ -17,9 +17,24 @@
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:10px;">
             <div style="color:#ffd43b;font-weight:bold;margin-bottom:10px;">RATE LIMIT STATUS</div>
 
-            @RateLimitBar("AniList GraphQL", "#02a9ff", AniListService.AniListRateLimit)
+            @RateLimitBar("AniList GraphQL", "#02a9ff", AniListService.AniListRateLimit, _aniListReqsThisMinute)
             <div style="height:10px;"></div>
-            @RateLimitBar("Jikan REST", "#ff9f43", AniListService.JikanRateLimit)
+            @RateLimitBar("Jikan REST", "#ff9f43", AniListService.JikanRateLimit, _jikanReqsThisMinute)
+        </div>
+
+        <!-- ═══════════════════════════════ REQUEST COUNTERS ══════════════════════ -->
+        <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
+            <div style="color:#ffd43b;font-weight:bold;margin-bottom:8px;">LIVE REQUEST COUNTERS</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                @CounterBox("AniList total",    AniListService.AniListRateLimit.RequestsSent.ToString(), "#02a9ff")
+                @CounterBox("AniList / min",    _aniListReqsThisMinute.ToString(),                        "#02a9ff")
+                @CounterBox("Jikan total",      AniListService.JikanRateLimit.RequestsSent.ToString(),    "#ff9f43")
+                @CounterBox("Jikan / min",      _jikanReqsThisMinute.ToString(),                          "#ff9f43")
+            </div>
+            <div style="margin-top:8px;color:#555;font-size:10px;">
+                Headers received — AniList: @(AniListService.AniListRateLimit.Remaining >= 0 ? "✅ yes" : "❌ no") &nbsp;|&nbsp;
+                Jikan: @(AniListService.JikanRateLimit.Remaining >= 0 ? "✅ yes" : "❌ no")
+            </div>
         </div>
 
         <!-- ═══════════════════════════════ TEST 1 ════════════════════════════════ -->
@@ -66,70 +81,99 @@
     </div>
 }
 
-@* ─── Render helper (called inside markup — returns void, writes to DOM via Blazor) ─── *@
 @code {
 
-    private void RenderRateLimitBar(string label, string accentColor, RateLimitInfo info)
-    {
-        // This is rendered inline above via RenderFragment delegation via StateHasChanged
-        // Actual rendering is done with direct style below
-    }
+    // ─── Rolling-window request counters (last 60 s) ──────────────────────────
+    private readonly Queue<DateTime> _aniListWindow = new();
+    private readonly Queue<DateTime> _jikanWindow   = new();
+    private int _aniListReqsThisMinute = 0;
+    private int _jikanReqsThisMinute   = 0;
 
-    // Build bar HTML as MarkupString so we can call it from @{ } blocks in markup
-    private RenderFragment RateLimitBar(string label, string accent, RateLimitInfo info) => builder =>
+    // track last-seen counts to detect new requests
+    private int _prevAniListSent = 0;
+    private int _prevJikanSent   = 0;
+
+    // ── Counter box ────────────────────────────────────────────────────────────
+    private RenderFragment CounterBox(string label, string value, string accent) => builder =>
     {
-        double pct = info.UsedPercent;
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "style",
+            $"background:#0d0d1a;border:1px solid #333;border-radius:6px;padding:8px 10px;");
+            builder.OpenElement(2, "div");
+            builder.AddAttribute(3, "style", $"color:{accent};font-size:10px;font-weight:bold;margin-bottom:4px;");
+            builder.AddContent(4, label);
+            builder.CloseElement();
+            builder.OpenElement(5, "div");
+            builder.AddAttribute(6, "style", "color:white;font-size:18px;font-weight:900;");
+            builder.AddContent(7, value);
+            builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    // ── Rate-limit bar ─────────────────────────────────────────────────────────
+    private RenderFragment RateLimitBar(string label, string accent, RateLimitInfo info, int recentCount) => builder =>
+    {
+        // Prefer header-derived remaining; fall back to rolling-window estimate
+        double pct;
+        string pctLabel;
+        if (info.Limit > 0 && info.Remaining >= 0)
+        {
+            pct      = Math.Min(100.0, (info.Limit - info.Remaining) / (double)info.Limit * 100.0);
+            pctLabel = $"{info.Remaining} / {info.Limit} remaining (header)";
+        }
+        else
+        {
+            pct      = Math.Min(100.0, recentCount / (double)info.Limit * 100.0);
+            pctLabel = $"~{info.Limit - recentCount} / {info.Limit} est. remaining (rolling 60s)";
+        }
+
         string barColor = info.IsLimited ? "#ff6b6b"
-                        : pct >= 85 ? "#ff6b6b"
-                        : pct >= 60 ? "#ffd43b"
+                        : pct >= 85      ? "#ff6b6b"
+                        : pct >= 60      ? "#ffd43b"
                         : "#51cf66";
-
         string limitedBadge = info.IsLimited ? " 🚫 RATE LIMITED" : "";
 
         builder.OpenElement(0, "div");
-            // Row: label left, count right
+            // Label row
             builder.OpenElement(1, "div");
             builder.AddAttribute(2, "style", "display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;");
                 builder.OpenElement(3, "span");
                 builder.AddAttribute(4, "style", $"color:{accent};font-weight:bold;font-size:11px;");
                 builder.AddContent(5, label + limitedBadge);
                 builder.CloseElement();
-
                 builder.OpenElement(6, "span");
-                builder.AddAttribute(7, "style", $"color:{barColor};font-weight:bold;font-size:12px;");
-                builder.AddContent(8, info.Label);
+                builder.AddAttribute(7, "style", $"color:{barColor};font-weight:bold;font-size:11px;");
+                builder.AddContent(8, pctLabel);
                 builder.CloseElement();
             builder.CloseElement();
-
-            // Progress track
+            // Bar
             builder.OpenElement(9, "div");
             builder.AddAttribute(10, "style", "background:#0d0d1a;border-radius:4px;height:7px;overflow:hidden;");
                 builder.OpenElement(11, "div");
-                builder.AddAttribute(12, "style", $"height:100%;width:{pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%;background:{barColor};border-radius:4px;transition:width 0.4s ease;");
+                builder.AddAttribute(12, "style",
+                    $"height:100%;width:{pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%;" +
+                    $"background:{barColor};border-radius:4px;transition:width 0.4s ease;");
                 builder.CloseElement();
             builder.CloseElement();
-
-            // Reset / sent counters
+            // Footer row
             builder.OpenElement(13, "div");
             builder.AddAttribute(14, "style", "display:flex;justify-content:space-between;margin-top:3px;");
-                // Left: countdown
                 builder.OpenElement(15, "span");
                 builder.AddAttribute(16, "style", "color:#888;font-size:10px;");
                 if (info.ResetAt.HasValue)
-                    builder.AddContent(17, $"Reset in {FormatSeconds(info.SecondsUntilReset)}");
+                    builder.AddContent(17, $"Header reset in {FormatSeconds(info.SecondsUntilReset)}");
                 else
-                    builder.AddContent(17, "No header data yet");
+                    builder.AddContent(17, "No reset header · window resets each 60s");
                 builder.CloseElement();
-                // Right: sent counter
                 builder.OpenElement(18, "span");
                 builder.AddAttribute(19, "style", "color:#555;font-size:10px;");
-                builder.AddContent(20, $"{info.RequestsSent} req sent");
+                builder.AddContent(20, $"{info.RequestsSent} total req sent");
                 builder.CloseElement();
             builder.CloseElement();
-
         builder.CloseElement();
     };
 
+    // ─── Parameters / lifecycle ───────────────────────────────────────────────
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnHide { get; set; }
 
@@ -141,13 +185,46 @@
 
     protected override void OnInitialized()
     {
+        _prevAniListSent = AniListService.AniListRateLimit.RequestsSent;
+        _prevJikanSent   = AniListService.JikanRateLimit.RequestsSent;
+
         _refreshTimer = new System.Threading.Timer(
-            async _ => await InvokeAsync(StateHasChanged),
+            async _ =>
+            {
+                TickCounters();
+                await InvokeAsync(StateHasChanged);
+            },
             null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
     public void Dispose() => _refreshTimer?.Dispose();
     private void Hide() => OnHide.InvokeAsync();
+
+    // ─── Rolling-window counter logic ─────────────────────────────────────────
+
+    private void TickCounters()
+    {
+        var now    = DateTime.UtcNow;
+        var cutoff = now.AddSeconds(-60);
+
+        // Detect new requests since last tick
+        int newAni = AniListService.AniListRateLimit.RequestsSent - _prevAniListSent;
+        int newJik = AniListService.JikanRateLimit.RequestsSent   - _prevJikanSent;
+        _prevAniListSent = AniListService.AniListRateLimit.RequestsSent;
+        _prevJikanSent   = AniListService.JikanRateLimit.RequestsSent;
+
+        for (int i = 0; i < newAni; i++) _aniListWindow.Enqueue(now);
+        for (int i = 0; i < newJik; i++) _jikanWindow.Enqueue(now);
+
+        // Evict timestamps older than 60 s
+        while (_aniListWindow.Count > 0 && _aniListWindow.Peek() < cutoff) _aniListWindow.Dequeue();
+        while (_jikanWindow.Count > 0   && _jikanWindow.Peek()   < cutoff) _jikanWindow.Dequeue();
+
+        _aniListReqsThisMinute = _aniListWindow.Count;
+        _jikanReqsThisMinute   = _jikanWindow.Count;
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static string FormatSeconds(int s)
     {
@@ -156,8 +233,17 @@
         return $"{s / 60}m {s % 60}s";
     }
 
-    // ── Test 1 ───────────────────────────────────────────────────────────────
+    private void AddRateLimitSnapshot(string prefix)
+    {
+        var al = AniListService.AniListRateLimit;
+        var jk = AniListService.JikanRateLimit;
+        string alRemaining = al.Remaining >= 0 ? $"remaining={al.Remaining}/{al.Limit}" : $"no header · ~{al.Limit - _aniListReqsThisMinute}/{al.Limit} est.";
+        string jkRemaining = jk.Remaining >= 0 ? $"remaining={jk.Remaining}/{jk.Limit}" : $"no header · ~{jk.Limit - _jikanReqsThisMinute}/{jk.Limit} est.";
+        logs.Add($"  {prefix} AniList: {alRemaining}  sent={al.RequestsSent}  /min={_aniListReqsThisMinute}  limited={al.IsLimited}  resetIn={FormatSeconds(al.SecondsUntilReset)}");
+        logs.Add($"  {prefix} Jikan  : {jkRemaining}  sent={jk.RequestsSent}  /min={_jikanReqsThisMinute}  limited={jk.IsLimited}  resetIn={FormatSeconds(jk.SecondsUntilReset)}");
+    }
 
+    // ── Test 1 ────────────────────────────────────────────────────────────────
     private async Task TestViaService()
     {
         logs.Clear(); isTesting = true; StateHasChanged();
@@ -192,16 +278,7 @@
         isTesting = false; StateHasChanged();
     }
 
-    private void AddRateLimitSnapshot(string prefix)
-    {
-        var al = AniListService.AniListRateLimit;
-        var jk = AniListService.JikanRateLimit;
-        logs.Add($"  {prefix} AniList: {al.Label}  sent={al.RequestsSent}  limited={al.IsLimited}  resetIn={FormatSeconds(al.SecondsUntilReset)}");
-        logs.Add($"  {prefix} Jikan  : {jk.Label}  sent={jk.RequestsSent}  limited={jk.IsLimited}  resetIn={FormatSeconds(jk.SecondsUntilReset)}");
-    }
-
-    // ── Test 2 ───────────────────────────────────────────────────────────────
-
+    // ── Test 2 ────────────────────────────────────────────────────────────────
     private async Task TestPostGraphQLClone()
     {
         logs.Clear(); isTesting = true; StateHasChanged();
@@ -225,7 +302,6 @@
             var response = await Http.PostAsync("https://graphql.anilist.co", content);
             logs.Add($"HTTP {(int)response.StatusCode} {response.StatusCode}");
 
-            // ── Dump ALL response headers ───────────────────────────────────────
             logs.Add("--- Response headers ---");
             bool anyRateLimit = false;
             foreach (var h in response.Headers)
@@ -237,9 +313,8 @@
                 if (isRL) anyRateLimit = true;
             }
             if (!anyRateLimit)
-                logs.Add("  (no rate-limit headers found in response headers)");
+                logs.Add("  ⚠️  No rate-limit headers in response headers");
 
-            // ── Also check content headers ──────────────────────────────────────
             if (response.Content != null)
             {
                 bool anyCH = false;
@@ -252,7 +327,7 @@
                         anyCH = true;
                     }
                 }
-                if (!anyCH) logs.Add("  (no rate-limit headers in content headers either)");
+                if (!anyCH) logs.Add("  ⚠️  No rate-limit headers in content headers either");
             }
 
             logs.Add("--- End headers ---");

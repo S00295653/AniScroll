@@ -1,30 +1,29 @@
+@using AniScroll.Shared.Models
 @inject IJSRuntime JS
 
 <div class="nav-section">
-    <nav class="main-nav-bar @(IsSearchOpen ? "search-open" : "")">
+    <div class="main-nav-bar @(isSearchOpen ? "search-open" : "")">
 
-        <!-- Search row -->
+        <!-- ── Search row ───────────────────────────────────────────────── -->
         <div class="search-row">
-            <div class="search-morphing-pill @(IsSearchOpen ? "expanded" : "")">
-                <div class="search-pill-content @(IsSearchOpen ? "visible" : "")">
-                    <svg class="search-pill-icon" width="17" height="17" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2.5"
-                         stroke-linecap="round" stroke-linejoin="round">
+            <div class="search-morphing-pill @(isSearchOpen ? "expanded" : "")">
+                <div class="search-pill-content @(isSearchOpen ? "visible" : "")">
+                    <svg class="search-pill-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input type="text"
+                    <input @ref="searchInputRef"
                            class="search-field"
+                           type="text"
                            placeholder="Search anime..."
-                           value="@SearchQuery"
-                           @oninput="OnSearchInput"
-                           @ref="searchInputRef" />
-                    @if (!string.IsNullOrEmpty(SearchQuery))
+                           value="@searchQuery"
+                           @oninput="HandleSearchInput" />
+                    @if (!string.IsNullOrEmpty(searchQuery))
                     {
                         <button class="clear-search-btn" @onclick="ClearSearch">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5"
-                                 stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
@@ -34,59 +33,59 @@
             </div>
         </div>
 
-        <!-- Always-visible buttons -->
+        <!-- ── Nav buttons row ─────────────────────────────────────────── -->
         <div class="nav-buttons-row">
 
-            <button class="nav-btn" @onclick="OnListsClick">
+            <!-- Lists -->
+            <button class="nav-btn" @onclick="HandleListsClick">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.9"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
                     </svg>
                 </div>
                 <span class="nav-btn-label">Lists</span>
             </button>
 
-            <button class="nav-center-btn @(IsSearchOpen ? "is-active" : "")"
-                    @onclick="ToggleSearch">
-                @if (IsSearchOpen)
+            <!-- Centre / Search toggle -->
+            <button class="nav-center-btn @(isSearchOpen ? "is-active" : "")" @onclick="ToggleSearch">
+                @if (!isSearchOpen)
                 {
-                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="4"></rect>
-                        <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"></polygon>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                 }
                 else
                 {
-                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.2"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 }
             </button>
 
-            <button class="nav-btn" @onclick="OnProfileClick">
+            <!-- Profile -->
+            <button class="nav-btn" @onclick="HandleProfileClick">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.9"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                 </div>
                 <span class="nav-btn-label">Profile</span>
             </button>
 
         </div>
-    </nav>
+    </div>
 </div>
 
 @code {
@@ -95,48 +94,50 @@
     [Parameter] public EventCallback OnProfileClicked { get; set; }
     [Parameter] public EventCallback<string> OnSearchQueryChanged { get; set; }
 
-    private bool IsSearchOpen { get; set; } = false;
-    private string SearchQuery { get; set; } = string.Empty;
+    private bool isSearchOpen = false;
+    private string searchQuery = string.Empty;
     private ElementReference searchInputRef;
+
+    // ── Search ────────────────────────────────────────────────────────────────
 
     private async Task ToggleSearch()
     {
-        IsSearchOpen = !IsSearchOpen;
+        isSearchOpen = !isSearchOpen;
 
-        if (IsSearchOpen)
+        if (!isSearchOpen)
         {
-            await Task.Delay(650);
-            try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
-            catch { }
+            // closing: clear query and notify parent
+            searchQuery = string.Empty;
+            await OnSearchQueryChanged.InvokeAsync(string.Empty);
+            await OnSearchToggled.InvokeAsync();
         }
         else
         {
-            // Closing search � clear query and notify parent
-            SearchQuery = string.Empty;
-            await OnSearchQueryChanged.InvokeAsync(string.Empty);
+            StateHasChanged();
+            // wait for animation then focus
+            await Task.Delay(600);
+            try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
+            catch { /* ignore JS interop errors */ }
         }
-
-        await OnSearchToggled.InvokeAsync();
     }
 
-    // Fires on EVERY keystroke via @oninput
-    private async Task OnSearchInput(ChangeEventArgs e)
+    private async Task HandleSearchInput(ChangeEventArgs e)
     {
-        SearchQuery = e.Value?.ToString() ?? string.Empty;
-        await OnSearchQueryChanged.InvokeAsync(SearchQuery);
-        // Force re-render so clear button appears/disappears
-        StateHasChanged();
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        await OnSearchQueryChanged.InvokeAsync(searchQuery);
     }
 
     private async Task ClearSearch()
     {
-        SearchQuery = string.Empty;
+        searchQuery = string.Empty;
         await OnSearchQueryChanged.InvokeAsync(string.Empty);
+        StateHasChanged();
         try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
         catch { }
-        StateHasChanged();
     }
 
-    private void OnListsClick() => OnListsClicked.InvokeAsync();
-    private void OnProfileClick() => OnProfileClicked.InvokeAsync();
+    // ── Nav actions ───────────────────────────────────────────────────────────
+
+    private Task HandleListsClick() => OnListsClicked.InvokeAsync();
+    private Task HandleProfileClick() => OnProfileClicked.InvokeAsync();
 }
