@@ -102,3 +102,13 @@ window.selectInputContent = function (element) {
         }, 0);
     }
 };
+
+// --- Set input value then select all (score/episode focus: shows raw value to edit) ---
+window.setAndSelectInput = function (element, value) {
+    if (element) {
+        element.value = value;
+        setTimeout(function () {
+            try { element.select(); } catch (e) { }
+        }, 0);
+    }
+};

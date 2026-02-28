@@ -475,7 +475,7 @@
     <div class="list-editor-overlay" @onclick="CloseListEditor">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
-            <!-- Header: banner + poster + title + fav + save (no X close) -->
+            <!-- Header: banner + poster + title + fav + save -->
             <div class="list-editor-header">
                 <div class="list-editor-banner"
                      style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl)
@@ -530,7 +530,17 @@
                                 var sk = GetStatusCssKey(s);
                                 var isSel = editStatus == s;
                                 <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
-                                        @onclick="async () => { editStatus = s; statusDropdownOpen = false; await AutoSave(); StateHasChanged(); }">
+                                        @onclick="async () => {
+                                            editStatus = s;
+                                            // FIX: auto-set episodes to max when marking as Completed
+                                            if (s == ListStatus.Completed) {
+                                                int tot = GetTotalEpisodes();
+                                                if (tot > 0) editEpisodes = tot;
+                                            }
+                                            statusDropdownOpen = false;
+                                            await AutoSave();
+                                            StateHasChanged();
+                                        }">
                                     <span class="le-dd-dot le-dd-dot-@sk"></span>
                                     <span class="le-dd-option-text">@GetStatusLabel(s)</span>
                                     @if (isSel)
@@ -558,7 +568,7 @@
                             <input type="text"
                                    @ref="scoreInputRef"
                                    class="le-score-input @(editScore > 0 ? "le-score-input-" + GetScoreColorClass(editScore) : "")"
-                                   value="@(editScore > 0 ? FormatScore(editScore) : "")"
+                                   value="@(editScore > 0 ? (_scoreBarDragging ? ((int)Math.Round(editScore)).ToString() : FormatScore(editScore)) : "")"
                                    placeholder="—"
                                    @onfocus="HandleScoreInputFocus"
                                    @onchange="HandleScoreTextChange" />
@@ -639,7 +649,7 @@
                         </div>
                     </div>
 
-                    <!-- Total Rewatches: − | number | + (same style as score/ep) -->
+                    <!-- Total Rewatches -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Rewatches</span>
                         <div class="le-score-controls">
@@ -679,7 +689,7 @@
                               @onchange="async e => { editNotes = e.Value?.ToString() ?? string.Empty; await AutoSave(); }"></textarea>
                 </div>
 
-                <!-- Delete button — always visible at bottom when in list -->
+                <!-- Delete button — always visible (sticky) when anime is in list -->
                 @if (isInList)
                 {
                     <div class="le-delete-section">
@@ -847,7 +857,7 @@
     {
         if (CurrentAnime == null) return;
 
-        // Bug fix: never save (and never create an entry) when no status is selected
+        // Never create/update an entry without a status
         if (!editStatus.HasValue) return;
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
@@ -919,11 +929,26 @@
         StateHasChanged();
     }
 
+    // FIX: Save even when no status is selected — use Planning as default if user has entered data
     private async Task SaveListEntry()
     {
-        // Only persist if a status was actually chosen
+        if (CurrentAnime == null) { showListEditor = false; StateHasChanged(); return; }
+
+        // If no status selected but user has filled in other fields, default to Planning
+        if (!editStatus.HasValue)
+        {
+            bool hasData = editScore > 0
+                        || editEpisodes > 0
+                        || !string.IsNullOrEmpty(editNotes.Trim())
+                        || editStartDate.HasValue
+                        || editFinishDate.HasValue
+                        || editRewatches > 0;
+            if (hasData) editStatus = ListStatus.Planning;
+        }
+
         if (editStatus.HasValue)
             await AutoSave();
+
         showListEditor = false;
         StateHasChanged();
     }
@@ -959,9 +984,15 @@
         StateHasChanged();
     }
 
+    // FIX: On focus, set raw value (no "/total" format) then select all for easy editing
     private async Task HandleScoreInputFocus()
     {
-        try { await JS.InvokeVoidAsync("selectInputContent", scoreInputRef); } catch { }
+        try
+        {
+            var val = editScore > 0 ? FormatScore(editScore) : "";
+            await JS.InvokeVoidAsync("setAndSelectInput", scoreInputRef, val);
+        }
+        catch { }
     }
 
     private async Task HandleScoreTextChange(ChangeEventArgs e)
@@ -1043,9 +1074,14 @@
         StateHasChanged();
     }
 
+    // FIX: On focus, show only the number (not "N/total") so user can type a fresh value
     private async Task HandleEpInputFocus()
     {
-        try { await JS.InvokeVoidAsync("selectInputContent", epInputRef); } catch { }
+        try
+        {
+            await JS.InvokeVoidAsync("setAndSelectInput", epInputRef, editEpisodes.ToString());
+        }
+        catch { }
     }
 
     private async Task HandleEpTextChange(ChangeEventArgs e)
@@ -1059,7 +1095,6 @@
             // Validate: must be >= 0 and <= total (if total is known)
             if (v >= 0 && (totalEp <= 0 || v <= totalEp))
                 editEpisodes = v;
-            // If invalid, editEpisodes stays at previous value
         }
         await AutoSave();
         StateHasChanged(); // Re-render so input shows "N/total" format
