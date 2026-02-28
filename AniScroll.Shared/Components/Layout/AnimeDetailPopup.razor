@@ -35,10 +35,7 @@
                                         @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")">
                             </div>
 
-                            <!-- ─── Action buttons ─────────────────────────────── -->
                             <div class="modal-action-buttons">
-
-                                <!-- Add to List / status button — opens full editor -->
                                 <button class="btn-add-to-list @(isInList ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus!.Value) : "")"
                                         @onclick="OpenListEditor">
                                     <div class="btn-add-to-list-inner">
@@ -478,7 +475,7 @@
     <div class="list-editor-overlay" @onclick="CloseListEditor">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
-            <!-- Header: banner + poster + title + delete (if in list) + save -->
+            <!-- Header: banner + poster + title + fav + save (no X close) -->
             <div class="list-editor-header">
                 <div class="list-editor-banner"
                      style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl)
@@ -498,33 +495,14 @@
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
-                    @if (isInList)
-                    {
-                        <button class="list-editor-header-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true" title="Remove from list">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6l-1 14H6L5 6"></path>
-                                <path d="M10 11v6M14 11v6"></path>
-                                <path d="M9 6V4h6v2"></path>
-                            </svg>
-                        </button>
-                    }
-                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Done</button>
+                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Save</button>
                 </div>
-                <button class="list-editor-close-btn" @onclick="CloseListEditor">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
             </div>
 
             <!-- Body -->
             <div class="list-editor-body">
 
-                <!-- ── Status Dropdown ── -->
+                <!-- Status Dropdown -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">Status</span>
                     <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + GetStatusCssKey(editStatus.Value) : "")"
@@ -568,25 +546,32 @@
                     }
                 </div>
 
-                <!-- ── Score & Episode Progress ── -->
+                <!-- Score & Episode Progress -->
                 <div class="list-editor-grid list-editor-grid-2">
 
-                    <!-- Score: − | editable input | + with clickable bar -->
+                    <!-- Score: − | editable input | + with draggable bar -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Score</span>
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeScore(-0.5); await AutoSave(); }">−</button>
                             <input type="text"
+                                   @ref="scoreInputRef"
                                    class="le-score-input @(editScore > 0 ? "le-score-input-" + GetScoreColorClass(editScore) : "")"
                                    value="@(editScore > 0 ? FormatScore(editScore) : "")"
                                    placeholder="—"
+                                   @onfocus="HandleScoreInputFocus"
                                    @onchange="HandleScoreTextChange" />
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeScore(0.5); await AutoSave(); }">+</button>
                         </div>
-                        <!-- Clickable progress bar -->
-                        <div class="le-score-bar-click" @ref="scoreBarRef" @onclick="HandleScoreBarClick">
+                        <!-- Draggable progress bar -->
+                        <div class="le-score-bar-click @(_scoreBarDragging ? "dragging" : "")"
+                             @ref="scoreBarRef"
+                             @onpointerdown="HandleScoreBarPointerDown"
+                             @onpointermove="HandleScoreBarPointerMove"
+                             @onpointerup="HandleScoreBarPointerUp"
+                             @onpointercancel="@(() => _scoreBarDragging = false)">
                             <div class="le-score-bar-fill-click"
                                  style="width:@((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;
                                         background:@GetScoreHexColor(editScore);">
@@ -598,18 +583,7 @@
                     <div class="list-editor-field">
                         <span class="list-editor-label">Episode Progress</span>
                         @{
-                            int totalEp = 0;
-                            var epRaw = CurrentAnime.Episodes ?? "";
-                            var parts = epRaw.Split('/');
-                            foreach (var part in parts.Reverse())
-                            {
-                                var cleaned = new string(part.Trim().TakeWhile(char.IsDigit).ToArray());
-                                if (int.TryParse(cleaned, out int parsed) && parsed > 0)
-                                {
-                                    totalEp = parsed;
-                                    break;
-                                }
-                            }
+                            int totalEp = GetTotalEpisodes();
                             string epInputVal = totalEp > 0
                                 ? $"{editEpisodes}/{totalEp}"
                                 : editEpisodes.ToString();
@@ -621,21 +595,28 @@
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">−</button>
                             <input type="text"
+                                   @ref="epInputRef"
                                    class="le-score-input le-ep-input"
                                    value="@epInputVal"
                                    placeholder="0"
+                                   @onfocus="HandleEpInputFocus"
                                    @onchange="HandleEpTextChange" />
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">+</button>
                         </div>
-                        <div class="list-editor-ep-bar le-ep-bar-clickable" @ref="epBarRef" @onclick="HandleEpBarClick">
+                        <div class="list-editor-ep-bar le-ep-bar-clickable @(_epBarDragging ? "dragging" : "")"
+                             @ref="epBarRef"
+                             @onpointerdown="HandleEpBarPointerDown"
+                             @onpointermove="HandleEpBarPointerMove"
+                             @onpointerup="HandleEpBarPointerUp"
+                             @onpointercancel="@(() => _epBarDragging = false)">
                             <div class="list-editor-ep-fill"
                                  style="width: @epPct%;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ── Dates | Rewatches | Options ── -->
+                <!-- Dates | Rewatches | Options -->
                 <div class="list-editor-grid">
 
                     <!-- Start Date -->
@@ -658,19 +639,15 @@
                         </div>
                     </div>
 
-                    <!-- Total Rewatches -->
+                    <!-- Total Rewatches: − | number | + (same style as score/ep) -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Rewatches</span>
-                        <div class="list-editor-number-input">
-                            <span class="list-editor-num-display">@editRewatches</span>
-                            <div class="list-editor-arrows">
-                                <button class="list-editor-arrow-btn" @onclick="async () => { editRewatches = Math.Max(0, editRewatches + 1); await AutoSave(); }">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                </button>
-                                <button class="list-editor-arrow-btn" @onclick="async () => { editRewatches = Math.Max(0, editRewatches - 1); await AutoSave(); }">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                </button>
-                            </div>
+                        <div class="le-score-controls">
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { editRewatches = Math.Max(0, editRewatches - 1); await AutoSave(); }">−</button>
+                            <div class="le-score-input le-rewatch-display">@editRewatches</div>
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { editRewatches = Math.Max(0, editRewatches + 1); await AutoSave(); }">+</button>
                         </div>
                     </div>
 
@@ -692,7 +669,7 @@
                     </div>
                 </div>
 
-                <!-- ── Notes ── -->
+                <!-- Notes -->
                 <div class="list-editor-field">
                     <span class="list-editor-label">Notes</span>
                     <textarea class="list-editor-textarea"
@@ -701,6 +678,23 @@
                               @oninput="e => editNotes = e.Value?.ToString() ?? string.Empty"
                               @onchange="async e => { editNotes = e.Value?.ToString() ?? string.Empty; await AutoSave(); }"></textarea>
                 </div>
+
+                <!-- Delete button — always visible at bottom when in list -->
+                @if (isInList)
+                {
+                    <div class="le-delete-section">
+                        <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
+                            </svg>
+                            Remove from list
+                        </button>
+                    </div>
+                }
 
             </div>
         </div>
@@ -744,7 +738,7 @@
     private bool showSpoilers = false;
     private int? _lastAnimeId = null;
 
-    // ─── List state ───────────────────────────────────────────────────────────
+    // List state
     private bool isInList = false;
     private ListStatus? currentListStatus = null;
 
@@ -754,7 +748,7 @@
         ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
     };
 
-    // ─── List Editor state ────────────────────────────────────────────────────
+    // List Editor state
     private bool showListEditor = false;
     private bool showDeleteConfirm = false;
     private bool statusDropdownOpen = false;
@@ -770,11 +764,17 @@
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
 
-    // ─── Element refs for clickable bars ─────────────────────────────────────
+    // Element refs
     private ElementReference scoreBarRef;
     private ElementReference epBarRef;
+    private ElementReference scoreInputRef;
+    private ElementReference epInputRef;
 
-    // ─── Swipe-DOWN-to-close state (main detail popup only) ───────────────────
+    // Slider drag state
+    private bool _scoreBarDragging = false;
+    private bool _epBarDragging = false;
+
+    // Swipe-DOWN-to-close state (main detail popup only)
     private ElementReference scrollContainerRef;
     private double pullOffset = 0;
     private double pullStartY = 0;
@@ -782,7 +782,7 @@
     private bool isPullTrackingActive = false;
     private const double PULL_CLOSE_THRESHOLD = 40;
 
-    // ─── Swipe-LEFT-EDGE-to-close state ──────────────────────────────────────
+    // Swipe-LEFT-EDGE-to-close state
     private double edgeSwipeStartX = 0;
     private double edgeSwipeStartY = 0;
     private double edgeSwipeOffset = 0;
@@ -791,14 +791,14 @@
     private const double EDGE_ZONE_WIDTH = 40;
     private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90;
 
-    // ─── JS interop helpers ───────────────────────────────────────────────────
+    // JS interop helper
     private class ElementBounds
     {
         public double Left { get; set; }
         public double Width { get; set; }
     }
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
+    // Lifecycle
 
     protected override void OnInitialized()
     {
@@ -827,6 +827,8 @@
             edgeSwipeOffset = 0;
             isEdgeSwiping = false;
             isEdgeSwipeTrackingActive = false;
+            _scoreBarDragging = false;
+            _epBarDragging = false;
             _lastAnimeId = CurrentAnime?.Id;
             RefreshListState();
         }
@@ -840,11 +842,13 @@
         currentListStatus = status;
     }
 
-    // ─── Auto-save ────────────────────────────────────────────────────────────
-
+    // Auto-save — only saves when a status has been selected
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
+
+        // Bug fix: never save (and never create an entry) when no status is selected
+        if (!editStatus.HasValue) return;
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
         {
@@ -852,7 +856,7 @@
             AddedAt = DateTime.Now
         };
 
-        existing.Status              = editStatus ?? ListStatus.Planning;
+        existing.Status              = editStatus.Value;
         existing.Score               = editScore;
         existing.EpisodesWatched     = editEpisodes;
         existing.TotalRewatches      = editRewatches;
@@ -864,13 +868,13 @@
 
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
-        isInList = editStatus.HasValue;
+        isInList = true;
         StateHasChanged();
 
         await Task.CompletedTask;
     }
 
-    // ─── List Editor ──────────────────────────────────────────────────────────
+    // List Editor
 
     private void OpenListEditor()
     {
@@ -879,26 +883,26 @@
         var existing = UserListService.GetEntry(CurrentAnime.Id);
         if (existing != null)
         {
-            editStatus      = existing.Status;
-            editScore       = existing.Score;
-            editEpisodes    = existing.EpisodesWatched;
-            editRewatches   = existing.TotalRewatches;
-            editNotes       = existing.Notes;
-            editStartDate   = existing.StartDate;
-            editFinishDate  = existing.FinishDate;
-            editIsPrivate   = existing.IsPrivate;
+            editStatus        = existing.Status;
+            editScore         = existing.Score;
+            editEpisodes      = existing.EpisodesWatched;
+            editRewatches     = existing.TotalRewatches;
+            editNotes         = existing.Notes;
+            editStartDate     = existing.StartDate;
+            editFinishDate    = existing.FinishDate;
+            editIsPrivate     = existing.IsPrivate;
             editHideFromLists = existing.HideFromStatusLists;
         }
         else
         {
-            editStatus      = null;
-            editScore       = 0;
-            editEpisodes    = 0;
-            editRewatches   = 0;
-            editNotes       = "";
-            editStartDate   = null;
-            editFinishDate  = null;
-            editIsPrivate   = false;
+            editStatus        = null;
+            editScore         = 0;
+            editEpisodes      = 0;
+            editRewatches     = 0;
+            editNotes         = "";
+            editStartDate     = null;
+            editFinishDate    = null;
+            editIsPrivate     = false;
             editHideFromLists = false;
         }
 
@@ -910,12 +914,16 @@
     {
         showListEditor = false;
         statusDropdownOpen = false;
+        _scoreBarDragging = false;
+        _epBarDragging = false;
         StateHasChanged();
     }
 
     private async Task SaveListEntry()
     {
-        await AutoSave();
+        // Only persist if a status was actually chosen
+        if (editStatus.HasValue)
+            await AutoSave();
         showListEditor = false;
         StateHasChanged();
     }
@@ -943,12 +951,17 @@
         StateHasChanged();
     }
 
-    // ─── Score helpers ────────────────────────────────────────────────────────
+    // Score helpers
 
     private void ChangeScore(double delta)
     {
         editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
         StateHasChanged();
+    }
+
+    private async Task HandleScoreInputFocus()
+    {
+        try { await JS.InvokeVoidAsync("selectInputContent", scoreInputRef); } catch { }
     }
 
     private async Task HandleScoreTextChange(ChangeEventArgs e)
@@ -958,6 +971,7 @@
         {
             editScore = 0;
             await AutoSave();
+            StateHasChanged();
             return;
         }
         if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
@@ -966,86 +980,132 @@
             editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
         }
         await AutoSave();
+        StateHasChanged();
     }
 
-    private async Task HandleScoreBarClick(MouseEventArgs e)
+    // Score bar slider
+
+    private async Task HandleScoreBarPointerDown(PointerEventArgs e)
+    {
+        _scoreBarDragging = true;
+        await UpdateScoreFromPointer(e.ClientX);
+        try { await JS.InvokeVoidAsync("capturePointer", scoreBarRef, e.PointerId); } catch { }
+    }
+
+    private async Task HandleScoreBarPointerMove(PointerEventArgs e)
+    {
+        if (!_scoreBarDragging) return;
+        await UpdateScoreFromPointer(e.ClientX);
+    }
+
+    private async Task HandleScoreBarPointerUp(PointerEventArgs e)
+    {
+        if (!_scoreBarDragging) return;
+        _scoreBarDragging = false;
+        await AutoSave();
+        StateHasChanged();
+    }
+
+    private async Task UpdateScoreFromPointer(double clientX)
     {
         try
         {
             var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef);
             if (bounds.Width <= 0) return;
-            double pct = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
+            double pct = Math.Clamp((clientX - bounds.Left) / bounds.Width, 0, 1);
             editScore = Math.Round(pct * 10 * 2) / 2;
-            await AutoSave();
+            StateHasChanged();
         }
         catch { }
     }
 
-    private async Task HandleEpBarClick(MouseEventArgs e)
+    // Episode helpers
+
+    private int GetTotalEpisodes()
     {
-        if (CurrentAnime == null) return;
-        int totalEp = 0;
+        if (CurrentAnime == null) return 0;
         var epRaw = CurrentAnime.Episodes ?? "";
         foreach (var part in epRaw.Split('/').Reverse())
         {
             var cleaned = new string(part.Trim().TakeWhile(char.IsDigit).ToArray());
-            if (int.TryParse(cleaned, out int parsed) && parsed > 0) { totalEp = parsed; break; }
+            if (int.TryParse(cleaned, out int parsed) && parsed > 0) return parsed;
         }
-        if (totalEp <= 0) return;
-        try
-        {
-            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
-            if (bounds.Width <= 0) return;
-            double pct = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
-            editEpisodes = (int)Math.Round(pct * totalEp);
-            await AutoSave();
-        }
-        catch { }
+        return 0;
     }
-
-    private static string GetScoreHexColor(double s) => s switch
-    {
-        <= 0 => "#3f3f58",
-        <= 2 => "#ef4444",
-        <= 4 => "#f97316",
-        <= 6 => "#eab308",
-        <= 8 => "#84cc16",
-        _    => "#22c55e"
-    };
-
-    private static string FormatScore(double s)
-    {
-        if (s <= 0) return "";
-        return s % 1 == 0
-            ? ((int)s).ToString()
-            : s.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static string GetScoreColorClass(double score) => score switch
-    {
-        <= 2   => "score-bar-red",
-        <= 4   => "score-bar-orange",
-        <= 6   => "score-bar-yellow",
-        <= 8   => "score-bar-lime",
-        _      => "score-bar-green"
-    };
 
     private void ChangeEpisodes(int delta)
     {
-        editEpisodes = Math.Max(0, editEpisodes + delta);
+        int total = GetTotalEpisodes();
+        int next = editEpisodes + delta;
+        if (next < 0) return;
+        if (total > 0 && next > total) return;
+        editEpisodes = next;
         StateHasChanged();
+    }
+
+    private async Task HandleEpInputFocus()
+    {
+        try { await JS.InvokeVoidAsync("selectInputContent", epInputRef); } catch { }
     }
 
     private async Task HandleEpTextChange(ChangeEventArgs e)
     {
         var raw = e.Value?.ToString() ?? "";
+        // Accept "5" or "5/24" — take only the part before any slash
         var part = raw.Split('/')[0].Trim();
         if (int.TryParse(part, out int v))
-            editEpisodes = Math.Max(0, v);
+        {
+            int totalEp = GetTotalEpisodes();
+            // Validate: must be >= 0 and <= total (if total is known)
+            if (v >= 0 && (totalEp <= 0 || v <= totalEp))
+                editEpisodes = v;
+            // If invalid, editEpisodes stays at previous value
+        }
         await AutoSave();
+        StateHasChanged(); // Re-render so input shows "N/total" format
     }
 
-    // ─── Transition helper ────────────────────────────────────────────────────
+    // Episode bar slider
+
+    private async Task HandleEpBarPointerDown(PointerEventArgs e)
+    {
+        int totalEp = GetTotalEpisodes();
+        if (totalEp <= 0) return;
+        _epBarDragging = true;
+        await UpdateEpFromPointer(e.ClientX, totalEp);
+        try { await JS.InvokeVoidAsync("capturePointer", epBarRef, e.PointerId); } catch { }
+    }
+
+    private async Task HandleEpBarPointerMove(PointerEventArgs e)
+    {
+        if (!_epBarDragging) return;
+        int totalEp = GetTotalEpisodes();
+        if (totalEp <= 0) return;
+        await UpdateEpFromPointer(e.ClientX, totalEp);
+    }
+
+    private async Task HandleEpBarPointerUp(PointerEventArgs e)
+    {
+        if (!_epBarDragging) return;
+        _epBarDragging = false;
+        await AutoSave();
+        StateHasChanged();
+    }
+
+    private async Task UpdateEpFromPointer(double clientX, int totalEp)
+    {
+        try
+        {
+            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
+            if (bounds.Width <= 0) return;
+            double pct = Math.Clamp((clientX - bounds.Left) / bounds.Width, 0, 1);
+            editEpisodes = (int)Math.Round(pct * totalEp);
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    // Transition helper
 
     private string GetModalTransition()
     {
@@ -1053,7 +1113,7 @@
         return "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)";
     }
 
-    // ─── Touch handlers (main detail popup only) ─────────────────────────────
+    // Touch handlers (main detail popup only)
 
     private async Task HandleModalTouchStart(TouchEventArgs e)
     {
@@ -1144,7 +1204,7 @@
         else { pullOffset = 0; StateHasChanged(); }
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    // Helpers
 
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
@@ -1236,7 +1296,7 @@
         return string.Empty;
     }
 
-    // ─── Platform icon helpers ────────────────────────────────────────────────
+    // Platform icon helpers
 
     private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -1401,4 +1461,31 @@
         }
         return (h*100, s*100, l*100);
     }
+
+    private static string GetScoreHexColor(double s) => s switch
+    {
+        <= 0 => "#3f3f58",
+        <= 2 => "#ef4444",
+        <= 4 => "#f97316",
+        <= 6 => "#eab308",
+        <= 8 => "#84cc16",
+        _    => "#22c55e"
+    };
+
+    private static string FormatScore(double s)
+    {
+        if (s <= 0) return "";
+        return s % 1 == 0
+            ? ((int)s).ToString()
+            : s.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string GetScoreColorClass(double score) => score switch
+    {
+        <= 2   => "score-bar-red",
+        <= 4   => "score-bar-orange",
+        <= 6   => "score-bar-yellow",
+        <= 8   => "score-bar-lime",
+        _      => "score-bar-green"
+    };
 }

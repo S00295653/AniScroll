@@ -60,7 +60,7 @@ window.isModalScrollAtTop = function (element) {
     return element.scrollTop <= 2;
 };
 
-// ─── Image preloader ──────────────────────────────────────────────────────────
+// --- Image preloader ----------------------------------------------------------
 const _preloadedUrls = new Set();
 
 window.preloadImages = function (urls) {
@@ -73,19 +73,32 @@ window.preloadImages = function (urls) {
     }
 };
 
-// ─── Dynamic height measurement ───────────────────────────────────────────────
-// Returns the scrollHeight (full content height) of the first element matching
-// the given CSS selector. Used by the search-nav-extension to size itself
-// exactly to the content of .search-results-panel.
+// --- Dynamic height measurement -----------------------------------------------
 window.getElementScrollHeight = function (selector) {
     const el = document.querySelector(selector);
     return el ? el.scrollHeight : 0;
 };
 
-// ─── Element bounds helper (used by clickable score & episode bars) ───────────
-// Returns the bounding rect of an element so C# can compute click percentage.
+// --- Element bounds helper (clickable score & episode bars) -------------------
 window.getElementBounds = function (element) {
     if (!element) return { left: 0, width: 0 };
     const rect = element.getBoundingClientRect();
     return { left: rect.left, width: rect.width };
+};
+
+// --- Pointer capture helper (slider bars) ------------------------------------
+// Captures the pointer to the element so pointermove fires even outside it.
+window.capturePointer = function (element, pointerId) {
+    if (element && element.setPointerCapture) {
+        try { element.setPointerCapture(pointerId); } catch (e) { }
+    }
+};
+
+// --- Select all input content on focus (clear-on-click) ----------------------
+window.selectInputContent = function (element) {
+    if (element) {
+        setTimeout(function () {
+            try { element.select(); } catch (e) { }
+        }, 0);
+    }
 };
