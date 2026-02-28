@@ -707,7 +707,7 @@
                 </div>
 
                 <!-- Delete button — always in DOM, shown via CSS transition -->
-                @{ var _deleteCls = "le-delete-section" + (isInList ? " le-delete-visible" : ""); }
+                @{ var _deleteCls = "le-delete-section" + (_deleteAnimVisible ? " le-delete-visible" : ""); }
                 <div class="@_deleteCls">
                     <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -792,6 +792,7 @@
     // List Editor state
     private bool showListEditor = false;
     private bool showDeleteConfirm = false;
+    private bool _deleteAnimVisible = false;
     private bool statusDropdownOpen = false;
 
     // Edit form fields
@@ -986,8 +987,19 @@
         }
 
         statusDropdownOpen = false;
+        _deleteAnimVisible = false;
         showListEditor = true;
         StateHasChanged();
+        // Trigger delete button transition after first render
+        if (isInList)
+            _ = TriggerDeleteAnimAsync();
+    }
+
+    private async Task TriggerDeleteAnimAsync()
+    {
+        await Task.Delay(60);
+        _deleteAnimVisible = true;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void PromptDelete()
