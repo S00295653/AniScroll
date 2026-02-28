@@ -1213,3 +1213,121 @@
 .le-ep-bar-clickable:hover {
     background: rgba(255, 255, 255, 0.12) !important;
 }
+
+/* ── "None" status dot — neutral, no color ── */
+.le-dd-dot-none {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: none;
+}
+
+/* Default trigger when no status selected — plain border, no tint */
+.le-dd-trigger:not([class*="le-dd-trigger-watching"])
+               :not([class*="le-dd-trigger-rewatching"])
+               :not([class*="le-dd-trigger-completed"])
+               :not([class*="le-dd-trigger-planning"])
+               :not([class*="le-dd-trigger-paused"])
+               :not([class*="le-dd-trigger-dropped"]) {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* ══════════════════════════════════════════════════════
+   SCORE CONTROLS: − | editable input | +
+   ══════════════════════════════════════════════════════ */
+
+.le-score-controls {
+    display: flex;
+    align-items: stretch;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.le-score-step-btn {
+    width: 42px;
+    height: 46px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.le-score-step-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
+.le-score-step-btn:active { background: rgba(255,255,255,0.13); transform: scale(0.94); }
+
+.le-score-input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    color: white;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 8px 4px;
+    outline: none;
+    font-family: inherit;
+    letter-spacing: -0.02em;
+    user-select: text;
+    -webkit-user-select: text;
+    /* no spinner arrows on number-like inputs */
+    -moz-appearance: textfield;
+}
+
+.le-score-input::placeholder { color: rgba(255, 255, 255, 0.18); font-weight: 400; font-size: 22px; }
+
+/* Colored value based on score quality */
+.le-score-input-score-bar-red    { color: #ef4444; }
+.le-score-input-score-bar-orange { color: #f97316; }
+.le-score-input-score-bar-yellow { color: #eab308; }
+.le-score-input-score-bar-lime   { color: #84cc16; }
+.le-score-input-score-bar-green  { color: #22c55e; }
+
+/* Episode input shows "7/24" — use slightly smaller font to fit */
+.le-ep-input {
+    font-size: 15px !important;
+}
+
+/* ── Clickable score progress bar ── */
+.le-score-bar-click {
+    height: 7px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    margin-top: 2px;
+    transition: background 0.15s;
+}
+
+.le-score-bar-click:hover { background: rgba(255, 255, 255, 0.13); }
+
+.le-score-bar-fill-click {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 0;
+    transition: width 0.18s ease, background 0.22s ease;
+}
+
+/* ── Clickable episode bar ── */
+.le-ep-bar-clickable {
+    cursor: pointer !important;
+}
+
+.le-ep-bar-clickable:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+}

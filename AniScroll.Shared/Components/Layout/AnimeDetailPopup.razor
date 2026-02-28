@@ -515,10 +515,17 @@
                 <!-- ── Status Dropdown ── -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">Status</span>
-                    <button class="le-dd-trigger le-dd-trigger-@GetStatusCssKey(editStatus)"
+                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + GetStatusCssKey(editStatus.Value) : "")"
                             @onclick="() => { statusDropdownOpen = !statusDropdownOpen; StateHasChanged(); }">
-                        <span class="le-dd-dot le-dd-dot-@GetStatusCssKey(editStatus)"></span>
-                        <span class="le-dd-trigger-text">@GetStatusLabel(editStatus)</span>
+                        @if (editStatus.HasValue)
+                        {
+                            <span class="le-dd-dot le-dd-dot-@GetStatusCssKey(editStatus.Value)"></span>
+                        }
+                        else
+                        {
+                            <span class="le-dd-dot le-dd-dot-none"></span>
+                        }
+                        <span class="le-dd-trigger-text">@(editStatus.HasValue ? GetStatusLabel(editStatus.Value) : "None")</span>
                         <svg class="le-dd-chevron @(statusDropdownOpen ? "open" : "")"
                              width="14" height="14" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -528,6 +535,21 @@
                     @if (statusDropdownOpen)
                     {
                         <div class="le-dd-list">
+                            @{
+                                var noneSelected = !editStatus.HasValue;
+                            }
+                            <button class="le-dd-option @(noneSelected ? "selected le-opt-none" : "")"
+                                    @onclick="async () => { editStatus = null; statusDropdownOpen = false; await AutoSave(); StateHasChanged(); }">
+                                <span class="le-dd-dot le-dd-dot-none"></span>
+                                <span class="le-dd-option-text">None</span>
+                                @if (noneSelected)
+                                {
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                }
+                            </button>
                             @foreach (var s in _allStatuses)
                             {
                                 var sk = GetStatusCssKey(s);
@@ -578,29 +600,28 @@
                     <!-- Episode Progress -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Episode Progress</span>
-                        <div class="list-editor-number-input">
-                            <span class="list-editor-num-display">@editEpisodes</span>
-                            <div class="list-editor-arrows">
-                                <button class="list-editor-arrow-btn" @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                </button>
-                                <button class="list-editor-arrow-btn" @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                </button>
-                            </div>
-                        </div>
                         @{
                             int totalEp = 0;
                             int.TryParse(CurrentAnime.Episodes?.Split('/').Last().Trim(), out totalEp);
+                            string epDisplay = totalEp > 0 ? $"{editEpisodes}/{totalEp}" : editEpisodes.ToString();
                         }
+                        <div class="le-score-controls">
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">−</button>
+                            <input type="text"
+                                   class="le-score-input le-ep-input"
+                                   value="@epDisplay"
+                                   placeholder="0"
+                                   @onchange="HandleEpTextChange" />
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">+</button>
+                        </div>
                         @if (totalEp > 0)
                         {
-                            <!-- Clickable episode bar -->
                             <div class="list-editor-ep-bar le-ep-bar-clickable" @ref="epBarRef" @onclick="HandleEpBarClick">
                                 <div class="list-editor-ep-fill"
                                      style="width: @(Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100)))%;"></div>
                             </div>
-                            <span class="list-editor-ep-label">@editEpisodes / @totalEp</span>
                         }
                     </div>
                 </div>
@@ -762,7 +783,7 @@
     private bool statusDropdownOpen = false;
 
     // Edit form fields
-    private ListStatus editStatus = ListStatus.Planning;
+    private ListStatus? editStatus = null;   // null = no status selected
     private double editScore = 0;
     private int editEpisodes = 0;
     private int editRewatches = 0;
@@ -854,7 +875,7 @@
             AddedAt = DateTime.Now
         };
 
-        existing.Status              = editStatus;
+        existing.Status              = editStatus ?? ListStatus.Planning;
         existing.Score               = editScore;
         existing.EpisodesWatched     = editEpisodes;
         existing.TotalRewatches      = editRewatches;
@@ -866,7 +887,7 @@
 
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
-        isInList = true;
+        isInList = editStatus.HasValue;
         StateHasChanged();
 
         await Task.CompletedTask;
@@ -893,7 +914,7 @@
         }
         else
         {
-            editStatus      = ListStatus.Planning;
+            editStatus      = null;
             editScore       = 0;
             editEpisodes    = 0;
             editRewatches   = 0;
@@ -1046,6 +1067,16 @@
     {
         editEpisodes = Math.Max(0, editEpisodes + delta);
         StateHasChanged();
+    }
+
+    private async Task HandleEpTextChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        // Accept "7" or "7/24" — take the part before '/'
+        var part = raw.Split('/')[0].Trim();
+        if (int.TryParse(part, out int v))
+            editEpisodes = Math.Max(0, v);
+        await AutoSave();
     }
 
     // ─── Transition helper ────────────────────────────────────────────────────
