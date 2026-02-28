@@ -923,16 +923,20 @@
     background: #0d0d18;
     padding: 12px 0 28px;
     margin-top: auto;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid transparent;
     flex-shrink: 0;
-    overflow: hidden;
-    animation: le-delete-appear 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* Hidden state by default */
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-top-color 0.35s ease;
 }
 
-@keyframes le-delete-appear {
-    0%   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; border-top-color: transparent; }
-    40%  { opacity: 0; }
-    100% { opacity: 1; max-height: 200px; padding-top: 12px; padding-bottom: 28px; }
+.le-delete-section.le-delete-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    border-top-color: rgba(255,255,255,0.06);
 }
 
 .le-delete-btn {

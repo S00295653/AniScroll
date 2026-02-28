@@ -706,26 +706,19 @@
                               @onchange="async e => { editNotes = e.Value?.ToString() ?? string.Empty; await AutoSave(); }"></textarea>
                 </div>
 
-                <!-- Delete button — always visible (sticky) when anime is in list -->
-                @if (isInList)
-                {
-                    <div class="le-delete-section">
-                        <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6l-1 14H6L5 6"></path>
-                                <path d="M10 11v6M14 11v6"></path>
-                                <path d="M9 6V4h6v2"></path>
-                            </svg>
-                            Remove from list
-                        </button>
-                    </div>
-                }
-                else
-                {
-                    <div style="height:28px;flex-shrink:0;"></div>
-                }
+                <!-- Delete button — always in DOM, shown via CSS transition -->
+                <div class="le-delete-section @(isInList ? \"le-delete-visible\" : \"\")" >
+                    <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                        </svg>
+                        Remove from list
+                    </button>
+                </div>
 
             </div>
         </div>
