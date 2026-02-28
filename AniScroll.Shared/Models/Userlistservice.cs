@@ -16,6 +16,8 @@ namespace AniScroll.Shared.Services
         public UserListEntry? GetEntry(int animeId) =>
             _entries.TryGetValue(animeId, out var e) ? e : null;
 
+        private List<UserCustomList> _customLists = new();
+
         /// <summary>Quick add/update — only changes Status, preserves other fields.</summary>
         public void AddOrUpdate(AnimeCard anime, ListStatus status)
         {
@@ -66,5 +68,31 @@ namespace AniScroll.Shared.Services
             status == null
                 ? _entries.Count
                 : _entries.Values.Count(e => e.Status == status);
+
+        public List<UserCustomList> GetCustomLists()
+        {
+            return _customLists
+                .OrderBy(l => l.Order)
+                .ToList();
+        }
+
+        public void SaveCustomLists(List<UserCustomList> lists)
+        {
+            _customLists = lists;
+            OnChanged?.Invoke();
+        }
+
+        public List<UserListEntry> GetEntriesForCustomList(string id)
+        {
+            return _entries.Values
+                .Where(e => e.CustomListIds.Contains(id))
+                .OrderByDescending(e => e.UpdatedAt)
+                .ToList();
+        }
+
+        public int GetCountForCustomList(string id)
+        {
+            return _entries.Values.Count(e => e.CustomListIds.Contains(id));
+        }
     }
 }

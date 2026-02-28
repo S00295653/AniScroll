@@ -32,5 +32,6 @@ namespace AniScroll.Shared.Models
         // Metadata
         public DateTime AddedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public List<string> CustomListIds { get; set; } = new();
     }
 }

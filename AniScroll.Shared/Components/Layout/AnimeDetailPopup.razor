@@ -21,6 +21,7 @@
 
             <div class="modal-scroll-container"
                  @ref="scrollContainerRef"
+                 style="@(isEdgeSwipeTrackingActive || isEdgeSwiping ? "overflow:hidden;touch-action:none;" : "")"
                  @ontouchstart="HandleModalTouchStart"
                  @ontouchmove="HandleModalTouchMove"
                  @ontouchend="HandleModalTouchEnd">
@@ -1060,6 +1061,9 @@
         if (string.IsNullOrWhiteSpace(raw))
         {
             editScore = 0;
+            // FIX: Blazor won't re-render a "value=''" if the bound value didn't change
+            // from its perspective — force the DOM update explicitly
+            try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, ""); } catch { }
         }
         else if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
             System.Globalization.CultureInfo.InvariantCulture, out double v)
@@ -1324,6 +1328,7 @@
             edgeSwipeStartX = touch.ClientX;
             edgeSwipeStartY = touch.ClientY;
             edgeSwipeOffset = 0;
+            StateHasChanged(); // FIX: lock scroll immediately when edge tracking begins
             return;
         }
 
@@ -1347,6 +1352,7 @@
             if (!isEdgeSwiping && Math.Abs(dy) > Math.Abs(dx) + 10)
             {
                 isEdgeSwipeTrackingActive = false;
+                StateHasChanged(); // FIX: re-enable scroll when gesture cancelled
                 return;
             }
             if (dx > 0)

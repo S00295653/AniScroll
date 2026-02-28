@@ -1054,3 +1054,313 @@
 }
 .delete-confirm-delete:hover  { opacity: 0.9; }
 .delete-confirm-delete:active { transform: scale(0.96); }
+
+/* ======================================================
+   LISTS TABS ROW: + button for custom list manager
+   ====================================================== */
+
+.lists-add-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, transform 0.13s;
+    font-family: inherit;
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+.lists-add-btn:hover  { background: rgba(255,255,255,0.13); color: white; }
+.lists-add-btn:active { transform: scale(0.88); }
+
+/* Custom list tab pills (dynamic status colours) */
+.lists-tab-custom { }
+.lists-tab-custom.active {
+    background: rgba(var(--cl-rgb, 99,102,241), 0.12);
+    border-color: rgba(var(--cl-rgb, 99,102,241), 0.4);
+    color: rgb(var(--cl-rgb, 99,102,241));
+}
+.lists-tab-custom .lists-tab-dot {
+    background: var(--cl-color, #6366f1);
+    box-shadow: 0 0 6px var(--cl-color, #6366f1);
+}
+
+/* ======================================================
+   CUSTOM LIST MANAGER POPUP
+   ====================================================== */
+
+.clm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4500;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: overlayFadeIn 0.18s ease;
+}
+
+.clm-panel {
+    background: #0e0e18;
+    width: 100%;
+    max-width: 540px;
+    max-height: 80dvh;
+    border-radius: 22px 22px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: sheetSlideUp 0.3s cubic-bezier(0.22,1,0.36,1);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+
+@media (min-width: 700px) {
+    .clm-overlay { align-items: center; padding: 40px; }
+    .clm-panel {
+        border-radius: 22px;
+        border: 1px solid rgba(255,255,255,0.07);
+        box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+        animation: modalFadeScale 0.22s ease;
+    }
+}
+
+/* Header */
+.clm-header {
+    flex-shrink: 0;
+    padding: 8px 16px 12px;
+}
+
+.clm-handle-bar {
+    width: 34px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 0 auto 12px;
+}
+
+.clm-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.clm-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+.clm-close-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.13s;
+}
+.clm-close-btn:active { transform: scale(0.88); }
+
+/* Scrollable body */
+.clm-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 14px 28px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.clm-body::-webkit-scrollbar { display: none; }
+
+/* Row (both new and existing) */
+.clm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 12px;
+    transition: background 0.15s;
+    position: relative;
+}
+.clm-row:hover { background: rgba(255,255,255,0.03); }
+.clm-row-dragging { opacity: 0.45; }
+.clm-row-drag-over { background: rgba(99,102,241,0.08); border: 1px dashed rgba(99,102,241,0.35); }
+
+.clm-row-new { border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.02); }
+
+/* Drag handle */
+.clm-drag-handle {
+    flex-shrink: 0;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.clm-drag-handle:hover { opacity: 1; }
+.clm-drag-handle:active { cursor: grabbing; }
+
+/* Color swatch */
+.clm-color-swatch {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+}
+.clm-color-swatch:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+.clm-swatch-empty { border-style: dashed; }
+
+.clm-swatch-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+}
+
+/* Color picker popup */
+.clm-color-picker-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 100;
+    background: #16162a;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    animation: ddOpen 0.16s cubic-bezier(0.22,1,0.36,1);
+    width: 168px;
+}
+
+.clm-palette-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.13s, border-color 0.13s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.clm-palette-btn:hover  { transform: scale(1.12); }
+.clm-palette-btn:active { transform: scale(0.95); }
+.clm-palette-selected   { border-color: white; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+
+.clm-color-native {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    cursor: pointer;
+    background: rgba(255,255,255,0.06);
+    padding: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Name input */
+.clm-name-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 4px 2px;
+    outline: none;
+    transition: border-color 0.18s;
+}
+.clm-name-input:focus { border-bottom-color: rgba(99,102,241,0.5); }
+.clm-name-input::placeholder { color: rgba(255,255,255,0.22); font-weight: 400; }
+.clm-name-placeholder { font-weight: 400; }
+
+/* Add button */
+.clm-add-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.35);
+    color: #818cf8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.13s;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.clm-add-btn:hover  { background: rgba(99,102,241,0.25); }
+.clm-add-btn:active { transform: scale(0.9); }
+.clm-add-btn-disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Delete button */
+.clm-delete-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.22);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.clm-delete-btn:hover  { color: #ef4444; background: rgba(239,68,68,0.1); }
+.clm-delete-btn:active { transform: scale(0.9); }
+
+/* Divider */
+.clm-section-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 8px 0;
+}
+
+.clm-empty-hint {
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    padding: 16px 0 8px;
+    font-style: italic;
+}
