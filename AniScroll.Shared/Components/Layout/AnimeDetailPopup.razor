@@ -531,11 +531,13 @@
                                 var isSel = editStatus == s;
                                 <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
                                         @onclick="async () => {
+                                            var prev = editStatus;
                                             editStatus = s;
                                             if (s == ListStatus.Completed) {
                                                 int tot = GetTotalEpisodes();
                                                 if (tot > 0) editEpisodes = tot;
                                             }
+                                            ApplyAutoDate(prev, editStatus);
                                             statusDropdownOpen = false;
                                             await AutoSave();
                                             StateHasChanged();
@@ -1130,12 +1132,14 @@
         if (total > 0 && next > total) return;
         editEpisodes = next;
 
+        var prev = editStatus;
         if (editEpisodes > 0 && !editStatus.HasValue)
             editStatus = ListStatus.Watching;
 
         if (total > 0 && editEpisodes == total)
             editStatus = ListStatus.Completed;
 
+        ApplyAutoDate(prev, editStatus);
         StateHasChanged();
     }
 
@@ -1163,11 +1167,14 @@
         {
             editEpisodes = v;
 
+            var prev = editStatus;
             if (editEpisodes > 0 && !editStatus.HasValue)
                 editStatus = ListStatus.Watching;
 
             if (totalEp > 0 && editEpisodes == totalEp)
                 editStatus = ListStatus.Completed;
+
+            ApplyAutoDate(prev, editStatus);
         }
         else
         {
@@ -1202,13 +1209,26 @@
         StateHasChanged();
     }
 
+    private void ApplyAutoDate(ListStatus? previousStatus, ListStatus? newStatus)
+    {
+        // Auto-set start date when entering Watching (and not already set)
+        if (newStatus == ListStatus.Watching && previousStatus != ListStatus.Watching && !editStartDate.HasValue)
+            editStartDate = DateTime.Today;
+
+        // Auto-set finish date when entering Completed (and not already set)
+        if (newStatus == ListStatus.Completed && previousStatus != ListStatus.Completed && !editFinishDate.HasValue)
+            editFinishDate = DateTime.Today;
+    }
+
     private void ApplyRewatchAutoStatus(int previousRewatches)
     {
         if (editRewatches > 0 && previousRewatches == 0 && !editStatus.HasValue)
         {
+            var prev = editStatus;
             editStatus = ListStatus.Completed;
             int total = GetTotalEpisodes();
             if (total > 0) editEpisodes = total;
+            ApplyAutoDate(prev, editStatus);
         }
     }
 
@@ -1250,11 +1270,14 @@
 
         int totalEp = GetTotalEpisodes();
 
+        var prev = editStatus;
         if (editEpisodes > 0 && !editStatus.HasValue)
             editStatus = ListStatus.Watching;
 
         if (totalEp > 0 && editEpisodes == totalEp)
             editStatus = ListStatus.Completed;
+
+        ApplyAutoDate(prev, editStatus);
 
         await AutoSave();
         StateHasChanged();
