@@ -707,7 +707,8 @@
                 </div>
 
                 <!-- Delete button — always in DOM, shown via CSS transition -->
-                <div class="le-delete-section @(isInList ? \"le-delete-visible\" : \"\")" >
+                @{ var _deleteCls = "le-delete-section" + (isInList ? " le-delete-visible" : ""); }
+                <div class="@_deleteCls">
                     <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

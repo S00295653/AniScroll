@@ -203,7 +203,7 @@
 
     private async Task HandleEntryClick(UserListEntry entry)
     {
-        JS.InvokeVoidAsync("console.log", $"[ListsPanel] Entry clicked: {entry.Anime.Title}");
+        await JS.InvokeVoidAsync("console.log", $"[ListsPanel] Entry clicked: {entry.Anime.Title}");
         await OnAnimeSelected.InvokeAsync(entry.Anime);
     }
 
