@@ -62,8 +62,8 @@ namespace AniScroll.Shared.Services
         // ── Exposed for the debug panel ──────────────────────────────────────────
         public string LastError { get; private set; } = string.Empty;
 
-        public RateLimitInfo AniListRateLimit { get; } = new();
-        public RateLimitInfo JikanRateLimit   { get; } = new();
+        public RateLimitInfo AniListRateLimit { get; } = new() { Limit = 30 };  // AniList: 30 req/min
+        public RateLimitInfo JikanRateLimit   { get; } = new() { Limit = 60 };  // Jikan:   60 req/min
 
         // Legacy compat props
         public int RequestCount => AniListRateLimit.RequestsSent;
