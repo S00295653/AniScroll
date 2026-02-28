@@ -519,12 +519,10 @@
                     <div class="list-editor-field">
                         <span class="list-editor-label">Status</span>
                         <div class="list-editor-select-wrapper">
-                            <select class="list-editor-select"
-                                    value="@editStatus.ToString()"
-                                    @onchange="e => editStatus = Enum.Parse<ListStatus>(e.Value!.ToString()!)">
+                            <select class="list-editor-select" @bind="editStatus">
                                 @foreach (var s in _allStatuses)
                                 {
-                                    <option value="@s.ToString()">@GetStatusLabel(s)</option>
+                                    <option value="@s">@GetStatusLabel(s)</option>
                                 }
                             </select>
                             <svg class="list-editor-select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -836,7 +834,13 @@
 
     private void OpenListEditor()
     {
-        if (CurrentAnime == null) return;
+        if (CurrentAnime == null)
+        {
+            JS.InvokeVoidAsync("console.log", "[ListEditor] OpenListEditor: CurrentAnime is NULL, aborting");
+            return;
+        }
+
+        JS.InvokeVoidAsync("console.log", $"[ListEditor] Opening editor for: {CurrentAnime.Title} (id={CurrentAnime.Id}, isInList={isInList})");
 
         // Populate form from existing entry or defaults
         var existing = UserListService.GetEntry(CurrentAnime.Id);
@@ -870,11 +874,13 @@
         }
 
         showListEditor = true;
+        JS.InvokeVoidAsync("console.log", $"[ListEditor] showListEditor set to TRUE");
         StateHasChanged();
     }
 
     private void CloseListEditor()
     {
+        JS.InvokeVoidAsync("console.log", "[ListEditor] CloseListEditor called");
         showListEditor = false;
         StateHasChanged();
     }
@@ -882,6 +888,7 @@
     private void SaveListEntry()
     {
         if (CurrentAnime == null) return;
+        JS.InvokeVoidAsync("console.log", $"[ListEditor] Saving entry: status={editStatus}, score={editScore}, ep={editEpisodes}");
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
         {

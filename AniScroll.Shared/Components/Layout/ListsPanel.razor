@@ -2,10 +2,9 @@
 @using AniScroll.Shared.Services
 @using System.Globalization
 @inject UserListService UserListService
+@inject IJSRuntime JS
 @implements IDisposable
 
-@{ Console.WriteLine($"ListsPanel render, IsVisible={IsVisible}"); }
-    
 @if (IsVisible)
 {
 
@@ -102,6 +101,8 @@
                                         metaParts.Add(e.Anime.Format);
                                     if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes))
                                         metaParts.Add(e.Anime.Episodes + " EP");
+                                    if (e.Score > 0)
+                                        metaParts.Add("My score: " + e.Score);
                                 }
                                 @if (metaParts.Any())
                                 {
@@ -171,7 +172,6 @@
 
     protected override void OnParametersSet()
     {
-        // Reset pull when panel reopens
         if (IsVisible)
         {
             pullOffset = 0;
@@ -196,7 +196,10 @@
     private void RemoveEntry(int animeId) => UserListService.Remove(animeId);
 
     private async Task HandleEntryClick(UserListEntry entry)
-        => await OnAnimeSelected.InvokeAsync(entry.Anime);
+    {
+        JS.InvokeVoidAsync("console.log", $"[ListsPanel] Entry clicked: {entry.Anime.Title}");
+        await OnAnimeSelected.InvokeAsync(entry.Anime);
+    }
 
     // ─── Touch gestures ───────────────────────────────────────────────────────
 
