@@ -471,7 +471,7 @@
 }
 
 <!-- ══════════════════════════════════════════════════════════════
-     LIST EDITOR MODAL (AniList-style)
+     LIST EDITOR MODAL (redesigned)
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
@@ -512,52 +512,59 @@
             <!-- Body -->
             <div class="list-editor-body">
 
-                <!-- ── Row 1: Status | Score | Episode Progress | Custom Lists ── -->
-                <div class="list-editor-grid">
-
-                    <!-- Status -->
-                    <div class="list-editor-field">
-                        <span class="list-editor-label">Status</span>
-                        <div class="list-editor-select-wrapper">
-                            <select class="list-editor-select" @bind="editStatus">
-                                @foreach (var s in _allStatuses)
+                <!-- ── Status Picker ── -->
+                <div class="list-editor-field">
+                    <span class="list-editor-label">Status</span>
+                    <div class="list-editor-status-grid">
+                        @foreach (var s in _allStatuses)
+                        {
+                            var sKey = GetStatusCssKey(s);
+                            <button class="list-editor-status-btn @(editStatus == s ? "active" : "") status-btn-@sKey"
+                                    @onclick="() => { editStatus = s; StateHasChanged(); }">
+                                <span class="status-btn-indicator"></span>
+                                <span class="status-btn-text">@GetStatusLabel(s)</span>
+                                @if (editStatus == s)
                                 {
-                                    <option value="@s">@GetStatusLabel(s)</option>
+                                    <svg class="status-btn-check" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
                                 }
-                            </select>
-                            <svg class="list-editor-select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
+                            </button>
+                        }
                     </div>
+                </div>
+
+                <!-- ── Score & Episode Progress ── -->
+                <div class="list-editor-grid list-editor-grid-2">
 
                     <!-- Score -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Score</span>
-                        <div class="list-editor-number-input">
-                            <span class="list-editor-num-display">@(editScore == 0 ? "—" : editScore.ToString())</span>
-                            <div class="list-editor-arrows">
-                                <button class="list-editor-arrow-btn" @onclick="() => ChangeScore(1)">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                                </button>
-                                <button class="list-editor-arrow-btn" @onclick="() => ChangeScore(-1)">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Score bar (visual) -->
-                        <div class="list-editor-score-bar">
-                            @for (int i = 1; i <= 10; i++)
-                            {
-                                var idx = i;
-                                <button class="list-editor-score-pip @(editScore >= idx ? "active" : "") @(GetScoreColor(idx))"
-                                        @onclick="() => SetScore(idx)">
-                                </button>
-                            }
+                        <div class="list-editor-score-row">
+                            <button class="list-editor-score-arrow-btn" @onclick="() => ChangeScore(-0.5)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <input type="text"
+                                   class="list-editor-score-text"
+                                   value="@FormatScore(editScore)"
+                                   @onchange="HandleScoreTextChange"
+                                   placeholder="—" />
+                            <button class="list-editor-score-arrow-btn" @onclick="() => ChangeScore(0.5)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
                         </div>
                         @if (editScore > 0)
                         {
+                            <div class="list-editor-score-bar-wrap">
+                                <div class="list-editor-score-bar-fill @GetScoreColorClass(editScore)"
+                                     style="width: @((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                            </div>
                             <span class="list-editor-score-label">@GetScoreLabel(editScore)</span>
                         }
                     </div>
@@ -589,24 +596,9 @@
                             <span class="list-editor-ep-label">@editEpisodes / @totalEp</span>
                         }
                     </div>
-
-                    <!-- Custom Lists -->
-                    <div class="list-editor-field">
-                        <span class="list-editor-label">Custom Lists</span>
-                        <div class="list-editor-custom-lists">
-                            <label class="list-editor-checkbox-row">
-                                <input type="checkbox" @bind="editWatchSoon" />
-                                <span>Watch Soon</span>
-                            </label>
-                            <label class="list-editor-checkbox-row">
-                                <input type="checkbox" @bind="editMovies" />
-                                <span>Movies</span>
-                            </label>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- ── Row 2: Dates | Rewatches | Options ── -->
+                <!-- ── Dates | Rewatches | Options ── -->
                 <div class="list-editor-grid">
 
                     <!-- Start Date -->
@@ -760,7 +752,7 @@
 
     // Edit form fields
     private ListStatus editStatus = ListStatus.Planning;
-    private int editScore = 0;
+    private double editScore = 0;
     private int editEpisodes = 0;
     private int editRewatches = 0;
     private string editNotes = "";
@@ -768,8 +760,6 @@
     private DateTime? editFinishDate = null;
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
-    private bool editWatchSoon = false;
-    private bool editMovies = false;
 
     // ─── Swipe-DOWN-to-close state ────────────────────────────────────────────
     private ElementReference scrollContainerRef;
@@ -834,15 +824,8 @@
 
     private void OpenListEditor()
     {
-        if (CurrentAnime == null)
-        {
-            JS.InvokeVoidAsync("console.log", "[ListEditor] OpenListEditor: CurrentAnime is NULL, aborting");
-            return;
-        }
+        if (CurrentAnime == null) return;
 
-        JS.InvokeVoidAsync("console.log", $"[ListEditor] Opening editor for: {CurrentAnime.Title} (id={CurrentAnime.Id}, isInList={isInList})");
-
-        // Populate form from existing entry or defaults
         var existing = UserListService.GetEntry(CurrentAnime.Id);
         if (existing != null)
         {
@@ -855,8 +838,6 @@
             editFinishDate  = existing.FinishDate;
             editIsPrivate   = existing.IsPrivate;
             editHideFromLists = existing.HideFromStatusLists;
-            editWatchSoon   = existing.WatchSoon;
-            editMovies      = existing.Movies;
         }
         else
         {
@@ -869,18 +850,14 @@
             editFinishDate  = null;
             editIsPrivate   = false;
             editHideFromLists = false;
-            editWatchSoon   = false;
-            editMovies      = false;
         }
 
         showListEditor = true;
-        JS.InvokeVoidAsync("console.log", $"[ListEditor] showListEditor set to TRUE");
         StateHasChanged();
     }
 
     private void CloseListEditor()
     {
-        JS.InvokeVoidAsync("console.log", "[ListEditor] CloseListEditor called");
         showListEditor = false;
         StateHasChanged();
     }
@@ -888,7 +865,6 @@
     private void SaveListEntry()
     {
         if (CurrentAnime == null) return;
-        JS.InvokeVoidAsync("console.log", $"[ListEditor] Saving entry: status={editStatus}, score={editScore}, ep={editEpisodes}");
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
         {
@@ -905,8 +881,6 @@
         existing.FinishDate          = editFinishDate;
         existing.IsPrivate           = editIsPrivate;
         existing.HideFromStatusLists = editHideFromLists;
-        existing.WatchSoon           = editWatchSoon;
-        existing.Movies              = editMovies;
 
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
@@ -940,42 +914,55 @@
 
     // ─── Score helpers ────────────────────────────────────────────────────────
 
-    private void ChangeScore(int delta)
+    private void ChangeScore(double delta)
     {
-        editScore = Math.Max(0, Math.Min(10, editScore + delta));
-        if (editScore == 0 && delta < 0) editScore = 0;
+        editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
         StateHasChanged();
     }
 
-    private void SetScore(int val)
+    private void HandleScoreTextChange(ChangeEventArgs e)
     {
-        editScore = (editScore == val) ? 0 : val; // toggle off if same
+        var raw = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(raw)) { editScore = 0; StateHasChanged(); return; }
+        if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out double v))
+        {
+            // Snap to nearest 0.5, clamp 0-10
+            editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
+        }
         StateHasChanged();
     }
 
-    private static string GetScoreColor(int idx) => idx switch
+    private static string FormatScore(double s)
     {
-        1 or 2      => "score-red",
-        3 or 4      => "score-orange",
-        5 or 6      => "score-yellow",
-        7 or 8      => "score-lime",
-        9 or 10     => "score-green",
-        _           => ""
+        if (s <= 0) return "";
+        return s % 1 == 0
+            ? ((int)s).ToString()
+            : s.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string GetScoreColorClass(double score) => score switch
+    {
+        <= 2   => "score-bar-red",
+        <= 4   => "score-bar-orange",
+        <= 6   => "score-bar-yellow",
+        <= 8   => "score-bar-lime",
+        _      => "score-bar-green"
     };
 
-    private static string GetScoreLabel(int score) => score switch
+    private static string GetScoreLabel(double score) => score switch
     {
-        1  => "Appalling",
-        2  => "Horrible",
-        3  => "Very Bad",
-        4  => "Bad",
-        5  => "Average",
-        6  => "Fine",
-        7  => "Good",
-        8  => "Very Good",
-        9  => "Great",
-        10 => "Masterpiece",
-        _  => ""
+        >= 9.5 => "Masterpiece",
+        >= 8.5 => "Great",
+        >= 7.5 => "Very Good",
+        >= 6.5 => "Good",
+        >= 5.5 => "Fine",
+        >= 4.5 => "Average",
+        >= 3.5 => "Bad",
+        >= 2.5 => "Very Bad",
+        >= 1.5 => "Horrible",
+        > 0    => "Appalling",
+        _      => ""
     };
 
     private void ChangeEpisodes(int delta)

@@ -16,7 +16,7 @@ namespace AniScroll.Shared.Models
         public ListStatus Status { get; set; }
 
         // Tracking
-        public int Score { get; set; } = 0;           // 0 = no score, 1-10
+        public double Score { get; set; } = 0;          // 0 = no score, 0.5-10
         public int EpisodesWatched { get; set; } = 0;
         public int TotalRewatches { get; set; } = 0;
 
@@ -28,10 +28,6 @@ namespace AniScroll.Shared.Models
         public string Notes { get; set; } = string.Empty;
         public bool IsPrivate { get; set; } = false;
         public bool HideFromStatusLists { get; set; } = false;
-
-        // Custom lists
-        public bool WatchSoon { get; set; } = false;
-        public bool Movies { get; set; } = false;
 
         // Metadata
         public DateTime AddedAt { get; set; } = DateTime.Now;
