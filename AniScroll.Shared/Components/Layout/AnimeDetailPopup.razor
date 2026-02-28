@@ -472,7 +472,12 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
-    <div class="list-editor-overlay" @onclick="async () => await CloseAndSave()">
+    <!-- FIX: stop touch events from reaching the underlying info popup scroll container -->
+    <div class="list-editor-overlay"
+         @onclick="async () => await CloseAndSave()"
+         @ontouchstart:stopPropagation="true"
+         @ontouchmove:stopPropagation="true"
+         @ontouchend:stopPropagation="true">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
             <!-- Header: banner + poster + title + fav + save -->
@@ -890,13 +895,10 @@
     }
 
     // ── Auto-save ─────────────────────────────────────────────────────────────
-    // Saves the entry whenever there is meaningful data to persist.
-    // Score is saved as-is — it does NOT force a status to be set.
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
 
-        // Only persist if there is at least one non-default value
         bool hasContent = editStatus.HasValue
             || editScore > 0
             || editEpisodes > 0
@@ -913,7 +915,7 @@
             AddedAt = DateTime.Now
         };
 
-        existing.Status              = editStatus;   // null is fine — score-only entry
+        existing.Status              = editStatus;
         existing.Score               = editScore;
         existing.EpisodesWatched     = editEpisodes;
         existing.TotalRewatches      = editRewatches;
@@ -926,6 +928,11 @@
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
         isInList = true;
+
+        // FIX: show delete button as soon as entry is first saved
+        if (!_deleteAnimVisible && showListEditor)
+            _ = TriggerDeleteAnimAsync();
+
         StateHasChanged();
 
         await Task.CompletedTask;
@@ -934,7 +941,6 @@
     // ── Unified close + save ──────────────────────────────────────────────────
     private async Task CloseAndSave()
     {
-        // Delegate entirely to AutoSave which already checks for meaningful content
         if (CurrentAnime != null)
             await AutoSave();
 
@@ -979,7 +985,6 @@
             editHideFromLists = false;
         }
 
-        // Enforce NOT_YET_RELEASED: episodes locked at 0, status stays as-is (no forced Planning)
         if (CurrentAnime.Status == "NOT_YET_RELEASED")
         {
             editEpisodes = 0;
@@ -990,7 +995,6 @@
         _deleteAnimVisible = false;
         showListEditor = true;
         StateHasChanged();
-        // Trigger delete button transition after first render
         if (isInList)
             _ = TriggerDeleteAnimAsync();
     }
@@ -1030,7 +1034,6 @@
     private void ChangeScore(double delta)
     {
         editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
-        // Score changes alone do NOT auto-set status
         StateHasChanged();
     }
 
@@ -1061,7 +1064,6 @@
         {
             try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { }
         }
-        // Score change does NOT auto-set status
         await AutoSave();
         StateHasChanged();
     }
@@ -1096,7 +1098,6 @@
         if (!_scoreBarDragging) return;
         _scoreBarDragging = false;
         _cachedScoreBounds = null;
-        // Score drag does NOT auto-set status
         await AutoSave();
         StateHasChanged();
     }
@@ -1217,11 +1218,9 @@
 
     private void ApplyAutoDate(ListStatus? previousStatus, ListStatus? newStatus)
     {
-        // Auto-set start date when entering Watching (and not already set)
         if (newStatus == ListStatus.Watching && previousStatus != ListStatus.Watching && !editStartDate.HasValue)
             editStartDate = DateTime.Today;
 
-        // Auto-set finish date when entering Completed (and not already set)
         if (newStatus == ListStatus.Completed && previousStatus != ListStatus.Completed && !editFinishDate.HasValue)
             editFinishDate = DateTime.Today;
     }

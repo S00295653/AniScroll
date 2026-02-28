@@ -1903,3 +1903,18 @@ html, body {
                  Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.tag-pill:not(.tag-pill-spoiler-revealed) {
+    color: rgba(255, 255, 255, 0.72) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    font-style: normal !important;
+}
+
+.tag-pill:not(.tag-pill-spoiler-revealed) .tag-pct {
+    color: rgba(255, 255, 255, 0.38) !important;
+}
+
+.tag-pill:not(.tag-pill-spoiler-revealed):hover {
+    background: rgba(255, 255, 255, 0.09) !important;
+    color: white !important;
+}

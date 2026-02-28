@@ -273,8 +273,6 @@
 .entry-status-planning   { background: rgba(168,85,247,0.12); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
 .entry-status-paused     { background: rgba(249,115,22,0.12); color: #f97316; border: 1px solid rgba(249,115,22,0.3); }
 .entry-status-dropped    { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-/* Score-only entries (no status set) */
-
 
 .entry-remove-btn {
     flex-shrink: 0;
@@ -444,7 +442,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 14px;
+    padding: 10px 14px;
 }
 
 @media (min-width: 900px) {
@@ -455,8 +453,8 @@
 }
 
 .list-editor-poster {
-    width: 48px;
-    height: 70px;
+    width: 44px;
+    height: 64px;
     border-radius: 8px;
     flex-shrink: 0;
     background-size: cover;
@@ -516,25 +514,21 @@
 .list-editor-save-btn:hover  { background: #0284c7; box-shadow: 0 3px 16px rgba(14,165,233,0.55); }
 .list-editor-save-btn:active { transform: scale(0.94); }
 
-/* Body */
+/* Body — FIX: not scrollable, compact */
 .list-editor-body {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 14px 14px 0;
+    overflow: hidden;
+    padding: 10px 14px 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    gap: 11px;
     -webkit-overflow-scrolling: touch;
 }
-.list-editor-body::-webkit-scrollbar { display: none; }
 
 @media (min-width: 900px) {
     .list-editor-body {
-        padding: 20px 24px 0;
-        gap: 22px;
+        padding: 16px 24px 0;
+        gap: 16px;
     }
 }
 
@@ -542,7 +536,7 @@
 .list-editor-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 11px;
+    gap: 9px;
 }
 @media (min-width: 700px) {
     .list-editor-grid {
@@ -550,27 +544,27 @@
     }
 }
 @media (min-width: 900px) {
-    .list-editor-grid { gap: 18px; }
+    .list-editor-grid { gap: 14px; }
 }
 
 .list-editor-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 11px;
+    gap: 9px;
 }
 @media (min-width: 900px) {
-    .list-editor-grid-2 { gap: 18px; }
+    .list-editor-grid-2 { gap: 14px; }
 }
 
 .list-editor-field {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 6px;
     min-width: 0;
 }
 
 .list-editor-label {
-    font-size: 10px;
+    font-size: 9px;
     color: rgba(255,255,255,0.35);
     text-transform: uppercase;
     letter-spacing: 0.7px;
@@ -584,7 +578,7 @@
 .le-dd-field {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 6px;
     position: relative;
 }
 
@@ -592,7 +586,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 11px 14px;
+    padding: 10px 14px;
     border-radius: 12px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
@@ -699,8 +693,8 @@
 }
 
 .le-score-step-btn {
-    width: 42px;
-    height: 46px;
+    width: 38px;
+    height: 42px;
     background: transparent;
     border: none;
     color: rgba(255,255,255,0.55);
@@ -736,9 +730,9 @@
     border-left: 1px solid rgba(255,255,255,0.07);
     border-right: 1px solid rgba(255,255,255,0.07);
     color: white;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
-    padding: 8px 4px;
+    padding: 6px 4px;
     outline: none;
     font-family: inherit;
     letter-spacing: -0.02em;
@@ -749,7 +743,7 @@
     -webkit-appearance: none;
     appearance: none;
 }
-.le-score-input::placeholder { color: rgba(255,255,255,0.18); font-weight: 400; font-size: 22px; }
+.le-score-input::placeholder { color: rgba(255,255,255,0.18); font-weight: 400; font-size: 20px; }
 .le-score-input::-webkit-outer-spin-button,
 .le-score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .le-score-input:disabled {
@@ -763,11 +757,19 @@
 .le-score-input-score-bar-lime   { color: #84cc16; }
 .le-score-input-score-bar-green  { color: #22c55e; }
 
-.le-ep-input { font-size: 15px !important; }
+/* FIX: Episode input — smaller font + shrink for long values like "100/120" */
+.le-ep-input {
+    font-size: 13px !important;
+    letter-spacing: -0.02em !important;
+    font-weight: 700 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
 
 .le-rewatch-input {
     color: rgba(255,255,255,0.9) !important;
-    font-size: 20px !important;
+    font-size: 18px !important;
 }
 
 /* Clickable / draggable score bar */
@@ -833,7 +835,7 @@
 .list-editor-date-wrapper {
     display: flex;
     align-items: center;
-    height: 46px;
+    height: 42px;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: 10px;
@@ -866,11 +868,11 @@
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     color: white;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.5;
-    padding: 10px 12px;
+    padding: 8px 12px;
     width: 100%;
-    min-height: 78px;
+    min-height: 58px;
     font-family: inherit;
     resize: vertical;
     outline: none;
@@ -921,7 +923,7 @@
     position: sticky;
     bottom: 0;
     background: #0d0d18;
-    padding: 12px 0 28px;
+    padding: 8px 0 20px;
     margin-top: auto;
     border-top: 1px solid transparent;
     flex-shrink: 0;
