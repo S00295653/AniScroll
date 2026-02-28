@@ -16,23 +16,34 @@ namespace AniScroll.Shared.Services
         public UserListEntry? GetEntry(int animeId) =>
             _entries.TryGetValue(animeId, out var e) ? e : null;
 
+        /// <summary>Quick add/update — only changes Status, preserves other fields.</summary>
         public void AddOrUpdate(AnimeCard anime, ListStatus status)
         {
             if (_entries.TryGetValue(anime.Id, out var existing))
             {
-                existing.Status = status;
+                existing.Status    = status;
                 existing.UpdatedAt = DateTime.Now;
             }
             else
             {
                 _entries[anime.Id] = new UserListEntry
                 {
-                    Anime = anime,
-                    Status = status,
-                    AddedAt = DateTime.Now,
+                    Anime     = anime,
+                    Status    = status,
+                    AddedAt   = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };
             }
+            OnChanged?.Invoke();
+        }
+
+        /// <summary>Full update — replaces the entry wholesale (from the list editor).</summary>
+        public void SaveEntry(UserListEntry entry)
+        {
+            entry.UpdatedAt = DateTime.Now;
+            if (!_entries.ContainsKey(entry.Anime.Id))
+                entry.AddedAt = DateTime.Now;
+            _entries[entry.Anime.Id] = entry;
             OnChanged?.Invoke();
         }
 

@@ -38,9 +38,9 @@
                             <!-- ─── Action buttons ─────────────────────────────── -->
                             <div class="modal-action-buttons">
 
-                                <!-- Add to List / status button -->
+                                <!-- Add to List / status button — opens full editor -->
                                 <button class="btn-add-to-list @(isInList ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus!.Value) : "")"
-                                        @onclick="ToggleStatusPicker">
+                                        @onclick="OpenListEditor">
                                     <div class="btn-add-to-list-inner">
                                         @if (!isInList)
                                         {
@@ -56,50 +56,13 @@
                                             <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus!.Value)"></span>
                                             <span>@GetStatusLabel(currentListStatus!.Value)</span>
                                         }
-                                        <svg class="btn-list-chevron @(showStatusPicker ? "open" : "")"
+                                        <svg class="btn-list-chevron"
                                              width="12" height="12" viewBox="0 0 24 24" fill="none"
                                              stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                             <polyline points="6 9 12 15 18 9"></polyline>
                                         </svg>
                                     </div>
                                 </button>
-
-                                <!-- Status picker dropdown -->
-                                @if (showStatusPicker)
-                                {
-                                    <div class="status-picker" @onclick:stopPropagation="true">
-                                        @foreach (var s in _allStatuses)
-                                        {
-                                            var sv = s;
-                                            <button class="status-option status-opt-@GetStatusCssKey(sv) @(isInList && currentListStatus == sv ? "active" : "")"
-                                                    @onclick="() => SetListStatus(sv)">
-                                                <span class="status-option-dot"></span>
-                                                @GetStatusLabel(sv)
-                                                @if (isInList && currentListStatus == sv)
-                                                {
-                                                    <svg style="margin-left:auto;opacity:0.6;" width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                                    </svg>
-                                                }
-                                            </button>
-                                        }
-                                        @if (isInList)
-                                        {
-                                            <button class="status-option status-opt-remove" @onclick="RemoveFromList">
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                     style="flex-shrink:0;">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                                    <path d="M10 11v6M14 11v6"></path>
-                                                    <path d="M9 6V4h6v2"></path>
-                                                </svg>
-                                                Remove
-                                            </button>
-                                        }
-                                    </div>
-                                }
 
                                 <div class="modal-secondary-btns">
                                     <button class="btn-share" @onclick="OnShare">
@@ -507,6 +470,273 @@
     </div>
 }
 
+<!-- ══════════════════════════════════════════════════════════════
+     LIST EDITOR MODAL (AniList-style)
+     ══════════════════════════════════════════════════════════════ -->
+@if (showListEditor && CurrentAnime != null)
+{
+    <div class="list-editor-overlay" @onclick="CloseListEditor">
+        <div class="list-editor-modal" @onclick:stopPropagation="true">
+
+            <!-- Header: banner + poster + title + save -->
+            <div class="list-editor-header">
+                <div class="list-editor-banner"
+                     style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl)
+                                ? $"background-image:url('{CurrentAnime.ImageUrl}');"
+                                : $"background-image:url('{CurrentAnime.BannerUrl}');")">
+                </div>
+                <div class="list-editor-header-content">
+                    <div class="list-editor-poster"
+                         style="background-image: url('@CurrentAnime.ImageUrl');
+                                @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")">
+                    </div>
+                    <span class="list-editor-title">@CurrentAnime.Title</span>
+                    <button class="list-editor-fav-btn @(isFavorited ? "is-fav" : "")" @onclick="OnFavorite" @onclick:stopPropagation="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24"
+                             fill="@(isFavorited ? "currentColor" : "none")"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </button>
+                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Save</button>
+                </div>
+                <button class="list-editor-close-btn" @onclick="CloseListEditor">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="list-editor-body">
+
+                <!-- ── Row 1: Status | Score | Episode Progress | Custom Lists ── -->
+                <div class="list-editor-grid">
+
+                    <!-- Status -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Status</span>
+                        <div class="list-editor-select-wrapper">
+                            <select class="list-editor-select"
+                                    value="@editStatus.ToString()"
+                                    @onchange="e => editStatus = Enum.Parse<ListStatus>(e.Value!.ToString()!)">
+                                @foreach (var s in _allStatuses)
+                                {
+                                    <option value="@s.ToString()">@GetStatusLabel(s)</option>
+                                }
+                            </select>
+                            <svg class="list-editor-select-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Score -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Score</span>
+                        <div class="list-editor-number-input">
+                            <span class="list-editor-num-display">@(editScore == 0 ? "—" : editScore.ToString())</span>
+                            <div class="list-editor-arrows">
+                                <button class="list-editor-arrow-btn" @onclick="() => ChangeScore(1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                </button>
+                                <button class="list-editor-arrow-btn" @onclick="() => ChangeScore(-1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Score bar (visual) -->
+                        <div class="list-editor-score-bar">
+                            @for (int i = 1; i <= 10; i++)
+                            {
+                                var idx = i;
+                                <button class="list-editor-score-pip @(editScore >= idx ? "active" : "") @(GetScoreColor(idx))"
+                                        @onclick="() => SetScore(idx)">
+                                </button>
+                            }
+                        </div>
+                        @if (editScore > 0)
+                        {
+                            <span class="list-editor-score-label">@GetScoreLabel(editScore)</span>
+                        }
+                    </div>
+
+                    <!-- Episode Progress -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Episode Progress</span>
+                        <div class="list-editor-number-input">
+                            <span class="list-editor-num-display">@editEpisodes</span>
+                            <div class="list-editor-arrows">
+                                <button class="list-editor-arrow-btn" @onclick="() => ChangeEpisodes(1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                </button>
+                                <button class="list-editor-arrow-btn" @onclick="() => ChangeEpisodes(-1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            </div>
+                        </div>
+                        @{
+                            int totalEp = 0;
+                            int.TryParse(CurrentAnime.Episodes?.Split('/').Last().Trim(), out totalEp);
+                        }
+                        @if (totalEp > 0)
+                        {
+                            <div class="list-editor-ep-bar">
+                                <div class="list-editor-ep-fill"
+                                     style="width: @(Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100)))%;"></div>
+                            </div>
+                            <span class="list-editor-ep-label">@editEpisodes / @totalEp</span>
+                        }
+                    </div>
+
+                    <!-- Custom Lists -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Custom Lists</span>
+                        <div class="list-editor-custom-lists">
+                            <label class="list-editor-checkbox-row">
+                                <input type="checkbox" @bind="editWatchSoon" />
+                                <span>Watch Soon</span>
+                            </label>
+                            <label class="list-editor-checkbox-row">
+                                <input type="checkbox" @bind="editMovies" />
+                                <span>Movies</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 2: Dates | Rewatches | Options ── -->
+                <div class="list-editor-grid">
+
+                    <!-- Start Date -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Start Date</span>
+                        <div class="list-editor-date-wrapper">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <input type="date" class="list-editor-date-input"
+                                   value="@(editStartDate.HasValue ? editStartDate.Value.ToString("yyyy-MM-dd") : "")"
+                                   @onchange="e => editStartDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!)" />
+                        </div>
+                    </div>
+
+                    <!-- Finish Date -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Finish Date</span>
+                        <div class="list-editor-date-wrapper">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="rgba(255,255,255,0.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <input type="date" class="list-editor-date-input"
+                                   value="@(editFinishDate.HasValue ? editFinishDate.Value.ToString("yyyy-MM-dd") : "")"
+                                   @onchange="e => editFinishDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!)" />
+                        </div>
+                    </div>
+
+                    <!-- Total Rewatches -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Total Rewatches</span>
+                        <div class="list-editor-number-input">
+                            <span class="list-editor-num-display">@editRewatches</span>
+                            <div class="list-editor-arrows">
+                                <button class="list-editor-arrow-btn" @onclick="() => editRewatches = Math.Max(0, editRewatches + 1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                </button>
+                                <button class="list-editor-arrow-btn" @onclick="() => editRewatches = Math.Max(0, editRewatches - 1)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy options -->
+                    <div class="list-editor-field">
+                        <span class="list-editor-label">Options</span>
+                        <div class="list-editor-custom-lists">
+                            <label class="list-editor-checkbox-row">
+                                <input type="checkbox" @bind="editHideFromLists" />
+                                <span>Hide from status lists</span>
+                            </label>
+                            <label class="list-editor-checkbox-row">
+                                <input type="checkbox" @bind="editIsPrivate" />
+                                <span>Private</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Notes ── -->
+                <div class="list-editor-field">
+                    <span class="list-editor-label">Notes</span>
+                    <textarea class="list-editor-textarea"
+                              placeholder="Add notes..."
+                              @bind="editNotes"
+                              @bind:event="oninput"></textarea>
+                </div>
+
+                <!-- ── Footer: Delete ── -->
+                @if (isInList)
+                {
+                    <div class="list-editor-footer">
+                        <button class="list-editor-delete-btn" @onclick="PromptDelete">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 style="flex-shrink:0;">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     DELETE CONFIRMATION
+     ══════════════════════════════════════════════════════════════ -->
+@if (showDeleteConfirm && CurrentAnime != null)
+{
+    <div class="delete-confirm-overlay" @onclick="CancelDelete">
+        <div class="delete-confirm-box" @onclick:stopPropagation="true">
+            <div class="delete-confirm-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                     stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6M14 11v6"></path>
+                    <path d="M9 6V4h6v2"></path>
+                </svg>
+            </div>
+            <p class="delete-confirm-title">Remove from list?</p>
+            <p class="delete-confirm-text">
+                <strong style="color:rgba(255,255,255,0.8);">@CurrentAnime.Title</strong> will be removed from your list. This can't be undone.
+            </p>
+            <div class="delete-confirm-btns">
+                <button class="delete-confirm-cancel" @onclick="CancelDelete">Cancel</button>
+                <button class="delete-confirm-delete" @onclick="ConfirmDelete">Remove</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public AnimeCard? CurrentAnime { get; set; }
     [Parameter] public bool IsVisible { get; set; }
@@ -519,13 +749,29 @@
     // ─── List state ───────────────────────────────────────────────────────────
     private bool isInList = false;
     private ListStatus? currentListStatus = null;
-    private bool showStatusPicker = false;
 
     private static readonly ListStatus[] _allStatuses =
     {
         ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
         ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
     };
+
+    // ─── List Editor state ────────────────────────────────────────────────────
+    private bool showListEditor = false;
+    private bool showDeleteConfirm = false;
+
+    // Edit form fields
+    private ListStatus editStatus = ListStatus.Planning;
+    private int editScore = 0;
+    private int editEpisodes = 0;
+    private int editRewatches = 0;
+    private string editNotes = "";
+    private DateTime? editStartDate = null;
+    private DateTime? editFinishDate = null;
+    private bool editIsPrivate = false;
+    private bool editHideFromLists = false;
+    private bool editWatchSoon = false;
+    private bool editMovies = false;
 
     // ─── Swipe-DOWN-to-close state ────────────────────────────────────────────
     private ElementReference scrollContainerRef;
@@ -565,7 +811,8 @@
         {
             isFavorited = false;
             showSpoilers = false;
-            showStatusPicker = false;
+            showListEditor = false;
+            showDeleteConfirm = false;
             pullOffset = 0;
             isPulling = false;
             isPullTrackingActive = false;
@@ -585,31 +832,148 @@
         currentListStatus = status;
     }
 
-    // ─── List interactions ────────────────────────────────────────────────────
+    // ─── List Editor ──────────────────────────────────────────────────────────
 
-    private void ToggleStatusPicker()
-    {
-        showStatusPicker = !showStatusPicker;
-        StateHasChanged();
-    }
-
-    private void SetListStatus(ListStatus status)
+    private void OpenListEditor()
     {
         if (CurrentAnime == null) return;
-        UserListService.AddOrUpdate(CurrentAnime, status);
-        currentListStatus = status;
-        isInList = true;
-        showStatusPicker = false;
+
+        // Populate form from existing entry or defaults
+        var existing = UserListService.GetEntry(CurrentAnime.Id);
+        if (existing != null)
+        {
+            editStatus      = existing.Status;
+            editScore       = existing.Score;
+            editEpisodes    = existing.EpisodesWatched;
+            editRewatches   = existing.TotalRewatches;
+            editNotes       = existing.Notes;
+            editStartDate   = existing.StartDate;
+            editFinishDate  = existing.FinishDate;
+            editIsPrivate   = existing.IsPrivate;
+            editHideFromLists = existing.HideFromStatusLists;
+            editWatchSoon   = existing.WatchSoon;
+            editMovies      = existing.Movies;
+        }
+        else
+        {
+            editStatus      = ListStatus.Planning;
+            editScore       = 0;
+            editEpisodes    = 0;
+            editRewatches   = 0;
+            editNotes       = "";
+            editStartDate   = null;
+            editFinishDate  = null;
+            editIsPrivate   = false;
+            editHideFromLists = false;
+            editWatchSoon   = false;
+            editMovies      = false;
+        }
+
+        showListEditor = true;
         StateHasChanged();
     }
 
-    private void RemoveFromList()
+    private void CloseListEditor()
+    {
+        showListEditor = false;
+        StateHasChanged();
+    }
+
+    private void SaveListEntry()
+    {
+        if (CurrentAnime == null) return;
+
+        var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
+        {
+            Anime   = CurrentAnime,
+            AddedAt = DateTime.Now
+        };
+
+        existing.Status              = editStatus;
+        existing.Score               = editScore;
+        existing.EpisodesWatched     = editEpisodes;
+        existing.TotalRewatches      = editRewatches;
+        existing.Notes               = editNotes;
+        existing.StartDate           = editStartDate;
+        existing.FinishDate          = editFinishDate;
+        existing.IsPrivate           = editIsPrivate;
+        existing.HideFromStatusLists = editHideFromLists;
+        existing.WatchSoon           = editWatchSoon;
+        existing.Movies              = editMovies;
+
+        UserListService.SaveEntry(existing);
+        currentListStatus = editStatus;
+        isInList = true;
+        showListEditor = false;
+        StateHasChanged();
+    }
+
+    private void PromptDelete()
+    {
+        showDeleteConfirm = true;
+        StateHasChanged();
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        StateHasChanged();
+    }
+
+    private void ConfirmDelete()
     {
         if (CurrentAnime == null) return;
         UserListService.Remove(CurrentAnime.Id);
         isInList = false;
         currentListStatus = null;
-        showStatusPicker = false;
+        showDeleteConfirm = false;
+        showListEditor = false;
+        StateHasChanged();
+    }
+
+    // ─── Score helpers ────────────────────────────────────────────────────────
+
+    private void ChangeScore(int delta)
+    {
+        editScore = Math.Max(0, Math.Min(10, editScore + delta));
+        if (editScore == 0 && delta < 0) editScore = 0;
+        StateHasChanged();
+    }
+
+    private void SetScore(int val)
+    {
+        editScore = (editScore == val) ? 0 : val; // toggle off if same
+        StateHasChanged();
+    }
+
+    private static string GetScoreColor(int idx) => idx switch
+    {
+        1 or 2      => "score-red",
+        3 or 4      => "score-orange",
+        5 or 6      => "score-yellow",
+        7 or 8      => "score-lime",
+        9 or 10     => "score-green",
+        _           => ""
+    };
+
+    private static string GetScoreLabel(int score) => score switch
+    {
+        1  => "Appalling",
+        2  => "Horrible",
+        3  => "Very Bad",
+        4  => "Bad",
+        5  => "Average",
+        6  => "Fine",
+        7  => "Good",
+        8  => "Very Good",
+        9  => "Great",
+        10 => "Masterpiece",
+        _  => ""
+    };
+
+    private void ChangeEpisodes(int delta)
+    {
+        editEpisodes = Math.Max(0, editEpisodes + delta);
         StateHasChanged();
     }
 
@@ -743,12 +1107,12 @@
 
     private string GetStatusText(string status) => status switch
     {
-        "RELEASING"       => "Airing",
-        "FINISHED"        => "Completed",
-        "NOT_YET_RELEASED"=> "Upcoming",
-        "CANCELLED"       => "Cancelled",
-        "HIATUS"          => "On Hiatus",
-        _                 => status
+        "RELEASING"        => "Airing",
+        "FINISHED"         => "Completed",
+        "NOT_YET_RELEASED" => "Upcoming",
+        "CANCELLED"        => "Cancelled",
+        "HIATUS"           => "On Hiatus",
+        _                  => status
     };
 
     private string FormatCountdown(int seconds)
@@ -804,7 +1168,7 @@
         return string.Empty;
     }
 
-    // ─── Platform icon helpers (unchanged) ───────────────────────────────────
+    // ─── Platform icon helpers ────────────────────────────────────────────────
 
     private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
