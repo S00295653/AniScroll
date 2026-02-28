@@ -126,7 +126,7 @@
                                     }
                                     <input type="color" class="clm-color-native"
                                            value="@(list.Color ?? "#7c7c99")"
-                                           @onchange="e => { list.Color = e.Value?.ToString(); _colorPickerOpenFor = -2; SaveLists(); }" />
+                                           @onchange="e => { list.Color = e.Value?.ToString() ?? list.Color; _colorPickerOpenFor = -2; SaveLists(); }" />
                                 </div>
                             }
                             <div class="clm-swatch-dot" style="background:@(list.Color ?? "rgba(255,255,255,0.25)");"></div>

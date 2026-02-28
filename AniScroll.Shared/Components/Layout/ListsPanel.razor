@@ -83,10 +83,10 @@
                     <span class="lists-tab-dot"></span>
                     <span>@cl.Name</span>
 
-                    @if (GetCountForCustomList(cl.Id) > 0)
+                    @if (UserListService.GetCountForCustomList(cl.Id) > 0)
                     {
                         <span class="lists-tab-count">
-                            @GetCountForCustomList(cl.Id)
+                            @UserListService.GetCountForCustomList(cl.Id)
                         </span>
                     }
                 </button>
