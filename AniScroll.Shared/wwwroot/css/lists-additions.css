@@ -547,7 +547,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 11px;
 }
-@media (min-width: 700) {
+@media (min-width: 700px) {
     .list-editor-grid {
         grid-template-columns: 1.4fr 1fr 1fr auto;
     }
