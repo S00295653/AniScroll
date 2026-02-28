@@ -826,7 +826,7 @@
 .list-editor-ep-fill {
     height: 100%;
     background: #0ea5e9;
-    border-radius: 2px;
+    border-radius: 999px;
     transition: none;
     pointer-events: none;
 }
