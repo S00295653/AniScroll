@@ -405,37 +405,34 @@
 /* Header */
 .list-editor-header {
     position: relative;
-    /* Use clip-path instead of overflow:hidden so the bottom gradient can bleed
-       40px into the body area for a seamless image→background fade */
     clip-path: inset(0 0 -40px 0);
     flex-shrink: 0;
     min-height: 100px;
 }
 
+/* ─── Banner: less dark than before (brightness 0.22 → 0.45) ─── */
 .list-editor-banner {
     position: absolute;
     inset: 0;
-    /* extend 40px below header so gradient bleeds into body area */
     bottom: -40px;
     background-size: cover;
     background-position: center;
-    filter: brightness(0.22) blur(5px) saturate(1.6);
+    filter: brightness(0.45) blur(4px) saturate(1.5);
     transform: scale(1.08);
 }
 
-/* Gradient: transparent at top → full body-bg (#0d0d18) at bottom,
-   bleeds 40px into body for a seamless cover→background fade */
+/* Gradient: lighter at the top so the image shows through more */
 .list-editor-header::after {
     content: '';
     position: absolute;
     inset: 0;
-    bottom: -40px; /* match banner extension + clip-path allowance */
+    bottom: -40px;
     background: linear-gradient(
         to bottom,
-        rgba(13,13,24,0.05)  0%,
-        rgba(13,13,24,0.30)  30%,
-        rgba(13,13,24,0.72)  62%,
-        rgba(13,13,24,0.94)  82%,
+        rgba(13,13,24,0)     0%,
+        rgba(13,13,24,0.12)  25%,
+        rgba(13,13,24,0.50)  58%,
+        rgba(13,13,24,0.88)  80%,
         rgba(13,13,24,1)     100%
     );
     pointer-events: none;
@@ -724,8 +721,12 @@
 }
 .le-score-step-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
 .le-score-step-btn:active { background: rgba(255,255,255,0.13); transform: scale(0.94); }
+.le-score-step-btn:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
-/* Score input: tabular nums so 5 / 5.5 / 6 don't cause layout jumps */
 .le-score-input {
     flex: 1;
     min-width: 0;
@@ -749,9 +750,12 @@
     appearance: none;
 }
 .le-score-input::placeholder { color: rgba(255,255,255,0.18); font-weight: 400; font-size: 22px; }
-/* Remove spinners on number inputs */
 .le-score-input::-webkit-outer-spin-button,
 .le-score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.le-score-input:disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+}
 
 .le-score-input-score-bar-red    { color: #ef4444; }
 .le-score-input-score-bar-orange { color: #f97316; }
@@ -759,10 +763,8 @@
 .le-score-input-score-bar-lime   { color: #84cc16; }
 .le-score-input-score-bar-green  { color: #22c55e; }
 
-/* Episode input shows "7/24" */
 .le-ep-input { font-size: 15px !important; }
 
-/* Rewatch input — same look as score/ep inputs */
 .le-rewatch-input {
     color: rgba(255,255,255,0.9) !important;
     font-size: 20px !important;
@@ -799,7 +801,6 @@
     background: rgba(255,255,255,0.08);
     border-radius: 999px;
     overflow: hidden;
-    cursor: pointer;
     position: relative;
     margin-top: 4px;
     transition: background 0.15s;
@@ -807,8 +808,20 @@
     user-select: none;
     -webkit-user-select: none;
 }
+
+/* Clickable / draggable variant */
+.le-ep-bar-clickable {
+    cursor: pointer;
+}
 .le-ep-bar-clickable:hover { background: rgba(255,255,255,0.12) !important; }
 .list-editor-ep-bar.dragging .list-editor-ep-fill { transition: none; }
+
+/* Disabled variant — NOT_YET_RELEASED */
+.le-ep-bar-disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+}
+.le-ep-bar-disabled:hover { background: rgba(255,255,255,0.08) !important; }
 
 .list-editor-ep-fill {
     height: 100%;
@@ -907,7 +920,6 @@
    ====================================================== */
 
 .le-delete-section {
-    /* Stick to the bottom of the modal body */
     position: sticky;
     bottom: 0;
     background: #0d0d18;
@@ -934,7 +946,6 @@
     transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.13s;
     font-family: inherit;
     letter-spacing: 0.01em;
-    /* Ensure full style on mobile */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;

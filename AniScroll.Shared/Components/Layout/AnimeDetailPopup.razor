@@ -472,7 +472,10 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
-    <div class="list-editor-overlay" @onclick="async () => await CloseListEditor()">
+    @{
+        bool isNotYetReleased = CurrentAnime.Status == "NOT_YET_RELEASED";
+    }
+    <div class="list-editor-overlay" @onclick="async () => await CloseAndSave()">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
             <!-- Header: banner + poster + title + fav + save -->
@@ -495,7 +498,7 @@
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
-                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Save</button>
+                    <button class="list-editor-save-btn" @onclick="async () => await CloseAndSave()">Save</button>
                 </div>
             </div>
 
@@ -525,14 +528,13 @@
                     @if (statusDropdownOpen)
                     {
                         <div class="le-dd-list">
-                            @foreach (var s in _allStatuses)
+                            @foreach (var s in GetAvailableStatuses())
                             {
                                 var sk = GetStatusCssKey(s);
                                 var isSel = editStatus == s;
                                 <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
                                         @onclick="async () => {
                                             editStatus = s;
-                                            // FIX: auto-set episodes to max when marking as Completed
                                             if (s == ListStatus.Completed) {
                                                 int tot = GetTotalEpisodes();
                                                 if (tot > 0) editEpisodes = tot;
@@ -603,18 +605,21 @@
                         }
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
-                                    @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">−</button>
+                                    disabled="@isNotYetReleased"
+                                    @onclick="async () => { if (!isNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
                             <input type="text"
                                    @ref="epInputRef"
                                    class="le-score-input le-ep-input"
                                    value="@epInputVal"
                                    placeholder="0"
+                                   disabled="@isNotYetReleased"
                                    @onfocus="HandleEpInputFocus"
                                    @onchange="HandleEpTextChange" />
                             <button class="le-score-step-btn"
-                                    @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">+</button>
+                                    disabled="@isNotYetReleased"
+                                    @onclick="async () => { if (!isNotYetReleased) { ChangeEpisodes(1); await AutoSave(); } }">+</button>
                         </div>
-                        <div class="list-editor-ep-bar le-ep-bar-clickable @(_epBarDragging ? "dragging" : "")"
+                        <div class="list-editor-ep-bar @(isNotYetReleased ? "le-ep-bar-disabled" : "le-ep-bar-clickable") @(_epBarDragging ? "dragging" : "")"
                              @ref="epBarRef"
                              @onpointerdown="HandleEpBarPointerDown"
                              @onpointermove="HandleEpBarPointerMove"
@@ -767,6 +772,18 @@
         ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
     };
 
+    // Returns statuses available for the current anime.
+    // NOT_YET_RELEASED animes cannot be marked as Completed.
+    private IEnumerable<ListStatus> GetAvailableStatuses()
+    {
+        bool notYetReleased = CurrentAnime?.Status == "NOT_YET_RELEASED";
+        foreach (var s in _allStatuses)
+        {
+            if (notYetReleased && s == ListStatus.Completed) continue;
+            yield return s;
+        }
+    }
+
     // List Editor state
     private bool showListEditor = false;
     private bool showDeleteConfirm = false;
@@ -797,10 +814,6 @@
     // Cached bar bounds for smooth drag (fetched once at pointerdown)
     private ElementBounds? _cachedScoreBounds;
     private ElementBounds? _cachedEpBounds;
-
-    // Original editor state for close-without-save auto-save logic
-    private ListStatus? _originalStatus = null;
-    private int _originalEpisodes = 0;
 
     // Swipe-DOWN-to-close state (main detail popup only)
     private ElementReference scrollContainerRef;
@@ -874,8 +887,6 @@
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
-
-        // Never create/update an entry without a status
         if (!editStatus.HasValue) return;
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
@@ -900,6 +911,23 @@
         StateHasChanged();
 
         await Task.CompletedTask;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // Unified close+save — used by both Save button and outside click
+    // ══════════════════════════════════════════════════════════
+    private async Task CloseAndSave()
+    {
+        if (CurrentAnime != null && editStatus.HasValue)
+            await AutoSave();
+
+        showListEditor     = false;
+        statusDropdownOpen = false;  // Always close dropdown on exit
+        _scoreBarDragging  = false;
+        _epBarDragging     = false;
+        _cachedScoreBounds = null;
+        _cachedEpBounds    = null;
+        StateHasChanged();
     }
 
     // List Editor
@@ -934,69 +962,12 @@
             editHideFromLists = false;
         }
 
-        // Track original values for auto-save-on-close logic
-        _originalStatus   = editStatus;
-        _originalEpisodes = editEpisodes;
+        // Enforce: NOT_YET_RELEASED always starts at 0 episodes
+        if (CurrentAnime.Status == "NOT_YET_RELEASED")
+            editEpisodes = 0;
 
+        statusDropdownOpen = false; // Always start with dropdown closed
         showListEditor = true;
-        StateHasChanged();
-    }
-
-    private async Task CloseListEditor()
-    {
-        // Auto-save if user modified data but never picked a status
-        bool hasData = editScore > 0
-                    || editEpisodes > 0
-                    || editRewatches > 0
-                    || !string.IsNullOrEmpty(editNotes.Trim())
-                    || editStartDate.HasValue
-                    || editFinishDate.HasValue;
-
-        if (hasData)
-        {
-            if (!editStatus.HasValue)
-            {
-                // Episodes changed with no prior status → Watching
-                // Otherwise → Planning
-                if (editEpisodes != _originalEpisodes && !_originalStatus.HasValue)
-                    editStatus = ListStatus.Watching;
-                else if (!_originalStatus.HasValue)
-                    editStatus = ListStatus.Planning;
-            }
-            if (editStatus.HasValue)
-                await AutoSave();
-        }
-
-        showListEditor = false;
-        statusDropdownOpen = false;
-        _scoreBarDragging = false;
-        _epBarDragging = false;
-        _cachedScoreBounds = null;
-        _cachedEpBounds = null;
-        StateHasChanged();
-    }
-
-    // FIX: Save even when no status is selected — use Planning as default if user has entered data
-    private async Task SaveListEntry()
-    {
-        if (CurrentAnime == null) { showListEditor = false; StateHasChanged(); return; }
-
-        // If no status selected but user has filled in other fields, default to Planning
-        if (!editStatus.HasValue)
-        {
-            bool hasData = editScore > 0
-                        || editEpisodes > 0
-                        || !string.IsNullOrEmpty(editNotes.Trim())
-                        || editStartDate.HasValue
-                        || editFinishDate.HasValue
-                        || editRewatches > 0;
-            if (hasData) editStatus = ListStatus.Planning;
-        }
-
-        if (editStatus.HasValue)
-            await AutoSave();
-
-        showListEditor = false;
         StateHasChanged();
     }
 
@@ -1028,10 +999,10 @@
     private void ChangeScore(double delta)
     {
         editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
+        // NOTE: score changes do NOT auto-set status
         StateHasChanged();
     }
 
-    // FIX: On focus, set raw value (no "/total" format) then select all for easy editing
     private async Task HandleScoreInputFocus()
     {
         try
@@ -1055,12 +1026,17 @@
         {
             editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
         }
-        // else: invalid input (non-numeric or out of range) → editScore unchanged → reverts
+        else
+        {
+            // Invalid input → force DOM back to last valid value
+            try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { }
+        }
+        // Score change does NOT auto-set status to anything
         await AutoSave();
         StateHasChanged();
     }
 
-    // Score bar slider — smooth: cache bounds at pointerdown, update DOM directly on move
+    // Score bar slider
 
     private async Task HandleScoreBarPointerDown(PointerEventArgs e)
     {
@@ -1072,7 +1048,6 @@
         }
         catch { }
         ApplyScoreFromX(e.ClientX);
-        // One re-render at start so input & bar update visually
         StateHasChanged();
     }
 
@@ -1080,7 +1055,6 @@
     {
         if (!_scoreBarDragging || _cachedScoreBounds == null) return;
         ApplyScoreFromX(e.ClientX);
-        // Update DOM directly — no Blazor re-render → silky smooth
         JS.InvokeVoidAsync("setBarWidth", scoreBarRef, ".le-score-bar-fill-click",
             editScore / 10.0 * 100, GetScoreHexColor(editScore));
         JS.InvokeVoidAsync("setInputValue", scoreInputRef,
@@ -1092,6 +1066,7 @@
         if (!_scoreBarDragging) return;
         _scoreBarDragging = false;
         _cachedScoreBounds = null;
+        // Score drag does NOT auto-set status
         await AutoSave();
         StateHasChanged();
     }
@@ -1100,7 +1075,7 @@
     {
         if (_cachedScoreBounds == null || _cachedScoreBounds.Width <= 0) return;
         double pct = Math.Clamp((clientX - _cachedScoreBounds.Left) / _cachedScoreBounds.Width, 0, 1);
-        editScore = Math.Round(pct * 10); // integers only during drag
+        editScore = Math.Round(pct * 10);
     }
 
     // Episode helpers
@@ -1117,42 +1092,75 @@
         return 0;
     }
 
+    private string GetEpInputDisplay()
+    {
+        int total = GetTotalEpisodes();
+        return total > 0 ? $"{editEpisodes}/{total}" : editEpisodes.ToString();
+    }
+
     private void ChangeEpisodes(int delta)
     {
+        // NOT_YET_RELEASED: episodes always stay at 0
+        if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
+
         int total = GetTotalEpisodes();
         int next = editEpisodes + delta;
         if (next < 0) return;
         if (total > 0 && next > total) return;
         editEpisodes = next;
+
+        // Episode progress > 0 with no status → auto Watching
+        if (editEpisodes > 0 && !editStatus.HasValue)
+            editStatus = ListStatus.Watching;
+
+        // Episode progress at max → auto Completed
+        if (total > 0 && editEpisodes == total)
+            editStatus = ListStatus.Completed;
+
         StateHasChanged();
     }
 
-    // FIX: On focus, just select all (keep "N/total" displayed, user types to replace)
     private async Task HandleEpInputFocus()
     {
-        try
-        {
-            await JS.InvokeVoidAsync("selectInputContent", epInputRef);
-        }
-        catch { }
+        try { await JS.InvokeVoidAsync("selectInputContent", epInputRef); } catch { }
     }
 
     private async Task HandleEpTextChange(ChangeEventArgs e)
     {
-        var raw = e.Value?.ToString() ?? "";
-        // Accept "5" or "5/24" — take only the part before any slash
-        var part = raw.Split('/')[0].Trim();
-        if (int.TryParse(part, out int v))
+        // NOT_YET_RELEASED: block any change, revert to 0
+        if (CurrentAnime?.Status == "NOT_YET_RELEASED")
         {
-            int totalEp = GetTotalEpisodes();
-            // Valid: >= 0 and within total (if known); otherwise revert (don't update)
-            if (v >= 0 && (totalEp <= 0 || v <= totalEp))
-                editEpisodes = v;
-            // else: > max → editEpisodes unchanged → Blazor reverts on re-render
+            editEpisodes = 0;
+            try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { }
+            StateHasChanged();
+            return;
         }
-        // else: not a number → editEpisodes unchanged → reverts
+
+        var raw = e.Value?.ToString() ?? "";
+        var part = raw.Split('/')[0].Trim();
+        int totalEp = GetTotalEpisodes();
+        bool valid = int.TryParse(part, out int v) && v >= 0 && (totalEp <= 0 || v <= totalEp);
+
+        if (valid)
+        {
+            editEpisodes = v;
+
+            // Episode > 0 with no status → Watching
+            if (editEpisodes > 0 && !editStatus.HasValue)
+                editStatus = ListStatus.Watching;
+
+            // Episode at max → Completed
+            if (totalEp > 0 && editEpisodes == totalEp)
+                editStatus = ListStatus.Completed;
+        }
+        else
+        {
+            // Invalid → force DOM back to last valid value
+            try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { }
+        }
+
         await AutoSave();
-        StateHasChanged(); // Re-render shows correct "N/total" format
+        StateHasChanged();
     }
 
     // Rewatch handlers
@@ -1167,15 +1175,22 @@
         var raw = e.Value?.ToString() ?? "";
         if (int.TryParse(raw.Trim(), out int v) && v >= 0)
             editRewatches = v;
-        // else: invalid → reverts on re-render
+        else
+        {
+            // Invalid → force DOM back to last valid value
+            try { await JS.InvokeVoidAsync("setInputValue", rewatchInputRef, editRewatches.ToString()); } catch { }
+        }
         await AutoSave();
         StateHasChanged();
     }
 
-    // Episode bar slider — smooth: same cached-bounds pattern
+    // Episode bar slider
 
     private async Task HandleEpBarPointerDown(PointerEventArgs e)
     {
+        // NOT_YET_RELEASED: block drag
+        if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
+
         int totalEp = GetTotalEpisodes();
         if (totalEp <= 0) return;
         _epBarDragging = true;
@@ -1197,8 +1212,7 @@
         ApplyEpFromX(e.ClientX, totalEp);
         double fillPct = (double)editEpisodes / totalEp * 100;
         JS.InvokeVoidAsync("setBarWidth", epBarRef, ".list-editor-ep-fill", fillPct, null);
-        JS.InvokeVoidAsync("setInputValue", epInputRef,
-            $"{editEpisodes}/{totalEp}");
+        JS.InvokeVoidAsync("setInputValue", epInputRef, $"{editEpisodes}/{totalEp}");
     }
 
     private async Task HandleEpBarPointerUp(PointerEventArgs e)
@@ -1206,6 +1220,17 @@
         if (!_epBarDragging) return;
         _epBarDragging = false;
         _cachedEpBounds = null;
+
+        int totalEp = GetTotalEpisodes();
+
+        // Episode > 0 with no status → Watching
+        if (editEpisodes > 0 && !editStatus.HasValue)
+            editStatus = ListStatus.Watching;
+
+        // Episode at max → Completed
+        if (totalEp > 0 && editEpisodes == totalEp)
+            editStatus = ListStatus.Completed;
+
         await AutoSave();
         StateHasChanged();
     }
