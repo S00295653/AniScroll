@@ -212,9 +212,9 @@
                                                          IsVisible="showDetailPopup"
                                                          OnClose="CloseDetailPopup" />
 
-<AniScroll.Shared.Components.Layout.ListsPanel IsVisible="showListsPanel"
-                                                  OnClose="@(() => { showListsPanel = false; StateHasChanged(); })"
-                                                OnAnimeSelected="@(async (anime) => { showListsPanel = false; await ShowAnimeDetails(anime); })" />
+    <ListsPanel IsVisible="showListsPanel"
+            OnClose="CloseListsPanel"
+            OnAnimeSelected="HandleListsAnimeSelected" />
 
 
     <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
@@ -687,6 +687,18 @@
         StateHasChanged();
     }
 
+    private void CloseListsPanel()
+    {
+        showListsPanel = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleListsAnimeSelected(AnimeCard anime)
+    {
+        showListsPanel = false;
+        await ShowAnimeDetails(anime);
+    }
+    
     private void HandleProfileClicked() { }
 
     public void Dispose() => rateLimitTimer?.Dispose();
