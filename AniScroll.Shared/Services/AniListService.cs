@@ -67,7 +67,7 @@ namespace AniScroll.Shared.Services
 
         // Legacy compat props
         public int RequestCount => AniListRateLimit.RequestsSent;
-        public const int RequestLimit = 90; // AniList: 90 req / min
+        public const int RequestLimit = 30; // AniList: 30 req/min (NOT 90 — that value circulating online is wrong)
 
         private const string ANILIST_ENDPOINT             = "https://graphql.anilist.co";
         private const int    RATE_LIMIT_FALLBACK_SECONDS  = 60;
