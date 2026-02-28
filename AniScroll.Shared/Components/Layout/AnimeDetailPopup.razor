@@ -1,5 +1,8 @@
 ﻿@using AniScroll.Shared.Models
+@using AniScroll.Shared.Services
 @inject IJSRuntime JS
+@inject UserListService UserListService
+@implements IDisposable
 
 @if (IsVisible && CurrentAnime != null)
 {
@@ -27,17 +30,78 @@
 
                     <div class="modal-header-content">
                         <div class="modal-poster-section">
-                            <div class="modal-poster" style="background-image: url('@CurrentAnime.ImageUrl');"></div>
+                            <div class="modal-poster"
+                                 style="background-image: url('@CurrentAnime.ImageUrl');
+                                        @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")">
+                            </div>
 
+                            <!-- ─── Action buttons ─────────────────────────────── -->
                             <div class="modal-action-buttons">
-                                <button class="btn-add-to-list" @onclick="OnAddToList">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                    Add to List
+
+                                <!-- Add to List / status button -->
+                                <button class="btn-add-to-list @(isInList ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus!.Value) : "")"
+                                        @onclick="ToggleStatusPicker">
+                                    <div class="btn-add-to-list-inner">
+                                        @if (!isInList)
+                                        {
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            <span>Add to List</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus!.Value)"></span>
+                                            <span>@GetStatusLabel(currentListStatus!.Value)</span>
+                                        }
+                                        <svg class="btn-list-chevron @(showStatusPicker ? "open" : "")"
+                                             width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </div>
                                 </button>
+
+                                <!-- Status picker dropdown -->
+                                @if (showStatusPicker)
+                                {
+                                    <div class="status-picker" @onclick:stopPropagation="true">
+                                        @foreach (var s in _allStatuses)
+                                        {
+                                            var sv = s;
+                                            <button class="status-option status-opt-@GetStatusCssKey(sv) @(isInList && currentListStatus == sv ? "active" : "")"
+                                                    @onclick="() => SetListStatus(sv)">
+                                                <span class="status-option-dot"></span>
+                                                @GetStatusLabel(sv)
+                                                @if (isInList && currentListStatus == sv)
+                                                {
+                                                    <svg style="margin-left:auto;opacity:0.6;" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                }
+                                            </button>
+                                        }
+                                        @if (isInList)
+                                        {
+                                            <div class="status-picker-divider"></div>
+                                            <button class="status-option status-opt-remove" @onclick="RemoveFromList">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                     style="flex-shrink:0;">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                                    <path d="M10 11v6M14 11v6"></path>
+                                                    <path d="M9 6V4h6v2"></path>
+                                                </svg>
+                                                Remove from list
+                                            </button>
+                                        }
+                                    </div>
+                                }
+
                                 <div class="modal-secondary-btns">
                                     <button class="btn-share" @onclick="OnShare">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -453,7 +517,18 @@
     private bool showSpoilers = false;
     private int? _lastAnimeId = null;
 
-    // ─── Swipe-DOWN-to-close state ───────────────────────────────────────────────
+    // ─── List state ───────────────────────────────────────────────────────────
+    private bool isInList = false;
+    private ListStatus? currentListStatus = null;
+    private bool showStatusPicker = false;
+
+    private static readonly ListStatus[] _allStatuses =
+    {
+        ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
+        ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
+    };
+
+    // ─── Swipe-DOWN-to-close state ────────────────────────────────────────────
     private ElementReference scrollContainerRef;
     private double pullOffset = 0;
     private double pullStartY = 0;
@@ -461,14 +536,29 @@
     private bool isPullTrackingActive = false;
     private const double PULL_CLOSE_THRESHOLD = 40;
 
-    // ─── Swipe-LEFT-EDGE-to-close state ──────────────────────────────────────────
+    // ─── Swipe-LEFT-EDGE-to-close state ──────────────────────────────────────
     private double edgeSwipeStartX = 0;
     private double edgeSwipeStartY = 0;
     private double edgeSwipeOffset = 0;
     private bool isEdgeSwiping = false;
     private bool isEdgeSwipeTrackingActive = false;
-    private const double EDGE_ZONE_WIDTH = 40;       // px from left edge to trigger
-    private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90; // px to swipe right to close
+    private const double EDGE_ZONE_WIDTH = 40;
+    private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90;
+
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override void OnInitialized()
+    {
+        UserListService.OnChanged += HandleListChanged;
+    }
+
+    public void Dispose() => UserListService.OnChanged -= HandleListChanged;
+
+    private void HandleListChanged()
+    {
+        RefreshListState();
+        InvokeAsync(StateHasChanged);
+    }
 
     protected override void OnParametersSet()
     {
@@ -476,6 +566,7 @@
         {
             isFavorited = false;
             showSpoilers = false;
+            showStatusPicker = false;
             pullOffset = 0;
             isPulling = false;
             isPullTrackingActive = false;
@@ -483,25 +574,61 @@
             isEdgeSwiping = false;
             isEdgeSwipeTrackingActive = false;
             _lastAnimeId = CurrentAnime?.Id;
+            RefreshListState();
         }
     }
 
-    // ─── Transition helper ───────────────────────────────────────────────────────
+    private void RefreshListState()
+    {
+        if (CurrentAnime == null) { isInList = false; currentListStatus = null; return; }
+        var status = UserListService.GetStatus(CurrentAnime.Id);
+        isInList = status.HasValue;
+        currentListStatus = status;
+    }
+
+    // ─── List interactions ────────────────────────────────────────────────────
+
+    private void ToggleStatusPicker()
+    {
+        showStatusPicker = !showStatusPicker;
+        StateHasChanged();
+    }
+
+    private void SetListStatus(ListStatus status)
+    {
+        if (CurrentAnime == null) return;
+        UserListService.AddOrUpdate(CurrentAnime, status);
+        currentListStatus = status;
+        isInList = true;
+        showStatusPicker = false;
+        StateHasChanged();
+    }
+
+    private void RemoveFromList()
+    {
+        if (CurrentAnime == null) return;
+        UserListService.Remove(CurrentAnime.Id);
+        isInList = false;
+        currentListStatus = null;
+        showStatusPicker = false;
+        StateHasChanged();
+    }
+
+    // ─── Transition helper ────────────────────────────────────────────────────
+
     private string GetModalTransition()
     {
         if (isPulling || isEdgeSwiping) return "none";
         return "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)";
     }
 
-    // ─── Touch handlers ──────────────────────────────────────────────────────────
+    // ─── Touch handlers ───────────────────────────────────────────────────────
 
     private async Task HandleModalTouchStart(TouchEventArgs e)
     {
         if (e.Touches.Length == 0) return;
-
         var touch = e.Touches[0];
 
-        // Left-edge swipe: starts within EDGE_ZONE_WIDTH px from left
         if (touch.ClientX <= EDGE_ZONE_WIDTH)
         {
             isEdgeSwipeTrackingActive = true;
@@ -512,7 +639,6 @@
             return;
         }
 
-        // Pull-down-to-close: only when scrolled to top
         bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
         if (!atTop) return;
         isPullTrackingActive = true;
@@ -526,23 +652,18 @@
         if (e.Touches.Length == 0) return;
         var touch = e.Touches[0];
 
-        // ── Edge swipe ──────────────────────────────────────────────────────
         if (isEdgeSwipeTrackingActive)
         {
             double dx = touch.ClientX - edgeSwipeStartX;
             double dy = touch.ClientY - edgeSwipeStartY;
-
-            // Cancel if the gesture is more vertical than horizontal
             if (!isEdgeSwiping && Math.Abs(dy) > Math.Abs(dx) + 10)
             {
                 isEdgeSwipeTrackingActive = false;
                 return;
             }
-
             if (dx > 0)
             {
                 isEdgeSwiping = true;
-                // Rubber-band: full movement up to threshold, dampened beyond
                 edgeSwipeOffset = dx <= EDGE_SWIPE_CLOSE_THRESHOLD
                     ? dx
                     : EDGE_SWIPE_CLOSE_THRESHOLD + (dx - EDGE_SWIPE_CLOSE_THRESHOLD) * 0.25;
@@ -551,15 +672,9 @@
             return;
         }
 
-        // ── Pull down ───────────────────────────────────────────────────────
         if (!isPullTrackingActive) return;
         double delta = touch.ClientY - pullStartY;
-        if (delta <= 0)
-        {
-            isPulling = false;
-            pullOffset = 0;
-            return;
-        }
+        if (delta <= 0) { isPulling = false; pullOffset = 0; return; }
         isPulling = true;
         pullOffset = Math.Sqrt(delta) * 6;
         StateHasChanged();
@@ -567,30 +682,22 @@
 
     private async Task HandleModalTouchEnd(TouchEventArgs e)
     {
-        // ── Edge swipe end ──────────────────────────────────────────────────
         if (isEdgeSwipeTrackingActive)
         {
             isEdgeSwipeTrackingActive = false;
             isEdgeSwiping = false;
-
             if (edgeSwipeOffset >= EDGE_SWIPE_CLOSE_THRESHOLD)
             {
-                // Fly off to the right
                 edgeSwipeOffset = 500;
                 StateHasChanged();
                 await Task.Delay(260);
                 edgeSwipeOffset = 0;
                 await OnClose.InvokeAsync();
             }
-            else
-            {
-                edgeSwipeOffset = 0;
-                StateHasChanged();
-            }
+            else { edgeSwipeOffset = 0; StateHasChanged(); }
             return;
         }
 
-        // ── Pull down end ───────────────────────────────────────────────────
         if (!isPullTrackingActive) return;
         isPullTrackingActive = false;
         isPulling = false;
@@ -603,29 +710,46 @@
             pullOffset = 0;
             await OnClose.InvokeAsync();
         }
-        else
-        {
-            pullOffset = 0;
-            StateHasChanged();
-        }
+        else { pullOffset = 0; StateHasChanged(); }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────────
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
-    private void OnAddToList() { }
     private void OnShare() { }
     private void OnFavorite() { isFavorited = !isFavorited; StateHasChanged(); }
 
+    private static string GetStatusLabel(ListStatus s) => s switch
+    {
+        ListStatus.Watching   => "Watching",
+        ListStatus.Rewatching => "Rewatching",
+        ListStatus.Completed  => "Completed",
+        ListStatus.Planning   => "Planning",
+        ListStatus.Paused     => "Paused",
+        ListStatus.Dropped    => "Dropped",
+        _                     => s.ToString()
+    };
+
+    private static string GetStatusCssKey(ListStatus s) => s switch
+    {
+        ListStatus.Watching   => "watching",
+        ListStatus.Rewatching => "rewatching",
+        ListStatus.Completed  => "completed",
+        ListStatus.Planning   => "planning",
+        ListStatus.Paused     => "paused",
+        ListStatus.Dropped    => "dropped",
+        _                     => "all"
+    };
+
     private string GetStatusText(string status) => status switch
     {
-        "RELEASING" => "Airing",
-        "FINISHED" => "Completed",
-        "NOT_YET_RELEASED" => "Upcoming",
-        "CANCELLED" => "Cancelled",
-        "HIATUS" => "On Hiatus",
-        _ => status
+        "RELEASING"       => "Airing",
+        "FINISHED"        => "Completed",
+        "NOT_YET_RELEASED"=> "Upcoming",
+        "CANCELLED"       => "Cancelled",
+        "HIATUS"          => "On Hiatus",
+        _                 => status
     };
 
     private string FormatCountdown(int seconds)
@@ -642,18 +766,12 @@
         if (string.IsNullOrWhiteSpace(s)) return false;
         foreach (char c in s)
         {
-            if (
-                (c >= 0x0400 && c <= 0x04FF) ||
-                (c >= 0x0600 && c <= 0x06FF) ||
-                (c >= 0x0590 && c <= 0x05FF) ||
-                (c >= 0x0900 && c <= 0x097F) ||
-                (c >= 0x0E00 && c <= 0x0E7F) ||
-                (c >= 0x3040 && c <= 0x309F) ||
-                (c >= 0x30A0 && c <= 0x30FF) ||
-                (c >= 0x4E00 && c <= 0x9FFF) ||
-                (c >= 0x3400 && c <= 0x4DBF) ||
-                (c >= 0xAC00 && c <= 0xD7AF)
-            ) return true;
+            if ((c >= 0x0400 && c <= 0x04FF) || (c >= 0x0600 && c <= 0x06FF) ||
+                (c >= 0x0590 && c <= 0x05FF) || (c >= 0x0900 && c <= 0x097F) ||
+                (c >= 0x0E00 && c <= 0x0E7F) || (c >= 0x3040 && c <= 0x309F) ||
+                (c >= 0x30A0 && c <= 0x30FF) || (c >= 0x4E00 && c <= 0x9FFF) ||
+                (c >= 0x3400 && c <= 0x4DBF) || (c >= 0xAC00 && c <= 0xD7AF))
+                return true;
         }
         return false;
     }
@@ -663,7 +781,7 @@
         if (string.IsNullOrEmpty(url)) return string.Empty;
         try
         {
-            var uri = new Uri(url);
+            var uri   = new Uri(url);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             if (query.AllKeys.Contains("v")) return query["v"] ?? "";
             var path = uri.AbsolutePath;
@@ -675,8 +793,7 @@
             if (uri.Segments.Length > 1)
             {
                 var last = uri.Segments.LastOrDefault()?.TrimEnd('/');
-                if (!string.IsNullOrEmpty(last) && last != "embed")
-                    return last;
+                if (!string.IsNullOrEmpty(last) && last != "embed") return last;
             }
         }
         catch
@@ -688,9 +805,7 @@
         return string.Empty;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  PLATFORM ICON RENDERING
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ─── Platform icon helpers (unchanged) ───────────────────────────────────
 
     private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -721,10 +836,8 @@
             string styleAttr = shouldRecolor
                 ? $"object-fit:contain;border-radius:2px;{GetWhiteToColorFilter(brandColor)}"
                 : "object-fit:contain;border-radius:2px;";
-
             return new MarkupString(
-                $"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" " +
-                $"style=\"{styleAttr}\" />");
+                $"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" style=\"{styleAttr}\" />");
         }
 
         string svgColor = shouldRecolor ? brandColor : "rgba(255,255,255,0.6)";
@@ -735,27 +848,14 @@
             $"<polygon points='10,8 16,12 10,16' fill='{svgColor}' stroke='none'/></svg>");
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  CSS FILTER SOLVER
-    // ═══════════════════════════════════════════════════════════════════════════
-
     private static readonly Dictionary<string, string> _filterCache = new();
 
     private static string GetWhiteToColorFilter(string hex)
     {
-        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#'))
-            return string.Empty;
-
-        if (_filterCache.TryGetValue(hex, out var cached))
-            return cached;
-
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#')) return string.Empty;
+        if (_filterCache.TryGetValue(hex, out var cached)) return cached;
         var rgb = ParseHexColor(hex);
-        if (rgb == null)
-        {
-            _filterCache[hex] = string.Empty;
-            return string.Empty;
-        }
-
+        if (rgb == null) { _filterCache[hex] = string.Empty; return string.Empty; }
         var colorFilter = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
         var result = $"filter:brightness(0) saturate(100%) {colorFilter};";
         _filterCache[hex] = result;
@@ -765,17 +865,9 @@
     private static (int r, int g, int b)? ParseHexColor(string hex)
     {
         hex = hex.TrimStart('#');
-        if (hex.Length == 3)
-            hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
+        if (hex.Length == 3) hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
         if (hex.Length != 6) return null;
-        try
-        {
-            return (
-                Convert.ToInt32(hex[0..2], 16),
-                Convert.ToInt32(hex[2..4], 16),
-                Convert.ToInt32(hex[4..6], 16)
-            );
-        }
+        try { return (Convert.ToInt32(hex[0..2], 16), Convert.ToInt32(hex[2..4], 16), Convert.ToInt32(hex[4..6], 16)); }
         catch { return null; }
     }
 
@@ -783,34 +875,23 @@
     {
         var (th, ts, tl) = RgbToHsl(tr, tg, tb);
         var rng = new Random(42);
-
         double[] best = Array.Empty<double>();
         double bestLoss = double.MaxValue;
-
         for (int attempt = 0; attempt < 3 && bestLoss > 25; attempt++)
         {
-            var r = RunSpsa(
-                tr, tg, tb, th, ts, tl,
+            var r = RunSpsa(tr, tg, tb, th, ts, tl,
                 new double[] { 50, 20, 3750, 50, 100, 100 },
                 A: 5, a: new double[] { 60, 180, 18000, 600, 1.2, 1.2 },
                 c: 15, iterations: 1000, rng);
             if (r.loss < bestLoss) { best = r.values; bestLoss = r.loss; }
         }
-
-        {
-            double A1 = bestLoss + 1;
-            var r = RunSpsa(
-                tr, tg, tb, th, ts, tl,
-                best,
-                A: bestLoss, a: new double[] { 0.25 * A1, 0.25 * A1, A1, 0.25 * A1, 0.2 * A1, 0.2 * A1 },
-                c: 2, iterations: 500, rng);
-            if (r.loss < bestLoss) { best = r.values; }
-        }
-
+        double A1 = bestLoss + 1;
+        var r2 = RunSpsa(tr, tg, tb, th, ts, tl, best,
+            A: bestLoss, a: new double[] { 0.25*A1, 0.25*A1, A1, 0.25*A1, 0.2*A1, 0.2*A1 },
+            c: 2, iterations: 500, rng);
+        if (r2.loss < bestLoss) best = r2.values;
         static int R(double v) => (int)Math.Round(v);
-        return $"invert({R(best[0])}%) sepia({R(best[1])}%) " +
-               $"saturate({R(best[2])}%) hue-rotate({R(best[3] * 3.6)}deg) " +
-               $"brightness({R(best[4])}%) contrast({R(best[5])}%)";
+        return $"invert({R(best[0])}%) sepia({R(best[1])}%) saturate({R(best[2])}%) hue-rotate({R(best[3] * 3.6)}deg) brightness({R(best[4])}%) contrast({R(best[5])}%)";
     }
 
     private static (double[] values, double loss) RunSpsa(
@@ -820,135 +901,73 @@
         var v = (double[])initial.Clone();
         double[] best = null!;
         double bestLoss = double.MaxValue;
-        var deltas = new double[6];
-        var hi = new double[6];
-        var lo = new double[6];
-
+        var deltas = new double[6]; var hi = new double[6]; var lo = new double[6];
         for (int k = 0; k < iterations; k++)
         {
             double ck = c / Math.Pow(k + 1, 1.0 / 6.0);
-            for (int i = 0; i < 6; i++)
-            {
-                deltas[i] = rng.NextDouble() > 0.5 ? 1 : -1;
-                hi[i] = v[i] + ck * deltas[i];
-                lo[i] = v[i] - ck * deltas[i];
-            }
-
-            double lossDiff = FilterLoss(hi, tr, tg, tb, th, ts, tl)
-                            - FilterLoss(lo, tr, tg, tb, th, ts, tl);
-
-            for (int i = 0; i < 6; i++)
-            {
-                double g = lossDiff / (2 * ck) * deltas[i];
-                double ak = a[i] / Math.Pow(A + k + 1, 1.0);
-                v[i] = ClampFilterParam(v[i] - ak * g, i);
-            }
-
+            for (int i = 0; i < 6; i++) { deltas[i] = rng.NextDouble() > 0.5 ? 1 : -1; hi[i] = v[i] + ck * deltas[i]; lo[i] = v[i] - ck * deltas[i]; }
+            double lossDiff = FilterLoss(hi, tr, tg, tb, th, ts, tl) - FilterLoss(lo, tr, tg, tb, th, ts, tl);
+            for (int i = 0; i < 6; i++) { double g = lossDiff / (2 * ck) * deltas[i]; double ak = a[i] / Math.Pow(A + k + 1, 1.0); v[i] = ClampFilterParam(v[i] - ak * g, i); }
             double l = FilterLoss(v, tr, tg, tb, th, ts, tl);
             if (l < bestLoss) { best = (double[])v.Clone(); bestLoss = l; }
         }
-
         return (best ?? v, bestLoss);
     }
 
-    private static double FilterLoss(
-        double[] f, int tr, int tg, int tb, double th, double ts, double tl)
+    private static double FilterLoss(double[] f, int tr, int tg, int tb, double th, double ts, double tl)
     {
         var (r, g, b) = ApplyFilters(f);
         var (h, s, l) = RgbToHsl((int)r, (int)g, (int)b);
-        return Math.Abs(r - tr) + Math.Abs(g - tg) + Math.Abs(b - tb)
-             + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
+        return Math.Abs(r - tr) + Math.Abs(g - tg) + Math.Abs(b - tb) + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
     }
 
     private static (double r, double g, double b) ApplyFilters(double[] f)
     {
         double r = 0, g = 0, b = 0;
-
         double inv = f[0] / 100.0;
         r = Cl((inv + r / 255.0 * (1 - 2 * inv)) * 255);
         g = Cl((inv + g / 255.0 * (1 - 2 * inv)) * 255);
         b = Cl((inv + b / 255.0 * (1 - 2 * inv)) * 255);
-
         (r, g, b) = MatMul(r, g, b, SepiaMatrix(f[1] / 100.0));
         (r, g, b) = MatMul(r, g, b, SaturateMatrix(f[2] / 100.0));
         (r, g, b) = MatMul(r, g, b, HueRotateMatrix(f[3] * 3.6));
-        r = Cl(r * (f[4] / 100.0));
-        g = Cl(g * (f[4] / 100.0));
-        b = Cl(b * (f[4] / 100.0));
-        double con = f[5] / 100.0;
-        double ic = (-0.5 * con + 0.5) * 255;
-        r = Cl(r * con + ic);
-        g = Cl(g * con + ic);
-        b = Cl(b * con + ic);
-
+        r = Cl(r * (f[4] / 100.0)); g = Cl(g * (f[4] / 100.0)); b = Cl(b * (f[4] / 100.0));
+        double con = f[5] / 100.0; double ic = (-0.5 * con + 0.5) * 255;
+        r = Cl(r * con + ic); g = Cl(g * con + ic); b = Cl(b * con + ic);
         return (r, g, b);
     }
 
     private static double Cl(double v) => Math.Max(0, Math.Min(255, v));
-
     private static (double r, double g, double b) MatMul(double r, double g, double b, double[] m) =>
-        (Cl(r * m[0] + g * m[1] + b * m[2]),
-         Cl(r * m[3] + g * m[4] + b * m[5]),
-         Cl(r * m[6] + g * m[7] + b * m[8]));
-
-    private static double[] SepiaMatrix(double v) => new[]
-    {
-        0.393 + 0.607*(1-v), 0.769 - 0.769*(1-v), 0.189 - 0.189*(1-v),
-        0.349 - 0.349*(1-v), 0.686 + 0.314*(1-v), 0.168 - 0.168*(1-v),
-        0.272 - 0.272*(1-v), 0.534 - 0.534*(1-v), 0.131 + 0.869*(1-v)
-    };
-
-    private static double[] SaturateMatrix(double v) => new[]
-    {
-        0.213 + 0.787*v, 0.715 - 0.715*v, 0.072 - 0.072*v,
-        0.213 - 0.213*v, 0.715 + 0.285*v, 0.072 - 0.072*v,
-        0.213 - 0.213*v, 0.715 - 0.715*v, 0.072 + 0.928*v
-    };
-
+        (Cl(r*m[0]+g*m[1]+b*m[2]), Cl(r*m[3]+g*m[4]+b*m[5]), Cl(r*m[6]+g*m[7]+b*m[8]));
+    private static double[] SepiaMatrix(double v) => new[] { 0.393+0.607*(1-v), 0.769-0.769*(1-v), 0.189-0.189*(1-v), 0.349-0.349*(1-v), 0.686+0.314*(1-v), 0.168-0.168*(1-v), 0.272-0.272*(1-v), 0.534-0.534*(1-v), 0.131+0.869*(1-v) };
+    private static double[] SaturateMatrix(double v) => new[] { 0.213+0.787*v, 0.715-0.715*v, 0.072-0.072*v, 0.213-0.213*v, 0.715+0.285*v, 0.072-0.072*v, 0.213-0.213*v, 0.715-0.715*v, 0.072+0.928*v };
     private static double[] HueRotateMatrix(double deg)
     {
-        double rad = deg / 180.0 * Math.PI;
-        double sin = Math.Sin(rad), cos = Math.Cos(rad);
-        return new[]
-        {
-            0.213 + cos*0.787 - sin*0.213, 0.715 - cos*0.715 - sin*0.715, 0.072 - cos*0.072 + sin*0.928,
-            0.213 - cos*0.213 + sin*0.143, 0.715 + cos*0.285 + sin*0.140, 0.072 - cos*0.072 - sin*0.283,
-            0.213 - cos*0.213 - sin*0.787, 0.715 - cos*0.715 + sin*0.715, 0.072 + cos*0.928 + sin*0.072
-        };
+        double rad = deg / 180.0 * Math.PI, sin = Math.Sin(rad), cos = Math.Cos(rad);
+        return new[] { 0.213+cos*0.787-sin*0.213, 0.715-cos*0.715-sin*0.715, 0.072-cos*0.072+sin*0.928, 0.213-cos*0.213+sin*0.143, 0.715+cos*0.285+sin*0.140, 0.072-cos*0.072-sin*0.283, 0.213-cos*0.213-sin*0.787, 0.715-cos*0.715+sin*0.715, 0.072+cos*0.928+sin*0.072 };
     }
-
     private static double ClampFilterParam(double v, int idx)
     {
         double max = idx == 2 ? 7500 : (idx == 4 || idx == 5) ? 200 : 100;
-        if (idx == 3)
-        {
-            if (v > max) v %= max;
-            else if (v < 0) v = max + v % max;
-        }
-        else
-        {
-            v = Math.Max(0, Math.Min(max, v));
-        }
+        if (idx == 3) { if (v > max) v %= max; else if (v < 0) v = max + v % max; }
+        else v = Math.Max(0, Math.Min(max, v));
         return v;
     }
-
     private static (double h, double s, double l) RgbToHsl(int r, int g, int b)
     {
-        double rf = r / 255.0, gf = g / 255.0, bf = b / 255.0;
-        double max = Math.Max(rf, Math.Max(gf, bf));
-        double min = Math.Min(rf, Math.Min(gf, bf));
+        double rf = r/255.0, gf = g/255.0, bf = b/255.0;
+        double max = Math.Max(rf, Math.Max(gf, bf)), min = Math.Min(rf, Math.Min(gf, bf));
         double l = (max + min) / 2.0, h = 0, s = 0;
-
         if (max != min)
         {
             double d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            if (max == rf) h = (gf - bf) / d + (gf < bf ? 6 : 0);
-            else if (max == gf) h = (bf - rf) / d + 2;
-            else h = (rf - gf) / d + 4;
+            s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+            if (max == rf) h = (gf-bf)/d + (gf < bf ? 6 : 0);
+            else if (max == gf) h = (bf-rf)/d + 2;
+            else h = (rf-gf)/d + 4;
             h /= 6;
         }
-
-        return (h * 100, s * 100, l * 100);
+        return (h*100, s*100, l*100);
     }
 }

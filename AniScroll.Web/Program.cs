@@ -14,4 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddScoped<AniListService>();
 
+// Singleton so the list persists for the whole session
+builder.Services.AddSingleton<UserListService>();
+
 await builder.Build().RunAsync();

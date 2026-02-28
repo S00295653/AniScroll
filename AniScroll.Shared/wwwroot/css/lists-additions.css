@@ -1,0 +1,441 @@
+/* ======================================================
+   LISTS PANEL
+   ====================================================== */
+
+/* ── Inline status dot inside the Add-to-List button ── */
+.status-btn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.status-dot-watching   { background: #22c55e; box-shadow: 0 0 5px rgba(34,197,94,0.7); }
+.status-dot-rewatching { background: #06b6d4; box-shadow: 0 0 5px rgba(6,182,212,0.7); }
+.status-dot-completed  { background: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,0.7); }
+.status-dot-planning   { background: #a855f7; box-shadow: 0 0 5px rgba(168,85,247,0.7); }
+.status-dot-paused     { background: #f97316; box-shadow: 0 0 5px rgba(249,115,22,0.7); }
+.status-dot-dropped    { background: #ef4444; box-shadow: 0 0 5px rgba(239,68,68,0.7); }
+
+/* ── Overlay ── */
+.lists-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 2100;
+    display: flex;
+    align-items: flex-end;
+    animation: overlayFadeIn 0.2s ease;
+}
+
+/* ── Panel ── */
+.lists-panel {
+    background: #0e0e16;
+    width: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: listsPanelSlideUp 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes listsPanelSlideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Drag handle ── */
+.lists-handle-zone {
+    flex-shrink: 0;
+    padding: 10px 0 4px;
+    display: flex;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+}
+
+.lists-handle-bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+}
+
+/* ── Header ── */
+.lists-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 4px 20px 14px;
+    gap: 10px;
+}
+
+.lists-header-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lists-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+.lists-total-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.45);
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.lists-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.lists-close-btn:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Tabs row ── */
+.lists-tabs-row {
+    flex-shrink: 0;
+    display: flex;
+    gap: 7px;
+    padding: 0 16px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.lists-tabs-row::-webkit-scrollbar { display: none; }
+
+.lists-tab {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-family: inherit;
+}
+
+.lists-tab-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.lists-tab-count {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* Per-status colors */
+.lists-tab-all     .lists-tab-dot { background: #e94560; }
+.lists-tab-watching   .lists-tab-dot { background: #22c55e; }
+.lists-tab-rewatching .lists-tab-dot { background: #06b6d4; }
+.lists-tab-completed  .lists-tab-dot { background: #3b82f6; }
+.lists-tab-planning   .lists-tab-dot { background: #a855f7; }
+.lists-tab-paused     .lists-tab-dot { background: #f97316; }
+.lists-tab-dropped    .lists-tab-dot { background: #ef4444; }
+
+/* Active tab */
+.lists-tab-all.active     { background: rgba(233, 69, 96,  0.12); border-color: rgba(233, 69, 96,  0.4); color: #e94560; }
+.lists-tab-watching.active   { background: rgba(34, 197, 94,  0.12); border-color: rgba(34, 197, 94,  0.4); color: #22c55e; }
+.lists-tab-rewatching.active { background: rgba(6, 182, 212,  0.12); border-color: rgba(6, 182, 212,  0.4); color: #06b6d4; }
+.lists-tab-completed.active  { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.4); color: #3b82f6; }
+.lists-tab-planning.active   { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.4); color: #a855f7; }
+.lists-tab-paused.active     { background: rgba(249, 115, 22, 0.12); border-color: rgba(249, 115, 22, 0.4); color: #f97316; }
+.lists-tab-dropped.active    { background: rgba(239, 68, 68,  0.12); border-color: rgba(239, 68, 68,  0.4); color: #ef4444; }
+
+.lists-tab.active .lists-tab-dot { opacity: 1; }
+
+/* ── Divider ── */
+.lists-header-divider {
+    flex-shrink: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0 16px;
+}
+
+/* ── Content / entries ── */
+.lists-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 8px 16px 32px;
+}
+
+.lists-content::-webkit-scrollbar { display: none; }
+
+/* ── Entry card ── */
+.list-entry {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.15s;
+    border-radius: 4px;
+}
+
+.list-entry:last-child { border-bottom: none; }
+
+.list-entry:active { background: rgba(255, 255, 255, 0.04); }
+
+/* Poster */
+.entry-poster {
+    width: 50px;
+    height: 72px;
+    border-radius: 7px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    /* CoverColor is set inline as background-color — shows while image loads */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    image-rendering: auto;
+    -webkit-image-rendering: auto;
+}
+
+/* Info column */
+.entry-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.entry-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.entry-meta {
+    font-size: 11px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Status badge on entry */
+.entry-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    width: fit-content;
+    letter-spacing: 0.01em;
+}
+
+.entry-status-watching   { background: rgba(34, 197, 94,  0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94,  0.3); }
+.entry-status-rewatching { background: rgba(6, 182, 212,  0.12); color: #06b6d4; border: 1px solid rgba(6, 182, 212,  0.3); }
+.entry-status-completed  { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+.entry-status-planning   { background: rgba(168, 85, 247, 0.12); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
+.entry-status-paused     { background: rgba(249, 115, 22, 0.12); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+.entry-status-dropped    { background: rgba(239, 68, 68,  0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68,  0.3); }
+
+/* Remove button */
+.entry-remove-btn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.22);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: color 0.18s, background 0.18s;
+}
+
+.entry-remove-btn:hover  { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.entry-remove-btn:active { transform: scale(0.9); }
+
+/* ── Empty state ── */
+.lists-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding-top: 20%;
+    text-align: center;
+}
+
+.lists-empty-icon {
+    font-size: 52px;
+    opacity: 0.18;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.lists-empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.lists-empty-sub {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.2);
+    max-width: 240px;
+    line-height: 1.5;
+}
+
+/* ======================================================
+   ADD-TO-LIST STATUS PICKER (inside AnimeDetailPopup)
+   ====================================================== */
+
+/* Button state when anime is already in list */
+.btn-add-to-list.btn-in-list {
+    background: linear-gradient(135deg, #1e3a5f, #0f2340);
+    box-shadow: 0 3px 12px rgba(59, 130, 246, 0.25);
+}
+
+.btn-add-to-list.btn-in-list.btn-status-watching   { background: linear-gradient(135deg, #14532d, #052e16); box-shadow: 0 3px 12px rgba(34, 197, 94, 0.2); }
+.btn-add-to-list.btn-in-list.btn-status-rewatching { background: linear-gradient(135deg, #164e63, #082f49); box-shadow: 0 3px 12px rgba(6, 182, 212, 0.2); }
+.btn-add-to-list.btn-in-list.btn-status-completed  { background: linear-gradient(135deg, #1e3a5f, #0f2340); box-shadow: 0 3px 12px rgba(59, 130, 246, 0.2); }
+.btn-add-to-list.btn-in-list.btn-status-planning   { background: linear-gradient(135deg, #3b0764, #1e0338); box-shadow: 0 3px 12px rgba(168, 85, 247, 0.2); }
+.btn-add-to-list.btn-in-list.btn-status-paused     { background: linear-gradient(135deg, #431407, #1c0702); box-shadow: 0 3px 12px rgba(249, 115, 22, 0.2); }
+.btn-add-to-list.btn-in-list.btn-status-dropped    { background: linear-gradient(135deg, #450a0a, #1c0202); box-shadow: 0 3px 12px rgba(239, 68, 68, 0.2); }
+
+.btn-add-to-list-inner {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: center;
+    width: 100%;
+}
+
+.btn-list-chevron {
+    margin-left: auto;
+    opacity: 0.6;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-list-chevron.open { transform: rotate(180deg); }
+
+/* Status picker dropdown */
+.status-picker {
+    width: 100%;
+    background: rgba(18, 18, 30, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: statusPickerDrop 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes statusPickerDrop {
+    from { opacity: 0; transform: translateY(-6px) scaleY(0.94); }
+    to   { opacity: 1; transform: translateY(0)     scaleY(1); }
+}
+
+.status-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s;
+}
+
+.status-option:last-child { border-bottom: none; }
+.status-option:active     { background: rgba(255, 255, 255, 0.07); }
+
+.status-option.active {
+    color: white;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.status-option-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-opt-watching   .status-option-dot { background: #22c55e; }
+.status-opt-rewatching .status-option-dot { background: #06b6d4; }
+.status-opt-completed  .status-option-dot { background: #3b82f6; }
+.status-opt-planning   .status-option-dot { background: #a855f7; }
+.status-opt-paused     .status-option-dot { background: #f97316; }
+.status-opt-dropped    .status-option-dot { background: #ef4444; }
+
+.status-opt-watching.active   { color: #22c55e; }
+.status-opt-rewatching.active { color: #06b6d4; }
+.status-opt-completed.active  { color: #3b82f6; }
+.status-opt-planning.active   { color: #a855f7; }
+.status-opt-paused.active     { color: #f97316; }
+.status-opt-dropped.active    { color: #ef4444; }
+
+.status-picker-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2px 0;
+}
+
+.status-opt-remove {
+    color: rgba(239, 68, 68, 0.7);
+    font-size: 11px;
+}
+
+.status-opt-remove:active { color: #ef4444; background: rgba(239, 68, 68, 0.08); }

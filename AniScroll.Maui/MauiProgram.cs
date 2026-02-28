@@ -29,6 +29,9 @@ public static class MauiProgram
 
         builder.Services.AddScoped<AniListService>();
 
+        // Singleton so the list persists for the whole session across all components
+        builder.Services.AddSingleton<UserListService>();
+
         return builder.Build();
     }
 }

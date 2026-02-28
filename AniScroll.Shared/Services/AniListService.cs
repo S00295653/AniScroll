@@ -7,42 +7,29 @@ namespace AniScroll.Shared.Services
     // ─── Rate-limit snapshot for one API ─────────────────────────────────────────
     public class RateLimitInfo
     {
-        /// <summary>Requests remaining in the current window (from X-RateLimit-Remaining).</summary>
-        public int Remaining { get; set; } = -1;   // -1 = not yet known
-
-        /// <summary>Total requests allowed per window (from X-RateLimit-Limit).</summary>
+        public int Remaining { get; set; } = -1;
         public int Limit { get; set; } = -1;
-
-        /// <summary>UTC time at which the window resets.</summary>
         public DateTime? ResetAt { get; set; }
-
-        /// <summary>True while we are in a hard rate-limited state (429 received).</summary>
         public bool IsLimited { get; set; }
-
-        /// <summary>How many requests have been made in the current window (tracked locally).</summary>
         public int RequestsSent { get; set; } = 0;
 
-        /// <summary>Seconds remaining until reset (0 when unknown or already passed).</summary>
         public int SecondsUntilReset =>
             ResetAt.HasValue
                 ? Math.Max(0, (int)Math.Ceiling((ResetAt.Value - DateTime.UtcNow).TotalSeconds))
                 : 0;
 
-        /// <summary>0–100 fill percentage for a progress bar (used = Limit - Remaining).</summary>
         public double UsedPercent
         {
             get
             {
                 if (Limit > 0 && Remaining >= 0)
                     return Math.Min(100.0, (Limit - Remaining) / (double)Limit * 100.0);
-                // Fallback: use local counter vs known limit
                 if (Limit > 0 && RequestsSent > 0)
                     return Math.Min(100.0, RequestsSent / (double)Limit * 100.0);
                 return 0;
             }
         }
 
-        /// <summary>Human-readable "X / Y" or "X sent" label.</summary>
         public string Label
         {
             get
@@ -59,18 +46,17 @@ namespace AniScroll.Shared.Services
         private readonly HttpClient _httpClient;
         private readonly Random _random;
 
-        // ── Exposed for the debug panel ──────────────────────────────────────────
         public string LastError { get; private set; } = string.Empty;
 
         public RateLimitInfo AniListRateLimit { get; } = new() { Limit = 30 };  // AniList: 30 req/min
         public RateLimitInfo JikanRateLimit   { get; } = new() { Limit = 60 };  // Jikan:   60 req/min
 
-        // Legacy compat props
+        // Legacy compat
         public int RequestCount => AniListRateLimit.RequestsSent;
-        public const int RequestLimit = 30; // AniList: 30 req/min (NOT 90 — that value circulating online is wrong)
+        public const int RequestLimit = 30; // AniList: 30 req/min (NOT 90 — that figure online is wrong)
 
-        private const string ANILIST_ENDPOINT             = "https://graphql.anilist.co";
-        private const int    RATE_LIMIT_FALLBACK_SECONDS  = 60;
+        private const string ANILIST_ENDPOINT            = "https://graphql.anilist.co";
+        private const int    RATE_LIMIT_FALLBACK_SECONDS = 60;
 
         public AniListService(HttpClient httpClient)
         {
@@ -83,12 +69,11 @@ namespace AniScroll.Shared.Services
         public bool IsRateLimited()
         {
             if (!AniListRateLimit.IsLimited) return false;
-            // Auto-clear once reset time has passed
             if (AniListRateLimit.ResetAt.HasValue && DateTime.UtcNow >= AniListRateLimit.ResetAt.Value)
             {
-                AniListRateLimit.IsLimited  = false;
-                AniListRateLimit.ResetAt    = null;
-                AniListRateLimit.Remaining  = -1;
+                AniListRateLimit.IsLimited = false;
+                AniListRateLimit.ResetAt   = null;
+                AniListRateLimit.Remaining = -1;
             }
             return AniListRateLimit.IsLimited;
         }
@@ -113,8 +98,7 @@ namespace AniScroll.Shared.Services
                 var response = await _httpClient.SendAsync(request);
 
                 ParseRateLimitHeaders(response, JikanRateLimit,
-                    // Jikan v4 header aliases
-                    limitAliases:     new[] { "X-RateLimit-Limit",     "X-RateLimit-Limit-EachMinute",  "X-Ratelimit-Limit-60" },
+                    limitAliases:     new[] { "X-RateLimit-Limit",     "X-RateLimit-Limit-EachMinute",     "X-Ratelimit-Limit-60" },
                     remainingAliases: new[] { "X-RateLimit-Remaining", "X-RateLimit-Remaining-EachMinute", "X-Ratelimit-Remaining-60" },
                     resetAliases:     new[] { "X-RateLimit-Reset",     "Retry-After" });
 
@@ -125,7 +109,6 @@ namespace AniScroll.Shared.Services
                 }
 
                 JikanRateLimit.IsLimited = false;
-
                 if (!response.IsSuccessStatusCode) return new List<JikanSearchResult>();
 
                 var json  = await response.Content.ReadAsStringAsync();
@@ -139,22 +122,18 @@ namespace AniScroll.Shared.Services
                 foreach (var item in items)
                 {
                     if (item == null || item.Type == JTokenType.Null) continue;
-
                     var scoreToken  = item["score"];
                     double numScore = scoreToken != null && scoreToken.Type != JTokenType.Null
                         ? scoreToken.Value<double>() : 0;
-                    string scoreStr = numScore > 0 ? numScore.ToString() : "N/A";
-
                     var titleRaw     = item["title"]?.ToString() ?? "";
                     var titleEnglish = item["title_english"]?.ToString() ?? "";
-
                     raw.Add(new JikanSearchResult
                     {
                         MalId          = item["mal_id"]?.Value<int>() ?? 0,
                         Title          = titleRaw,
                         ImageUrl       = item["images"]?["jpg"]?["large_image_url"]?.ToString()
                                       ?? item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
-                        Score          = scoreStr,
+                        Score          = numScore > 0 ? numScore.ToString() : "N/A",
                         Type           = item["type"]?.ToString() ?? "",
                         Episodes       = item["episodes"]?.Value<int?>(),
                         RelevanceScore = ComputeRelevance(queryNorm, titleRaw, titleEnglish, numScore)
@@ -171,36 +150,28 @@ namespace AniScroll.Shared.Services
             }
         }
 
-        // ─── Single anime lookups (WITH relations) ────────────────────────────────
+        // ─── Single anime lookups ─────────────────────────────────────────────────
 
         public async Task<AnimeCard?> GetAnimeByMalIdAsync(int malId)
         {
             if (IsRateLimited()) return null;
             try
             {
-                var fields = GetAnimeFieldsWithRelations();
-                var query  = "query { Media(idMal: " + malId + ", type: ANIME) { " + fields + " } }";
-                var resp   = await PostGraphQL(query);
+                var query = "query { Media(idMal: " + malId + ", type: ANIME) { " + GetAnimeFieldsWithRelations() + " } }";
+                var resp  = await PostGraphQL(query);
                 if (resp == null) return null;
-
                 var data   = JObject.Parse(resp);
                 var errors = data["errors"];
                 if (errors != null && errors.HasValues)
                     System.Diagnostics.Debug.WriteLine("AniList errors MAL " + malId + ": " + errors);
-
                 var media = data["data"]?["Media"];
                 if (media == null || media.Type == JTokenType.Null) return null;
-
                 var card = ParseAnimeCard(media, includeRelations: true);
                 if (card == null && string.IsNullOrEmpty(LastError))
                     LastError = "ParseAnimeCard returned null";
                 return card;
             }
-            catch (Exception ex)
-            {
-                LastError = "GetAnimeByMalIdAsync: " + ex.Message;
-                return null;
-            }
+            catch (Exception ex) { LastError = "GetAnimeByMalIdAsync: " + ex.Message; return null; }
         }
 
         public async Task<AnimeCard?> GetAnimeByTitleAsync(string title)
@@ -209,19 +180,14 @@ namespace AniScroll.Shared.Services
             try
             {
                 var safeTitle = title.Replace("\"", "\\\"");
-                var fields    = GetAnimeFieldsWithRelations();
-                var query     = "query { Media(search: \"" + safeTitle + "\", type: ANIME) { " + fields + " } }";
-                var resp      = await PostGraphQL(query);
+                var query = "query { Media(search: \"" + safeTitle + "\", type: ANIME) { " + GetAnimeFieldsWithRelations() + " } }";
+                var resp  = await PostGraphQL(query);
                 if (resp == null) return null;
                 var media = JObject.Parse(resp)?["data"]?["Media"];
                 if (media == null || media.Type == JTokenType.Null) return null;
                 return ParseAnimeCard(media, includeRelations: true);
             }
-            catch (Exception ex)
-            {
-                LastError = "GetAnimeByTitleAsync: " + ex.Message;
-                return null;
-            }
+            catch (Exception ex) { LastError = "GetAnimeByTitleAsync: " + ex.Message; return null; }
         }
 
         public async Task<AnimeCard?> GetAnimeByAniListIdAsync(int aniListId)
@@ -229,22 +195,17 @@ namespace AniScroll.Shared.Services
             if (IsRateLimited()) return null;
             try
             {
-                var fields = GetAnimeFieldsWithRelations();
-                var query  = "query { Media(id: " + aniListId + ", type: ANIME) { " + fields + " } }";
-                var resp   = await PostGraphQL(query);
+                var query = "query { Media(id: " + aniListId + ", type: ANIME) { " + GetAnimeFieldsWithRelations() + " } }";
+                var resp  = await PostGraphQL(query);
                 if (resp == null) return null;
                 var media = JObject.Parse(resp)?["data"]?["Media"];
                 if (media == null || media.Type == JTokenType.Null) return null;
                 return ParseAnimeCard(media, includeRelations: true);
             }
-            catch (Exception ex)
-            {
-                LastError = "GetAnimeByAniListIdAsync: " + ex.Message;
-                return null;
-            }
+            catch (Exception ex) { LastError = "GetAnimeByAniListIdAsync: " + ex.Message; return null; }
         }
 
-        // ─── Bulk load — WITH relations so popup needs no extra API call ──────────
+        // ─── Bulk load ────────────────────────────────────────────────────────────
 
         public async Task<AnimeLoadResult> GetBulkAnimesAsync()
         {
@@ -252,7 +213,6 @@ namespace AniScroll.Shared.Services
                 return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = true };
             try
             {
-                // Using WithRelations so that opening the popup never requires a second request
                 var fields = GetAnimeFieldsWithRelations();
                 var query  = @"query {
                     popular:    Page(page: 1, perPage: 50) { media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"",""Ecchi""], sort: POPULARITY_DESC) { " + fields + @" } }
@@ -266,7 +226,7 @@ namespace AniScroll.Shared.Services
                 if (response == null)
                     return new AnimeLoadResult { Animes = new List<AnimeCard>(), IsRateLimited = IsRateLimited() };
 
-                var data = JObject.Parse(response);
+                var data   = JObject.Parse(response);
                 var result = new List<AnimeCard>();
                 result.AddRange(Pick(ExtractPool(data["data"]?["popular"]?["media"],    true), 27));
                 result.AddRange(Pick(ExtractPool(data["data"]?["topScore"]?["media"],   true), 12));
@@ -308,8 +268,8 @@ namespace AniScroll.Shared.Services
 
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    AniListRateLimit.IsLimited  = true;
-                    AniListRateLimit.Remaining  = 0;
+                    AniListRateLimit.IsLimited = true;
+                    AniListRateLimit.Remaining = 0;
                     LastError = "429 Rate Limited";
                     return null;
                 }
@@ -334,51 +294,33 @@ namespace AniScroll.Shared.Services
             }
         }
 
-        // ─── Shared header parser ─────────────────────────────────────────────────
+        // ─── Header parser ────────────────────────────────────────────────────────
 
         private static void ParseRateLimitHeaders(
             HttpResponseMessage response, RateLimitInfo info,
             string[] limitAliases, string[] remainingAliases, string[] resetAliases)
         {
-            // Limit
             foreach (var name in limitAliases)
                 if (TryGetHeader(response, name, out var v) && int.TryParse(v, out var lim))
                 { info.Limit = lim; break; }
 
-            // Remaining
             foreach (var name in remainingAliases)
                 if (TryGetHeader(response, name, out var v) && int.TryParse(v, out var rem))
                 { info.Remaining = rem; break; }
 
-            // Reset — prefer Unix timestamp, fall back to Retry-After
             foreach (var name in resetAliases)
             {
                 if (!TryGetHeader(response, name, out var v)) continue;
                 if (long.TryParse(v, out var unix) && unix > 1_000_000_000L)
-                {
-                    // Unix timestamp (seconds)
-                    info.ResetAt = DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
-                    break;
-                }
+                    { info.ResetAt = DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime; break; }
                 if (int.TryParse(v, out var delta))
-                {
-                    // Relative seconds (Retry-After)
-                    info.ResetAt = DateTime.UtcNow.AddSeconds(delta);
-                    break;
-                }
+                    { info.ResetAt = DateTime.UtcNow.AddSeconds(delta); break; }
                 if (DateTimeOffset.TryParse(v, out var dto))
-                {
-                    info.ResetAt = dto.UtcDateTime;
-                    break;
-                }
+                    { info.ResetAt = dto.UtcDateTime; break; }
             }
 
-            // If we got a 429 and still have no reset time, default 60 s
-            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests
-                && info.ResetAt == null)
-            {
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests && info.ResetAt == null)
                 info.ResetAt = DateTime.UtcNow.AddSeconds(RATE_LIMIT_FALLBACK_SECONDS);
-            }
         }
 
         private static bool TryGetHeader(HttpResponseMessage r, string name, out string value)
@@ -399,10 +341,13 @@ namespace AniScroll.Shared.Services
 
         // ─── Field sets ───────────────────────────────────────────────────────────
 
+        // coverImage now includes `color` — AniList returns the dominant hex color of the artwork.
+        // This is used as a CSS placeholder background-color while the real image loads,
+        // giving a noticeably better perceived quality vs a generic grey box.
         private string GetAnimeFieldsWithRelations() => @"
             id
             title { romaji english native }
-            coverImage { extraLarge large }
+            coverImage { extraLarge large color }
             bannerImage
             format
             averageScore
@@ -426,7 +371,7 @@ namespace AniScroll.Shared.Services
                     node {
                         id type
                         title { romaji english }
-                        coverImage { extraLarge large }
+                        coverImage { extraLarge large color }
                         format status
                     }
                 }
@@ -437,11 +382,10 @@ namespace AniScroll.Shared.Services
             rankings { rank type context allTime season year }
         ";
 
-        // Kept for GetRandomAnimeAsync (single card, relations not needed there)
         private string GetAnimeFieldsNoRelations() => @"
             id
             title { romaji english native }
-            coverImage { extraLarge large }
+            coverImage { extraLarge large color }
             bannerImage
             format
             averageScore
@@ -504,8 +448,8 @@ namespace AniScroll.Shared.Services
             if (IsRateLimited()) return null;
             try
             {
-                int rand   = _random.Next(100);
-                int page   = _random.Next(1, 80);
+                int rand  = _random.Next(100);
+                int page  = _random.Next(1, 80);
                 string filter = rand < 45
                     ? "type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [\"Hentai\",\"Ecchi\"], sort: POPULARITY_DESC"
                     : rand < 65
@@ -541,6 +485,8 @@ namespace AniScroll.Shared.Services
                 var cover       = m["coverImage"];
                 string imageUrl = cover?["extraLarge"]?.ToString()
                                ?? cover?["large"]?.ToString() ?? "";
+                // Dominant color from AniList CDN — used as CSS background-color placeholder
+                string coverColor = cover?["color"]?.ToString() ?? "";
 
                 string score = m["averageScore"] != null && m["averageScore"]!.Type != JTokenType.Null
                     ? m["averageScore"]!.ToString() : "N/A";
@@ -594,11 +540,7 @@ namespace AniScroll.Shared.Services
                     foreach (var s in sn)
                     {
                         if (s == null || s.Type == JTokenType.Null) continue;
-                        studios.Add(new AnimeStudio
-                        {
-                            Id   = s["id"]?.Value<int>() ?? 0,
-                            Name = s["name"]?.ToString() ?? ""
-                        });
+                        studios.Add(new AnimeStudio { Id = s["id"]?.Value<int>() ?? 0, Name = s["name"]?.ToString() ?? "" });
                     }
 
                 var relations = new List<AnimeRelation>();
@@ -615,9 +557,9 @@ namespace AniScroll.Shared.Services
                             string relTitle = !string.IsNullOrEmpty(rt?["english"]?.ToString())
                                 ? rt!["english"]!.ToString()
                                 : rt?["romaji"]?.ToString() ?? "";
-                            var relCover   = node["coverImage"];
-                            string relImg  = relCover?["extraLarge"]?.ToString()
-                                          ?? relCover?["large"]?.ToString() ?? "";
+                            var relCover  = node["coverImage"];
+                            string relImg = relCover?["extraLarge"]?.ToString()
+                                         ?? relCover?["large"]?.ToString() ?? "";
                             relations.Add(new AnimeRelation
                             {
                                 Id           = node["id"]?.Value<int>() ?? 0,
@@ -696,6 +638,7 @@ namespace AniScroll.Shared.Services
                     NativeTitle = nativeTitle,
                     ImageUrl    = imageUrl,
                     BannerUrl   = m["bannerImage"]?.ToString() ?? "",
+                    CoverColor  = coverColor,
                     Score       = score,
                     Description = description,
                     Season      = season,
@@ -760,9 +703,9 @@ namespace AniScroll.Shared.Services
         private static int DetermineDisplayCount(List<JikanSearchResult> sorted, string query)
         {
             if (sorted.Count == 0) return 0;
-            double best = sorted[0].RelevanceScore;
-            int qualified = sorted.Count(r => r.RelevanceScore >= best * 0.45);
-            int max = best >= 60 ? 4 : best >= 40 ? 6 : best >= 20 ? 8 : 10;
+            double best      = sorted[0].RelevanceScore;
+            int qualified    = sorted.Count(r => r.RelevanceScore >= best * 0.45);
+            int max          = best >= 60 ? 4 : best >= 40 ? 6 : best >= 20 ? 8 : 10;
             return Math.Min(qualified, max);
         }
 
@@ -789,14 +732,14 @@ namespace AniScroll.Shared.Services
 
         private string FormatSource(string s) => s switch
         {
-            "ORIGINAL"           => "Original",   "MANGA"       => "Manga",
-            "LIGHT_NOVEL"        => "Light Novel", "VISUAL_NOVEL"=> "Visual Novel",
-            "VIDEO_GAME"         => "Video Game",  "WEB_NOVEL"   => "Web Novel",
-            "NOVEL"              => "Novel",        "ANIME"       => "Anime",
-            "GAME"               => "Game",         "COMIC"       => "Comic",
+            "ORIGINAL"           => "Original",    "MANGA"        => "Manga",
+            "LIGHT_NOVEL"        => "Light Novel",  "VISUAL_NOVEL" => "Visual Novel",
+            "VIDEO_GAME"         => "Video Game",   "WEB_NOVEL"    => "Web Novel",
+            "NOVEL"              => "Novel",         "ANIME"        => "Anime",
+            "GAME"               => "Game",          "COMIC"        => "Comic",
             "PICTURE_BOOK"       => "Picture Book",
             "MULTIMEDIA_PROJECT" => "Multimedia Project",
-            "OTHER"              => "Other",        _             => s
+            "OTHER"              => "Other",         _              => s
         };
 
         private string FormatRelationType(string rt) => rt switch

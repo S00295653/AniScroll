@@ -212,6 +212,11 @@
                                                          IsVisible="showDetailPopup"
                                                          OnClose="CloseDetailPopup" />
 
+<AniScroll.Shared.Components.Layout.ListsPanel IsVisible="showListsPanel"
+                                                  OnClose="@(() => { showListsPanel = false; StateHasChanged(); })"
+                                                OnAnimeSelected="@(async (anime) => { showListsPanel = false; await ShowAnimeDetails(anime); })" />
+
+
     <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
                                                    OnHide="@(() => showDebugPanel = false)" />
 </div>
@@ -257,6 +262,8 @@
 
     // ─── Popup ───────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
+
+    private bool showListsPanel = false;
     private AnimeCard? selectedAnime = null;
 
     // ─── Search ──────────────────────────────────────────────────────────────
@@ -586,7 +593,7 @@
         selectedAnime   = null;
         StateHasChanged();
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════════
     //  SEARCH
     // ═══════════════════════════════════════════════════════════════════════════
@@ -674,7 +681,12 @@
         StateHasChanged();
     }
 
-    private void HandleListsClicked() { }
+    private void HandleListsClicked()
+    {
+        showListsPanel = true;
+        StateHasChanged();
+    }
+
     private void HandleProfileClicked() { }
 
     public void Dispose() => rateLimitTimer?.Dispose();
