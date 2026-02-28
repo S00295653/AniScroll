@@ -382,6 +382,7 @@
     width: 100%;
     max-width: 560px;
     max-height: 94dvh;
+    /* rounded top corners — banner fills right up to this boundary */
     border-radius: 22px 22px 0 0;
     overflow: hidden;
     display: flex;
@@ -389,6 +390,7 @@
     animation: sheetSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    /* no ::before drag handle — swipe-to-close removed */
 }
 
 @keyframes sheetSlideUp {
@@ -396,19 +398,8 @@
     to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ── Drag handle ── */
-.list-editor-modal::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.14);
-    border-radius: 2px;
-    margin: 10px auto 0;
-    flex-shrink: 0;
-}
-
 /* ── Header (banner + poster + title + save) ── */
+/* Banner now goes flush to the top rounded corners */
 .list-editor-header {
     position: relative;
     overflow: hidden;
@@ -486,6 +477,25 @@
 .list-editor-fav-btn:hover  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #f87171; }
 .list-editor-fav-btn:active { transform: scale(0.88); }
 .list-editor-fav-btn.is-fav { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #ef4444; }
+
+/* ── Delete button in header (replaces footer delete) ── */
+.list-editor-header-delete-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    color: rgba(239, 68, 68, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.18s;
+}
+
+.list-editor-header-delete-btn:hover  { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #ef4444; }
+.list-editor-header-delete-btn:active { transform: scale(0.88); }
 
 .list-editor-save-btn {
     background: #0ea5e9;
@@ -582,7 +592,6 @@
    STATUS CUSTOM DROPDOWN
    ══════════════════════════════════════════════════════ */
 
-/* Field wrapper — relative so dropdown anchors to it */
 .le-dd-field {
     display: flex;
     flex-direction: column;
@@ -590,7 +599,6 @@
     position: relative;
 }
 
-/* Trigger button */
 .le-dd-trigger {
     display: flex;
     align-items: center;
@@ -611,7 +619,6 @@
 
 .le-dd-trigger:hover { background: rgba(255,255,255,0.07); }
 
-/* Color accent on border when a status is selected */
 .le-dd-trigger-watching   { border-color: rgba(34,197,94,0.35);  color: #86efac; }
 .le-dd-trigger-rewatching { border-color: rgba(6,182,212,0.35);  color: #67e8f9; }
 .le-dd-trigger-completed  { border-color: rgba(59,130,246,0.35); color: #93c5fd; }
@@ -619,9 +626,7 @@
 .le-dd-trigger-paused     { border-color: rgba(249,115,22,0.35); color: #fdba74; }
 .le-dd-trigger-dropped    { border-color: rgba(239,68,68,0.35);  color: #fca5a5; }
 
-.le-dd-trigger-text {
-    flex: 1;
-}
+.le-dd-trigger-text { flex: 1; }
 
 .le-dd-chevron {
     flex-shrink: 0;
@@ -634,7 +639,6 @@
     opacity: 0.8;
 }
 
-/* Colored dot — shared between trigger and list */
 .le-dd-dot {
     width: 9px;
     height: 9px;
@@ -649,7 +653,6 @@
 .le-dd-dot-paused     { background: #f97316; box-shadow: 0 0 6px rgba(249,115,22,0.7); }
 .le-dd-dot-dropped    { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.7); }
 
-/* Dropdown list */
 .le-dd-list {
     position: absolute;
     top: calc(100% + 5px);
@@ -669,7 +672,6 @@
     to   { opacity: 1; transform: translateY(0)     scale(1);    }
 }
 
-/* Option row */
 .le-dd-option {
     display: flex;
     align-items: center;
@@ -694,7 +696,6 @@
 
 .le-dd-option-text { flex: 1; }
 
-/* Selected option highlight */
 .le-dd-option.selected { color: white; }
 .le-dd-option.selected.le-opt-watching   { background: rgba(34,197,94,0.08);  color: #86efac; }
 .le-dd-option.selected.le-opt-rewatching { background: rgba(6,182,212,0.08);  color: #67e8f9; }
@@ -704,188 +705,96 @@
 .le-dd-option.selected.le-opt-dropped    { background: rgba(239,68,68,0.08);  color: #fca5a5; }
 
 /* ══════════════════════════════════════════════════════
-   SCORE SLIDER
+   SCORE CONTROLS: − | editable input | +
    ══════════════════════════════════════════════════════ */
 
-.le-score-header-row {
+.le-score-controls {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.le-score-badge-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.le-score-val {
-    font-size: 20px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    transition: color 0.25s;
-}
-
-.le-score-val-empty          { color: rgba(255,255,255,0.2); }
-.le-score-val-score-bar-red    { color: #ef4444; }
-.le-score-val-score-bar-orange { color: #f97316; }
-.le-score-val-score-bar-yellow { color: #eab308; }
-.le-score-val-score-bar-lime   { color: #84cc16; }
-.le-score-val-score-bar-green  { color: #22c55e; }
-
-.le-score-sublabel {
-    font-size: 11px;
-    color: rgba(255,255,255,0.35);
-    font-style: italic;
-}
-
-/* Slider container */
-.le-slider-wrap {
-    position: relative;
-    padding: 4px 0 2px;
-}
-
-/* The range input */
-.le-score-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    border-radius: 999px;
-    outline: none;
-    cursor: pointer;
-    background: linear-gradient(
-        to right,
-        var(--fill) 0%,
-        var(--fill) var(--pct),
-        rgba(255,255,255,0.1) var(--pct),
-        rgba(255,255,255,0.1) 100%
-    );
-    transition: background 0.18s;
-}
-
-/* Thumb — WebKit */
-.le-score-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 3px var(--fill);
-    cursor: grab;
-    transition: box-shadow 0.15s, transform 0.12s;
-}
-
-.le-score-slider::-webkit-slider-thumb:active {
-    cursor: grabbing;
-    transform: scale(1.15);
-    box-shadow: 0 3px 14px rgba(0,0,0,0.6), 0 0 0 4px var(--fill);
-}
-
-/* Thumb — Firefox */
-.le-score-slider::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: white;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 3px var(--fill);
-    cursor: grab;
-    transition: box-shadow 0.15s, transform 0.12s;
-}
-
-.le-score-slider::-moz-range-thumb:active {
-    cursor: grabbing;
-    transform: scale(1.15);
-}
-
-/* Scale labels 0 / 5 / 10 */
-.le-slider-scale {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: rgba(255,255,255,0.25);
-    font-weight: 600;
-    margin-top: 5px;
-    padding: 0 2px;
-}
-
-/* ══════════════════════════════════════════════════════
-   Keep old score bar classes (used elsewhere if any)
-   ══════════════════════════════════════════════════════ */
-.list-editor-score-bar-wrap {
-    height: 3px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.list-editor-score-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-.score-bar-red    { background: #ef4444; }
-.score-bar-orange { background: #f97316; }
-.score-bar-yellow { background: #eab308; }
-.score-bar-lime   { background: #84cc16; }
-.score-bar-green  { background: #22c55e; }
-
-.list-editor-score-label {
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
-    font-style: italic;
-}
-
-/* ── Number input with arrows ── */
-.list-editor-number-input {
-    display: flex;
-    align-items: center;
+    align-items: stretch;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 10px;
     overflow: hidden;
-    transition: border-color 0.18s;
 }
 
-.list-editor-number-input:focus-within { border-color: rgba(14,165,233,0.45); }
-
-.list-editor-num-display {
-    flex: 1;
-    color: white;
-    font-size: 15px;
-    font-weight: 700;
-    padding: 9px 10px;
-    min-width: 0;
-}
-
-.list-editor-arrows {
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid rgba(255,255,255,0.06);
-    flex-shrink: 0;
-}
-
-.list-editor-arrow-btn {
+.le-score-step-btn {
+    width: 42px;
+    height: 46px;
     background: transparent;
     border: none;
-    color: rgba(255,255,255,0.4);
-    padding: 5px 9px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.14s, color 0.14s;
-    line-height: 1;
+    flex-shrink: 0;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-.list-editor-arrow-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
-.list-editor-arrow-btn:active { background: rgba(255,255,255,0.12); }
+.le-score-step-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
+.le-score-step-btn:active { background: rgba(255,255,255,0.13); transform: scale(0.94); }
 
-/* ── Episode progress bar ── */
+.le-score-input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    color: white;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 8px 4px;
+    outline: none;
+    font-family: inherit;
+    letter-spacing: -0.02em;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-appearance: textfield;
+}
+
+.le-score-input::placeholder { color: rgba(255, 255, 255, 0.18); font-weight: 400; font-size: 22px; }
+
+.le-score-input-score-bar-red    { color: #ef4444; }
+.le-score-input-score-bar-orange { color: #f97316; }
+.le-score-input-score-bar-yellow { color: #eab308; }
+.le-score-input-score-bar-lime   { color: #84cc16; }
+.le-score-input-score-bar-green  { color: #22c55e; }
+
+/* Episode input shows "7/24" — use slightly smaller font to fit */
+.le-ep-input {
+    font-size: 15px !important;
+}
+
+/* ── Clickable score progress bar ── */
+.le-score-bar-click {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    margin-top: 4px;
+    transition: background 0.15s;
+}
+
+.le-score-bar-click:hover { background: rgba(255, 255, 255, 0.13); }
+
+.le-score-bar-fill-click {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 0;
+    transition: width 0.18s ease, background 0.22s ease;
+}
+
+/* ── Episode progress bar — 8px ── */
 .list-editor-ep-bar {
     height: 8px;
     background: rgba(255, 255, 255, 0.08);
@@ -904,11 +813,103 @@
     transition: width 0.25s ease;
 }
 
-.list-editor-ep-label {
-    font-size: 10px;
-    color: rgba(255,255,255,0.3);
-    margin-top: 1px;
+.le-ep-bar-clickable { cursor: pointer !important; }
+.le-ep-bar-clickable:hover { background: rgba(255, 255, 255, 0.12) !important; }
+
+/* ── "None" status dot ── */
+.le-dd-dot-none {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: none;
 }
+
+/* ══════════════════════════════════════════════════════
+   DATE INPUTS — no icon, uniform height
+   ══════════════════════════════════════════════════════ */
+
+.list-editor-date-wrapper {
+    display: flex;
+    align-items: center;
+    height: 46px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 0 11px;
+    transition: border-color 0.18s;
+    box-sizing: border-box;
+}
+
+.list-editor-date-wrapper:focus-within { border-color: rgba(14,165,233,0.45); }
+
+.list-editor-date-input {
+    flex: 1;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+    color-scheme: dark;
+}
+
+.list-editor-date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.55);
+    cursor: pointer;
+}
+
+/* ── Number input for Rewatches — same 46px height as date inputs ── */
+.list-editor-number-input {
+    display: flex;
+    align-items: center;
+    height: 46px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: border-color 0.18s;
+}
+
+.list-editor-number-input:focus-within { border-color: rgba(14,165,233,0.45); }
+
+.list-editor-num-display {
+    flex: 1;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 0 10px;
+    min-width: 0;
+}
+
+.list-editor-arrows {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    height: 100%;
+}
+
+.list-editor-arrow-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    padding: 0 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.14s, color 0.14s;
+    line-height: 1;
+}
+
+.list-editor-arrow-btn:not(:last-child) {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.list-editor-arrow-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
+.list-editor-arrow-btn:active { background: rgba(255,255,255,0.12); }
 
 /* ── Custom lists / checkboxes ── */
 .list-editor-custom-lists {
@@ -939,37 +940,6 @@
 
 .list-editor-checkbox-row:hover { color: rgba(255,255,255,0.85); }
 
-/* ── Date input ── */
-.list-editor-date-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 10px;
-    padding: 9px 11px;
-    transition: border-color 0.18s;
-}
-
-.list-editor-date-wrapper:focus-within { border-color: rgba(14,165,233,0.45); }
-
-.list-editor-date-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 12px;
-    font-family: inherit;
-    outline: none;
-    min-width: 0;
-    color-scheme: dark;
-}
-
-.list-editor-date-input::-webkit-calendar-picker-indicator {
-    filter: invert(0.55);
-    cursor: pointer;
-}
-
 /* ── Notes textarea ── */
 .list-editor-textarea {
     background: rgba(255,255,255,0.04);
@@ -992,31 +962,12 @@
 .list-editor-textarea:focus { border-color: rgba(14,165,233,0.38); }
 .list-editor-textarea::placeholder { color: rgba(255,255,255,0.2); }
 
-/* ── Footer (Delete) ── */
-.list-editor-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 4px;
-}
-
-.list-editor-delete-btn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(239,68,68,0.07);
-    border: 1px solid rgba(239,68,68,0.2);
-    border-radius: 10px;
-    color: rgba(239,68,68,0.75);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
-}
-
-.list-editor-delete-btn:hover  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.38); color: #ef4444; }
-.list-editor-delete-btn:active { transform: scale(0.96); }
+/* ── Score bar helpers ── */
+.score-bar-red    { background: #ef4444; }
+.score-bar-orange { background: #f97316; }
+.score-bar-yellow { background: #eab308; }
+.score-bar-lime   { background: #84cc16; }
+.score-bar-green  { background: #22c55e; }
 
 /* ======================================================
    DELETE CONFIRMATION
@@ -1120,217 +1071,3 @@
 
 .delete-confirm-delete:hover  { opacity: 0.9; }
 .delete-confirm-delete:active { transform: scale(0.96); }
-
-/* ══════════════════════════════════════════════════════
-   SCORE CONTROLS: − | editable input | +
-   ══════════════════════════════════════════════════════ */
-
-.le-score-controls {
-    display: flex;
-    align-items: stretch;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.le-score-step-btn {
-    width: 42px;
-    height: 46px;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 22px;
-    font-weight: 300;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-family: inherit;
-    transition: background 0.15s, color 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.le-score-step-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
-.le-score-step-btn:active { background: rgba(255,255,255,0.13); transform: scale(0.94); }
-
-.le-score-input {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
-    background: transparent;
-    border: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.07);
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
-    color: white;
-    font-size: 20px;
-    font-weight: 800;
-    padding: 8px 4px;
-    outline: none;
-    font-family: inherit;
-    letter-spacing: -0.02em;
-    user-select: text;
-    -webkit-user-select: text;
-    /* no spinner arrows on number-like inputs */
-    -moz-appearance: textfield;
-}
-
-.le-score-input::placeholder { color: rgba(255, 255, 255, 0.18); font-weight: 400; font-size: 22px; }
-
-/* Colored value based on score quality */
-.le-score-input-score-bar-red    { color: #ef4444; }
-.le-score-input-score-bar-orange { color: #f97316; }
-.le-score-input-score-bar-yellow { color: #eab308; }
-.le-score-input-score-bar-lime   { color: #84cc16; }
-.le-score-input-score-bar-green  { color: #22c55e; }
-
-/* ── Clickable score progress bar ── */
-.le-score-bar-click {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    overflow: hidden;
-    cursor: pointer;
-    position: relative;
-    margin-top: 4px;
-    transition: background 0.15s;
-}
-
-.le-score-bar-click:hover { background: rgba(255, 255, 255, 0.13); }
-
-.le-score-bar-fill-click {
-    height: 100%;
-    border-radius: 999px;
-    min-width: 0;
-    transition: width 0.18s ease, background 0.22s ease;
-}
-
-/* ── Clickable episode bar ── */
-.le-ep-bar-clickable {
-    cursor: pointer !important;
-}
-
-.le-ep-bar-clickable:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-}
-
-/* ── "None" status dot — neutral, no color ── */
-.le-dd-dot-none {
-    background: rgba(255, 255, 255, 0.25);
-    box-shadow: none;
-}
-
-/* Default trigger when no status selected — plain border, no tint */
-.le-dd-trigger:not([class*="le-dd-trigger-watching"])
-               :not([class*="le-dd-trigger-rewatching"])
-               :not([class*="le-dd-trigger-completed"])
-               :not([class*="le-dd-trigger-planning"])
-               :not([class*="le-dd-trigger-paused"])
-               :not([class*="le-dd-trigger-dropped"]) {
-    border-color: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.55);
-}
-
-/* ══════════════════════════════════════════════════════
-   SCORE CONTROLS: − | editable input | +
-   ══════════════════════════════════════════════════════ */
-
-.le-score-controls {
-    display: flex;
-    align-items: stretch;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.le-score-step-btn {
-    width: 42px;
-    height: 46px;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 22px;
-    font-weight: 300;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-family: inherit;
-    transition: background 0.15s, color 0.15s;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.le-score-step-btn:hover  { background: rgba(255,255,255,0.07); color: white; }
-.le-score-step-btn:active { background: rgba(255,255,255,0.13); transform: scale(0.94); }
-
-.le-score-input {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
-    background: transparent;
-    border: none;
-    border-left: 1px solid rgba(255, 255, 255, 0.07);
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
-    color: white;
-    font-size: 20px;
-    font-weight: 800;
-    padding: 8px 4px;
-    outline: none;
-    font-family: inherit;
-    letter-spacing: -0.02em;
-    user-select: text;
-    -webkit-user-select: text;
-    /* no spinner arrows on number-like inputs */
-    -moz-appearance: textfield;
-}
-
-.le-score-input::placeholder { color: rgba(255, 255, 255, 0.18); font-weight: 400; font-size: 22px; }
-
-/* Colored value based on score quality */
-.le-score-input-score-bar-red    { color: #ef4444; }
-.le-score-input-score-bar-orange { color: #f97316; }
-.le-score-input-score-bar-yellow { color: #eab308; }
-.le-score-input-score-bar-lime   { color: #84cc16; }
-.le-score-input-score-bar-green  { color: #22c55e; }
-
-/* Episode input shows "7/24" — use slightly smaller font to fit */
-.le-ep-input {
-    font-size: 15px !important;
-}
-
-/* ── Clickable score progress bar ── */
-.le-score-bar-click {
-    height: 7px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    overflow: hidden;
-    cursor: pointer;
-    position: relative;
-    margin-top: 2px;
-    transition: background 0.15s;
-}
-
-.le-score-bar-click:hover { background: rgba(255, 255, 255, 0.13); }
-
-.le-score-bar-fill-click {
-    height: 100%;
-    border-radius: 999px;
-    min-width: 0;
-    transition: width 0.18s ease, background 0.22s ease;
-}
-
-/* ── Clickable episode bar ── */
-.le-ep-bar-clickable {
-    cursor: pointer !important;
-}
-
-.le-ep-bar-clickable:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-}
