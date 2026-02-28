@@ -1702,9 +1702,9 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    color: rgba(255,255,255,0.72);
+    background: rgba(42, 32, 4, 0.28);
+    border: 1px solid rgba(165, 130, 48, 0.28);
+    color: rgba(210, 168, 78, 0.60);
     padding: 4px 9px;
     border-radius: 20px;
     font-size: 11px;
@@ -1713,8 +1713,9 @@ html, body {
 }
 
     .tag-pill:hover {
-        background: rgba(255,255,255,0.09);
-        color: white;
+        background: rgba(58, 44, 6, 0.38);
+        border-color: rgba(200, 162, 68, 0.42);
+        color: rgba(235, 192, 98, 0.82);
     }
 
 .tag-pct {
