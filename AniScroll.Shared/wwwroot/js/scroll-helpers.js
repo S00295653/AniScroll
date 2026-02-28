@@ -81,3 +81,11 @@ window.getElementScrollHeight = function (selector) {
     const el = document.querySelector(selector);
     return el ? el.scrollHeight : 0;
 };
+
+// ─── Element bounds helper (used by clickable score & episode bars) ───────────
+// Returns the bounding rect of an element so C# can compute click percentage.
+window.getElementBounds = function (element) {
+    if (!element) return { left: 0, width: 0 };
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, width: rect.width };
+};

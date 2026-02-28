@@ -471,7 +471,7 @@
 }
 
 <!-- ══════════════════════════════════════════════════════════════
-     LIST EDITOR MODAL (redesigned)
+     LIST EDITOR MODAL
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
@@ -498,7 +498,7 @@
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
-                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Save</button>
+                    <button class="list-editor-save-btn" @onclick="SaveListEntry">Done</button>
                 </div>
                 <button class="list-editor-close-btn" @onclick="CloseListEditor">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -515,7 +515,6 @@
                 <!-- ── Status Dropdown ── -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">Status</span>
-                    <!-- trigger -->
                     <button class="le-dd-trigger le-dd-trigger-@GetStatusCssKey(editStatus)"
                             @onclick="() => { statusDropdownOpen = !statusDropdownOpen; StateHasChanged(); }">
                         <span class="le-dd-dot le-dd-dot-@GetStatusCssKey(editStatus)"></span>
@@ -526,7 +525,6 @@
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
-                    <!-- dropdown list -->
                     @if (statusDropdownOpen)
                     {
                         <div class="le-dd-list">
@@ -535,7 +533,7 @@
                                 var sk = GetStatusCssKey(s);
                                 var isSel = editStatus == s;
                                 <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
-                                        @onclick="() => { editStatus = s; statusDropdownOpen = false; StateHasChanged(); }">
+                                        @onclick="async () => { editStatus = s; statusDropdownOpen = false; await AutoSave(); StateHasChanged(); }">
                                     <span class="le-dd-dot le-dd-dot-@sk"></span>
                                     <span class="le-dd-option-text">@GetStatusLabel(s)</span>
                                     @if (isSel)
@@ -554,34 +552,26 @@
                 <!-- ── Score & Episode Progress ── -->
                 <div class="list-editor-grid list-editor-grid-2">
 
-                    <!-- Score -->
+                    <!-- Score: − | editable input | + with clickable bar -->
                     <div class="list-editor-field">
-                        <div class="le-score-header-row">
-                            <span class="list-editor-label">Score</span>
-                            <div class="le-score-badge-wrap">
-                                @if (editScore > 0)
-                                {
-                                    <span class="le-score-val le-score-val-@GetScoreColorClass(editScore)">@FormatScore(editScore)</span>
-                                    <span class="le-score-sublabel">@GetScoreLabel(editScore)</span>
-                                }
-                                else
-                                {
-                                    <span class="le-score-val le-score-val-empty">—</span>
-                                }
+                        <span class="list-editor-label">Score</span>
+                        <div class="le-score-controls">
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { ChangeScore(-0.5); await AutoSave(); }">−</button>
+                            <input type="text"
+                                   class="le-score-input @(editScore > 0 ? "le-score-input-" + GetScoreColorClass(editScore) : "")"
+                                   value="@(editScore > 0 ? FormatScore(editScore) : "")"
+                                   placeholder="—"
+                                   @onchange="HandleScoreTextChange" />
+                            <button class="le-score-step-btn"
+                                    @onclick="async () => { ChangeScore(0.5); await AutoSave(); }">+</button>
+                        </div>
+                        <!-- Clickable progress bar (no text labels) -->
+                        <div class="le-score-bar-click" @ref="scoreBarRef" @onclick="HandleScoreBarClick">
+                            <div class="le-score-bar-fill-click"
+                                 style="width:@((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;
+                                        background:@GetScoreHexColor(editScore);">
                             </div>
-                        </div>
-                        <!-- slider — 0 to 20 steps = 0 to 10 by 0.5 -->
-                        <div class="le-slider-wrap">
-                            <input type="range"
-                                   class="le-score-slider"
-                                   min="0" max="20" step="1"
-                                   value="@((int)(editScore * 2))"
-                                   @oninput="HandleSliderInput"
-                                   style="--pct:@((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;
-                                          --fill:@GetScoreHexColor(editScore);" />
-                        </div>
-                        <div class="le-slider-scale">
-                            <span>0</span><span>5</span><span>10</span>
                         </div>
                     </div>
 
@@ -591,10 +581,10 @@
                         <div class="list-editor-number-input">
                             <span class="list-editor-num-display">@editEpisodes</span>
                             <div class="list-editor-arrows">
-                                <button class="list-editor-arrow-btn" @onclick="() => ChangeEpisodes(1)">
+                                <button class="list-editor-arrow-btn" @onclick="async () => { ChangeEpisodes(1); await AutoSave(); }">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
                                 </button>
-                                <button class="list-editor-arrow-btn" @onclick="() => ChangeEpisodes(-1)">
+                                <button class="list-editor-arrow-btn" @onclick="async () => { ChangeEpisodes(-1); await AutoSave(); }">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
                             </div>
@@ -605,7 +595,8 @@
                         }
                         @if (totalEp > 0)
                         {
-                            <div class="list-editor-ep-bar">
+                            <!-- Clickable episode bar -->
+                            <div class="list-editor-ep-bar le-ep-bar-clickable" @ref="epBarRef" @onclick="HandleEpBarClick">
                                 <div class="list-editor-ep-fill"
                                      style="width: @(Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100)))%;"></div>
                             </div>
@@ -630,7 +621,7 @@
                             </svg>
                             <input type="date" class="list-editor-date-input"
                                    value="@(editStartDate.HasValue ? editStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   @onchange="e => editStartDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!)" />
+                                   @onchange="async e => { editStartDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!); await AutoSave(); }" />
                         </div>
                     </div>
 
@@ -647,7 +638,7 @@
                             </svg>
                             <input type="date" class="list-editor-date-input"
                                    value="@(editFinishDate.HasValue ? editFinishDate.Value.ToString("yyyy-MM-dd") : "")"
-                                   @onchange="e => editFinishDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!)" />
+                                   @onchange="async e => { editFinishDate = string.IsNullOrEmpty(e.Value?.ToString()) ? null : DateTime.Parse(e.Value.ToString()!); await AutoSave(); }" />
                         </div>
                     </div>
 
@@ -657,10 +648,10 @@
                         <div class="list-editor-number-input">
                             <span class="list-editor-num-display">@editRewatches</span>
                             <div class="list-editor-arrows">
-                                <button class="list-editor-arrow-btn" @onclick="() => editRewatches = Math.Max(0, editRewatches + 1)">
+                                <button class="list-editor-arrow-btn" @onclick="async () => { editRewatches = Math.Max(0, editRewatches + 1); await AutoSave(); }">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
                                 </button>
-                                <button class="list-editor-arrow-btn" @onclick="() => editRewatches = Math.Max(0, editRewatches - 1)">
+                                <button class="list-editor-arrow-btn" @onclick="async () => { editRewatches = Math.Max(0, editRewatches - 1); await AutoSave(); }">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
                             </div>
@@ -672,11 +663,13 @@
                         <span class="list-editor-label">Options</span>
                         <div class="list-editor-custom-lists">
                             <label class="list-editor-checkbox-row">
-                                <input type="checkbox" @bind="editHideFromLists" />
+                                <input type="checkbox" checked="@editHideFromLists"
+                                       @onchange="async e => { editHideFromLists = e.Value is bool b1 ? b1 : false; await AutoSave(); }" />
                                 <span>Hide from status lists</span>
                             </label>
                             <label class="list-editor-checkbox-row">
-                                <input type="checkbox" @bind="editIsPrivate" />
+                                <input type="checkbox" checked="@editIsPrivate"
+                                       @onchange="async e => { editIsPrivate = e.Value is bool b2 ? b2 : false; await AutoSave(); }" />
                                 <span>Private</span>
                             </label>
                         </div>
@@ -688,8 +681,9 @@
                     <span class="list-editor-label">Notes</span>
                     <textarea class="list-editor-textarea"
                               placeholder="Add notes..."
-                              @bind="editNotes"
-                              @bind:event="oninput"></textarea>
+                              value="@editNotes"
+                              @oninput="e => editNotes = e.Value?.ToString() ?? string.Empty"
+                              @onchange="async e => { editNotes = e.Value?.ToString() ?? string.Empty; await AutoSave(); }"></textarea>
                 </div>
 
                 <!-- ── Footer: Delete ── -->
@@ -778,6 +772,10 @@
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
 
+    // ─── Element refs for clickable bars ─────────────────────────────────────
+    private ElementReference scoreBarRef;
+    private ElementReference epBarRef;
+
     // ─── Swipe-DOWN-to-close state ────────────────────────────────────────────
     private ElementReference scrollContainerRef;
     private double pullOffset = 0;
@@ -794,6 +792,13 @@
     private bool isEdgeSwipeTrackingActive = false;
     private const double EDGE_ZONE_WIDTH = 40;
     private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90;
+
+    // ─── JS interop helpers ───────────────────────────────────────────────────
+    private class ElementBounds
+    {
+        public double Left { get; set; }
+        public double Width { get; set; }
+    }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -835,6 +840,36 @@
         var status = UserListService.GetStatus(CurrentAnime.Id);
         isInList = status.HasValue;
         currentListStatus = status;
+    }
+
+    // ─── Auto-save (saves without closing) ───────────────────────────────────
+
+    private async Task AutoSave()
+    {
+        if (CurrentAnime == null) return;
+
+        var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
+        {
+            Anime   = CurrentAnime,
+            AddedAt = DateTime.Now
+        };
+
+        existing.Status              = editStatus;
+        existing.Score               = editScore;
+        existing.EpisodesWatched     = editEpisodes;
+        existing.TotalRewatches      = editRewatches;
+        existing.Notes               = editNotes;
+        existing.StartDate           = editStartDate;
+        existing.FinishDate          = editFinishDate;
+        existing.IsPrivate           = editIsPrivate;
+        existing.HideFromStatusLists = editHideFromLists;
+
+        UserListService.SaveEntry(existing);
+        currentListStatus = editStatus;
+        isInList = true;
+        StateHasChanged();
+
+        await Task.CompletedTask;
     }
 
     // ─── List Editor ──────────────────────────────────────────────────────────
@@ -880,29 +915,9 @@
         StateHasChanged();
     }
 
-    private void SaveListEntry()
+    private async Task SaveListEntry()
     {
-        if (CurrentAnime == null) return;
-
-        var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
-        {
-            Anime   = CurrentAnime,
-            AddedAt = DateTime.Now
-        };
-
-        existing.Status              = editStatus;
-        existing.Score               = editScore;
-        existing.EpisodesWatched     = editEpisodes;
-        existing.TotalRewatches      = editRewatches;
-        existing.Notes               = editNotes;
-        existing.StartDate           = editStartDate;
-        existing.FinishDate          = editFinishDate;
-        existing.IsPrivate           = editIsPrivate;
-        existing.HideFromStatusLists = editHideFromLists;
-
-        UserListService.SaveEntry(existing);
-        currentListStatus = editStatus;
-        isInList = true;
+        await AutoSave();
         showListEditor = false;
         StateHasChanged();
     }
@@ -938,11 +953,51 @@
         StateHasChanged();
     }
 
-    private void HandleSliderInput(ChangeEventArgs e)
+    private async Task HandleScoreTextChange(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int v))
-            editScore = v / 2.0;
-        StateHasChanged();
+        var raw = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            editScore = 0;
+            await AutoSave();
+            return;
+        }
+        if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out double v))
+        {
+            editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
+        }
+        await AutoSave();
+    }
+
+    private async Task HandleScoreBarClick(MouseEventArgs e)
+    {
+        try
+        {
+            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef);
+            if (bounds.Width <= 0) return;
+            double pct = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
+            editScore = Math.Round(pct * 10 * 2) / 2; // snap to nearest 0.5
+            await AutoSave();
+        }
+        catch { /* JS interop may fail in some contexts */ }
+    }
+
+    private async Task HandleEpBarClick(MouseEventArgs e)
+    {
+        if (CurrentAnime == null) return;
+        int totalEp = 0;
+        int.TryParse(CurrentAnime.Episodes?.Split('/').Last().Trim(), out totalEp);
+        if (totalEp <= 0) return;
+        try
+        {
+            var bounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
+            if (bounds.Width <= 0) return;
+            double pct = Math.Clamp((e.ClientX - bounds.Left) / bounds.Width, 0, 1);
+            editEpisodes = (int)Math.Round(pct * totalEp);
+            await AutoSave();
+        }
+        catch { /* JS interop may fail in some contexts */ }
     }
 
     private static string GetScoreHexColor(double s) => s switch
@@ -954,19 +1009,6 @@
         <= 8 => "#84cc16",
         _    => "#22c55e"
     };
-
-    private void HandleScoreTextChange(ChangeEventArgs e)
-    {
-        var raw = e.Value?.ToString() ?? "";
-        if (string.IsNullOrWhiteSpace(raw)) { editScore = 0; StateHasChanged(); return; }
-        if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out double v))
-        {
-            // Snap to nearest 0.5, clamp 0-10
-            editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
-        }
-        StateHasChanged();
-    }
 
     private static string FormatScore(double s)
     {
