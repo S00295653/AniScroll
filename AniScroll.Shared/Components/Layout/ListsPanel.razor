@@ -44,7 +44,9 @@
             <div class="lists-tabs-row">
                 @foreach (var tab in _tabs)
                 {
-                    int cnt     = tab.Status == null ? UserListService.Count() : UserListService.Count(tab.Status.Value);
+                    int cnt     = tab.Status == null
+                        ? UserListService.GetAll().Count(e => e.Status.HasValue)
+                        : UserListService.Count(tab.Status.Value);
                     bool active = activeStatus == tab.Status;
                     <button class="lists-tab lists-tab-@tab.CssKey @(active ? "active" : "")"
                             @onclick="() => SetTab(tab.Status)">
@@ -63,8 +65,9 @@
             <!-- ── Entries ────────────────────────────────────────────────────── -->
             <div class="lists-content">
                 @{
+                    // Only show entries that have an explicit status set
                     var entries = activeStatus == null
-                        ? UserListService.GetAll()
+                        ? UserListService.GetAll().Where(e => e.Status.HasValue).ToList()
                         : UserListService.GetByStatus(activeStatus.Value);
                 }
 
@@ -113,12 +116,6 @@
                                 {
                                     <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status.Value)">
                                         @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
-                                    </div>
-                                }
-                                else if (e.Score > 0)
-                                {
-                                    <div class="entry-status-badge entry-status-scored">
-                                        ★ Scored
                                     </div>
                                 }
                             </div>

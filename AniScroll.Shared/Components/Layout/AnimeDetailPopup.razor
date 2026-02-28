@@ -36,10 +36,15 @@
                             </div>
 
                             <div class="modal-action-buttons">
-                                <button class="btn-add-to-list @(isInList && currentListStatus.HasValue ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus.Value) : isInList ? "btn-in-list btn-scored" : "")"
+                                <button class="btn-add-to-list @(isInList && currentListStatus.HasValue ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus.Value) : "")"
                                         @onclick="OpenListEditor">
                                     <div class="btn-add-to-list-inner">
-                                        @if (!isInList)
+                                        @if (isInList && currentListStatus.HasValue)
+                                        {
+                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus.Value)"></span>
+                                            <span>@GetStatusLabel(currentListStatus.Value)</span>
+                                        }
+                                        else
                                         {
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -47,19 +52,6 @@
                                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                                             </svg>
                                             <span>Add to List</span>
-                                        }
-                                        else if (currentListStatus.HasValue)
-                                        {
-                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus.Value)"></span>
-                                            <span>@GetStatusLabel(currentListStatus.Value)</span>
-                                        }
-                                        else
-                                        {
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                            </svg>
-                                            <span>Scored</span>
                                         }
                                         <svg class="btn-list-chevron"
                                              width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -990,13 +982,11 @@
             editHideFromLists = false;
         }
 
-        // Enforce NOT_YET_RELEASED: episodes locked at 0, status forced to Planning
+        // Enforce NOT_YET_RELEASED: episodes locked at 0, status stays as-is (no forced Planning)
         if (CurrentAnime.Status == "NOT_YET_RELEASED")
         {
             editEpisodes = 0;
             editRewatches = 0;
-            if (!editStatus.HasValue || editStatus != ListStatus.Planning)
-                editStatus = ListStatus.Planning;
         }
 
         statusDropdownOpen = false;
