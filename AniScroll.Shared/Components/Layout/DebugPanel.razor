@@ -1,5 +1,6 @@
 ﻿@using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
+@using Newtonsoft.Json.Linq
 @inject HttpClient Http
 @inject AniListService AniListService
 @implements IDisposable
@@ -16,9 +17,9 @@
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:10px;">
             <div style="color:#ffd43b;font-weight:bold;margin-bottom:10px;">RATE LIMIT STATUS</div>
 
-            @{ RenderRateLimitBar("AniList GraphQL", "#02a9ff", AniListService.AniListRateLimit); }
+            @RateLimitBar("AniList GraphQL", "#02a9ff", AniListService.AniListRateLimit)
             <div style="height:10px;"></div>
-            @{ RenderRateLimitBar("Jikan REST", "#ff9f43", AniListService.JikanRateLimit); }
+            @RateLimitBar("Jikan REST", "#ff9f43", AniListService.JikanRateLimit)
         </div>
 
         <!-- ═══════════════════════════════ TEST 1 ════════════════════════════════ -->
