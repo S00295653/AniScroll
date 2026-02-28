@@ -2,43 +2,106 @@
 @using AniScroll.Shared.Services
 @inject HttpClient Http
 @inject AniListService AniListService
+@implements IDisposable
 
 @if (IsVisible)
 {
     <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.97);z-index:9999;overflow-y:auto;padding:16px;font-family:monospace;font-size:11px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v5</span>
+            <span style="color:#E94560;font-weight:bold;font-size:15px;">Debug Panel v6</span>
             <button @onclick="Hide" style="background:#333;border:none;color:white;padding:6px 14px;border-radius:6px;cursor:pointer;">Close</button>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════════
+             RATE LIMIT STATUS
+             ══════════════════════════════════════════════════════════════════ -->
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
-            <div style="color:#ffd43b;font-weight:bold;margin-bottom:4px;">SERVICE STATUS</div>
-            <div style="color:@(AniListService.IsRateLimited() ? "#ff6b6b" : "#51cf66");">
-                Rate limited: @AniListService.IsRateLimited()
-            </div>
-            <div style="margin-top:8px;">
+            <div style="color:#ffd43b;font-weight:bold;margin-bottom:8px;">RATE LIMIT STATUS</div>
+
+            <!-- AniList bar -->
+            @{ var al = AniListService.AniListRateLimit; }
+            <div style="margin-bottom:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                    <span style="color:#aaa;font-size:10px;">Requêtes AniList</span>
-                    <span style="color:@GetCounterColor();font-weight:bold;font-size:12px;">
-                        @AniListService.RequestCount / @AniListService.RequestLimit
+                    <span style="color:#02a9ff;font-weight:bold;font-size:11px;">
+                        AniList GraphQL
+                        @if (al.IsLimited)
+                        {
+                            <span style="color:#ff6b6b;margin-left:6px;">🚫 RATE LIMITED</span>
+                        }
+                    </span>
+                    <span style="color:@GetBarColor(al);font-weight:bold;font-size:12px;">
+                        @if (al.Remaining >= 0 && al.Limit > 0)
+                        {
+                            <text>@al.Remaining / @al.Limit remaining</text>
+                        }
+                        else
+                        {
+                            <text>@AniListService.RequestCount reqs sent</text>
+                        }
                     </span>
                 </div>
-                <div style="background:#0d0d1a;border-radius:4px;height:6px;overflow:hidden;">
-                    <div style="height:100%;width:@GetCounterPercent()%;background:@GetCounterColor();border-radius:4px;transition:width 0.3s ease;"></div>
+                <div style="background:#0d0d1a;border-radius:4px;height:7px;overflow:hidden;">
+                    <div style="height:100%;width:@(GetBarWidth(al).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;background:@GetBarColor(al);border-radius:4px;transition:width 0.4s ease;"></div>
                 </div>
-                @if (AniListService.IsRateLimited())
+                @if (al.ResetAt.HasValue)
                 {
-                    <div style="color:#ff6b6b;font-size:10px;margin-top:3px;">
-                        ⏱️ Reset dans @AniListService.GetRateLimitSecondsRemaining()s
+                    <div style="color:#888;font-size:10px;margin-top:3px;display:flex;justify-content:space-between;">
+                        <span>Window resets in @FormatSeconds(al.SecondsUntilReset)</span>
+                        <span style="color:#555;">@al.ResetAt.Value.ToString("HH:mm:ss") UTC</span>
                     </div>
                 }
+                else
+                {
+                    <div style="color:#555;font-size:10px;margin-top:3px;">No reset info yet — make a request first</div>
+                }
+                @if (!string.IsNullOrEmpty(AniListService.LastError))
+                {
+                    <div style="color:#ff6b6b;margin-top:5px;word-break:break-all;font-size:10px;">⚠ @AniListService.LastError</div>
+                }
             </div>
-            @if (!string.IsNullOrEmpty(AniListService.LastError))
-            {
-                <div style="color:#ff6b6b;margin-top:6px;word-break:break-all;">Last error: @AniListService.LastError</div>
-            }
+
+            <!-- Jikan bar -->
+            @{ var jk = AniListService.JikanRateLimit; }
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="color:#ff9f43;font-weight:bold;font-size:11px;">
+                        Jikan REST
+                        @if (jk.IsLimited)
+                        {
+                            <span style="color:#ff6b6b;margin-left:6px;">🚫 RATE LIMITED</span>
+                        }
+                    </span>
+                    <span style="color:@GetBarColor(jk);font-weight:bold;font-size:12px;">
+                        @if (jk.Remaining >= 0 && jk.Limit > 0)
+                        {
+                            <text>@jk.Remaining / @jk.Limit remaining</text>
+                        }
+                        else
+                        {
+                            <text>No data yet</text>
+                        }
+                    </span>
+                </div>
+                <div style="background:#0d0d1a;border-radius:4px;height:7px;overflow:hidden;">
+                    <div style="height:100%;width:@(GetBarWidth(jk).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;background:@GetBarColor(jk);border-radius:4px;transition:width 0.4s ease;"></div>
+                </div>
+                @if (jk.ResetAt.HasValue)
+                {
+                    <div style="color:#888;font-size:10px;margin-top:3px;display:flex;justify-content:space-between;">
+                        <span>Window resets in @FormatSeconds(jk.SecondsUntilReset)</span>
+                        <span style="color:#555;">@jk.ResetAt.Value.ToString("HH:mm:ss") UTC</span>
+                    </div>
+                }
+                else
+                {
+                    <div style="color:#555;font-size:10px;margin-top:3px;">No reset info yet — search first</div>
+                }
+            </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════════
+             TEST — AniListService.GetAnimeByMalIdAsync
+             ══════════════════════════════════════════════════════════════════ -->
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
             <div style="color:#ffd43b;font-weight:bold;margin-bottom:6px;">TEST — AniListService.GetAnimeByMalIdAsync</div>
             <div style="display:flex;gap:8px;">
@@ -50,6 +113,9 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════════
+             TEST — PostGraphQL clone
+             ══════════════════════════════════════════════════════════════════ -->
         <div style="background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:10px;margin-bottom:10px;">
             <div style="color:#ffd43b;font-weight:bold;margin-bottom:6px;">TEST — PostGraphQL interne (même logique que le service)</div>
             <div style="display:flex;gap:8px;">
@@ -64,6 +130,9 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════════
+             LOGS
+             ══════════════════════════════════════════════════════════════════ -->
         <div style="background:#0a0a0f;border:1px solid #222;border-radius:8px;padding:10px;min-height:100px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                 <span style="color:#888;font-size:10px;">LOGS</span>
@@ -71,11 +140,15 @@
             </div>
             @foreach (var log in logs)
             {
-                var color = log.StartsWith("ERROR") || log.StartsWith("NULL") || log.StartsWith("FAIL") || log.StartsWith("EXCEPTION") || log.StartsWith("PARSE ERR") ? "#ff6b6b"
-                : log.StartsWith("OK") || log.StartsWith("FOUND") || log.StartsWith("SUCCESS") ? "#51cf66"
-                : log.StartsWith("===") || log.StartsWith("---") ? "#ffd43b"
-                : log.StartsWith("WARN") ? "#ff9f43"
-                : "#c8c8c8";
+                var color = log.StartsWith("ERROR") || log.StartsWith("NULL") || log.StartsWith("FAIL") || log.StartsWith("EXCEPTION") || log.StartsWith("PARSE ERR")
+                    ? "#ff6b6b"
+                    : log.StartsWith("OK") || log.StartsWith("FOUND") || log.StartsWith("SUCCESS")
+                    ? "#51cf66"
+                    : log.StartsWith("===") || log.StartsWith("---")
+                    ? "#ffd43b"
+                    : log.StartsWith("WARN")
+                    ? "#ff9f43"
+                    : "#c8c8c8";
                 <div style="color:@color;padding:2px 0;border-bottom:1px solid #111;word-break:break-all;line-height:1.5;">@log</div>
             }
         </div>
@@ -86,25 +159,53 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnHide { get; set; }
 
-    private string testMalId = "21";
+    private string testMalId  = "21";
     private string testMalId2 = "21";
-    private bool isTesting = false;
+    private bool isTesting    = false;
     private List<string> logs = new();
 
-    private string GetCounterColor()
+    // ── Periodic refresh so the countdown ticks without user interaction ─────
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override void OnInitialized()
     {
-        double pct = (double)AniListService.RequestCount / AniListService.RequestLimit;
-        if (pct >= 1.0) return "#ff6b6b";
-        if (pct >= 0.7) return "#ffd43b";
-        return "#51cf66";
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
-    private double GetCounterPercent()
-        => Math.Min(100, (double)AniListService.RequestCount / AniListService.RequestLimit * 100);
+    public void Dispose() => _refreshTimer?.Dispose();
 
     private void Hide() => OnHide.InvokeAsync();
 
-    // ── Test 1: via le vrai service ───────────────────────────────────────────
+    // ── Bar helpers ──────────────────────────────────────────────────────────
+
+    private static double GetBarWidth(RateLimitInfo info)
+    {
+        // Bar fills proportional to USED requests (left = empty, right = exhausted)
+        if (info.Limit > 0 && info.Remaining >= 0)
+            return Math.Min(100.0, (info.Limit - info.Remaining) / (double)info.Limit * 100.0);
+        return 0;
+    }
+
+    private static string GetBarColor(RateLimitInfo info)
+    {
+        if (info.IsLimited) return "#ff6b6b";
+        double pct = GetBarWidth(info) / 100.0;
+        if (pct >= 0.85) return "#ff6b6b";
+        if (pct >= 0.60) return "#ffd43b";
+        return "#51cf66";
+    }
+
+    private static string FormatSeconds(int s)
+    {
+        if (s <= 0) return "now";
+        if (s < 60) return $"{s}s";
+        return $"{s / 60}m {s % 60}s";
+    }
+
+    // ── Test 1 : via le vrai service ─────────────────────────────────────────
 
     private async Task TestViaService()
     {
@@ -113,8 +214,7 @@
         StateHasChanged();
 
         logs.Add("=== TEST AniListService.GetAnimeByMalIdAsync ===");
-        logs.Add($"IsRateLimited = {AniListService.IsRateLimited()}");
-        logs.Add($"Requêtes = {AniListService.RequestCount}/{AniListService.RequestLimit}");
+        LogRateLimitSnapshot();
 
         if (!int.TryParse(testMalId, out int malId))
         {
@@ -127,9 +227,8 @@
         try
         {
             var result = await AniListService.GetAnimeByMalIdAsync(malId);
-            var lastErr = AniListService.LastError;
-            logs.Add($"LastError = {(string.IsNullOrEmpty(lastErr) ? "(aucun)" : lastErr)}");
-            logs.Add($"Requêtes après = {AniListService.RequestCount}/{AniListService.RequestLimit}");
+            logs.Add("--- After request ---");
+            LogRateLimitSnapshot();
 
             if (result == null)
                 logs.Add("NULL: returned null — voir LastError ci-dessus");
@@ -152,7 +251,23 @@
         StateHasChanged();
     }
 
-    // ── Test 2: clone direct de PostGraphQL() ────────────────────────────────
+    private void LogRateLimitSnapshot()
+    {
+        var al = AniListService.AniListRateLimit;
+        var jk = AniListService.JikanRateLimit;
+
+        if (al.Remaining >= 0 && al.Limit > 0)
+            logs.Add($"AniList → {al.Remaining}/{al.Limit} remaining  reset in {FormatSeconds(al.SecondsUntilReset)}  limited={al.IsLimited}");
+        else
+            logs.Add($"AniList → requests sent so far: {AniListService.RequestCount}  limited={al.IsLimited}");
+
+        if (jk.Remaining >= 0 && jk.Limit > 0)
+            logs.Add($"Jikan   → {jk.Remaining}/{jk.Limit} remaining  reset in {FormatSeconds(jk.SecondsUntilReset)}  limited={jk.IsLimited}");
+        else
+            logs.Add("Jikan   → no header data yet");
+    }
+
+    // ── Test 2 : clone direct de PostGraphQL() ───────────────────────────────
 
     private async Task TestPostGraphQLClone()
     {
@@ -171,21 +286,24 @@
         logs.Add("=== CLONE DE PostGraphQL() ===");
         logs.Add($"HttpClient hash: {Http.GetHashCode()}");
         logs.Add($"Timeout: {Http.Timeout}");
-        logs.Add($"Requêtes actuelles: {AniListService.RequestCount}/{AniListService.RequestLimit}");
+        LogRateLimitSnapshot();
 
         var fields = GetAnimeFieldsNoRelations();
-        var query = $"query {{\n    Media(idMal: {malId}, type: ANIME) {{\n        {fields}\n    }}\n}}";
+        var query  = $"query {{\n    Media(idMal: {malId}, type: ANIME) {{\n        {fields}\n    }}\n}}";
         logs.Add($"Query length: {query.Length} chars");
 
         try
         {
             var payload = new { query };
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+            var json    = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
             logs.Add("Calling Http.PostAsync...");
             var response = await Http.PostAsync("https://graphql.anilist.co", content);
             logs.Add($"HTTP Status: {(int)response.StatusCode} {response.StatusCode}");
+
+            // Log all rate-limit-related headers
+            LogHeaders(response);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             { logs.Add("FAIL: 429 Rate Limited!"); isTesting = false; StateHasChanged(); return; }
@@ -221,16 +339,12 @@
                 logs.Add($"FOUND: id={media["id"]} title={media["title"]?["english"] ?? media["title"]?["romaji"]}");
                 logs.Add($"  status={media["status"]} ep={media["episodes"]} score={media["averageScore"]}");
                 logs.Add($"  description={media["description"]?.ToString()?.Length ?? 0} chars");
-
-                // ── Inspecte chaque tableau pour détecter les nulls ──────────
-                CheckArrayField(media, "tags", logs);
+                CheckArrayField(media, "tags",          logs);
                 CheckArrayField(media, "externalLinks", logs);
-                CheckArrayField(media, "rankings", logs);
+                CheckArrayField(media, "rankings",      logs);
                 var stuNodes = media["studios"]?["nodes"];
                 if (stuNodes != null) CheckArray(stuNodes, "studios.nodes", logs);
-
                 logs.Add("SUCCESS: PostGraphQL clone fonctionne!");
-                logs.Add("=> Si Test Service échoue toujours : regarder LastError du service ci-dessus");
             }
         }
         catch (Exception ex)
@@ -242,6 +356,27 @@
 
         isTesting = false;
         StateHasChanged();
+    }
+
+    private void LogHeaders(System.Net.Http.HttpResponseMessage response)
+    {
+        var interestingHeaders = new[]
+        {
+            "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset",
+            "Retry-After", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset"
+        };
+
+        bool anyFound = false;
+        foreach (var h in interestingHeaders)
+        {
+            if (response.Headers.TryGetValues(h, out var vals))
+            {
+                logs.Add($"  Header {h}: {string.Join(", ", vals)}");
+                anyFound = true;
+            }
+        }
+        if (!anyFound)
+            logs.Add("  (no rate-limit headers found in response — AniList may not send them until near the limit)");
     }
 
     private void CheckArrayField(Newtonsoft.Json.Linq.JToken parent, string field, List<string> log)
@@ -259,7 +394,6 @@
             + (nullCount > 0 ? " ← CAUSE PROBABLE DU CRASH" : ""));
     }
 
-    // Champs sans relations — miroir de AniListService.GetAnimeFields()
     private string GetAnimeFieldsNoRelations() =>
         "id title { romaji english native } coverImage { extraLarge large } bannerImage format averageScore genres episodes duration source description season seasonYear status startDate { year month day } endDate { year month day } popularity favourites nextAiringEpisode { episode timeUntilAiring } studios(isMain: true) { nodes { id name } } trailer { site id } tags { name rank isMediaSpoiler } externalLinks { url site type color } rankings { rank type context allTime season year }";
 }
