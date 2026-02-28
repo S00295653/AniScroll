@@ -435,7 +435,7 @@
 
 .status-opt-remove {
     color: rgba(239, 68, 68, 0.7);
-    font-size: 11px;
+    font-size: 14px;
 }
 
 .status-opt-remove:active { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
