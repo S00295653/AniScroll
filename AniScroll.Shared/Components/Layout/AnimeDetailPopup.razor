@@ -656,15 +656,18 @@
                         <span class="list-editor-label">Rewatches</span>
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
-                                    @onclick="async () => { editRewatches = Math.Max(0, editRewatches - 1); await AutoSave(); }">−</button>
+                                    disabled="@IsNotYetReleased"
+                                    @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches - 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">−</button>
                             <input type="text"
                                    @ref="rewatchInputRef"
                                    class="le-score-input le-rewatch-input"
                                    value="@editRewatches"
+                                   disabled="@IsNotYetReleased"
                                    @onfocus="HandleRewatchInputFocus"
                                    @onchange="HandleRewatchTextChange" />
                             <button class="le-score-step-btn"
-                                    @onclick="async () => { editRewatches = Math.Max(0, editRewatches + 1); await AutoSave(); }">+</button>
+                                    disabled="@IsNotYetReleased"
+                                    @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches + 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">+</button>
                         </div>
                     </div>
 
@@ -773,15 +776,16 @@
     private bool IsNotYetReleased => CurrentAnime?.Status == "NOT_YET_RELEASED";
 
     // Returns statuses available for the current anime.
-    // NOT_YET_RELEASED animes cannot be marked as Completed.
+    // NOT_YET_RELEASED animes can only be set to Planning.
     private IEnumerable<ListStatus> GetAvailableStatuses()
     {
-        bool notYetReleased = CurrentAnime?.Status == "NOT_YET_RELEASED";
-        foreach (var s in _allStatuses)
+        if (IsNotYetReleased)
         {
-            if (notYetReleased && s == ListStatus.Completed) continue;
-            yield return s;
+            yield return ListStatus.Planning;
+            yield break;
         }
+        foreach (var s in _allStatuses)
+            yield return s;
     }
 
     // List Editor state
@@ -883,11 +887,16 @@
         currentListStatus = status;
     }
 
-    // Auto-save — only saves when a status has been selected
+    // Auto-save — saves whenever a status is selected OR a score is set.
+    // If no status is chosen but score > 0, defaults to Planning so the entry persists.
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
-        if (!editStatus.HasValue) return;
+
+        // Determine effective status: if score set but no status, use Planning as the entry anchor
+        ListStatus? effectiveStatus = editStatus;
+        if (!effectiveStatus.HasValue && editScore <= 0) return; // nothing meaningful to save
+        if (!effectiveStatus.HasValue && editScore > 0) effectiveStatus = ListStatus.Planning;
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
         {
@@ -895,7 +904,7 @@
             AddedAt = DateTime.Now
         };
 
-        existing.Status              = editStatus.Value;
+        existing.Status              = effectiveStatus!.Value;
         existing.Score               = editScore;
         existing.EpisodesWatched     = editEpisodes;
         existing.TotalRewatches      = editRewatches;
@@ -906,7 +915,9 @@
         existing.HideFromStatusLists = editHideFromLists;
 
         UserListService.SaveEntry(existing);
-        currentListStatus = editStatus;
+        // Only update UI status badge if we actually have an explicit status
+        if (editStatus.HasValue) currentListStatus = editStatus;
+        else currentListStatus = effectiveStatus;
         isInList = true;
         StateHasChanged();
 
@@ -918,7 +929,8 @@
     // ══════════════════════════════════════════════════════════
     private async Task CloseAndSave()
     {
-        if (CurrentAnime != null && editStatus.HasValue)
+        // Save if a status is set OR if a score has been entered
+        if (CurrentAnime != null && (editStatus.HasValue || editScore > 0))
             await AutoSave();
 
         showListEditor     = false;
@@ -962,9 +974,14 @@
             editHideFromLists = false;
         }
 
-        // Enforce: NOT_YET_RELEASED always starts at 0 episodes
+        // Enforce NOT_YET_RELEASED: episodes locked at 0, status forced to Planning
         if (CurrentAnime.Status == "NOT_YET_RELEASED")
+        {
             editEpisodes = 0;
+            editRewatches = 0;
+            if (!editStatus.HasValue || editStatus != ListStatus.Planning)
+                editStatus = ListStatus.Planning;
+        }
 
         statusDropdownOpen = false; // Always start with dropdown closed
         showListEditor = true;
@@ -1174,7 +1191,11 @@
     {
         var raw = e.Value?.ToString() ?? "";
         if (int.TryParse(raw.Trim(), out int v) && v >= 0)
+        {
+            int prev = editRewatches;
             editRewatches = v;
+            ApplyRewatchAutoStatus(prev);
+        }
         else
         {
             // Invalid → force DOM back to last valid value
@@ -1182,6 +1203,17 @@
         }
         await AutoSave();
         StateHasChanged();
+    }
+
+    // When rewatches go from 0 to >0 with no status → auto Completed + fill episodes
+    private void ApplyRewatchAutoStatus(int previousRewatches)
+    {
+        if (editRewatches > 0 && previousRewatches == 0 && !editStatus.HasValue)
+        {
+            editStatus = ListStatus.Completed;
+            int total = GetTotalEpisodes();
+            if (total > 0) editEpisodes = total;
+        }
     }
 
     // Episode bar slider
