@@ -36,7 +36,7 @@
                             </div>
 
                             <div class="modal-action-buttons">
-                                <button class="btn-add-to-list @(isInList ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus!.Value) : "")"
+                                <button class="btn-add-to-list @(isInList && currentListStatus.HasValue ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus.Value) : isInList ? "btn-in-list btn-scored" : "")"
                                         @onclick="OpenListEditor">
                                     <div class="btn-add-to-list-inner">
                                         @if (!isInList)
@@ -48,10 +48,18 @@
                                             </svg>
                                             <span>Add to List</span>
                                         }
+                                        else if (currentListStatus.HasValue)
+                                        {
+                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus.Value)"></span>
+                                            <span>@GetStatusLabel(currentListStatus.Value)</span>
+                                        }
                                         else
                                         {
-                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus!.Value)"></span>
-                                            <span>@GetStatusLabel(currentListStatus!.Value)</span>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                            </svg>
+                                            <span>Scored</span>
                                         }
                                         <svg class="btn-list-chevron"
                                              width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -405,7 +413,7 @@
                                 </div>
 
                                 <div style="display:flex;justify-content:center;margin-top:10px;">
-                                    <button class="tag-spoiler-btn tag-spoiler-hide-btn"
+                                    <button class="tag-spoiler-btn"
                                             @onclick="() => showSpoilers = false">
                                         Hide spoilers
                                     </button>
@@ -565,6 +573,7 @@
                             <button class="le-score-step-btn"
                                     @onclick="async () => { ChangeScore(-0.5); await AutoSave(); }">−</button>
                             <input type="text"
+                                   inputmode="decimal"
                                    @ref="scoreInputRef"
                                    class="le-score-input @(editScore > 0 ? "le-score-input-" + GetScoreColorClass(editScore) : "")"
                                    value="@(editScore > 0 ? (_scoreBarDragging ? ((int)Math.Round(editScore)).ToString() : FormatScore(editScore)) : "")"
@@ -605,6 +614,8 @@
                                     disabled="@IsNotYetReleased"
                                     @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
                             <input type="text"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
                                    @ref="epInputRef"
                                    class="le-score-input le-ep-input"
                                    value="@epInputVal"
@@ -659,6 +670,8 @@
                                     disabled="@IsNotYetReleased"
                                     @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches - 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">−</button>
                             <input type="text"
+                                   inputmode="numeric"
+                                   pattern="[0-9]*"
                                    @ref="rewatchInputRef"
                                    class="le-score-input le-rewatch-input"
                                    value="@editRewatches"
@@ -882,21 +895,28 @@
     private void RefreshListState()
     {
         if (CurrentAnime == null) { isInList = false; currentListStatus = null; return; }
-        var status = UserListService.GetStatus(CurrentAnime.Id);
-        isInList = status.HasValue;
-        currentListStatus = status;
+        var entry = UserListService.GetEntry(CurrentAnime.Id);
+        isInList = entry != null;
+        currentListStatus = entry?.Status;
     }
 
-    // Auto-save — saves whenever a status is selected OR a score is set.
-    // If no status is chosen but score > 0, defaults to Planning so the entry persists.
+    // ── Auto-save ─────────────────────────────────────────────────────────────
+    // Saves the entry whenever there is meaningful data to persist.
+    // Score is saved as-is — it does NOT force a status to be set.
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
 
-        // Determine effective status: if score set but no status, use Planning as the entry anchor
-        ListStatus? effectiveStatus = editStatus;
-        if (!effectiveStatus.HasValue && editScore <= 0) return; // nothing meaningful to save
-        if (!effectiveStatus.HasValue && editScore > 0) effectiveStatus = ListStatus.Planning;
+        // Only persist if there is at least one non-default value
+        bool hasContent = editStatus.HasValue
+            || editScore > 0
+            || editEpisodes > 0
+            || editRewatches > 0
+            || !string.IsNullOrEmpty(editNotes)
+            || editStartDate.HasValue
+            || editFinishDate.HasValue;
+
+        if (!hasContent) return;
 
         var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
         {
@@ -904,7 +924,7 @@
             AddedAt = DateTime.Now
         };
 
-        existing.Status              = effectiveStatus!.Value;
+        existing.Status              = editStatus;   // null is fine — score-only entry
         existing.Score               = editScore;
         existing.EpisodesWatched     = editEpisodes;
         existing.TotalRewatches      = editRewatches;
@@ -915,26 +935,22 @@
         existing.HideFromStatusLists = editHideFromLists;
 
         UserListService.SaveEntry(existing);
-        // Only update UI status badge if we actually have an explicit status
-        if (editStatus.HasValue) currentListStatus = editStatus;
-        else currentListStatus = effectiveStatus;
+        currentListStatus = editStatus;
         isInList = true;
         StateHasChanged();
 
         await Task.CompletedTask;
     }
 
-    // ══════════════════════════════════════════════════════════
-    // Unified close+save — used by both Save button and outside click
-    // ══════════════════════════════════════════════════════════
+    // ── Unified close + save ──────────────────────────────────────────────────
     private async Task CloseAndSave()
     {
-        // Save if a status is set OR if a score has been entered
-        if (CurrentAnime != null && (editStatus.HasValue || editScore > 0))
+        // Delegate entirely to AutoSave which already checks for meaningful content
+        if (CurrentAnime != null)
             await AutoSave();
 
         showListEditor     = false;
-        statusDropdownOpen = false;  // Always close dropdown on exit
+        statusDropdownOpen = false;
         _scoreBarDragging  = false;
         _epBarDragging     = false;
         _cachedScoreBounds = null;
@@ -983,7 +999,7 @@
                 editStatus = ListStatus.Planning;
         }
 
-        statusDropdownOpen = false; // Always start with dropdown closed
+        statusDropdownOpen = false;
         showListEditor = true;
         StateHasChanged();
     }
@@ -1016,7 +1032,7 @@
     private void ChangeScore(double delta)
     {
         editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
-        // NOTE: score changes do NOT auto-set status
+        // Score changes alone do NOT auto-set status
         StateHasChanged();
     }
 
@@ -1045,10 +1061,9 @@
         }
         else
         {
-            // Invalid input → force DOM back to last valid value
             try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { }
         }
-        // Score change does NOT auto-set status to anything
+        // Score change does NOT auto-set status
         await AutoSave();
         StateHasChanged();
     }
@@ -1117,7 +1132,6 @@
 
     private void ChangeEpisodes(int delta)
     {
-        // NOT_YET_RELEASED: episodes always stay at 0
         if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
 
         int total = GetTotalEpisodes();
@@ -1126,11 +1140,9 @@
         if (total > 0 && next > total) return;
         editEpisodes = next;
 
-        // Episode progress > 0 with no status → auto Watching
         if (editEpisodes > 0 && !editStatus.HasValue)
             editStatus = ListStatus.Watching;
 
-        // Episode progress at max → auto Completed
         if (total > 0 && editEpisodes == total)
             editStatus = ListStatus.Completed;
 
@@ -1144,7 +1156,6 @@
 
     private async Task HandleEpTextChange(ChangeEventArgs e)
     {
-        // NOT_YET_RELEASED: block any change, revert to 0
         if (CurrentAnime?.Status == "NOT_YET_RELEASED")
         {
             editEpisodes = 0;
@@ -1162,17 +1173,14 @@
         {
             editEpisodes = v;
 
-            // Episode > 0 with no status → Watching
             if (editEpisodes > 0 && !editStatus.HasValue)
                 editStatus = ListStatus.Watching;
 
-            // Episode at max → Completed
             if (totalEp > 0 && editEpisodes == totalEp)
                 editStatus = ListStatus.Completed;
         }
         else
         {
-            // Invalid → force DOM back to last valid value
             try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { }
         }
 
@@ -1198,14 +1206,12 @@
         }
         else
         {
-            // Invalid → force DOM back to last valid value
             try { await JS.InvokeVoidAsync("setInputValue", rewatchInputRef, editRewatches.ToString()); } catch { }
         }
         await AutoSave();
         StateHasChanged();
     }
 
-    // When rewatches go from 0 to >0 with no status → auto Completed + fill episodes
     private void ApplyRewatchAutoStatus(int previousRewatches)
     {
         if (editRewatches > 0 && previousRewatches == 0 && !editStatus.HasValue)
@@ -1220,7 +1226,6 @@
 
     private async Task HandleEpBarPointerDown(PointerEventArgs e)
     {
-        // NOT_YET_RELEASED: block drag
         if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
 
         int totalEp = GetTotalEpisodes();
@@ -1255,11 +1260,9 @@
 
         int totalEp = GetTotalEpisodes();
 
-        // Episode > 0 with no status → Watching
         if (editEpisodes > 0 && !editStatus.HasValue)
             editStatus = ListStatus.Watching;
 
-        // Episode at max → Completed
         if (totalEp > 0 && editEpisodes == totalEp)
             editStatus = ListStatus.Completed;
 

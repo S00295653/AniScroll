@@ -109,9 +109,18 @@
                                     <div class="entry-meta">@string.Join(" · ", metaParts)</div>
                                 }
 
-                                <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status)">
-                                    @GetStatusIcon(e.Status) @GetStatusLabel(e.Status)
-                                </div>
+                                @if (e.Status.HasValue)
+                                {
+                                    <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status.Value)">
+                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
+                                    </div>
+                                }
+                                else if (e.Score > 0)
+                                {
+                                    <div class="entry-status-badge entry-status-scored">
+                                        ★ Scored
+                                    </div>
+                                }
                             </div>
 
                             <!-- Remove button -->

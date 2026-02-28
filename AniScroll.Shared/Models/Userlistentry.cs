@@ -13,7 +13,7 @@ namespace AniScroll.Shared.Models
     public class UserListEntry
     {
         public AnimeCard Anime { get; set; } = new();
-        public ListStatus Status { get; set; }
+        public ListStatus? Status { get; set; }   // nullable: score can be saved without a status
 
         // Tracking
         public double Score { get; set; } = 0;          // 0 = no score, 0.5-10
