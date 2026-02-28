@@ -472,9 +472,6 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
-    @{
-        bool isNotYetReleased = CurrentAnime.Status == "NOT_YET_RELEASED";
-    }
     <div class="list-editor-overlay" @onclick="async () => await CloseAndSave()">
         <div class="list-editor-modal" @onclick:stopPropagation="true">
 
@@ -605,21 +602,21 @@
                         }
                         <div class="le-score-controls">
                             <button class="le-score-step-btn"
-                                    disabled="@isNotYetReleased"
-                                    @onclick="async () => { if (!isNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
+                                    disabled="@IsNotYetReleased"
+                                    @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
                             <input type="text"
                                    @ref="epInputRef"
                                    class="le-score-input le-ep-input"
                                    value="@epInputVal"
                                    placeholder="0"
-                                   disabled="@isNotYetReleased"
+                                   disabled="@IsNotYetReleased"
                                    @onfocus="HandleEpInputFocus"
                                    @onchange="HandleEpTextChange" />
                             <button class="le-score-step-btn"
-                                    disabled="@isNotYetReleased"
-                                    @onclick="async () => { if (!isNotYetReleased) { ChangeEpisodes(1); await AutoSave(); } }">+</button>
+                                    disabled="@IsNotYetReleased"
+                                    @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(1); await AutoSave(); } }">+</button>
                         </div>
-                        <div class="list-editor-ep-bar @(isNotYetReleased ? "le-ep-bar-disabled" : "le-ep-bar-clickable") @(_epBarDragging ? "dragging" : "")"
+                        <div class="list-editor-ep-bar @(IsNotYetReleased ? "le-ep-bar-disabled" : "le-ep-bar-clickable") @(_epBarDragging ? "dragging" : "")"
                              @ref="epBarRef"
                              @onpointerdown="HandleEpBarPointerDown"
                              @onpointermove="HandleEpBarPointerMove"
@@ -771,6 +768,9 @@
         ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
         ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
     };
+
+    // True when the current anime has not yet aired — used to lock episode controls.
+    private bool IsNotYetReleased => CurrentAnime?.Status == "NOT_YET_RELEASED";
 
     // Returns statuses available for the current anime.
     // NOT_YET_RELEASED animes cannot be marked as Completed.
