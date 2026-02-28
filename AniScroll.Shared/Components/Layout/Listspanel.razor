@@ -4,8 +4,11 @@
 @inject UserListService UserListService
 @implements IDisposable
 
+@{ Console.WriteLine($"ListsPanel render, IsVisible={IsVisible}"); }
+    
 @if (IsVisible)
 {
+
     <div class="lists-overlay" @onclick="Close">
         <div class="lists-panel"
              @onclick:stopPropagation="true"

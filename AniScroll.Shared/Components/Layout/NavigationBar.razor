@@ -37,11 +37,15 @@
         <div class="nav-buttons-row">
 
             <!-- Lists (bookmark icon) -->
-            <button class="nav-btn" @onclick="HandleListsClick" @onclick:stopPropagation="true">
+            <button class="nav-btn" @onclick="@(() => { Console.WriteLine("LISTS CLICKED"); OnListsClicked.InvokeAsync(); })">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                         stroke="currentColor" stroke-width="1.9"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
                     </svg>
                 </div>
                 <span class="nav-btn-label">Lists</span>

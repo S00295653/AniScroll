@@ -683,7 +683,9 @@
 
     private void HandleListsClicked()
     {
+        Console.WriteLine($"HandleListsClicked called, showListsPanel was: {showListsPanel}");
         showListsPanel = true;
+        Console.WriteLine($"showListsPanel is now: {showListsPanel}");
         StateHasChanged();
     }
 
@@ -698,7 +700,7 @@
         showListsPanel = false;
         await ShowAnimeDetails(anime);
     }
-    
+
     private void HandleProfileClicked() { }
 
     public void Dispose() => rateLimitTimer?.Dispose();
