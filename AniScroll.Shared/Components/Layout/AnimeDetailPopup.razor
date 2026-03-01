@@ -885,7 +885,11 @@
     private IEnumerable<ListStatus> GetAvailableStatuses()
     {
         if (IsNotYetReleased) { yield return ListStatus.Planning; yield break; }
-        foreach (var s in _allStatuses) yield return s;
+        foreach (var setting in UserListService.GetStatusSettings())
+        {
+            if (Enum.TryParse<ListStatus>(setting.Key, out var s))
+                yield return s;
+        }
     }
 
     // List Editor state
