@@ -473,7 +473,6 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (showListEditor && CurrentAnime != null)
 {
-    <!-- FIX: touch-action:none stops iOS scroll momentum from passing through overlay -->
     <div class="list-editor-overlay"
          @ref="_listEditorOverlayRef"
          style="touch-action:none;overscroll-behavior:contain;"
@@ -517,34 +516,36 @@
             <!-- Body -->
             <div class="list-editor-body">
 
-                <!-- Status Dropdown -->
+                <!-- ── Status Dropdown (standards + custom lists) ── -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
-                    <span class="list-editor-label">Status</span>
-                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-active" : "")"
-                            @onclick="() => { statusDropdownOpen = !statusDropdownOpen; StateHasChanged(); }">
+                    <span class="list-editor-label">STATUS</span>
+
+                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
+                            @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @if (editStatus.HasValue)
                         {
-                            @StatusDotMarkup(editStatus.Value, true)
+                            @GlowDot(GetStatusHexColor(editStatus.Value))
                         }
                         else
                         {
                             <span class="le-dd-dot le-dd-dot-none"></span>
                         }
-                        <span class="le-dd-trigger-text">@(editStatus.HasValue ? GetStatusLabel(editStatus.Value) : "None")</span>
-                        <svg class="le-dd-chevron @(statusDropdownOpen ? "open" : "")"
-                             width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <span class="le-dd-trigger-text">@(editStatus.HasValue ? GetStatusLabel(editStatus.Value) : "Not in list")</span>
+                        <svg class="le-dd-chevron @(_statusDropdownOpen ? "open" : "")" width="14" height="14"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
-                    @if (statusDropdownOpen)
+
+                    @if (_statusDropdownOpen)
                     {
                         <div class="le-dd-list">
+
+                            <!-- Statuts standards -->
                             @foreach (var s in GetAvailableStatuses())
                             {
-                                var sk = GetStatusCssKey(s);
-                                var isSel = editStatus == s;
-                                <button class="le-dd-option @(isSel ? "selected" : "")"
+                                bool isSel = editStatus == s;
+                                <button class="le-dd-option @(isSel ? "selected le-opt-" + s.ToString().ToLower() : "")"
                                         @onclick="async () => {
                                             var prev = editStatus;
                                             editStatus = s;
@@ -553,21 +554,51 @@
                                                 if (tot > 0) editEpisodes = tot;
                                             }
                                             ApplyAutoDate(prev, editStatus);
-                                            statusDropdownOpen = false;
+                                            _statusDropdownOpen = false;
                                             await AutoSave();
                                             StateHasChanged();
-                                        }">
-                                    @StatusDotMarkup(s, isSel)
+                                        }"
+                                        @onclick:stopPropagation="true">
+                                    @GlowDot(GetStatusHexColor(s))
                                     <span class="le-dd-option-text">@GetStatusLabel(s)</span>
                                     @if (isSel)
                                     {
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="3" stroke-linecap="round">
                                             <polyline points="20 6 9 17 4 12"></polyline>
                                         </svg>
                                     }
                                 </button>
                             }
+
+                            <!-- Séparateur + Custom lists -->
+                            @{
+                                var customLists = UserListService.GetCustomLists().ToList();
+                            }
+                            @if (customLists.Any())
+                            {
+                                <div style="height:1px;background:rgba(255,255,255,0.07);margin:4px 0;"></div>
+
+                                @foreach (var cl in customLists)
+                                {
+                                    bool isInCl = editAnime != null && UserListService.IsInCustomList(editAnime.Id, cl.Id);
+                                    <button class="le-dd-option @(isInCl ? "selected" : "")"
+                                            style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
+                                            @onclick="() => ToggleCustomList(cl.Id)"
+                                            @onclick:stopPropagation="true">
+                                        @GlowDot(cl.Color)
+                                        <span class="le-dd-option-text">@cl.Name</span>
+                                        @if (isInCl)
+                                        {
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        }
+                                    </button>
+                                }
+                            }
+
                         </div>
                     }
                 </div>
@@ -776,6 +807,9 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    // Alias used in custom list toggle (same reference as CurrentAnime)
+    private AnimeCard? editAnime => CurrentAnime;
+
     private bool isFavorited = false;
     private bool showSpoilers = false;
     private int? _lastAnimeId = null;
@@ -802,10 +836,9 @@
     private bool showListEditor = false;
     private bool showDeleteConfirm = false;
     private bool _deleteAnimVisible = false;
-    private bool statusDropdownOpen = false;
+    private bool _statusDropdownOpen = false;
     private bool _pointerDownOnModal = false;
 
-    // FIX: track whether the JS edge-swipe interceptor is registered
     private bool _edgeInterceptorRegistered = false;
 
     // Edit form fields
@@ -820,8 +853,8 @@
     private bool editHideFromLists = false;
 
     // Element refs
-    private ElementReference _listEditorOverlayRef;   // FIX 3: wheel prevention
-    private bool _wheelListenerActive = false;         // FIX 3: wheel prevention
+    private ElementReference _listEditorOverlayRef;
+    private bool _wheelListenerActive = false;
     private ElementReference scoreBarRef;
     private ElementReference epBarRef;
     private ElementReference scoreInputRef;
@@ -868,7 +901,6 @@
     public void Dispose()
     {
         UserListService.OnChanged -= HandleListChanged;
-        // Clean up native JS listener if still active
         try { _ = JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); } catch { }
     }
 
@@ -899,13 +931,8 @@
         }
     }
 
-    // FIX: Register/unregister the native JS edge-swipe interceptor.
-    // This fires synchronously on touchstart (before iOS scroll momentum can capture the touch),
-    // which fixes the "swipe from left edge doesn't work when scroll is still moving" bug.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // FIX 3: add/remove a non-passive wheel listener so the mouse wheel
-        // cannot scroll the modal-scroll-container through the list-editor-overlay.
         if (showListEditor && !_wheelListenerActive)
         {
             _wheelListenerActive = true;
@@ -988,12 +1015,12 @@
     private async Task CloseAndSave()
     {
         if (CurrentAnime != null) await AutoSave();
-        showListEditor     = false;
-        statusDropdownOpen = false;
-        _scoreBarDragging  = false;
-        _epBarDragging     = false;
-        _cachedScoreBounds = null;
-        _cachedEpBounds    = null;
+        showListEditor      = false;
+        _statusDropdownOpen = false;
+        _scoreBarDragging   = false;
+        _epBarDragging      = false;
+        _cachedScoreBounds  = null;
+        _cachedEpBounds     = null;
         StateHasChanged();
     }
 
@@ -1034,9 +1061,9 @@
             editRewatches = 0;
         }
 
-        statusDropdownOpen = false;
-        _deleteAnimVisible = false;
-        showListEditor = true;
+        _statusDropdownOpen = false;
+        _deleteAnimVisible  = false;
+        showListEditor      = true;
         StateHasChanged();
         if (isInList) _ = TriggerDeleteAnimAsync();
     }
@@ -1059,6 +1086,17 @@
         currentListStatus = null;
         showDeleteConfirm = false;
         showListEditor = false;
+        StateHasChanged();
+    }
+
+    // ── Custom Lists ──────────────────────────────────────────────────────────
+    private void ToggleCustomList(string customListId)
+    {
+        if (editAnime == null) return;
+        if (UserListService.IsInCustomList(editAnime.Id, customListId))
+            UserListService.RemoveFromCustomList(editAnime.Id, customListId);
+        else
+            UserListService.AddToCustomList(editAnime.Id, customListId);
         StateHasChanged();
     }
 
@@ -1313,8 +1351,6 @@
 
         if (touch.ClientX <= EDGE_ZONE_WIDTH)
         {
-            // The JS registerEdgeSwipeInterceptor already killed momentum scroll synchronously.
-            // Reset any pull state and start edge tracking.
             isPullTrackingActive      = false;
             isPulling                 = false;
             pullOffset                = 0;
@@ -1430,10 +1466,9 @@
         _                     => "all"
     };
 
-    /// Résout la couleur d'un statut depuis les settings utilisateur (couleur personnalisable).
     private string GetStatusHexColor(ListStatus s)
     {
-        var key = s.ToString(); // "Watching", "Completed", etc.
+        var key = s.ToString();
         return UserListService.GetStatusSettings()
                    .FirstOrDefault(x => x.Key == key)?.Color
                ?? s switch
@@ -1448,7 +1483,7 @@
                };
     }
 
-    /// Dot universelle : active = pleine + glow, inactive = 35% opacité.
+    /// Dot with glow for active state, dimmed for inactive.
     private MarkupString StatusDotMarkup(ListStatus s, bool active)
     {
         string color = GetStatusHexColor(s);
@@ -1457,6 +1492,15 @@
               $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};"
             : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
               $"background:{color};opacity:0.35;";
+        return new MarkupString($"<span style=\"{style}\"></span>");
+    }
+
+    /// Universal glow dot (used in dropdown options and trigger button).
+    private static MarkupString GlowDot(string color)
+    {
+        var style =
+            $"display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;" +
+            $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};";
         return new MarkupString($"<span style=\"{style}\"></span>");
     }
 
