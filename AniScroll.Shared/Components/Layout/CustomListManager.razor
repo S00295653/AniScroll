@@ -10,7 +10,7 @@
              @ontouchstart:stopPropagation="true"
              @ontouchmove:stopPropagation="true">
 
-            <!-- ── Header ──────────────────────────────────────────────── -->
+            <!-- ── Header ─────────────────────────────────────────── -->
             <div class="clm-header">
                 <div class="clm-handle-bar"></div>
                 <div class="clm-header-row">
@@ -25,30 +25,24 @@
                 </div>
             </div>
 
-            <!-- ── Body ────────────────────────────────────────────────── -->
+            <!-- ── Body ───────────────────────────────────────────── -->
             <div class="clm-body"
                  @ondragover:preventDefault="true"
-                 @ondrop="() => CommitDrop()"
+                 @ondrop="CommitDrop"
                  @ondragend="CancelDrag">
 
-                <!-- ══════════════════════════════════════════
-                     CREATE NEW LIST ROW
-                     ══════════════════════════════════════════ -->
+                <!-- NEW LIST ROW -->
                 <div class="clm2-row clm2-row-new">
 
-                    <!-- color swatch -->
-                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "")"
-                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor}20;border-color:{_newColor}60;" : "")"
+                    <!-- swatch: filled with color when chosen, dashed + icon when empty -->
+                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
                          @onclick:stopPropagation="true"
                          @onclick="() => OpenPicker(-1, _newColor ?? string.Empty, c => { _newColor = c; StateHasChanged(); })">
-                        @if (!string.IsNullOrEmpty(_newColor))
-                        {
-                            <div class="clm2-swatch-dot" style="background:@_newColor;"></div>
-                        }
-                        else
+                        @if (string.IsNullOrEmpty(_newColor))
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round">
+                                 stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="8" x2="12" y2="16"></line>
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
@@ -75,117 +69,100 @@
                     </button>
                 </div>
 
-                <!-- ══════════════════════════════════════════
-                     ROWS  (status + custom unified, with insertion line)
-                     _insertBefore = index before which the line shows
-                     ══════════════════════════════════════════ -->
-                @for (int i = 0; i <= _rows.Count; i++)
+                <!-- LIST ROWS — each shifts via CSS transform while dragging -->
+                @for (int i = 0; i < _rows.Count; i++)
                 {
-                    var li = i; // local capture for insertion target
+                    var ri     = i;
+                    var row    = _rows[i];
+                    var color  = row.Color;
+                    var isDrag = _dragIdx == ri;
+                    var shift  = GetShift(ri);    // "0px", "64px", or "-64px"
 
-                    <!-- insertion line: show before row li when dragging -->
-                    @if (_dragIdx >= 0
-                         && _insertBefore == li
-                         && li != _dragIdx
-                         && li != _dragIdx + 1)
-                    {
-                        <div class="clm2-insert-line"></div>
-                    }
+                    var cnt = row.IsStatus
+                        ? UserListService.Count(ParseStatus(row.Status!.Key))
+                        : UserListService.GetCountForCustomList(row.Custom!.Id);
 
-                    @if (i < _rows.Count)
-                    {
-                        var ri  = i;
-                        var row = _rows[i];
-                        var isDragging = _dragIdx == ri;
-                        var color = row.Color;
-                        var cnt   = row.IsStatus
-                            ? UserListService.Count(ParseStatus(row.Status!.Key))
-                            : UserListService.GetCountForCustomList(row.Custom!.Id);
+                    <div class="clm2-row @(isDrag ? "clm2-dragging" : "") clm2-row-anim"
+                         style="transform:translateY(@shift); z-index:@(isDrag ? 10 : 1);"
+                         draggable="true"
+                         @ondragstart="() => StartDrag(ri)"
+                         @ondragenter:preventDefault="true"
+                         @ondragenter="() => EnterRow(ri)"
+                         @ondragover:preventDefault="true"
+                         @ondrop:stopPropagation="true"
+                         @ondrop="CommitDrop"
+                         @ondragend="CancelDrag">
 
-                        <div class="clm2-row @(isDragging ? "clm2-dragging" : "")"
-                             draggable="true"
-                             @ondragstart="() => StartDrag(ri)"
-                             @ondragenter:preventDefault="true"
-                             @ondragenter="() => EnterRow(ri)"
-                             @ondragover:preventDefault="true"
-                             @ondrop:stopPropagation="true"
-                             @ondrop="() => CommitDrop()"
-                             @ondragend="CancelDrag">
+                        <!-- drag handle -->
+                        <div class="clm2-drag">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <line x1="9"  y1="5"  x2="15" y2="5"></line>
+                                <line x1="9"  y1="12" x2="15" y2="12"></line>
+                                <line x1="9"  y1="19" x2="15" y2="19"></line>
+                            </svg>
+                        </div>
 
-                            <!-- drag handle -->
-                            <div class="clm2-drag">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <line x1="9" y1="5"  x2="15" y2="5"></line>
-                                    <line x1="9" y1="12" x2="15" y2="12"></line>
-                                    <line x1="9" y1="19" x2="15" y2="19"></line>
+                        <!-- swatch: filled with color -->
+                        <div class="clm2-swatch clm2-swatch-filled"
+                             style="background:@color;"
+                             @onclick:stopPropagation="true"
+                             @onclick="() => OpenPicker(ri, color, c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
+                        </div>
+
+                        <!-- editable name -->
+                        <input class="clm2-name-input"
+                               value="@row.Name"
+                               @oninput="e => row.SetName(e.Value?.ToString() ?? row.Name)"
+                               @onchange="e => { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); }"
+                               @onclick:stopPropagation="true" />
+
+                        <!-- entry count -->
+                        @if (cnt > 0)
+                        {
+                            <span class="clm2-count" style="border-color:@(color)66;color:@color;">@cnt</span>
+                        }
+
+                        <!-- lock (status) OR delete (custom) -->
+                        @if (row.IsStatus)
+                        {
+                            <div class="clm2-lock">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                                 </svg>
                             </div>
-
-                            <!-- color swatch -->
-                            <div class="clm2-swatch"
-                                 style="background:@(color)20;border-color:@(color)60;"
-                                 @onclick:stopPropagation="true"
-                                 @onclick="() => OpenPicker(ri, color, c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
-                                <div class="clm2-swatch-dot" style="background:@color;"></div>
-                            </div>
-
-                            <!-- editable name -->
-                            <input class="clm2-name-input"
-                                   value="@row.Name"
-                                   @oninput="e => row.SetName(e.Value?.ToString() ?? row.Name)"
-                                   @onchange="e => { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); }"
-                                   @onclick:stopPropagation="true" />
-
-                            <!-- entry count -->
-                            @if (cnt > 0)
-                            {
-                                <span class="clm2-count" style="border-color:@(color)55;color:@color;">@cnt</span>
-                            }
-
-                            <!-- lock (status) OR delete (custom) -->
-                            @if (row.IsStatus)
-                            {
-                                <div class="clm2-lock">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                         stroke="rgba(255,255,255,0.18)" stroke-width="2" stroke-linecap="round">
-                                        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                    </svg>
-                                </div>
-                            }
-                            else
-                            {
-                                <button class="clm2-delete-btn"
-                                        @onclick="() => DeleteRow(ri)"
-                                        @onclick:stopPropagation="true">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="2"
-                                         stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6l-1 14H6L5 6"></path>
-                                        <path d="M10 11v6M14 11v6"></path>
-                                        <path d="M9 6V4h6v2"></path>
-                                    </svg>
-                                </button>
-                            }
-                        </div>
-                    }
+                        }
+                        else
+                        {
+                            <button class="clm2-delete-btn"
+                                    @onclick="() => DeleteRow(ri)"
+                                    @onclick:stopPropagation="true">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="M10 11v6M14 11v6"></path>
+                                    <path d="M9 6V4h6v2"></path>
+                                </svg>
+                            </button>
+                        }
+                    </div>
                 }
 
-            </div><!-- end clm-body -->
-
-        </div><!-- end clm-panel -->
-    </div><!-- end clm-overlay -->
+            </div><!-- /clm-body -->
+        </div><!-- /clm-panel -->
+    </div><!-- /clm-overlay -->
 
     <!-- ══════════════════════════════════════════
-         COLOR PICKER — position:fixed, always on top
-         Rendered OUTSIDE the panel to avoid any clip
+         COLOR PICKER  — fixed, centered in viewport
+         Rendered outside .clm-panel so nothing clips it
          ══════════════════════════════════════════ -->
     @if (_pickerOpen && _pickerCallback != null)
     {
-        <!-- backdrop: click anywhere to close -->
-        <div class="clm2-picker-backdrop" @onclick="ClosePicker"></div>
+        <div class="clm2-picker-backdrop" @onclick="ClosePicker" @onclick:stopPropagation="true"></div>
         <div class="clm2-picker-fixed" @onclick:stopPropagation="true">
             <div class="clm2-picker-grid">
                 @foreach (var c in _palette)
@@ -198,7 +175,7 @@
                 }
             </div>
             <input type="color" class="clm2-color-native"
-                   value="@(_pickerCurrentColor is { Length: > 0 } pc ? pc : "#6366f1")"
+                   value="@(_pickerCurrentColor.Length > 0 ? _pickerCurrentColor : "#6366f1")"
                    @onchange="e => PickColor(e.Value?.ToString() ?? string.Empty)" />
         </div>
     }
@@ -208,7 +185,7 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    // ── Unified row wrapper ──────────────────────────────────────────────
+    // ── Row wrapper ──────────────────────────────────────────────────────
     private class Row
     {
         public bool IsStatus;
@@ -229,19 +206,28 @@
     private string? _newColor = null;
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
 
-    // ── Picker state ─────────────────────────────────────────────────────
-    // _pickerOpenFor: -2=closed, -1=new-row, >=0=row index
+    // ── Picker ───────────────────────────────────────────────────────────
     private bool            _pickerOpen         = false;
-    private int             _pickerOpenFor      = -2;
+    private int             _pickerOpenFor      = -2;   // -2=closed -1=new-row >=0=row
     private string          _pickerCurrentColor = "";
     private Action<string>? _pickerCallback;
 
-    // ── Drag state ───────────────────────────────────────────────────────
-    // _dragIdx:      which row is being dragged (-1 = none)
-    // _insertBefore: draw insertion line BEFORE this row index (-1 = none)
+    // ── Drag ─────────────────────────────────────────────────────────────
+    // _dragIdx:      row currently being dragged (-1 = none)
+    // _insertBefore: insertion target index      (-1 = none)
+    //
+    // Visual shift logic (same as codesandbox k260nyxq9v):
+    //   • Dragging DOWN (dragIdx < insertBefore):
+    //       rows in (dragIdx, insertBefore)  →  shift UP   by -ROW_H
+    //   • Dragging UP   (dragIdx > insertBefore):
+    //       rows in [insertBefore, dragIdx)  →  shift DOWN by +ROW_H
     private int _dragIdx      = -1;
     private int _insertBefore = -1;
 
+    // Height of one row (px) — keep in sync with CSS (.clm2-row height + margin)
+    private const int ROW_H = 64;
+
+    // ── Palette ──────────────────────────────────────────────────────────
     private static readonly string[] _palette =
     {
         "#ef4444","#f97316","#f59e0b","#eab308",
@@ -267,10 +253,27 @@
     private void RebuildRows()
     {
         _rows = UserListService.GetStatusSettings()
-            .Select(s => new Row { IsStatus = true, Status = s })
+            .Select(s => new Row { IsStatus = true,  Status = s })
             .Concat(UserListService.GetCustomLists()
                 .Select(c => new Row { IsStatus = false, Custom = c }))
             .ToList();
+    }
+
+    // ── Shift calculation for the drag animation ─────────────────────────
+    // Returns a CSS translateY value string for row at index `i`.
+    private string GetShift(int i)
+    {
+        if (_dragIdx < 0 || _insertBefore < 0 || i == _dragIdx) return "0px";
+
+        // Dragging DOWN: src < tgt → rows between src+1 and tgt-1 shift UP
+        if (_dragIdx < _insertBefore && i > _dragIdx && i < _insertBefore)
+            return $"{-ROW_H}px";
+
+        // Dragging UP: src > tgt → rows between tgt and src-1 shift DOWN
+        if (_dragIdx > _insertBefore && i >= _insertBefore && i < _dragIdx)
+            return $"{ROW_H}px";
+
+        return "0px";
     }
 
     // ── Picker ───────────────────────────────────────────────────────────
@@ -300,7 +303,7 @@
         StateHasChanged();
     }
 
-    // ── Save helpers ─────────────────────────────────────────────────────
+    // ── Persist ──────────────────────────────────────────────────────────
     private void SaveAll()
     {
         var statusRows = _rows.Where(r => r.IsStatus).Select(r => r.Status!).ToList();
@@ -317,14 +320,17 @@
     private void AddList()
     {
         if (!CanAdd) return;
-        var newList = new UserCustomList
+        _rows.Add(new Row
         {
-            Id    = Guid.NewGuid().ToString(),
-            Name  = _newName.Trim(),
-            Color = _newColor ?? "#6366f1",
-            Order = _rows.Count
-        };
-        _rows.Add(new Row { IsStatus = false, Custom = newList });
+            IsStatus = false,
+            Custom   = new UserCustomList
+            {
+                Id    = Guid.NewGuid().ToString(),
+                Name  = _newName.Trim(),
+                Color = _newColor ?? "#6366f1",
+                Order = _rows.Count
+            }
+        });
         SaveAll();
         _newName        = "";
         _newColor       = null;
@@ -342,21 +348,21 @@
         StateHasChanged();
     }
 
-    // ── Drag & drop (insertion line approach) ────────────────────────────
+    // ── Drag & drop ──────────────────────────────────────────────────────
     private void StartDrag(int idx)
     {
         _dragIdx      = idx;
-        _insertBefore = -1;
+        _insertBefore = idx;    // start with no shift
         StateHasChanged();
     }
 
     private void EnterRow(int idx)
     {
-        if (_dragIdx < 0) return;
+        if (_dragIdx < 0 || idx == _dragIdx) return;
 
-        // Determine insertion position based on relative direction:
-        // dragging DOWN (from idx < dragIdx): want to place AFTER this row → insertBefore = idx + 1
-        // dragging UP   (from idx > dragIdx): want to place BEFORE this row → insertBefore = idx
+        // Convert hovered row to an insertion position:
+        // Entering a row BELOW the drag source → insert after that row → insertBefore = idx+1
+        // Entering a row ABOVE the drag source → insert before that row → insertBefore = idx
         int newInsert = idx > _dragIdx ? idx + 1 : idx;
 
         if (newInsert != _insertBefore)
@@ -368,13 +374,16 @@
 
     private void CommitDrop()
     {
-        if (_dragIdx < 0 || _insertBefore < 0) { CancelDrag(); return; }
+        if (_dragIdx < 0 || _insertBefore < 0)
+        {
+            CancelDrag();
+            return;
+        }
 
-        // Clamp to valid range
-        int insertAt = Math.Clamp(_insertBefore, 0, _rows.Count);
+        int tgt = Math.Clamp(_insertBefore, 0, _rows.Count);
 
-        // Don't move if dropping on same position
-        if (insertAt == _dragIdx || insertAt == _dragIdx + 1)
+        // No actual movement
+        if (tgt == _dragIdx || tgt == _dragIdx + 1)
         {
             CancelDrag();
             return;
@@ -383,8 +392,8 @@
         var item = _rows[_dragIdx];
         _rows.RemoveAt(_dragIdx);
 
-        // After removal, adjust insertion index if it was after the dragged item
-        int at = insertAt > _dragIdx ? insertAt - 1 : insertAt;
+        // Adjust index after removal
+        int at = tgt > _dragIdx ? tgt - 1 : tgt;
         at = Math.Clamp(at, 0, _rows.Count);
 
         _rows.Insert(at, item);
@@ -404,7 +413,7 @@
     // ── Keyboard ─────────────────────────────────────────────────────────
     private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddList(); }
 
-    // ── Close ────────────────────────────────────────────────────────────
+    // ── Panel close ──────────────────────────────────────────────────────
     private void HandleOverlayClick()
     {
         if (_pickerOpen) { ClosePicker(); return; }
@@ -413,7 +422,7 @@
 
     private async Task Close() { ClosePicker(); await OnClose.InvokeAsync(); }
 
-    // ── Parse status key ─────────────────────────────────────────────────
+    // ── Status key ───────────────────────────────────────────────────────
     private static ListStatus? ParseStatus(string key) => key switch
     {
         "Watching"   => ListStatus.Watching,
