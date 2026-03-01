@@ -59,13 +59,13 @@
                         ? UserListService.GetAll().Count(e => e.Status.HasValue)
                         : UserListService.Count(tab.Status.Value);
 
-                    bool active = activeStatus == tab.Status;
-                    string color = GetStatusColor(tab.Status);
+                    bool isActive = activeStatus == tab.Status && activeCustomListId == null;
+                    string color  = GetStatusColor(tab.Status);
 
-                    <button class="lists-tab @(active ? "active" : "")"
-                            style="@(active ? $"--tab-active-color:{color};" : "")"
+                    <button class="lists-tab @(isActive ? "active" : "")"
+                            style="--tab-color:@color;"
                             @onclick="() => SetTab(tab.Status)">
-                        @DotMarkup(color, active)
+                        @GlowDot(color)
                         <span class="lists-tab-label">@tab.Label</span>
                         @if (cnt > 0)
                         {
@@ -77,12 +77,12 @@
                 <!-- CUSTOM LIST TABS -->
                 @foreach (var cl in UserListService.GetCustomLists())
                 {
-                    bool active = activeCustomListId == cl.Id;
+                    bool isActive = activeCustomListId == cl.Id;
 
-                    <button class="lists-tab @(active ? "active" : "")"
-                            style="@(active ? $"--tab-active-color:{cl.Color};" : "")"
+                    <button class="lists-tab @(isActive ? "active" : "")"
+                            style="--tab-color:@cl.Color;"
                             @onclick="() => SetCustomTab(cl.Id)">
-                        @DotMarkup(cl.Color, active)
+                        @GlowDot(cl.Color)
                         <span>@cl.Name</span>
                         @if (UserListService.GetCountForCustomList(cl.Id) > 0)
                         {
@@ -151,9 +151,8 @@
 
                                 @if (e.Status.HasValue)
                                 {
-                                    string dotColor = GetStatusColor(e.Status);
-                                    <div class="entry-status-badge" style="border-color:@(dotColor)40; color:@dotColor;">
-                                        @DotMarkup(dotColor, true) @GetStatusLabel(e.Status.Value)
+                                    <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status.Value)">
+                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
                                     </div>
                                 }
                             </div>
@@ -216,30 +215,28 @@
         new("Dropped",    ListStatus.Dropped,    "dropped"),
     };
 
-    // ─── Universal dot color resolution ──────────────────────────────────────
+    // ─── Universal glow dot ───────────────────────────────────────────────────
 
-    /// Returns the hex color for a given status (or a neutral grey for "All").
-    /// Reads live from UserListService so custom colors are always up-to-date.
+    /// Renders a dot that always glows at full brightness.
+    /// Active vs inactive state is expressed solely by the tab container's CSS (.active).
+    private static MarkupString GlowDot(string color)
+    {
+        var style =
+            $"display:inline-block;" +
+            $"width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+            $"background:{color};" +
+            $"box-shadow:0 0 6px {color}99,0 0 2px {color};";
+        return new MarkupString($"<span style=\"{style}\"></span>");
+    }
+
+    /// Resolves the hex color for a given status from the user's (possibly customised) settings.
     private string GetStatusColor(ListStatus? status)
     {
-        if (status == null) return "#6b7280"; // "All" tab — neutral grey
-        var key = status.Value.ToString(); // e.g. "Watching"
+        if (status == null) return "#6b7280"; // "All" — neutral grey
+        var key = status.Value.ToString();    // "Watching", "Completed", etc.
         return UserListService.GetStatusSettings()
                    .FirstOrDefault(s => s.Key == key)?.Color
                ?? "#6366f1";
-    }
-
-    /// Renders a universal dot as a MarkupString.
-    /// active=true  → full brightness + glow
-    /// active=false → 35% opacity, no glow (resting state)
-    private static MarkupString DotMarkup(string color, bool active)
-    {
-        string style = active
-            ? $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-              $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};"
-            : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-              $"background:{color};opacity:0.35;";
-        return new MarkupString($"<span style=\"{style}\"></span>");
     }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
@@ -343,6 +340,17 @@
         ListStatus.Paused     => "Paused",
         ListStatus.Dropped    => "Dropped",
         _                     => s.ToString()
+    };
+
+    private static string GetStatusCssKey(ListStatus s) => s switch
+    {
+        ListStatus.Watching   => "watching",
+        ListStatus.Rewatching => "rewatching",
+        ListStatus.Completed  => "completed",
+        ListStatus.Planning   => "planning",
+        ListStatus.Paused     => "paused",
+        ListStatus.Dropped    => "dropped",
+        _                     => "all"
     };
 
     private static string GetStatusIcon(ListStatus s) => s switch
