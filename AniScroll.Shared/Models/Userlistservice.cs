@@ -108,5 +108,25 @@ namespace AniScroll.Shared.Services
 
         public int GetCountForCustomList(string id) =>
             _entries.Values.Count(e => e.CustomListIds.Contains(id));
+
+        public bool IsInCustomList(int animeId, string customListId) =>
+            _entries.TryGetValue(animeId, out var e) && e.CustomListIds.Contains(customListId);
+
+        public void AddToCustomList(int animeId, string customListId)
+        {
+            if (!_entries.TryGetValue(animeId, out var e)) return;
+            if (!e.CustomListIds.Contains(customListId))
+            {
+                e.CustomListIds.Add(customListId);
+                OnChanged?.Invoke();
+            }
+        }
+
+        public void RemoveFromCustomList(int animeId, string customListId)
+        {
+            if (!_entries.TryGetValue(animeId, out var e)) return;
+            if (e.CustomListIds.Remove(customListId))
+                OnChanged?.Invoke();
+        }
     }
 }
