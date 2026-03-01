@@ -149,7 +149,7 @@
         </div><!-- /clm-panel -->
     </div><!-- /clm-overlay -->
 
-    <!-- Color picker (rendered outside clm-overlay so clicks don't bubble to close handler) -->
+    <!-- Color picker rendered outside overlay so its clicks don't bubble to close handler -->
     <ColorPickerPopup IsVisible="_pickerOpen"
                       InitialColor="@_pickerInitColor"
                       AnchorRef="_pickerAnchor"
@@ -180,8 +180,8 @@
     // Element refs
     private ElementReference   _panelRef;
     private ElementReference   _newSwatchRef;
-    private ElementReference[] _swatchRefs  = new ElementReference[64];
-    private ElementReference[] _handleRefs  = new ElementReference[64];
+    private ElementReference[] _swatchRefs = new ElementReference[64];
+    private ElementReference[] _handleRefs = new ElementReference[64];
 
     // DotNet ref passed to JS for drag callbacks
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
@@ -203,9 +203,18 @@
         _dotNetRef = DotNetObjectReference.Create(this);
     }
 
+    // FIX: only rebuild _rows when the panel is OPENED, not on every parent re-render.
+    // Previously, RebuildRows() was called on every OnParametersSet while IsVisible=true,
+    // which reset _rows and broke drag state for newly added rows.
+    private bool _prevIsVisible = false;
+
     protected override void OnParametersSet()
     {
-        if (!IsVisible) return;
+        bool justOpened = IsVisible && !_prevIsVisible;
+        _prevIsVisible = IsVisible;
+
+        if (!justOpened) return;
+
         RebuildRows();
         _newName  = "";
         _newColor = null;
@@ -238,6 +247,7 @@
         catch { }
     }
 
+    // Called by JS after the user releases the dragged row.
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
@@ -261,17 +271,12 @@
     private const int ROW_H = 64;
 
     // ── Color picker ─────────────────────────────────────────────────────
-
     private void OpenPickerForNewRow()
     {
         _pickerAnchor    = _newSwatchRef;
         _pickerInitColor = _newColor ?? "#6366f1";
-        _pickerCallback  = c =>
-        {
-            _newColor = c;
-            StateHasChanged();
-        };
-        _pickerOpen = true;
+        _pickerCallback  = c => { _newColor = c; StateHasChanged(); };
+        _pickerOpen      = true;
         StateHasChanged();
     }
 
@@ -284,10 +289,7 @@
         StateHasChanged();
     }
 
-    private void OnPickerColorChanged(string hex)
-    {
-        _pickerCallback?.Invoke(hex);
-    }
+    private void OnPickerColorChanged(string hex) => _pickerCallback?.Invoke(hex);
 
     private void CloseColorPicker()
     {
