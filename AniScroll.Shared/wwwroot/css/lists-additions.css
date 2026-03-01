@@ -299,16 +299,14 @@
    ====================================================== */
 
 .btn-add-to-list.btn-in-list {
-    background: linear-gradient(135deg, #1e3a5f, #0f2340);
-    box-shadow: 0 3px 12px rgba(59,130,246,0.25);
+    --status-color: #3b82f6; /* fallback (Completed blue) if variable not set */
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--status-color) 28%, #000000),
+        color-mix(in srgb, var(--status-color) 13%, #000000));
+    border: 1px solid color-mix(in srgb, var(--status-color) 38%, transparent);
+    color: var(--status-color);
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--status-color) 22%, transparent);
 }
-
-.btn-add-to-list.btn-in-list.btn-status-watching   { background: linear-gradient(135deg,#14532d,#052e16); box-shadow: 0 3px 12px rgba(34,197,94,0.2); }
-.btn-add-to-list.btn-in-list.btn-status-rewatching { background: linear-gradient(135deg,#164e63,#082f49); box-shadow: 0 3px 12px rgba(6,182,212,0.2); }
-.btn-add-to-list.btn-in-list.btn-status-completed  { background: linear-gradient(135deg,#1e3a5f,#0f2340); box-shadow: 0 3px 12px rgba(59,130,246,0.2); }
-.btn-add-to-list.btn-in-list.btn-status-planning   { background: linear-gradient(135deg,#3b0764,#1e0338); box-shadow: 0 3px 12px rgba(168,85,247,0.2); }
-.btn-add-to-list.btn-in-list.btn-status-paused     { background: linear-gradient(135deg,#431407,#1c0702); box-shadow: 0 3px 12px rgba(249,115,22,0.2); }
-.btn-add-to-list.btn-in-list.btn-status-dropped    { background: linear-gradient(135deg,#450a0a,#1c0202); box-shadow: 0 3px 12px rgba(239,68,68,0.2); }
 
 .btn-add-to-list-inner {
     display: flex;
