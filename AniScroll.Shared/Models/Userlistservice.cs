@@ -18,6 +18,28 @@ namespace AniScroll.Shared.Services
 
         private List<UserCustomList> _customLists = new();
 
+        // ── Status list settings (color + display name, user-editable) ────────
+        private List<StatusListSetting> _statusSettings = GetDefaultStatusSettings();
+
+        private static List<StatusListSetting> GetDefaultStatusSettings() => new()
+        {
+            new() { Key = "Watching",   DisplayName = "Watching",   Color = "#22c55e", Order = 0 },
+            new() { Key = "Rewatching", DisplayName = "Rewatching", Color = "#06b6d4", Order = 1 },
+            new() { Key = "Completed",  DisplayName = "Completed",  Color = "#3b82f6", Order = 2 },
+            new() { Key = "Planning",   DisplayName = "Planning",   Color = "#a855f7", Order = 3 },
+            new() { Key = "Paused",     DisplayName = "Paused",     Color = "#f97316", Order = 4 },
+            new() { Key = "Dropped",    DisplayName = "Dropped",    Color = "#ef4444", Order = 5 },
+        };
+
+        public List<StatusListSetting> GetStatusSettings() =>
+            _statusSettings.OrderBy(s => s.Order).ToList();
+
+        public void SaveStatusSettings(List<StatusListSetting> settings)
+        {
+            _statusSettings = settings;
+            OnChanged?.Invoke();
+        }
+
         /// <summary>Quick add/update — only changes Status, preserves other fields.</summary>
         public void AddOrUpdate(AnimeCard anime, ListStatus status)
         {
@@ -69,12 +91,8 @@ namespace AniScroll.Shared.Services
                 ? _entries.Count
                 : _entries.Values.Count(e => e.Status == status);
 
-        public List<UserCustomList> GetCustomLists()
-        {
-            return _customLists
-                .OrderBy(l => l.Order)
-                .ToList();
-        }
+        public List<UserCustomList> GetCustomLists() =>
+            _customLists.OrderBy(l => l.Order).ToList();
 
         public void SaveCustomLists(List<UserCustomList> lists)
         {
@@ -82,17 +100,13 @@ namespace AniScroll.Shared.Services
             OnChanged?.Invoke();
         }
 
-        public List<UserListEntry> GetEntriesForCustomList(string id)
-        {
-            return _entries.Values
+        public List<UserListEntry> GetEntriesForCustomList(string id) =>
+            _entries.Values
                 .Where(e => e.CustomListIds.Contains(id))
                 .OrderByDescending(e => e.UpdatedAt)
                 .ToList();
-        }
 
-        public int GetCountForCustomList(string id)
-        {
-            return _entries.Values.Count(e => e.CustomListIds.Contains(id));
-        }
+        public int GetCountForCustomList(string id) =>
+            _entries.Values.Count(e => e.CustomListIds.Contains(id));
     }
 }

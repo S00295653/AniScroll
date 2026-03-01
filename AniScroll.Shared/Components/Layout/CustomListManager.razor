@@ -9,7 +9,7 @@
              @ontouchstart:stopPropagation="true"
              @ontouchmove:stopPropagation="true">
 
-            <!-- Header -->
+            <!-- ── Header ──────────────────────────────────────────────── -->
             <div class="clm-header">
                 <div class="clm-handle-bar"></div>
                 <div class="clm-header-row">
@@ -24,59 +24,61 @@
                 </div>
             </div>
 
-            <!-- Scrollable body -->
+            <!-- ── Body ────────────────────────────────────────────────── -->
             <div class="clm-body">
 
                 <!-- ══════════════════════════════════════════
-                     "ADD NEW LIST" ROW — always at top
+                     CREATE NEW LIST ROW  (always at top)
                      ══════════════════════════════════════════ -->
-                <div class="clm-list-row clm-list-row-new @(_colorPickerOpenFor == -1 ? "clm-list-row-picker-open" : "")">
+                <div class="clm2-row clm2-row-new">
 
-                    <!-- Color swatch / picker trigger -->
-                    <div class="clm-pill-swatch @(string.IsNullOrEmpty(_newListColor) ? "clm-pill-swatch-empty" : "")"
-                         @onclick="() => ToggleColorPicker(-1)"
+                    <!-- color swatch -->
+                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "")"
+                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor}20;border-color:{_newColor}60;" : "")"
+                         @onclick="() => TogglePicker(-1)"
                          @onclick:stopPropagation="true">
-                        @if (!string.IsNullOrEmpty(_newListColor))
+
+                        @if (!string.IsNullOrEmpty(_newColor))
                         {
-                            <div class="clm-pill-dot" style="background:@_newListColor;"></div>
+                            <div class="clm2-swatch-dot" style="background:@_newColor;"></div>
                         }
                         else
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
+                                 stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="8" x2="12" y2="16"></line>
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
                         }
 
-                        @if (_colorPickerOpenFor == -1)
+                        @if (_pickerOpenFor == -1)
                         {
-                            <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
+                            <div class="clm2-picker-pop" @onclick:stopPropagation="true">
                                 @foreach (var c in _palette)
                                 {
                                     var cc = c;
-                                    <button class="clm-palette-btn @(_newListColor == cc ? "clm-palette-selected" : "")"
+                                    <button class="clm2-pal-btn @(_newColor == cc ? "clm2-pal-sel" : "")"
                                             style="background:@cc;"
-                                            @onclick="() => { _newListColor = cc; _colorPickerOpenFor = -2; StateHasChanged(); }">
+                                            @onclick="() => { _newColor = cc; _pickerOpenFor = -2; StateHasChanged(); }">
                                     </button>
                                 }
-                                <input type="color" class="clm-color-native"
-                                       value="@(_newListColor ?? "#7c7c99")"
-                                       @onchange="e => { _newListColor = e.Value?.ToString(); _colorPickerOpenFor = -2; StateHasChanged(); }" />
+                                <input type="color" class="clm2-color-native"
+                                       value="@(_newColor ?? "#6366f1")"
+                                       @onchange="e => { _newColor = e.Value?.ToString(); _pickerOpenFor = -2; StateHasChanged(); }" />
                             </div>
                         }
                     </div>
 
-                    <!-- Name input -->
-                    <input class="clm-pill-input"
+                    <!-- name input -->
+                    <input class="clm2-name-input"
                            placeholder="New list name…"
-                           value="@_newListName"
-                           @oninput="e => _newListName = e.Value?.ToString() ?? string.Empty"
-                           @onkeydown="OnNewListKeyDown" />
+                           value="@_newName"
+                           @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
+                           @onkeydown="OnNewKeyDown" />
 
-                    <!-- Add button -->
-                    <button class="clm-pill-add-btn @(CanAdd ? "" : "clm-pill-add-btn-disabled")"
+                    <!-- add button -->
+                    <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
                             disabled="@(!CanAdd)"
                             @onclick="AddList"
                             @onclick:stopPropagation="true">
@@ -89,78 +91,143 @@
                 </div>
 
                 <!-- ══════════════════════════════════════════
-                     EXISTING CUSTOM LISTS
+                     STATUS LISTS  (built-in, color+name editable)
                      ══════════════════════════════════════════ -->
-                @for (int i = 0; i < _lists.Count; i++)
+                @for (int i = 0; i < _statusSettings.Count; i++)
                 {
-                    var idx   = i;
-                    var list  = _lists[i];
-                    var isDragging = _dragIndex == idx;
-                    var isDragOver = _dragOverIndex == idx;
+                    var si  = i;
+                    var s   = _statusSettings[i];
+                    var cnt = UserListService.Count(ParseStatus(s.Key));
+                    var isDragging = _dragStatusIdx == si;
+                    var isDragOver = _dragStatusOver == si;
 
-                    <div class="clm-list-row @(isDragging ? "clm-row-dragging" : "") @(isDragOver ? "clm-row-drag-over" : "")"
+                    <div class="clm2-row @(isDragging ? "clm2-dragging" : "") @(isDragOver ? "clm2-dragover" : "")"
                          draggable="true"
-                         @ondragstart="() => OnDragStart(idx)"
+                         @ondragstart="() => { _dragStatusIdx = si; _dragCustomIdx = -1; }"
                          @ondragover:preventDefault="true"
-                         @ondragover="() => OnDragOver(idx)"
-                         @ondrop="OnDrop"
-                         @ondragend="OnDragEnd">
+                         @ondragover="() => { _dragStatusOver = si; StateHasChanged(); }"
+                         @ondrop="DropStatus"
+                         @ondragend="() => { _dragStatusIdx = -1; _dragStatusOver = -1; StateHasChanged(); }">
 
-                        <!-- Drag handle -->
-                        <div class="clm-pill-drag" @onclick:stopPropagation="true">
+                        <div class="clm2-drag">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-linecap="round">
+                                 stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round">
                                 <line x1="8" y1="6"  x2="16" y2="6"></line>
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                                 <line x1="8" y1="18" x2="16" y2="18"></line>
                             </svg>
                         </div>
 
-                        <!-- Color swatch / picker trigger -->
-                        <div class="clm-pill-swatch"
-                             @onclick="() => ToggleColorPicker(idx)"
+                        <div class="clm2-swatch"
+                             style="background:@(s.Color)20;border-color:@(s.Color)60;"
+                             @onclick="() => TogglePicker(1000 + si)"
                              @onclick:stopPropagation="true">
-                            <div class="clm-pill-dot" style="background:@(list.Color ?? "#6366f1");"></div>
+                            <div class="clm2-swatch-dot" style="background:@s.Color;"></div>
 
-                            @if (_colorPickerOpenFor == idx)
+                            @if (_pickerOpenFor == 1000 + si)
                             {
-                                <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
+                                <div class="clm2-picker-pop" @onclick:stopPropagation="true">
                                     @foreach (var c in _palette)
                                     {
                                         var cc = c;
-                                        <button class="clm-palette-btn @(list.Color == cc ? "clm-palette-selected" : "")"
+                                        <button class="clm2-pal-btn @(s.Color == cc ? "clm2-pal-sel" : "")"
                                                 style="background:@cc;"
-                                                @onclick="() => { list.Color = cc; _colorPickerOpenFor = -2; SaveLists(); StateHasChanged(); }">
+                                                @onclick="() => { s.Color = cc; _pickerOpenFor = -2; SaveStatus(); StateHasChanged(); }">
                                         </button>
                                     }
-                                    <input type="color" class="clm-color-native"
-                                           value="@(list.Color ?? "#7c7c99")"
-                                           @onchange="e => { list.Color = e.Value?.ToString() ?? list.Color; _colorPickerOpenFor = -2; SaveLists(); StateHasChanged(); }" />
+                                    <input type="color" class="clm2-color-native"
+                                           value="@s.Color"
+                                           @onchange="e => { s.Color = e.Value?.ToString() ?? s.Color; _pickerOpenFor = -2; SaveStatus(); StateHasChanged(); }" />
                                 </div>
                             }
                         </div>
 
-                        <!-- Editable name -->
-                        <input class="clm-pill-input"
-                               value="@list.Name"
-                               @oninput="e => { list.Name = e.Value?.ToString() ?? string.Empty; }"
-                               @onchange="e => { list.Name = e.Value?.ToString() ?? string.Empty; SaveLists(); }"
+                        <input class="clm2-name-input"
+                               value="@s.DisplayName"
+                               @oninput="e => { s.DisplayName = e.Value?.ToString() ?? s.DisplayName; }"
+                               @onchange="e => { s.DisplayName = e.Value?.ToString() ?? s.DisplayName; SaveStatus(); }"
                                @onclick:stopPropagation="true" />
 
-                        <!-- Entry count badge -->
-                        @{
-                            var cnt = UserListService.GetCountForCustomList(list.Id);
-                        }
                         @if (cnt > 0)
                         {
-                            <span class="clm-pill-count" style="border-color:@(list.Color ?? "#6366f1")55; color:@(list.Color ?? "#6366f1");">
-                                @cnt
-                            </span>
+                            <span class="clm2-count" style="border-color:@(s.Color)55;color:@s.Color;">@cnt</span>
                         }
 
-                        <!-- Delete button -->
-                        <button class="clm-pill-delete-btn"
-                                @onclick="() => DeleteList(idx)"
+                        <div class="clm2-lock">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                 stroke="rgba(255,255,255,0.18)" stroke-width="2" stroke-linecap="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                }
+
+                <!-- ══════════════════════════════════════════
+                     CUSTOM LISTS  (user-created)
+                     ══════════════════════════════════════════ -->
+                @for (int i = 0; i < _customLists.Count; i++)
+                {
+                    var ci   = i;
+                    var list = _customLists[i];
+                    var cnt  = UserListService.GetCountForCustomList(list.Id);
+                    var isDragging = _dragCustomIdx == ci;
+                    var isDragOver = _dragCustomOver == ci;
+
+                    <div class="clm2-row @(isDragging ? "clm2-dragging" : "") @(isDragOver ? "clm2-dragover" : "")"
+                         draggable="true"
+                         @ondragstart="() => { _dragCustomIdx = ci; _dragStatusIdx = -1; }"
+                         @ondragover:preventDefault="true"
+                         @ondragover="() => { _dragCustomOver = ci; StateHasChanged(); }"
+                         @ondrop="DropCustom"
+                         @ondragend="() => { _dragCustomIdx = -1; _dragCustomOver = -1; StateHasChanged(); }">
+
+                        <div class="clm2-drag">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                 stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round">
+                                <line x1="8" y1="6"  x2="16" y2="6"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                                <line x1="8" y1="18" x2="16" y2="18"></line>
+                            </svg>
+                        </div>
+
+                        <div class="clm2-swatch"
+                             style="background:@(list.Color ?? "#6366f1")20;border-color:@(list.Color ?? "#6366f1")60;"
+                             @onclick="() => TogglePicker(2000 + ci)"
+                             @onclick:stopPropagation="true">
+                            <div class="clm2-swatch-dot" style="background:@(list.Color ?? "#6366f1");"></div>
+
+                            @if (_pickerOpenFor == 2000 + ci)
+                            {
+                                <div class="clm2-picker-pop" @onclick:stopPropagation="true">
+                                    @foreach (var c in _palette)
+                                    {
+                                        var cc = c;
+                                        <button class="clm2-pal-btn @(list.Color == cc ? "clm2-pal-sel" : "")"
+                                                style="background:@cc;"
+                                                @onclick="() => { list.Color = cc; _pickerOpenFor = -2; SaveCustom(); StateHasChanged(); }">
+                                        </button>
+                                    }
+                                    <input type="color" class="clm2-color-native"
+                                           value="@(list.Color ?? "#6366f1")"
+                                           @onchange="e => { list.Color = e.Value?.ToString() ?? list.Color; _pickerOpenFor = -2; SaveCustom(); StateHasChanged(); }" />
+                                </div>
+                            }
+                        </div>
+
+                        <input class="clm2-name-input"
+                               value="@list.Name"
+                               @oninput="e => { list.Name = e.Value?.ToString() ?? list.Name; }"
+                               @onchange="e => { list.Name = e.Value?.ToString() ?? list.Name; SaveCustom(); }"
+                               @onclick:stopPropagation="true" />
+
+                        @if (cnt > 0)
+                        {
+                            <span class="clm2-count" style="border-color:@(list.Color ?? "#6366f1")55;color:@(list.Color ?? "#6366f1");">@cnt</span>
+                        }
+
+                        <button class="clm2-delete-btn"
+                                @onclick="() => DeleteCustom(ci)"
                                 @onclick:stopPropagation="true">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -173,11 +240,6 @@
                     </div>
                 }
 
-                @if (!_lists.Any())
-                {
-                    <p class="clm-empty-hint">No custom lists yet. Create one above!</p>
-                }
-
             </div>
         </div>
     </div>
@@ -187,119 +249,114 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    private List<UserCustomList> _lists = new();
-    private string _newListName = "";
-    private string? _newListColor = null;
-    private int _colorPickerOpenFor = -2;
+    private List<StatusListSetting> _statusSettings = new();
+    private List<UserCustomList>    _customLists    = new();
 
-    private int _dragIndex = -1;
-    private int _dragOverIndex = -1;
+    private string  _newName  = "";
+    private string? _newColor = null;
+    private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
 
-    private bool CanAdd => !string.IsNullOrWhiteSpace(_newListName);
+    // -2=closed  -1=new row  1000+i=status row  2000+i=custom row
+    private int _pickerOpenFor = -2;
 
-    private static readonly string[] _palette = new[]
+    private int _dragStatusIdx  = -1;
+    private int _dragStatusOver = -1;
+    private int _dragCustomIdx  = -1;
+    private int _dragCustomOver = -1;
+
+    private static readonly string[] _palette =
     {
-        "#ef4444", "#f97316", "#f59e0b", "#eab308",
-        "#84cc16", "#22c55e", "#10b981", "#06b6d4",
-        "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7",
-        "#ec4899", "#f43f5e", "#64748b", "#78716c"
+        "#ef4444","#f97316","#f59e0b","#eab308",
+        "#84cc16","#22c55e","#10b981","#06b6d4",
+        "#3b82f6","#6366f1","#8b5cf6","#a855f7",
+        "#ec4899","#f43f5e","#64748b","#78716c"
     };
 
     protected override void OnParametersSet()
     {
-        if (IsVisible) LoadLists();
+        if (!IsVisible) return;
+        _statusSettings = UserListService.GetStatusSettings();
+        _customLists    = UserListService.GetCustomLists();
+        _newName        = "";
+        _newColor       = null;
+        _pickerOpenFor  = -2;
     }
 
-    private void LoadLists()
+    private void TogglePicker(int idx)
     {
-        _lists = UserListService.GetCustomLists();
-        _newListName = "";
-        _newListColor = null;
-        _colorPickerOpenFor = -2;
-    }
-
-    private void ToggleColorPicker(int idx)
-    {
-        _colorPickerOpenFor = _colorPickerOpenFor == idx ? -2 : idx;
+        _pickerOpenFor = _pickerOpenFor == idx ? -2 : idx;
         StateHasChanged();
+    }
+
+    private void SaveStatus() => UserListService.SaveStatusSettings(_statusSettings);
+    private void SaveCustom()
+    {
+        for (int i = 0; i < _customLists.Count; i++) _customLists[i].Order = i;
+        UserListService.SaveCustomLists(_customLists);
     }
 
     private void AddList()
     {
         if (!CanAdd) return;
-        var list = new UserCustomList
+        _customLists.Add(new UserCustomList
         {
             Id    = Guid.NewGuid().ToString(),
-            Name  = _newListName.Trim(),
-            Color = _newListColor ?? "#6366f1",
-            Order = _lists.Count
-        };
-        _lists.Add(list);
-        SaveLists();
-        _newListName  = "";
-        _newListColor = null;
-        _colorPickerOpenFor = -2;
+            Name  = _newName.Trim(),
+            Color = _newColor ?? "#6366f1",
+            Order = _customLists.Count
+        });
+        SaveCustom();
+        _newName       = "";
+        _newColor      = null;
+        _pickerOpenFor = -2;
         StateHasChanged();
     }
 
-    private void DeleteList(int idx)
+    private void DeleteCustom(int idx)
     {
-        if (idx < 0 || idx >= _lists.Count) return;
-        _lists.RemoveAt(idx);
-        ReorderLists();
-        SaveLists();
+        if (idx < 0 || idx >= _customLists.Count) return;
+        _customLists.RemoveAt(idx);
+        SaveCustom();
         StateHasChanged();
     }
 
-    private void SaveLists()
+    private void DropStatus()
     {
-        ReorderLists();
-        UserListService.SaveCustomLists(_lists);
-    }
-
-    private void ReorderLists()
-    {
-        for (int i = 0; i < _lists.Count; i++)
-            _lists[i].Order = i;
-    }
-
-    private void OnDragStart(int idx) => _dragIndex = idx;
-
-    private void OnDragOver(int idx)
-    {
-        if (_dragIndex == -1 || idx == _dragIndex) return;
-        _dragOverIndex = idx;
+        if (_dragStatusIdx < 0 || _dragStatusOver < 0 || _dragStatusIdx == _dragStatusOver) return;
+        var item = _statusSettings[_dragStatusIdx];
+        _statusSettings.RemoveAt(_dragStatusIdx);
+        int at = _dragStatusOver > _dragStatusIdx ? _dragStatusOver - 1 : _dragStatusOver;
+        _statusSettings.Insert(at, item);
+        for (int i = 0; i < _statusSettings.Count; i++) _statusSettings[i].Order = i;
+        SaveStatus();
+        _dragStatusIdx = -1; _dragStatusOver = -1;
         StateHasChanged();
     }
 
-    private void OnDrop()
+    private void DropCustom()
     {
-        if (_dragIndex == -1 || _dragOverIndex == -1 || _dragIndex == _dragOverIndex) return;
-        var item = _lists[_dragIndex];
-        _lists.RemoveAt(_dragIndex);
-        int insertAt = _dragOverIndex > _dragIndex ? _dragOverIndex - 1 : _dragOverIndex;
-        _lists.Insert(insertAt, item);
-        SaveLists();
-        _dragIndex = -1;
-        _dragOverIndex = -1;
+        if (_dragCustomIdx < 0 || _dragCustomOver < 0 || _dragCustomIdx == _dragCustomOver) return;
+        var item = _customLists[_dragCustomIdx];
+        _customLists.RemoveAt(_dragCustomIdx);
+        int at = _dragCustomOver > _dragCustomIdx ? _dragCustomOver - 1 : _dragCustomOver;
+        _customLists.Insert(at, item);
+        SaveCustom();
+        _dragCustomIdx = -1; _dragCustomOver = -1;
         StateHasChanged();
     }
 
-    private void OnDragEnd()
-    {
-        _dragIndex = -1;
-        _dragOverIndex = -1;
-        StateHasChanged();
-    }
+    private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddList(); }
 
-    private async Task OnNewListKeyDown(KeyboardEventArgs e)
+    private static ListStatus? ParseStatus(string key) => key switch
     {
-        if (e.Key == "Enter") AddList();
-    }
+        "Watching"   => ListStatus.Watching,
+        "Rewatching" => ListStatus.Rewatching,
+        "Completed"  => ListStatus.Completed,
+        "Planning"   => ListStatus.Planning,
+        "Paused"     => ListStatus.Paused,
+        "Dropped"    => ListStatus.Dropped,
+        _            => null
+    };
 
-    private async Task Close()
-    {
-        _colorPickerOpenFor = -2;
-        await OnClose.InvokeAsync();
-    }
+    private async Task Close() { _pickerOpenFor = -2; await OnClose.InvokeAsync(); }
 }
