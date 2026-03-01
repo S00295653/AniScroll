@@ -2,14 +2,15 @@
 @using AniScroll.Shared.Services
 @using System.Globalization
 @inject UserListService UserListService
+@inject IJSRuntime JS
 
 @if (IsVisible)
 {
     <!--
-        @onpointermove / @onpointerup on the overlay so drag tracking
-        continues even if the pointer wanders outside the panel.
-        Touch events are stopped on the panel to prevent scroll fighting,
-        but pointer events are NOT stopped, so they still bubble to the overlay.
+        The overlay owns @onpointermove / @onpointerup so drag tracking
+        continues even when the pointer wanders outside the panel.
+        The dragged row is pointer-captured (via JS setPointerCapture) so
+        events keep firing to the handle even when the pointer moves fast.
     -->
     <div class="clm-overlay"
          @onclick="HandleOverlayClick"
@@ -48,7 +49,7 @@
                          @onclick:stopPropagation="true"
                          @onclick="e => OpenPicker(-1, _newColor ?? string.Empty,
                                          c => { _newColor = c; StateHasChanged(); },
-                                         e.ClientY)">
+                                         e.ClientX, e.ClientY)">
                         @if (string.IsNullOrEmpty(_newColor))
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -87,15 +88,12 @@
                     var color  = row.Color;
                     var isDrag = _dragIdx == ri;
 
-                    // Visual Y offset for this row:
-                    //   • Dragged row  → follows the pointer (raw px delta from drag start)
-                    //   • Other rows   → shift ±ROW_H to make room (only while dragging)
+                    // Dragged row → follow the pointer exactly.
+                    // Other rows  → shift ±ROW_H to open/close the gap.
                     double translatePx = isDrag
                         ? (_dragCurrentY - _dragStartY)
                         : GetShiftPx(ri);
 
-                    // Dragged row has no transition so it snaps to the finger.
-                    // Other rows animate smoothly when they shift.
                     string rowTransition = (_pointerDragging && isDrag)
                         ? "none"
                         : "transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)";
@@ -112,11 +110,14 @@
                                 -webkit-user-select: none;">
 
                         <!--
-                            Drag handle — touch-action:none prevents the browser from
-                            intercepting touch scroll so pointer events fire cleanly.
+                            Drag handle:
+                            • touch-action:none  → browser won't steal touch for scroll
+                            • @ref               → used by JS setPointerCapture so the
+                                                   dragged item always follows the pointer
                         -->
                         <div class="clm2-drag"
                              style="touch-action: none; cursor: grab;"
+                             @ref="_handleRefs[ri]"
                              @onpointerdown="e => StartPointerDrag(e, ri)"
                              @onpointerdown:stopPropagation="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -133,7 +134,7 @@
                              @onclick:stopPropagation="true"
                              @onclick="e => OpenPicker(ri, color,
                                              c => { row.SetColor(c); SaveAll(); StateHasChanged(); },
-                                             e.ClientY)">
+                                             e.ClientX, e.ClientY)">
                         </div>
 
                         <!-- Editable name -->
@@ -152,7 +153,7 @@
                             </span>
                         }
 
-                        <!-- Status list → lock icon  |  Custom list → delete button -->
+                        <!-- Status list → lock  |  Custom list → delete -->
                         @if (row.IsStatus)
                         {
                             <div class="clm2-lock">
@@ -185,13 +186,12 @@
         </div><!-- /clm-panel -->
 
         <!--
-            Color picker — rendered OUTSIDE .clm-panel so nothing clips it.
-            Anchored vertically near the swatch that was tapped instead of
-            being stuck at the screen center.
+            Color picker — rendered OUTSIDE .clm-panel so it is never clipped.
+            Anchored just above (or below) the swatch that was tapped,
+            horizontally aligned with it.
         -->
         @if (_pickerOpen && _pickerCallback != null)
         {
-            <!-- Invisible full-screen backdrop: tap outside = close -->
             <div class="clm2-picker-backdrop"
                  @onclick="ClosePicker"
                  @onclick:stopPropagation="true"></div>
@@ -238,6 +238,10 @@
 
     private List<Row> _rows = new();
 
+    // ElementReference array for drag handles — used to call JS setPointerCapture.
+    // Fixed size; only the first _rows.Count slots are populated by @ref.
+    private ElementReference[] _handleRefs = new ElementReference[64];
+
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
     private string? _newColor = null;
@@ -245,22 +249,20 @@
 
     // ── Color picker ─────────────────────────────────────────────────────
     private bool            _pickerOpen         = false;
-    private int             _pickerOpenFor      = -2;   // -2 = closed, -1 = new-row, >=0 = row index
+    private int             _pickerOpenFor      = -2;
     private string          _pickerCurrentColor = "";
     private Action<string>? _pickerCallback;
-    private double          _pickerAnchorY      = 0;    // clientY of the tap that opened the picker
+    private double          _pickerAnchorX      = 0;
+    private double          _pickerAnchorY      = 0;
 
     // ── Pointer drag ─────────────────────────────────────────────────────
-    // _dragIdx:    index of the row being dragged (-1 = none)
-    // _targetIdx:  where the row will land when released (-1 = none)
-    // _dragStartY / _dragCurrentY: raw clientY values used for visual offset
     private bool   _pointerDragging = false;
     private int    _dragIdx         = -1;
     private int    _targetIdx       = -1;
     private double _dragStartY      = 0;
     private double _dragCurrentY    = 0;
 
-    // Must stay in sync with the CSS row height (height + gap/margin of .clm2-row)
+    // Must stay in sync with CSS row height + gap.
     private const int ROW_H = 64;
 
     // ── Palette ──────────────────────────────────────────────────────────
@@ -296,17 +298,15 @@
             .ToList();
     }
 
-    // ── Visual shift ─────────────────────────────────────────────────────
-    // Returns the translateY offset (px) a non-dragged row should apply
-    // so that the gap for the dragged row opens in the right place.
-    //
-    //   Dragging DOWN (dragIdx < targetIdx):
-    //     rows in (dragIdx, targetIdx]  → shift UP   by -ROW_H
-    //   Dragging UP (dragIdx > targetIdx):
-    //     rows in [targetIdx, dragIdx)  → shift DOWN by +ROW_H
+    // ── Visual shift for non-dragged rows ────────────────────────────────
+    // Dragging DOWN (dragIdx < targetIdx):
+    //   rows in (dragIdx, targetIdx]  → shift UP   (-ROW_H)
+    // Dragging UP (dragIdx > targetIdx):
+    //   rows in [targetIdx, dragIdx)  → shift DOWN (+ROW_H)
     private double GetShiftPx(int i)
     {
-        if (!_pointerDragging || _dragIdx < 0 || _targetIdx < 0 || i == _dragIdx) return 0;
+        if (!_pointerDragging || _dragIdx < 0 || _targetIdx < 0 || i == _dragIdx)
+            return 0;
 
         if (_dragIdx < _targetIdx && i > _dragIdx && i <= _targetIdx) return -ROW_H;
         if (_dragIdx > _targetIdx && i >= _targetIdx && i < _dragIdx)  return  ROW_H;
@@ -315,13 +315,23 @@
     }
 
     // ── Pointer drag handlers ─────────────────────────────────────────────
-    private void StartPointerDrag(PointerEventArgs e, int ri)
+    private async Task StartPointerDrag(PointerEventArgs e, int ri)
     {
         _pointerDragging = true;
         _dragIdx         = ri;
         _targetIdx       = ri;
         _dragStartY      = e.ClientY;
         _dragCurrentY    = e.ClientY;
+
+        // setPointerCapture makes ALL subsequent pointermove / pointerup events
+        // for this pointer ID fire on this element, even when the pointer moves
+        // outside it. Without this, fast movements lose tracking.
+        try
+        {
+            await JS.InvokeVoidAsync("capturePointer", _handleRefs[ri], e.PointerId);
+        }
+        catch { /* JS may not be available yet on first render */ }
+
         StateHasChanged();
     }
 
@@ -331,8 +341,7 @@
 
         _dragCurrentY = e.ClientY;
 
-        // Compute how many rows the dragged item has moved past.
-        // Using the index-relative formula avoids needing absolute panel coords.
+        // How many rows has the drag offset crossed?
         double offsetPx  = _dragCurrentY - _dragStartY;
         int    newTarget = (int)Math.Round(_dragIdx + offsetPx / ROW_H);
         _targetIdx = Math.Clamp(newTarget, 0, _rows.Count - 1);
@@ -361,7 +370,7 @@
             var item = _rows[_dragIdx];
             _rows.RemoveAt(_dragIdx);
 
-            // Adjust insertion index after the removal shifted indices.
+            // Removing the dragged item shifts all later indices by -1.
             int at = _targetIdx > _dragIdx ? _targetIdx - 1 : _targetIdx;
             at = Math.Clamp(at, 0, _rows.Count);
             _rows.Insert(at, item);
@@ -376,15 +385,17 @@
     }
 
     // ── Color picker ─────────────────────────────────────────────────────
-    private void OpenPicker(int forIdx, string currentColor, Action<string> callback, double clientY = 0)
+    private void OpenPicker(int forIdx, string currentColor, Action<string> callback,
+                            double clientX, double clientY)
     {
-        // Second tap on the same swatch closes the picker
+        // Second tap on the same swatch → toggle closed
         if (_pickerOpenFor == forIdx && _pickerOpen) { ClosePicker(); return; }
 
         _pickerOpen         = true;
         _pickerOpenFor      = forIdx;
         _pickerCurrentColor = currentColor;
         _pickerCallback     = callback;
+        _pickerAnchorX      = clientX;
         _pickerAnchorY      = clientY;
         StateHasChanged();
     }
@@ -405,24 +416,28 @@
         StateHasChanged();
     }
 
-    // Positions the picker vertically near the swatch that triggered it.
-    // • Preferred: above the tap (so the thumb doesn't hide the picker)
-    // • Fallback : below if there isn't enough room above
-    // Horizontally the picker stays centred in the viewport.
+    // Anchors the picker just above (or below when near the top) the swatch.
+    // Horizontally left-aligned with the swatch's clientX, clamped to viewport.
     private string GetPickerPositionStyle()
     {
-        const double pickerH = 230; // approximate rendered height of the picker card
-        const double margin  = 10;
-        const double minTop  = 60;  // keep it below the status-bar / header
+        const double pickerW = 220;
+        const double pickerH = 230;
+        const double margin  = 8;
+        const double minTop  = 60;
 
+        // Vertical
         double top = _pickerAnchorY - pickerH - margin;
         if (top < minTop)
-            top = _pickerAnchorY + margin; // not enough room above → show below
-
+            top = _pickerAnchorY + margin + 20; // not enough room above → show below
         top = Math.Max(minTop, top);
 
-        // Override the CSS class's centered positioning with an anchored one.
-        return $"position:fixed; top:{top:F0}px; left:50%; transform:translateX(-50%);";
+        // Horizontal: left-align with swatch, clamp so it doesn't overflow right edge
+        double left = _pickerAnchorX - 8;
+        if (left + pickerW > 360) left = 360 - pickerW;
+        if (left < 8) left = 8;
+
+        // Override any centered CSS from the class — use absolute coords instead
+        return $"position:fixed; top:{top:F0}px; left:{left:F0}px; transform:none;";
     }
 
     // ── Persist ──────────────────────────────────────────────────────────
