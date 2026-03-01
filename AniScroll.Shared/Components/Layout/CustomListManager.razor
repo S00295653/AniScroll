@@ -28,136 +28,58 @@
             <div class="clm-body">
 
                 <!-- ══════════════════════════════════════════
-                     STANDARD STATUS LISTS
+                     "ADD NEW LIST" ROW — always at top
                      ══════════════════════════════════════════ -->
-                <p class="clm-section-label">Status Lists</p>
+                <div class="clm-list-row clm-list-row-new @(_colorPickerOpenFor == -1 ? "clm-list-row-picker-open" : "")">
 
-                @foreach (var tab in _statusTabs)
-                {
-                    var statusEntries = tab.Status == null
-                        ? UserListService.GetAll().Where(e => e.Status.HasValue).ToList()
-                        : UserListService.GetByStatus(tab.Status.Value).ToList();
-                    var isExpanded = _expandedStatusKey == tab.CssKey;
-
-                    <div class="clm-list-block">
-                        <!-- Clickable header row -->
-                        <div class="clm-row clm-row-status"
-                             @onclick="() => ToggleStatusExpand(tab.CssKey)"
-                             @onclick:stopPropagation="true">
-
-                            <div class="clm-status-dot clm-status-dot-@tab.CssKey"></div>
-
-                            <span class="clm-status-label">@tab.Label</span>
-
-                            @if (statusEntries.Count > 0)
-                            {
-                                <span class="clm-entry-count clm-entry-count-@tab.CssKey">
-                                    @statusEntries.Count
-                                </span>
-                            }
-
-                            <svg class="clm-chevron @(isExpanded ? "clm-chevron-open" : "")"
-                                 width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-
-                        @if (isExpanded)
-                        {
-                            <div class="clm-entries clm-entries-status" @onclick:stopPropagation="true">
-                                @if (!statusEntries.Any())
-                                {
-                                    <p class="clm-entries-empty">Nothing here yet.</p>
-                                }
-                                else
-                                {
-                                    @foreach (var entry in statusEntries)
-                                    {
-                                        var e = entry;
-                                        <div class="clm-entry-row">
-                                            <div class="clm-entry-poster"
-                                                 style="background-image:url('@e.Anime.ImageUrl');
-                                                        @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
-                                            </div>
-                                            <div class="clm-entry-info">
-                                                <span class="clm-entry-title">@e.Anime.Title</span>
-                                                @if (e.Status.HasValue)
-                                                {
-                                                    <span class="clm-entry-status clm-entry-status-@GetStatusCssKey(e.Status.Value)">
-                                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
-                                                    </span>
-                                                }
-                                            </div>
-                                            <button class="clm-entry-remove-btn"
-                                                    title="Remove from list"
-                                                    @onclick="() => RemoveEntry(e.Anime.Id)"
-                                                    @onclick:stopPropagation="true">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                                    <path d="M10 11v6M14 11v6"></path>
-                                                    <path d="M9 6V4h6v2"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    }
-                                }
-                            </div>
-                        }
-                    </div>
-                }
-
-                <!-- ══════════════════════════════════════════
-                     CUSTOM LISTS
-                     ══════════════════════════════════════════ -->
-                <div class="clm-section-divider clm-section-divider-spaced"></div>
-                <p class="clm-section-label">Custom Lists</p>
-
-                <!-- "Add new list" row -->
-                <div class="clm-row clm-row-new">
-                    <div class="clm-color-swatch clm-swatch-empty"
-                         @onclick="() => ToggleColorPicker(-1)">
-                        @if (_colorPickerOpenFor == -1)
-                        {
-                            <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
-                                @foreach (var c in _palette)
-                                {
-                                    <button class="clm-palette-btn"
-                                            style="background:@c;"
-                                            @onclick="() => { _newListColor = c; _colorPickerOpenFor = -2; }">
-                                    </button>
-                                }
-                                <input type="color" class="clm-color-native"
-                                       value="@(_newListColor ?? "#7c7c99")"
-                                       @onchange="e => { _newListColor = e.Value?.ToString(); _colorPickerOpenFor = -2; }" />
-                            </div>
-                        }
+                    <!-- Color swatch / picker trigger -->
+                    <div class="clm-pill-swatch @(string.IsNullOrEmpty(_newListColor) ? "clm-pill-swatch-empty" : "")"
+                         @onclick="() => ToggleColorPicker(-1)"
+                         @onclick:stopPropagation="true">
                         @if (!string.IsNullOrEmpty(_newListColor))
                         {
-                            <div class="clm-swatch-dot" style="background:@_newListColor;"></div>
+                            <div class="clm-pill-dot" style="background:@_newListColor;"></div>
                         }
                         else
                         {
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                  stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="8" x2="12" y2="16"></line>
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
                         }
+
+                        @if (_colorPickerOpenFor == -1)
+                        {
+                            <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
+                                @foreach (var c in _palette)
+                                {
+                                    var cc = c;
+                                    <button class="clm-palette-btn @(_newListColor == cc ? "clm-palette-selected" : "")"
+                                            style="background:@cc;"
+                                            @onclick="() => { _newListColor = cc; _colorPickerOpenFor = -2; StateHasChanged(); }">
+                                    </button>
+                                }
+                                <input type="color" class="clm-color-native"
+                                       value="@(_newListColor ?? "#7c7c99")"
+                                       @onchange="e => { _newListColor = e.Value?.ToString(); _colorPickerOpenFor = -2; StateHasChanged(); }" />
+                            </div>
+                        }
                     </div>
 
-                    <input class="clm-name-input clm-name-placeholder"
+                    <!-- Name input -->
+                    <input class="clm-pill-input"
                            placeholder="New list name…"
                            value="@_newListName"
                            @oninput="e => _newListName = e.Value?.ToString() ?? string.Empty"
                            @onkeydown="OnNewListKeyDown" />
 
-                    <button class="clm-add-btn @(CanAdd ? "" : "clm-add-btn-disabled")"
+                    <!-- Add button -->
+                    <button class="clm-pill-add-btn @(CanAdd ? "" : "clm-pill-add-btn-disabled")"
                             disabled="@(!CanAdd)"
-                            @onclick="AddList">
+                            @onclick="AddList"
+                            @onclick:stopPropagation="true">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -166,22 +88,17 @@
                     </button>
                 </div>
 
-                @if (_lists.Any())
-                {
-                    <div class="clm-section-divider"></div>
-                }
-
-                <!-- Existing custom lists -->
+                <!-- ══════════════════════════════════════════
+                     EXISTING CUSTOM LISTS
+                     ══════════════════════════════════════════ -->
                 @for (int i = 0; i < _lists.Count; i++)
                 {
-                    var idx = i;
-                    var list = _lists[i];
-                    var isDragging  = _dragIndex == idx;
-                    var isDragOver  = _dragOverIndex == idx;
-                    var isExpanded  = _expandedListId == list.Id;
-                    var customEntries = UserListService.GetEntriesForCustomList(list.Id);
+                    var idx   = i;
+                    var list  = _lists[i];
+                    var isDragging = _dragIndex == idx;
+                    var isDragOver = _dragOverIndex == idx;
 
-                    <div class="clm-list-block @(isDragging ? "clm-row-dragging" : "") @(isDragOver ? "clm-row-drag-over" : "")"
+                    <div class="clm-list-row @(isDragging ? "clm-row-dragging" : "") @(isDragOver ? "clm-row-drag-over" : "")"
                          draggable="true"
                          @ondragstart="() => OnDragStart(idx)"
                          @ondragover:preventDefault="true"
@@ -189,114 +106,70 @@
                          @ondrop="OnDrop"
                          @ondragend="OnDragEnd">
 
-                        <div class="clm-row clm-row-list"
-                             @onclick="() => ToggleExpand(list.Id)"
-                             @onclick:stopPropagation="true">
-
-                            <div class="clm-drag-handle" @onclick:stopPropagation="true">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                     stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round">
-                                    <line x1="8" y1="6" x2="16" y2="6"></line>
-                                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                                    <line x1="8" y1="18" x2="16" y2="18"></line>
-                                </svg>
-                            </div>
-
-                            <div class="clm-color-swatch"
-                                 @onclick="() => ToggleColorPicker(idx)"
-                                 @onclick:stopPropagation="true">
-                                @if (_colorPickerOpenFor == idx)
-                                {
-                                    <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
-                                        @foreach (var c in _palette)
-                                        {
-                                            var cc = c;
-                                            <button class="clm-palette-btn @(list.Color == cc ? "clm-palette-selected" : "")"
-                                                    style="background:@cc;"
-                                                    @onclick="() => { list.Color = cc; _colorPickerOpenFor = -2; SaveLists(); }">
-                                            </button>
-                                        }
-                                        <input type="color" class="clm-color-native"
-                                               value="@(list.Color ?? "#7c7c99")"
-                                               @onchange="e => { list.Color = e.Value?.ToString() ?? list.Color; _colorPickerOpenFor = -2; SaveLists(); }" />
-                                    </div>
-                                }
-                                <div class="clm-swatch-dot" style="background:@(list.Color ?? "rgba(255,255,255,0.25)");"></div>
-                            </div>
-
-                            <input class="clm-name-input"
-                                   value="@list.Name"
-                                   @oninput="e => { list.Name = e.Value?.ToString() ?? string.Empty; }"
-                                   @onchange="e => { list.Name = e.Value?.ToString() ?? string.Empty; SaveLists(); }"
-                                   @onclick:stopPropagation="true" />
-
-                            @if (customEntries.Count > 0)
-                            {
-                                <span class="clm-entry-count" style="border-color:@(list.Color ?? "#6366f1")55;color:@(list.Color ?? "#6366f1");">
-                                    @customEntries.Count
-                                </span>
-                            }
-
-                            <svg class="clm-chevron @(isExpanded ? "clm-chevron-open" : "")"
-                                 width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
+                        <!-- Drag handle -->
+                        <div class="clm-pill-drag" @onclick:stopPropagation="true">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                 stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-linecap="round">
+                                <line x1="8" y1="6"  x2="16" y2="6"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                                <line x1="8" y1="18" x2="16" y2="18"></line>
                             </svg>
-
-                            <button class="clm-delete-btn"
-                                    @onclick="() => DeleteList(idx)"
-                                    @onclick:stopPropagation="true">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                    <path d="M10 11v6M14 11v6"></path>
-                                    <path d="M9 6V4h6v2"></path>
-                                </svg>
-                            </button>
                         </div>
 
-                        @if (isExpanded)
-                        {
-                            <div class="clm-entries" @onclick:stopPropagation="true">
-                                @if (!customEntries.Any())
-                                {
-                                    <p class="clm-entries-empty">No anime in this list yet.</p>
-                                }
-                                else
-                                {
-                                    @foreach (var entry in customEntries)
+                        <!-- Color swatch / picker trigger -->
+                        <div class="clm-pill-swatch"
+                             @onclick="() => ToggleColorPicker(idx)"
+                             @onclick:stopPropagation="true">
+                            <div class="clm-pill-dot" style="background:@(list.Color ?? "#6366f1");"></div>
+
+                            @if (_colorPickerOpenFor == idx)
+                            {
+                                <div class="clm-color-picker-pop" @onclick:stopPropagation="true">
+                                    @foreach (var c in _palette)
                                     {
-                                        var e = entry;
-                                        <div class="clm-entry-row">
-                                            <div class="clm-entry-poster"
-                                                 style="background-image:url('@e.Anime.ImageUrl');
-                                                        @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
-                                            </div>
-                                            <div class="clm-entry-info">
-                                                <span class="clm-entry-title">@e.Anime.Title</span>
-                                                @if (e.Status.HasValue)
-                                                {
-                                                    <span class="clm-entry-status clm-entry-status-@GetStatusCssKey(e.Status.Value)">
-                                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
-                                                    </span>
-                                                }
-                                            </div>
-                                            <button class="clm-entry-remove-btn"
-                                                    title="Remove from list"
-                                                    @onclick="() => RemoveFromCustomList(e, list.Id)"
-                                                    @onclick:stopPropagation="true">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </button>
-                                        </div>
+                                        var cc = c;
+                                        <button class="clm-palette-btn @(list.Color == cc ? "clm-palette-selected" : "")"
+                                                style="background:@cc;"
+                                                @onclick="() => { list.Color = cc; _colorPickerOpenFor = -2; SaveLists(); StateHasChanged(); }">
+                                        </button>
                                     }
-                                }
-                            </div>
+                                    <input type="color" class="clm-color-native"
+                                           value="@(list.Color ?? "#7c7c99")"
+                                           @onchange="e => { list.Color = e.Value?.ToString() ?? list.Color; _colorPickerOpenFor = -2; SaveLists(); StateHasChanged(); }" />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Editable name -->
+                        <input class="clm-pill-input"
+                               value="@list.Name"
+                               @oninput="e => { list.Name = e.Value?.ToString() ?? string.Empty; }"
+                               @onchange="e => { list.Name = e.Value?.ToString() ?? string.Empty; SaveLists(); }"
+                               @onclick:stopPropagation="true" />
+
+                        <!-- Entry count badge -->
+                        @{
+                            var cnt = UserListService.GetCountForCustomList(list.Id);
                         }
+                        @if (cnt > 0)
+                        {
+                            <span class="clm-pill-count" style="border-color:@(list.Color ?? "#6366f1")55; color:@(list.Color ?? "#6366f1");">
+                                @cnt
+                            </span>
+                        }
+
+                        <!-- Delete button -->
+                        <button class="clm-pill-delete-btn"
+                                @onclick="() => DeleteList(idx)"
+                                @onclick:stopPropagation="true">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
+                            </svg>
+                        </button>
                     </div>
                 }
 
@@ -318,27 +191,11 @@
     private string _newListName = "";
     private string? _newListColor = null;
     private int _colorPickerOpenFor = -2;
-    private string? _expandedListId = null;
-    private string? _expandedStatusKey = null;
 
     private int _dragIndex = -1;
     private int _dragOverIndex = -1;
 
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newListName);
-
-    // ─── Status tab definitions ───────────────────────────────────────────────
-    private sealed record StatusTabDef(string Label, ListStatus? Status, string CssKey);
-
-    private static readonly StatusTabDef[] _statusTabs =
-    {
-        new("All",        null,                  "all"),
-        new("Watching",   ListStatus.Watching,   "watching"),
-        new("Rewatching", ListStatus.Rewatching, "rewatching"),
-        new("Completed",  ListStatus.Completed,  "completed"),
-        new("Planning",   ListStatus.Planning,   "planning"),
-        new("Paused",     ListStatus.Paused,     "paused"),
-        new("Dropped",    ListStatus.Dropped,    "dropped"),
-    };
 
     private static readonly string[] _palette = new[]
     {
@@ -367,19 +224,6 @@
         StateHasChanged();
     }
 
-    private void ToggleExpand(string listId)
-    {
-        _expandedListId = _expandedListId == listId ? null : listId;
-        _colorPickerOpenFor = -2;
-        StateHasChanged();
-    }
-
-    private void ToggleStatusExpand(string key)
-    {
-        _expandedStatusKey = _expandedStatusKey == key ? null : key;
-        StateHasChanged();
-    }
-
     private void AddList()
     {
         if (!CanAdd) return;
@@ -394,30 +238,16 @@
         SaveLists();
         _newListName  = "";
         _newListColor = null;
+        _colorPickerOpenFor = -2;
         StateHasChanged();
     }
 
     private void DeleteList(int idx)
     {
         if (idx < 0 || idx >= _lists.Count) return;
-        var id = _lists[idx].Id;
         _lists.RemoveAt(idx);
-        if (_expandedListId == id) _expandedListId = null;
         ReorderLists();
         SaveLists();
-        StateHasChanged();
-    }
-
-    private void RemoveEntry(int animeId)
-    {
-        UserListService.Remove(animeId);
-        StateHasChanged();
-    }
-
-    private void RemoveFromCustomList(UserListEntry entry, string listId)
-    {
-        entry.CustomListIds.Remove(listId);
-        UserListService.SaveEntry(entry);
         StateHasChanged();
     }
 
@@ -472,37 +302,4 @@
         _colorPickerOpenFor = -2;
         await OnClose.InvokeAsync();
     }
-
-    private static string GetStatusLabel(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "Watching",
-        ListStatus.Rewatching => "Rewatching",
-        ListStatus.Completed  => "Completed",
-        ListStatus.Planning   => "Planning",
-        ListStatus.Paused     => "Paused",
-        ListStatus.Dropped    => "Dropped",
-        _                     => s.ToString()
-    };
-
-    private static string GetStatusCssKey(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "watching",
-        ListStatus.Rewatching => "rewatching",
-        ListStatus.Completed  => "completed",
-        ListStatus.Planning   => "planning",
-        ListStatus.Paused     => "paused",
-        ListStatus.Dropped    => "dropped",
-        _                     => "all"
-    };
-
-    private static string GetStatusIcon(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "▶",
-        ListStatus.Rewatching => "↻",
-        ListStatus.Completed  => "✓",
-        ListStatus.Planning   => "☆",
-        ListStatus.Paused     => "⏸",
-        ListStatus.Dropped    => "✕",
-        _                     => ""
-    };
 }
