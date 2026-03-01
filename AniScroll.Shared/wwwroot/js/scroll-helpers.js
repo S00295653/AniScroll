@@ -294,3 +294,101 @@ window.getElementBoundingRect = function (el) {
         viewportWidth: window.innerWidth, viewportHeight: window.innerHeight
     };
 };
+
+// ─── Color Picker helpers ────────────────────────────────────────────────────
+// Add these functions to your existing JS file (e.g. wwwroot/js/app.js)
+
+(function () {
+
+    var _cpDrag = null; // active drag state
+
+    // Get bounding rect of an element
+    window.cpGetRect = function (el) {
+        var r = el.getBoundingClientRect();
+        return { Left: r.left, Top: r.top, Width: r.width, Height: r.height };
+    };
+
+    // Position the color picker popup relative to the anchor swatch.
+    // Appears BELOW if there is room, otherwise ABOVE.
+    // popupW / popupH = expected size of the popup (px)
+    window.cpGetPosition = function (anchor, popupW, popupH) {
+        var r   = anchor.getBoundingClientRect();
+        var vw  = window.innerWidth;
+        var vh  = window.innerHeight;
+        var gap = 6; // px between swatch and popup
+
+        var left = r.left;
+        // Clamp horizontally so popup doesn't overflow viewport
+        if (left + popupW > vw - 8) left = vw - popupW - 8;
+        if (left < 8) left = 8;
+
+        // Try below first
+        var top = r.bottom + gap;
+        if (top + popupH > vh - 8) {
+            // Not enough room below → place above
+            top = r.top - popupH - gap;
+        }
+        if (top < 8) top = 8;
+
+        return { Left: left, Top: top };
+    };
+
+    // Start drag tracking for the SV square.
+    // Attaches document-level pointermove/pointerup, calls dotnet.invokeMethod on each move.
+    window.cpStartSvDrag = function (svEl, dotnet) {
+        _cpStopDrag(); // cancel any existing drag
+
+        var r = svEl.getBoundingClientRect();
+
+        function onMove(e) {
+            var pctX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            var pctY = Math.max(0, Math.min(1, (e.clientY - r.top)  / r.height));
+            dotnet.invokeMethodAsync('OnSvDrag', pctX, pctY);
+        }
+        function onUp() { _cpStopDrag(); }
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup',   onUp);
+        document.addEventListener('pointercancel', onUp);
+
+        _cpDrag = {
+            remove: function () {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup',   onUp);
+                document.removeEventListener('pointercancel', onUp);
+            }
+        };
+    };
+
+    // Start drag tracking for the Hue strip.
+    window.cpStartHueDrag = function (hueEl, dotnet) {
+        _cpStopDrag();
+
+        var r = hueEl.getBoundingClientRect();
+
+        function onMove(e) {
+            var pctX = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            dotnet.invokeMethodAsync('OnHueDrag', pctX);
+        }
+        function onUp() { _cpStopDrag(); }
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup',   onUp);
+        document.addEventListener('pointercancel', onUp);
+
+        _cpDrag = {
+            remove: function () {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup',   onUp);
+                document.removeEventListener('pointercancel', onUp);
+            }
+        };
+    };
+
+    // Stop any active drag (called on pointerup or when picker closes)
+    function _cpStopDrag() {
+        if (_cpDrag) { _cpDrag.remove(); _cpDrag = null; }
+    }
+    window.cpStopDrag = _cpStopDrag;
+
+})();

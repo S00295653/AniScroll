@@ -1,5 +1,6 @@
 @using System.Globalization
 @inject IJSRuntime JS
+@implements IDisposable
 
 @if (IsVisible)
 {
@@ -16,20 +17,14 @@
              @ref="_svRef"
              style="background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%),
                                 linear-gradient(to right, rgba(255,255,255,1) 0%, hsl(@F0(_h), 100%, 50%) 100%);"
-             @onpointerdown="SvDown"
-             @onpointermove="SvMove"
-             @onpointerup="SvUp"
-             @onpointercancel="@(() => _svDrag = false)">
-            <div class="cp-sv-dot" style="left:@Pct(_s);top:@Pct(1 - _v);"></div>
+             @onpointerdown="SvPointerDown">
+            <div class="cp-sv-dot" style="left:@Pct(_s);top:@Pct(1.0 - _v);"></div>
         </div>
 
         <!-- ── Hue slider ─────────────────────────────────────────── -->
         <div class="cp-hue-track"
              @ref="_hueRef"
-             @onpointerdown="HueDown"
-             @onpointermove="HueMove"
-             @onpointerup="HueUp"
-             @onpointercancel="@(() => _hueDrag = false)">
+             @onpointerdown="HuePointerDown">
             <div class="cp-hue-thumb" style="left:@Pct(_h / 360.0);"></div>
         </div>
 
@@ -144,15 +139,17 @@
 
 <style>
     .cp-overlay  { position:fixed;inset:0;z-index:9990;background:transparent; }
-    .cp-popup    { position:fixed;z-index:9991;width:272px;background:#2b2b2b;border-radius:10px;
+    .cp-popup    { position:fixed;z-index:9991;width:280px;background:#2b2b2b;border-radius:10px;
                    padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.65);user-select:none; }
 
-    .cp-sv       { position:relative;width:100%;padding-bottom:60%;border-radius:6px;
-                   cursor:crosshair;touch-action:none;overflow:hidden; }
+    /* SV square — height via aspect-ratio so getBoundingClientRect has real height */
+    .cp-sv       { position:relative;width:100%;aspect-ratio:5/3;border-radius:6px;
+                   cursor:crosshair;touch-action:none;overflow:visible; }
     .cp-sv-dot   { position:absolute;width:14px;height:14px;border-radius:50%;
-                   border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.4);
-                   transform:translate(-50%,-50%);pointer-events:none; }
+                   border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.4);
+                   transform:translate(-50%,-50%);pointer-events:none;z-index:2; }
 
+    /* Hue strip */
     .cp-hue-track { position:relative;height:14px;border-radius:7px;margin-top:10px;touch-action:none;
                     background:linear-gradient(to right,
                       hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),hsl(90,100%,50%),
@@ -163,19 +160,22 @@
                     border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 4px rgba(0,0,0,.5);
                     transform:translate(-50%,-50%);pointer-events:none; }
 
+    /* Preview + presets */
     .cp-preview-row { display:flex;align-items:center;gap:8px;margin-top:10px; }
     .cp-color-dot   { width:32px;height:32px;border-radius:50%;flex-shrink:0;
                       border:2px solid rgba(255,255,255,.15); }
-    .cp-swatches    { display:flex;gap:5px;flex-wrap:wrap;flex:1; }
-    .cp-swatch      { width:26px;height:26px;border-radius:4px;border:none;cursor:pointer;
-                      padding:0;transition:transform .1s;flex-shrink:0; }
-    .cp-swatch:hover { transform:scale(1.15); }
+    .cp-swatches    { display:grid;grid-template-columns:repeat(8,1fr);gap:4px;flex:1; }
+    .cp-swatch      { width:100%;aspect-ratio:1;border-radius:3px;border:none;cursor:pointer;
+                      padding:0;transition:transform .1s,box-shadow .1s; }
+    .cp-swatch:hover { transform:scale(1.18);box-shadow:0 0 0 2px rgba(255,255,255,.4); }
 
+    /* Tabs */
     .cp-tabs     { display:flex;gap:2px;margin-top:10px;background:#222;border-radius:6px;padding:2px; }
     .cp-tab      { flex:1;background:transparent;border:none;color:rgba(255,255,255,.45);font-size:11px;
                    font-weight:600;padding:5px 0;border-radius:4px;cursor:pointer;transition:all .15s; }
     .cp-tab-on   { background:#444;color:#fff; }
 
+    /* Inputs */
     .cp-inputs   { margin-top:8px; }
     .cp-hex-row  { display:flex;gap:6px;align-items:center; }
     .cp-hex-in   { flex:1;background:#1a1a1a;border:1px solid #444;color:#fff;padding:7px 10px;
@@ -197,32 +197,58 @@
 </style>
 
 @code {
+    /* ─── Parameters ──────────────────────────────────────────────────────── */
     [Parameter] public bool                  IsVisible      { get; set; }
     [Parameter] public string                InitialColor   { get; set; } = "#6366f1";
     [Parameter] public ElementReference      AnchorRef      { get; set; }
     [Parameter] public EventCallback<string> OnColorChanged { get; set; }
     [Parameter] public EventCallback         OnClose        { get; set; }
 
+    /* ─── State ───────────────────────────────────────────────────────────── */
     private static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
     private double _h = 0, _s = 0, _v = 1;
     private string _hexInput = "#ffffff";
     private string _tab      = "HEX";
     private string _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);";
-    private bool _svDrag, _hueDrag;
+
     private ElementReference _svRef, _hueRef;
-    private FullRect? _svBounds, _hueBounds;
     private bool _prevVisible;
 
-    private static readonly string[] _tabs    = { "HEX", "RGB", "HSV", "HSL" };
+    private DotNetObjectReference<ColorPickerPopup>? _dotNetRef;
+
+    private static readonly string[] _tabs = { "HEX", "RGB", "HSV", "HSL" };
+
+    // 24 swatches: 3 rows of 8 — reds · oranges · yellows · greens · cyans · blues · purples · pinks
     private static readonly string[] _presets =
     {
-        "#e57373", "#f4a351", "#ffd54f", "#aed581",
-        "#4dd0e1", "#90caf9", "#ce93d8", "#f48fb1"
+        // row 1 — warm
+        "#ef4444", "#f97316", "#f59e0b", "#eab308",
+        "#84cc16", "#22c55e", "#10b981", "#14b8a6",
+        // row 2 — cool
+        "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1",
+        "#8b5cf6", "#a855f7", "#d946ef", "#ec4899",
+        // row 3 — neutrals & extras
+        "#ffffff", "#d1d5db", "#6b7280", "#374151",
+        "#1f2937", "#111827", "#000000", "#713f12",
     };
 
+    /* ─── Computed ────────────────────────────────────────────────────────── */
     private string HexColor
     {
         get { var (r, g, b) = HsvToRgb(_h, _s, _v); return $"#{Ri(r):x2}{Ri(g):x2}{Ri(b):x2}"; }
+    }
+
+    /* ─── Lifecycle ───────────────────────────────────────────────────────── */
+    protected override void OnInitialized()
+    {
+        _dotNetRef = DotNetObjectReference.Create(this);
+    }
+
+    public void Dispose()
+    {
+        _ = JS.InvokeVoidAsync("cpStopDrag");
+        _dotNetRef?.Dispose();
     }
 
     protected override async Task OnParametersSetAsync()
@@ -233,66 +259,86 @@
             { _h = h; _s = s; _v = v; _hexInput = HexColor; }
             await PositionAsync();
         }
+        if (!IsVisible && _prevVisible)
+        {
+            await JS.InvokeVoidAsync("cpStopDrag");
+        }
         _prevVisible = IsVisible;
     }
 
+    /* ─── Positioning: anchored below (or above) the swatch ─────────────── */
     private async Task PositionAsync()
     {
         try
         {
-            var b = await JS.InvokeAsync<FullRect>("getFullBounds", AnchorRef);
-            double left = b.Left;
-            double top  = b.Top + b.Height + 6;
-            if (left + 278 > b.ViewWidth)  left = b.ViewWidth  - 282;
-            if (left < 4)                  left = 4;
-            if (top  + 390 > b.ViewHeight) top  = b.Top - 396;
-            if (top  < 4)                  top  = 4;
-            _posStyle = $"left:{left.ToString(IC)}px;top:{top.ToString(IC)}px;";
+            // Small delay so the popup is in the DOM and has a measurable size
+            await Task.Delay(10);
+            var pos = await JS.InvokeAsync<PickerPos>("cpGetPosition", AnchorRef, 290, 420);
+            _posStyle = $"left:{pos.Left.ToString(IC)}px;top:{pos.Top.ToString(IC)}px;";
+            StateHasChanged();
         }
-        catch { _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);"; }
+        catch
+        {
+            _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);";
+        }
     }
 
-    private async Task SvDown(PointerEventArgs e)
+    /* ─── JS-driven drag: SV ─────────────────────────────────────────────── */
+    private async Task SvPointerDown(PointerEventArgs e)
     {
-        _svDrag = true;
+        // Immediate update on click
+        await UpdateSvFromClient(e.ClientX, e.ClientY);
+
+        // Hand off to JS document-level drag; JS calls OnSvDrag on every move
+        await JS.InvokeVoidAsync("cpStartSvDrag", _svRef, _dotNetRef);
+    }
+
+    [JSInvokable]
+    public void OnSvDrag(double pctX, double pctY)
+    {
+        _s = Math.Clamp(pctX, 0, 1);
+        _v = Math.Clamp(1.0 - pctY, 0, 1);
+        SyncHex(); Emit();
+    }
+
+    private async Task UpdateSvFromClient(double cx, double cy)
+    {
         try
         {
-            _svBounds = await JS.InvokeAsync<FullRect>("getFullBounds", _svRef);
-            await JS.InvokeVoidAsync("capturePointer", _svRef, e.PointerId);
+            var b = await JS.InvokeAsync<ElemRect>("cpGetRect", _svRef);
+            _s = Math.Clamp((cx - b.Left) / b.Width,  0, 1);
+            _v = Math.Clamp(1.0 - (cy - b.Top) / b.Height, 0, 1);
+            SyncHex(); Emit();
         }
         catch { }
-        ApplySv(e.ClientX, e.ClientY); Emit();
-    }
-    private void SvMove(PointerEventArgs e) { if (!_svDrag || _svBounds is null) return; ApplySv(e.ClientX, e.ClientY); Emit(); }
-    private void SvUp  (PointerEventArgs e) { _svDrag = false; _svBounds = null; }
-    private void ApplySv(double cx, double cy)
-    {
-        if (_svBounds is null || _svBounds.Width <= 0 || _svBounds.Height <= 0) return;
-        _s = Math.Clamp((cx - _svBounds.Left)   / _svBounds.Width,  0, 1);
-        _v = Math.Clamp(1 - (cy - _svBounds.Top) / _svBounds.Height, 0, 1);
-        SyncHex();
     }
 
-    private async Task HueDown(PointerEventArgs e)
+    /* ─── JS-driven drag: Hue ────────────────────────────────────────────── */
+    private async Task HuePointerDown(PointerEventArgs e)
     {
-        _hueDrag = true;
+        await UpdateHueFromClient(e.ClientX);
+        await JS.InvokeVoidAsync("cpStartHueDrag", _hueRef, _dotNetRef);
+    }
+
+    [JSInvokable]
+    public void OnHueDrag(double pctX)
+    {
+        _h = Math.Clamp(pctX, 0, 1) * 360;
+        SyncHex(); Emit();
+    }
+
+    private async Task UpdateHueFromClient(double cx)
+    {
         try
         {
-            _hueBounds = await JS.InvokeAsync<FullRect>("getFullBounds", _hueRef);
-            await JS.InvokeVoidAsync("capturePointer", _hueRef, e.PointerId);
+            var b = await JS.InvokeAsync<ElemRect>("cpGetRect", _hueRef);
+            _h = Math.Clamp((cx - b.Left) / b.Width, 0, 1) * 360;
+            SyncHex(); Emit();
         }
         catch { }
-        ApplyHue(e.ClientX); Emit();
-    }
-    private void HueMove(PointerEventArgs e) { if (!_hueDrag || _hueBounds is null) return; ApplyHue(e.ClientX); Emit(); }
-    private void HueUp  (PointerEventArgs e) { _hueDrag = false; _hueBounds = null; }
-    private void ApplyHue(double cx)
-    {
-        if (_hueBounds is null || _hueBounds.Width <= 0) return;
-        _h = Math.Clamp((cx - _hueBounds.Left) / _hueBounds.Width, 0, 1) * 360;
-        SyncHex();
     }
 
+    /* ─── Hex input ───────────────────────────────────────────────────────── */
     private void HexTyping(ChangeEventArgs e)
     {
         _hexInput = e.Value?.ToString() ?? _hexInput;
@@ -307,6 +353,7 @@
     }
     private void ResetBlack() { _h = 0; _s = 0; _v = 0; _hexInput = "#000000"; Emit(); }
 
+    /* ─── Presets & setters ──────────────────────────────────────────────── */
     private void SetFromHex(string hex)
     {
         if (!TryParseHex(hex, out var h, out var s, out var v)) return;
@@ -322,11 +369,12 @@
         SyncHex(); Emit();
     }
 
+    /* ─── Helpers ─────────────────────────────────────────────────────────── */
     private void SyncHex() => _hexInput = HexColor;
-    private void Emit()     { _ = OnColorChanged.InvokeAsync(HexColor); StateHasChanged(); }
+    private void Emit()    { _ = OnColorChanged.InvokeAsync(HexColor); StateHasChanged(); }
     private void HandleClose() => _ = OnClose.InvokeAsync();
 
-    private static string Pct(double v) => v.ToString("F2", IC) + "%";
+    private static string Pct(double v) => (v * 100.0).ToString("F2", IC) + "%";
     private static string F0(double v)  => v.ToString("F0", IC);
     private static int    Ri(double v)  => (int)Math.Round(Math.Clamp(v, 0, 255));
     private static int    Clamp(object? raw, int min, int max, int fallback)
@@ -335,6 +383,7 @@
         => double.TryParse(raw?.ToString(), NumberStyles.Any, IC, out var n)
            ? Math.Clamp(n, min, max) : fallback;
 
+    /* ─── Color math ──────────────────────────────────────────────────────── */
     private static (double r, double g, double b) HsvToRgb(double h, double s, double v)
     {
         if (s <= 0) { var c = v * 255; return (c, c, c); }
@@ -385,19 +434,17 @@
         catch { return false; }
     }
 
-    // Add to your JS file:
-    // window.getFullBounds = function (el) {
-    //     var r = el.getBoundingClientRect();
-    //     return { Left: r.left, Top: r.top, Width: r.width, Height: r.height,
-    //              ViewWidth: window.innerWidth, ViewHeight: window.innerHeight };
-    // };
-    private class FullRect
+    /* ─── JS interop models ──────────────────────────────────────────────── */
+    private class ElemRect
     {
-        public double Left       { get; set; }
-        public double Top        { get; set; }
-        public double Width      { get; set; }
-        public double Height     { get; set; }
-        public double ViewWidth  { get; set; }
-        public double ViewHeight { get; set; }
+        public double Left   { get; set; }
+        public double Top    { get; set; }
+        public double Width  { get; set; }
+        public double Height { get; set; }
+    }
+    private class PickerPos
+    {
+        public double Left { get; set; }
+        public double Top  { get; set; }
     }
 }
