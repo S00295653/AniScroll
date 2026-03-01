@@ -3,22 +3,14 @@
 @using System.Globalization
 @inject UserListService UserListService
 @inject IJSRuntime JS
+@implements IDisposable
 
 @if (IsVisible)
 {
-    <!--
-        The overlay owns @onpointermove / @onpointerup so drag tracking
-        continues even when the pointer wanders outside the panel.
-        The dragged row is pointer-captured (via JS setPointerCapture) so
-        events keep firing to the handle even when the pointer moves fast.
-    -->
-    <div class="clm-overlay"
-         @onclick="HandleOverlayClick"
-         @onpointermove="HandlePointerMove"
-         @onpointerup="HandlePointerUp"
-         @onpointercancel="CancelPointerDrag">
+    <div class="clm-overlay" @onclick="HandleOverlayClick">
 
         <div class="clm-panel"
+             @ref="_panelRef"
              @onclick:stopPropagation="true"
              @ontouchstart:stopPropagation="true"
              @ontouchmove:stopPropagation="true">
@@ -43,13 +35,11 @@
 
                 <!-- NEW LIST ROW -->
                 <div class="clm2-row clm2-row-new">
-
                     <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
                          style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
                          @onclick:stopPropagation="true"
                          @onclick="e => OpenPicker(-1, _newColor ?? string.Empty,
-                                         c => { _newColor = c; StateHasChanged(); },
-                                         e.ClientX, e.ClientY)">
+                                       c => { _newColor = c; StateHasChanged(); })">
                         @if (string.IsNullOrEmpty(_newColor))
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -83,42 +73,21 @@
                 <!-- LIST ROWS -->
                 @for (int i = 0; i < _rows.Count; i++)
                 {
-                    var ri     = i;
-                    var row    = _rows[i];
-                    var color  = row.Color;
-                    var isDrag = _dragIdx == ri;
-
-                    // Dragged row → follow the pointer exactly.
-                    // Other rows  → shift ±ROW_H to open/close the gap.
-                    double translatePx = isDrag
-                        ? (_dragCurrentY - _dragStartY)
-                        : GetShiftPx(ri);
-
-                    string rowTransition = (_pointerDragging && isDrag)
-                        ? "none"
-                        : "transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)";
+                    var ri    = i;
+                    var row   = _rows[i];
+                    var color = row.Color;
 
                     var cnt = row.IsStatus
                         ? UserListService.Count(ParseStatus(row.Status!.Key))
                         : UserListService.GetCountForCustomList(row.Custom!.Id);
 
-                    <div class="clm2-row @(isDrag ? "clm2-dragging" : "")"
-                         style="transform: translateY(@(translatePx.ToString("F1", CultureInfo.InvariantCulture))px);
-                                z-index: @(isDrag ? 10 : 1);
-                                transition: @rowTransition;
-                                user-select: none;
-                                -webkit-user-select: none;">
+                    <!-- data-row-index lets the JS drag code identify rows -->
+                    <div class="clm2-row" data-row-index="@ri">
 
-                        <!--
-                            Drag handle:
-                            • touch-action:none  → browser won't steal touch for scroll
-                            • @ref               → used by JS setPointerCapture so the
-                                                   dragged item always follows the pointer
-                        -->
+                        <!-- Drag handle — pointerdown launches JS drag -->
                         <div class="clm2-drag"
-                             style="touch-action: none; cursor: grab;"
-                             @ref="_handleRefs[ri]"
-                             @onpointerdown="e => StartPointerDrag(e, ri)"
+                             style="touch-action:none; cursor:grab;"
+                             @onpointerdown="e => OnHandlePointerDown(e, ri)"
                              @onpointerdown:stopPropagation="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -128,32 +97,26 @@
                             </svg>
                         </div>
 
-                        <!-- Swatch / color picker trigger -->
+                        <!-- Swatch / color picker trigger — passes its own ElementReference -->
                         <div class="clm2-swatch clm2-swatch-filled"
                              style="background:@color;"
+                             @ref="_swatchRefs[ri]"
                              @onclick:stopPropagation="true"
-                             @onclick="e => OpenPicker(ri, color,
-                                             c => { row.SetColor(c); SaveAll(); StateHasChanged(); },
-                                             e.ClientX, e.ClientY)">
+                             @onclick="() => OpenPickerForRow(ri, color,
+                                           c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
                         </div>
 
-                        <!-- Editable name -->
                         <input class="clm2-name-input"
                                value="@row.Name"
                                @oninput="e => row.SetName(e.Value?.ToString() ?? row.Name)"
                                @onchange="e => { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); }"
                                @onclick:stopPropagation="true" />
 
-                        <!-- Entry count badge -->
                         @if (cnt > 0)
                         {
-                            <span class="clm2-count"
-                                  style="border-color:@(color)66; color:@color;">
-                                @cnt
-                            </span>
+                            <span class="clm2-count" style="border-color:@(color)66; color:@color;">@cnt</span>
                         }
 
-                        <!-- Status list → lock  |  Custom list → delete -->
                         @if (row.IsStatus)
                         {
                             <div class="clm2-lock">
@@ -185,11 +148,7 @@
             </div><!-- /clm-body -->
         </div><!-- /clm-panel -->
 
-        <!--
-            Color picker — rendered OUTSIDE .clm-panel so it is never clipped.
-            Anchored just above (or below) the swatch that was tapped,
-            horizontally aligned with it.
-        -->
+        <!-- Color picker — outside clm-panel so nothing clips it -->
         @if (_pickerOpen && _pickerCallback != null)
         {
             <div class="clm2-picker-backdrop"
@@ -197,7 +156,7 @@
                  @onclick:stopPropagation="true"></div>
 
             <div class="clm2-picker-fixed"
-                 style="@GetPickerPositionStyle()"
+                 style="@_pickerPositionStyle"
                  @onclick:stopPropagation="true">
                 <div class="clm2-picker-grid">
                     @foreach (var c in _palette)
@@ -238,9 +197,12 @@
 
     private List<Row> _rows = new();
 
-    // ElementReference array for drag handles — used to call JS setPointerCapture.
-    // Fixed size; only the first _rows.Count slots are populated by @ref.
-    private ElementReference[] _handleRefs = new ElementReference[64];
+    // ElementReferences for swatches (used to get bounding rect for picker positioning)
+    private ElementReference[] _swatchRefs = new ElementReference[64];
+    private ElementReference   _panelRef;
+
+    // DotNetObjectReference passed to JS so it can call OnDragComplete
+    private DotNetObjectReference<CustomListManager>? _dotNetRef;
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
@@ -252,18 +214,7 @@
     private int             _pickerOpenFor      = -2;
     private string          _pickerCurrentColor = "";
     private Action<string>? _pickerCallback;
-    private double          _pickerAnchorX      = 0;
-    private double          _pickerAnchorY      = 0;
-
-    // ── Pointer drag ─────────────────────────────────────────────────────
-    private bool   _pointerDragging = false;
-    private int    _dragIdx         = -1;
-    private int    _targetIdx       = -1;
-    private double _dragStartY      = 0;
-    private double _dragCurrentY    = 0;
-
-    // Must stay in sync with CSS row height + gap.
-    private const int ROW_H = 64;
+    private string          _pickerPositionStyle = "";
 
     // ── Palette ──────────────────────────────────────────────────────────
     private static readonly string[] _palette =
@@ -274,20 +225,27 @@
         "#ec4899","#f43f5e","#64748b","#78716c"
     };
 
+    // ── ROW_H must stay in sync with CSS (row height + gap) ──────────────
+    private const int ROW_H = 64;
+
     // ── Lifecycle ────────────────────────────────────────────────────────
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
         RebuildRows();
-        _newName         = "";
-        _newColor        = null;
-        _pickerOpen      = false;
-        _pickerOpenFor   = -2;
-        _pickerCallback  = null;
-        _pointerDragging = false;
-        _dragIdx         = -1;
-        _targetIdx       = -1;
+        _newName        = "";
+        _newColor       = null;
+        _pickerOpen     = false;
+        _pickerOpenFor  = -2;
+        _pickerCallback = null;
     }
+
+    protected override void OnInitialized()
+    {
+        _dotNetRef = DotNetObjectReference.Create(this);
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
 
     private void RebuildRows()
     {
@@ -298,105 +256,99 @@
             .ToList();
     }
 
-    // ── Visual shift for non-dragged rows ────────────────────────────────
-    // Dragging DOWN (dragIdx < targetIdx):
-    //   rows in (dragIdx, targetIdx]  → shift UP   (-ROW_H)
-    // Dragging UP (dragIdx > targetIdx):
-    //   rows in [targetIdx, dragIdx)  → shift DOWN (+ROW_H)
-    private double GetShiftPx(int i)
+    // ── Drag — launched from pointerdown, handled entirely by JS ─────────
+    // JS moves DOM elements directly (no Blazor re-render latency).
+    // When the pointer is released, JS calls OnDragComplete.
+    private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
-        if (!_pointerDragging || _dragIdx < 0 || _targetIdx < 0 || i == _dragIdx)
-            return 0;
-
-        if (_dragIdx < _targetIdx && i > _dragIdx && i <= _targetIdx) return -ROW_H;
-        if (_dragIdx > _targetIdx && i >= _targetIdx && i < _dragIdx)  return  ROW_H;
-
-        return 0;
-    }
-
-    // ── Pointer drag handlers ─────────────────────────────────────────────
-    private async Task StartPointerDrag(PointerEventArgs e, int ri)
-    {
-        _pointerDragging = true;
-        _dragIdx         = ri;
-        _targetIdx       = ri;
-        _dragStartY      = e.ClientY;
-        _dragCurrentY    = e.ClientY;
-
-        // setPointerCapture makes ALL subsequent pointermove / pointerup events
-        // for this pointer ID fire on this element, even when the pointer moves
-        // outside it. Without this, fast movements lose tracking.
         try
         {
-            await JS.InvokeVoidAsync("capturePointer", _handleRefs[ri], e.PointerId);
+            await JS.InvokeVoidAsync(
+                "startRowDrag",
+                _dotNetRef,
+                _panelRef,
+                e.PointerId,
+                rowIndex,
+                ROW_H);
         }
-        catch { /* JS may not be available yet on first render */ }
-
-        StateHasChanged();
+        catch { /* JS not ready */ }
     }
 
-    private void HandlePointerMove(PointerEventArgs e)
+    // Called by JS on pointerup with the resolved from/to indices
+    [JSInvokable]
+    public void OnDragComplete(int fromIndex, int toIndex)
     {
-        if (!_pointerDragging || _dragIdx < 0) return;
-
-        _dragCurrentY = e.ClientY;
-
-        // How many rows has the drag offset crossed?
-        double offsetPx  = _dragCurrentY - _dragStartY;
-        int    newTarget = (int)Math.Round(_dragIdx + offsetPx / ROW_H);
-        _targetIdx = Math.Clamp(newTarget, 0, _rows.Count - 1);
-
-        StateHasChanged();
-    }
-
-    private void HandlePointerUp(PointerEventArgs e)
-    {
-        if (!_pointerDragging) return;
-        CommitPointerDrop();
-    }
-
-    private void CancelPointerDrag()
-    {
-        _pointerDragging = false;
-        _dragIdx         = -1;
-        _targetIdx       = -1;
-        StateHasChanged();
-    }
-
-    private void CommitPointerDrop()
-    {
-        if (_dragIdx >= 0 && _targetIdx >= 0 && _dragIdx != _targetIdx)
+        if (fromIndex == toIndex || fromIndex < 0 || toIndex < 0
+            || fromIndex >= _rows.Count || toIndex >= _rows.Count)
         {
-            var item = _rows[_dragIdx];
-            _rows.RemoveAt(_dragIdx);
-
-            // Removing the dragged item shifts all later indices by -1.
-            int at = _targetIdx > _dragIdx ? _targetIdx - 1 : _targetIdx;
-            at = Math.Clamp(at, 0, _rows.Count);
-            _rows.Insert(at, item);
-
-            SaveAll();
+            StateHasChanged();
+            return;
         }
 
-        _pointerDragging = false;
-        _dragIdx         = -1;
-        _targetIdx       = -1;
+        var item = _rows[fromIndex];
+        _rows.RemoveAt(fromIndex);
+        int at = Math.Clamp(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, _rows.Count);
+        _rows.Insert(at, item);
+
+        SaveAll();
         StateHasChanged();
     }
 
     // ── Color picker ─────────────────────────────────────────────────────
-    private void OpenPicker(int forIdx, string currentColor, Action<string> callback,
-                            double clientX, double clientY)
-    {
-        // Second tap on the same swatch → toggle closed
-        if (_pickerOpenFor == forIdx && _pickerOpen) { ClosePicker(); return; }
 
+    // New-row swatch: no ElementReference, use a simple fallback position
+    private void OpenPicker(int forIdx, string currentColor, Action<string> callback)
+    {
+        if (_pickerOpenFor == forIdx && _pickerOpen) { ClosePicker(); return; }
         _pickerOpen         = true;
         _pickerOpenFor      = forIdx;
         _pickerCurrentColor = currentColor;
         _pickerCallback     = callback;
-        _pickerAnchorX      = clientX;
-        _pickerAnchorY      = clientY;
+        // Place it in a sensible default position (top of panel area)
+        _pickerPositionStyle = "position:fixed; top:120px; left:30px; transform:none;";
+        StateHasChanged();
+    }
+
+    // Row swatches: use the swatch's bounding rect for precise positioning
+    private async Task OpenPickerForRow(int ri, string currentColor, Action<string> callback)
+    {
+        if (_pickerOpenFor == ri && _pickerOpen) { ClosePicker(); return; }
+
+        _pickerOpen         = true;
+        _pickerOpenFor      = ri;
+        _pickerCurrentColor = currentColor;
+        _pickerCallback     = callback;
+
+        // Get the swatch element's position in the viewport
+        try
+        {
+            var rect = await JS.InvokeAsync<BoundingRect>(
+                "getElementBoundingRect", _swatchRefs[ri]);
+
+            const double pickerW = 224;
+            const double pickerH = 230;
+            const double gap     = 8;
+
+            // Prefer above the swatch
+            double top  = rect.Top - pickerH - gap;
+            double left = rect.Left;
+
+            // Fall back to below if no room above
+            if (top < 60) top = rect.Bottom + gap;
+
+            // Clamp horizontally
+            if (left + pickerW > rect.ViewportWidth - 8)
+                left = rect.ViewportWidth - pickerW - 8;
+            if (left < 8) left = 8;
+
+            _pickerPositionStyle =
+                $"position:fixed; top:{top:F0}px; left:{left:F0}px; transform:none;";
+        }
+        catch
+        {
+            _pickerPositionStyle = "position:fixed; top:180px; left:30px; transform:none;";
+        }
+
         StateHasChanged();
     }
 
@@ -414,30 +366,6 @@
         _pickerOpenFor  = -2;
         _pickerCallback = null;
         StateHasChanged();
-    }
-
-    // Anchors the picker just above (or below when near the top) the swatch.
-    // Horizontally left-aligned with the swatch's clientX, clamped to viewport.
-    private string GetPickerPositionStyle()
-    {
-        const double pickerW = 220;
-        const double pickerH = 230;
-        const double margin  = 8;
-        const double minTop  = 60;
-
-        // Vertical
-        double top = _pickerAnchorY - pickerH - margin;
-        if (top < minTop)
-            top = _pickerAnchorY + margin + 20; // not enough room above → show below
-        top = Math.Max(minTop, top);
-
-        // Horizontal: left-align with swatch, clamp so it doesn't overflow right edge
-        double left = _pickerAnchorX - 8;
-        if (left + pickerW > 360) left = 360 - pickerW;
-        if (left < 8) left = 8;
-
-        // Override any centered CSS from the class — use absolute coords instead
-        return $"position:fixed; top:{top:F0}px; left:{left:F0}px; transform:none;";
     }
 
     // ── Persist ──────────────────────────────────────────────────────────
@@ -497,7 +425,7 @@
 
     private async Task Close() { ClosePicker(); await OnClose.InvokeAsync(); }
 
-    // ── Status key ───────────────────────────────────────────────────────
+    // ── Status parser ─────────────────────────────────────────────────────
     private static ListStatus? ParseStatus(string key) => key switch
     {
         "Watching"   => ListStatus.Watching,
@@ -508,4 +436,17 @@
         "Dropped"    => ListStatus.Dropped,
         _            => null
     };
+
+    // ── JS interop helpers ────────────────────────────────────────────────
+    private class BoundingRect
+    {
+        public double Top            { get; set; }
+        public double Bottom         { get; set; }
+        public double Left           { get; set; }
+        public double Right          { get; set; }
+        public double Width          { get; set; }
+        public double Height         { get; set; }
+        public double ViewportWidth  { get; set; }
+        public double ViewportHeight { get; set; }
+    }
 }
