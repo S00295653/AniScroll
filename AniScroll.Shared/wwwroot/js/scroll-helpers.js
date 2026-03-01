@@ -297,7 +297,6 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     });
     document.body.appendChild(ghost);
 
-    // Make dragged row invisible (spacer)
     draggedEl.style.opacity       = '0';
     draggedEl.style.pointerEvents = 'none';
 
@@ -305,6 +304,8 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     let targetIndex = fromIndex;
     let lastClientY = draggedRect.top + halfH;
 
+    // FIX: measure the new-row height so rows below it are offset correctly.
+    // The ghost must never go above row index 0 (the first sortable row).
     const newRowEl = bodyEl.querySelector('.clm2-row-new');
     const newRowH  = newRowEl ? newRowEl.offsetHeight : 0;
 
@@ -312,17 +313,29 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     let scrollRaf = null;
 
     const applyShifts = () => {
+        // Ghost centre in scroll-space (bodyEl.scrollTop accounts for current scroll)
         const bodyTopScrolled     = bodyEl.getBoundingClientRect().top - bodyEl.scrollTop;
         const ghostCentreInScroll = lastClientY - bodyTopScrolled;
 
+        // Natural (un-transformed) centre of sortable row i:
+        //   newRowH  = height of the "add new list" row (offset below it)
+        //   i*rowH   = row i starts at newRowH + i*rowH
         let best = fromIndex, bestDist = Infinity;
         for (let i = 0; i < count; i++) {
             const naturalCentre = newRowH + i * rowH + rowH / 2;
             const dist = Math.abs(ghostCentreInScroll - naturalCentre);
             if (dist < bestDist) { bestDist = dist; best = i; }
         }
-        targetIndex = best;
+        // Clamp: never above row 0, never below last row
+        targetIndex = Math.max(0, Math.min(count - 1, best));
 
+        // FIX: also clamp the ghost visual so it never appears above clm2-row-new
+        const minGhostTop = bodyEl.getBoundingClientRect().top + newRowH;
+        const maxGhostTop = bodyEl.getBoundingClientRect().bottom - rowH;
+        const clampedGhostTop = Math.max(minGhostTop, Math.min(maxGhostTop, lastClientY - halfH));
+        ghost.style.top = clampedGhostTop + 'px';
+
+        // Shift siblings
         allRows.forEach((row, i) => {
             if (i === fromIndex) { row.style.transform = ''; return; }
             let shift = 0;
@@ -353,9 +366,8 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     scrollRaf = requestAnimationFrame(scrollTick);
 
     const onMove = (clientX, clientY) => {
-        lastClientY      = clientY;
-        ghost.style.top  = `${clientY - halfH}px`;
-        applyShifts();
+        lastClientY = clientY;
+        applyShifts(); // ghost.style.top set inside applyShifts with clamping
     };
 
     const onEnd = () => {
@@ -382,4 +394,75 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     document.addEventListener('pointercancel', onPU);
     document.addEventListener('touchmove',     onTM, { passive: false });
     document.addEventListener('touchend',      onTE);
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODAL SCROLL — stop momentum + edge swipe intercept
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Stop iOS momentum scroll on an element immediately.
+ * Called from Blazor when the list-editor opens or when we need to
+ * kill scroll inertia before starting an edge swipe.
+ */
+window.stopMomentumScroll = function (el) {
+    if (!el) return;
+    // Reading and re-setting scrollTop immediately stops iOS inertia
+    el.scrollTop = el.scrollTop;
+};
+
+/**
+ * Register a native (synchronous) touchstart listener on the
+ * modal-scroll-container that:
+ *   1. Stops momentum scroll when the finger lands on the LEFT EDGE (<= 40px).
+ *   2. Prevents the scroll container from stealing touches during an edge swipe.
+ *
+ * Must be called once after the modal opens (from OnAfterRenderAsync).
+ * Returns a cleanup function — call window.unregisterEdgeSwipeInterceptor()
+ * when the modal closes.
+ *
+ * @param {Element} scrollEl - the .modal-scroll-container element
+ * @param {number}  edgeZone - width of the edge zone in px (default 40)
+ */
+let _edgeSwipeCleanup = null;
+
+window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
+    if (!scrollEl) return;
+    edgeZone = edgeZone || 40;
+
+    // Remove previous listener if any
+    if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
+
+    const onTouchStart = (e) => {
+        if (!e.touches.length) return;
+        const x = e.touches[0].clientX;
+        if (x <= edgeZone) {
+            // Kill momentum scroll immediately (synchronous, no await)
+            scrollEl.scrollTop = scrollEl.scrollTop;
+            // Prevent the scroll container from handling this touch
+            // so Blazor's ontouchstart fires correctly
+            scrollEl.style.overflowY = 'hidden';
+            // Restore after a short delay so normal scroll still works later
+            const restore = () => {
+                scrollEl.style.overflowY = '';
+                document.removeEventListener('touchend',    restore);
+                document.removeEventListener('touchcancel', restore);
+            };
+            document.addEventListener('touchend',    restore, { once: true });
+            document.addEventListener('touchcancel', restore, { once: true });
+        }
+    };
+
+    // passive: false would let us preventDefault, but we only need to stop scroll capture.
+    // We use capture:true so we run BEFORE the scroll container's own handler.
+    scrollEl.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
+
+    _edgeSwipeCleanup = () => {
+        scrollEl.removeEventListener('touchstart', onTouchStart, { capture: true });
+        scrollEl.style.overflowY = '';
+    };
+};
+
+window.unregisterEdgeSwipeInterceptor = function () {
+    if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 };
