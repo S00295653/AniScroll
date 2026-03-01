@@ -154,18 +154,6 @@ window.cpGetRect = function (el) {
     return { left: r.left, top: r.top, width: r.width, height: r.height };
 };
 
-/**
- * Position the color picker popup near an anchor element.
- *
- * KEY FIX: instead of trusting the estimated popupH passed from Blazor
- * (which is wrong because the popup hasn't painted yet), we find the
- * actual .cp-popup element in the DOM and measure it directly.
- * The popup must be in the DOM (even off-screen) before this is called.
- *
- * - Prefers BELOW the anchor (gap 8px).
- * - Falls back to ABOVE: BOTTOM of popup = TOP of anchor - gap.
- * - Clamps horizontally within viewport.
- */
 window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const MARGIN = 12;
     const GAP    = 8;
@@ -174,7 +162,6 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Measure the real rendered popup height instead of the estimate
     const popupEl = document.querySelector('.cp-popup');
     const popupH  = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
     const w       = Math.min(popupW, vw - 2 * MARGIN);
@@ -184,11 +171,9 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
 
     let top;
     if (spaceBelow >= popupH || spaceBelow >= spaceAbove) {
-        // Place below
         top = a.bottom + GAP;
         if (top + popupH > vh - MARGIN) top = vh - MARGIN - popupH;
     } else {
-        // Place above: BOTTOM of popup = TOP of anchor - gap
         top = a.top - GAP - popupH;
         if (top < MARGIN) top = MARGIN;
     }
@@ -252,7 +237,6 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
 
 window.cpStopDrag = function () { _cpSvActive = false; _cpHueActive = false; };
 
-// Random vivid swatch color (used when user adds a list without picking a color)
 window.cpRandomSwatchColor = function () {
     const swatches = [
         '#ef4444','#f97316','#f59e0b','#eab308',
@@ -267,11 +251,18 @@ window.cpRandomSwatchColor = function () {
 // ═══════════════════════════════════════════════════════════════════════
 //  ROW DRAG — live visual reorder + scroll-aware
 //
-//  FIX: On touch devices both `pointerup` AND `touchend` fire for the
-//  same finger-lift. Without a guard, `OnDragComplete` was called twice
-//  with identical indices — the second call immediately undid the first
-//  reorder, making the list appear to snap back to its original order.
-//  The `ended` flag ensures the completion callback fires exactly once.
+//  FIX 1: pointerStartY was initialized to null and the first pointermove
+//  was wasted just capturing the start position. For short drags, toIndex
+//  stayed at fromIndex → C# early-returned without saving anything.
+//  Solution: capture dragStartClientY immediately from the dragged row's
+//  bounding rect centre, so every move event contributes to positioning.
+//
+//  FIX 2: The ended guard ensures OnDragComplete fires exactly once even
+//  when both pointerup and touchend fire for the same finger-lift.
+//
+//  INDEX SPACE: `best` is an index into `otherRows` (all rows minus the
+//  dragged element), which has length N-1. This maps directly to the
+//  post-RemoveAt array in C#. C# should NOT decrement toIndex.
 // ═══════════════════════════════════════════════════════════════════════
 
 window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
@@ -288,31 +279,33 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
         }
     } catch (e) { /* ignore */ }
 
-    const dragged   = rows[fromIndex];
-    const origRect  = dragged.getBoundingClientRect();
-    const bodyRect  = body.getBoundingClientRect();
+    const dragged  = rows[fromIndex];
+    const origRect = dragged.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+
+    const origIndex    = fromIndex;
+    const initialBodyY = origRect.top - bodyRect.top + body.scrollTop;
+
+    // FIX 1: capture the drag start Y from the row's centre immediately,
+    // so the very first pointermove event already contributes to movement.
+    const dragStartClientY = origRect.top + rowH / 2;
+
+    let toIndex = fromIndex;
 
     // Lift the dragged row out of normal flow
-    const origIndex   = fromIndex;
-    let   currentY    = origRect.top - bodyRect.top + body.scrollTop;
-
     dragged.style.position  = 'absolute';
     dragged.style.left      = '0';
     dragged.style.right     = '0';
     dragged.style.zIndex    = '100';
     dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
-    dragged.style.top       = currentY + 'px';
+    dragged.style.top       = initialBodyY + 'px';
     body.style.position     = 'relative';
 
     // Placeholder to maintain layout height while item is floating
-    const placeholder        = document.createElement('div');
+    const placeholder         = document.createElement('div');
     placeholder.style.height    = rowH + 'px';
     placeholder.style.flexShrink = '0';
     body.insertBefore(placeholder, dragged);
-
-    let pointerStartY  = null;
-    let dragStartBodyY = currentY;
-    let toIndex        = fromIndex;
 
     // ── Guard: ensure onEnd() fires at most once ──────────────────────
     let ended = false;
@@ -321,14 +314,12 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
         if (ended) return;
         ended = true;
 
-        // Remove all listeners first
         document.removeEventListener('pointermove',   onPM);
         document.removeEventListener('pointerup',     onPU);
         document.removeEventListener('pointercancel', onPU);
         document.removeEventListener('touchmove',     onTM);
         document.removeEventListener('touchend',      onTE);
 
-        // Restore dragged element to normal flow
         dragged.style.position  = '';
         dragged.style.left      = '';
         dragged.style.right     = '';
@@ -347,11 +338,9 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
     function onMove(e) {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        // Capture start position on the very first move event
-        if (pointerStartY === null) { pointerStartY = clientY; return; }
-
-        const delta  = clientY - pointerStartY;
-        const newTop = Math.max(minTopPx, dragStartBodyY + delta);
+        // FIX 1: delta from the captured start position, applied to initial body position
+        const delta  = clientY - dragStartClientY;
+        const newTop = Math.max(minTopPx, initialBodyY + delta);
         dragged.style.top = newTop + 'px';
 
         // Ghost centre in body-scroll space
@@ -361,7 +350,9 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
         const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
                                .filter(r => r !== dragged);
 
-        // Count how many rows have their midpoint above our ghost centre
+        // Count how many rows have their midpoint above our ghost centre.
+        // `best` is an index into otherRows (size N-1), which maps directly
+        // to the post-RemoveAt insertion index expected by C#.
         let best = 0;
         for (let i = 0; i < otherRows.length; i++) {
             if (centreY > otherRows[i].offsetTop + rowH / 2) best = i + 1;
@@ -401,49 +392,25 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
 //  MODAL SCROLL — stop momentum + edge swipe intercept
 // ═══════════════════════════════════════════════════════════════════════
 
-/**
- * Stop iOS momentum scroll on an element immediately.
- * Called from Blazor when the list-editor opens or when we need to
- * kill scroll inertia before starting an edge swipe.
- */
 window.stopMomentumScroll = function (el) {
     if (!el) return;
-    // Reading and re-setting scrollTop immediately stops iOS inertia
     el.scrollTop = el.scrollTop;
 };
 
-/**
- * Register a native (synchronous) touchstart listener on the
- * modal-scroll-container that:
- *   1. Stops momentum scroll when the finger lands on the LEFT EDGE (<= 40px).
- *   2. Prevents the scroll container from stealing touches during an edge swipe.
- *
- * Must be called once after the modal opens (from OnAfterRenderAsync).
- * Returns a cleanup function — call window.unregisterEdgeSwipeInterceptor()
- * when the modal closes.
- *
- * @param {Element} scrollEl - the .modal-scroll-container element
- * @param {number}  edgeZone - width of the edge zone in px (default 40)
- */
 let _edgeSwipeCleanup = null;
 
 window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
     if (!scrollEl) return;
     edgeZone = edgeZone || 40;
 
-    // Remove previous listener if any
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 
     const onTouchStart = (e) => {
         if (!e.touches.length) return;
         const x = e.touches[0].clientX;
         if (x <= edgeZone) {
-            // Kill momentum scroll immediately (synchronous, no await)
             scrollEl.scrollTop = scrollEl.scrollTop;
-            // Prevent the scroll container from handling this touch
-            // so Blazor's ontouchstart fires correctly
             scrollEl.style.overflowY = 'hidden';
-            // Restore after a short delay so normal scroll still works later
             const restore = () => {
                 scrollEl.style.overflowY = '';
                 document.removeEventListener('touchend',    restore);
@@ -454,8 +421,6 @@ window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
         }
     };
 
-    // passive: false would let us preventDefault, but we only need to stop scroll capture.
-    // We use capture:true so we run BEFORE the scroll container's own handler.
     scrollEl.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
 
     _edgeSwipeCleanup = () => {
@@ -471,7 +436,6 @@ window.unregisterEdgeSwipeInterceptor = function () {
 window.preventWheelScroll = function (el) { 
     if (!el || el._noWheel) return;
     el._noWheel = function (e) {
-        // Allow wheel on any scrollable child (e.g. le-dd-list)
         let node = e.target;
         while (node && node !== el) {
             const oy = window.getComputedStyle(node).overflowY;

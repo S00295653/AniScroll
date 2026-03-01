@@ -251,9 +251,14 @@
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
-        if (fromIndex == toIndex
-            || fromIndex < 0 || toIndex < 0
-            || fromIndex >= _rows.Count || toIndex >= _rows.Count)
+        // toIndex is an insertion index in the post-RemoveAt array (size N-1),
+        // so valid range is [0, _rows.Count - 1] after removal, meaning
+        // toIndex can legally equal _rows.Count - 1 (append to end).
+        // We use Math.Clamp on the Insert call to be safe.
+        if (fromIndex < 0 || toIndex < 0
+            || fromIndex >= _rows.Count
+            || toIndex > _rows.Count   // allow == _rows.Count only after removal shrinks the list
+            || fromIndex == toIndex)
         {
             InvokeAsync(StateHasChanged);
             return;
@@ -261,6 +266,7 @@
 
         var item = _rows[fromIndex];
         _rows.RemoveAt(fromIndex);
+        // After RemoveAt, valid insertion indices are [0, _rows.Count] (inclusive)
         _rows.Insert(Math.Clamp(toIndex, 0, _rows.Count), item);
 
         SaveAll();
