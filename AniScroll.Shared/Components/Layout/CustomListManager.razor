@@ -36,12 +36,14 @@
                 <!-- NEW LIST ROW -->
                 <div class="clm2-row clm2-row-new">
 
-                    <!-- Swatch for the new-list row — uses its own ref -->
-                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
-                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
-                         @ref="_newSwatchRef"
-                         @onclick:stopPropagation="true"
-                         @onclick="OpenPickerForNewRow">
+                    <!-- Swatch for the new-list row — native color picker -->
+                    <label class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                           style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
+                           @onclick:stopPropagation="true">
+                        <input type="color"
+                               style="opacity:0;position:absolute;width:0;height:0;pointer-events:none;"
+                               value="@(_newColor ?? "#6366f1")"
+                               @oninput="e => { _newColor = e.Value?.ToString(); StateHasChanged(); }" />
                         @if (string.IsNullOrEmpty(_newColor))
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -51,7 +53,7 @@
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
                         }
-                    </div>
+                    </label>
 
                     <input class="clm2-name-input"
                            placeholder="New list name…"
@@ -99,14 +101,15 @@
                             </svg>
                         </div>
 
-                        <!-- Swatch: click opens jscolorpicker anchored to this element -->
-                        <div class="clm2-swatch clm2-swatch-filled"
-                             style="background:@color;"
-                             @ref="_swatchRefs[ri]"
-                             @onclick:stopPropagation="true"
-                             @onclick="() => OpenPickerForRow(ri, color,
-                                           c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
-                        </div>
+                        <!-- Swatch: native color picker anchored to label -->
+                        <label class="clm2-swatch clm2-swatch-filled"
+                               style="background:@color; cursor:pointer;"
+                               @onclick:stopPropagation="true">
+                            <input type="color"
+                                   style="opacity:0;position:absolute;width:0;height:0;pointer-events:none;"
+                                   value="@color"
+                                   @oninput="e => { row.SetColor(e.Value?.ToString() ?? color); SaveAll(); StateHasChanged(); }" />
+                        </label>
 
                         <input class="clm2-name-input"
                                value="@row.Name"
@@ -175,20 +178,15 @@
 
     // Element refs
     private ElementReference   _panelRef;
-    private ElementReference   _newSwatchRef;
-    private ElementReference[] _swatchRefs  = new ElementReference[64];
-    private ElementReference[] _handleRefs  = new ElementReference[64];
+    private ElementReference[] _handleRefs = new ElementReference[64];
 
-    // DotNet ref passed to JS for callbacks
+    // DotNet ref passed to JS for drag callbacks only
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
     private string? _newColor = null;
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
-
-    // Pending color-picker callback (whichever swatch was clicked last)
-    private Action<string>? _pendingColorCallback;
 
     // ── Lifecycle ────────────────────────────────────────────────────────
     protected override void OnInitialized()
@@ -220,8 +218,6 @@
     {
         try
         {
-            // startRowDrag sets up all pointer listeners and animates the rows.
-            // On pointerup it calls OnDragComplete once via DotNet interop.
             await JS.InvokeVoidAsync(
                 "startRowDrag",
                 _dotNetRef,
@@ -234,7 +230,6 @@
     }
 
     // Called by JS after the user releases the dragged row.
-    // fromIndex = original position, toIndex = desired final position.
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
@@ -248,16 +243,6 @@
 
         var item = _rows[fromIndex];
         _rows.RemoveAt(fromIndex);
-
-        // toIndex is the FINAL position we want the item at.
-        // After removing it, the array shifts by -1 for indices > fromIndex,
-        // so the effective insertion point is simply toIndex (clamped).
-        //
-        // Example: rows=[A,B,C,D], move A(0) → pos 1
-        //   Remove A → [B,C,D], insert at 1 → [B,A,C,D] ✓
-        //
-        // Example: rows=[A,B,C,D], move D(3) → pos 1
-        //   Remove D → [A,B,C], insert at 1 → [A,D,B,C] ✓
         int at = Math.Clamp(toIndex, 0, _rows.Count);
         _rows.Insert(at, item);
 
@@ -266,50 +251,6 @@
     }
 
     private const int ROW_H = 64; // keep in sync with CSS
-
-    // ── Color picker (jscolorpicker.com, driven by JS) ───────────────────
-
-    // New-row swatch
-    private async Task OpenPickerForNewRow()
-    {
-        _pendingColorCallback = c =>
-        {
-            _newColor = c;
-            StateHasChanged();
-        };
-        await ShowPicker(_newSwatchRef, _newColor ?? "#6366f1");
-    }
-
-    // Existing-row swatch
-    private async Task OpenPickerForRow(int ri, string currentColor, Action<string> callback)
-    {
-        _pendingColorCallback = callback;
-        await ShowPicker(_swatchRefs[ri], currentColor);
-    }
-
-    private async Task ShowPicker(ElementReference anchorRef, string currentColor)
-    {
-        try
-        {
-            // showClmColorPicker opens the jscolorpicker dialog anchored to anchorRef,
-            // waits for the user to pick (prompt() promise), then calls OnColorSelected.
-            await JS.InvokeVoidAsync(
-                "showClmColorPicker",
-                anchorRef,
-                currentColor,
-                _dotNetRef);
-        }
-        catch { }
-    }
-
-    // Called by JS when the user confirms a color in the picker.
-    [JSInvokable]
-    public void OnColorSelected(string hexColor)
-    {
-        _pendingColorCallback?.Invoke(hexColor);
-        _pendingColorCallback = null;
-        StateHasChanged();
-    }
 
     // ── Persist ──────────────────────────────────────────────────────────
     private void SaveAll()
