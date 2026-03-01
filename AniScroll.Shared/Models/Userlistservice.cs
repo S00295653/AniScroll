@@ -40,6 +40,28 @@ namespace AniScroll.Shared.Services
             OnChanged?.Invoke();
         }
 
+        // ── Custom list accessors ─────────────────────────────────────────────
+
+        /// <summary>Toutes les listes (status-type + regular), triées par Order.</summary>
+        public List<UserCustomList> GetCustomLists() =>
+            _customLists.OrderBy(l => l.Order).ToList();
+
+        /// <summary>Listes de type "Status" (IsStatusList=true), triées par Order.</summary>
+        public List<UserCustomList> GetStatusTypeLists() =>
+            _customLists.Where(l => l.IsStatusList).OrderBy(l => l.Order).ToList();
+
+        /// <summary>Listes custom normales (IsStatusList=false), triées par Order.</summary>
+        public List<UserCustomList> GetRegularCustomLists() =>
+            _customLists.Where(l => !l.IsStatusList).OrderBy(l => l.Order).ToList();
+
+        public void SaveCustomLists(List<UserCustomList> lists)
+        {
+            _customLists = lists;
+            OnChanged?.Invoke();
+        }
+
+        // ── Entry CRUD ────────────────────────────────────────────────────────
+
         /// <summary>Quick add/update — only changes Status, preserves other fields.</summary>
         public void AddOrUpdate(AnimeCard anime, ListStatus status)
         {
@@ -91,14 +113,7 @@ namespace AniScroll.Shared.Services
                 ? _entries.Count
                 : _entries.Values.Count(e => e.Status == status);
 
-        public List<UserCustomList> GetCustomLists() =>
-            _customLists.OrderBy(l => l.Order).ToList();
-
-        public void SaveCustomLists(List<UserCustomList> lists)
-        {
-            _customLists = lists;
-            OnChanged?.Invoke();
-        }
+        // ── Custom list entry helpers ─────────────────────────────────────────
 
         public List<UserListEntry> GetEntriesForCustomList(string id) =>
             _entries.Values

@@ -7,13 +7,13 @@
 
 @if (IsVisible)
 {
-    <div class="lists-overlay" @onclick="Close">
+    <div class="lists-overlay" @onclick="() => { CloseAllDropdowns(); Close(); }">
         <div class="lists-panel"
              @onclick:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
                     transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
-            <!-- ── Drag handle ─────────────────────────────────────────────────── -->
+            <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
                  @ontouchstart="HandleTouchStart"
                  @ontouchmove="HandleTouchMove"
@@ -21,10 +21,13 @@
                 <div class="lists-handle-bar"></div>
             </div>
 
-            <!-- ── Header ─────────────────────────────────────────────────────── -->
+            <!-- ── Header ──────────────────────────────────────── -->
             <div class="lists-header">
                 <div class="lists-header-left">
                     <h2 class="lists-title">My Lists</h2>
+                    @{
+                        var totalCount = GetFilteredEntries().Count();
+                    }
                     @if (UserListService.Count() > 0)
                     {
                         <span class="lists-total-badge">@UserListService.Count()</span>
@@ -39,13 +42,13 @@
                 </button>
             </div>
 
-            <!-- ── Status tabs ────────────────────────────────────────────────── -->
-            <div class="lists-tabs-row">
+            <!-- ── Filter bar ──────────────────────────────────── -->
+            <div class="lf-bar" @onclick:stopPropagation="true">
 
-                <!-- Custom list manager button -->
+                <!-- [+] Manage lists button -->
                 <button class="lists-add-btn"
                         @onclick="OpenCustomListManager"
-                        title="Manage custom lists">
+                        title="Manage lists">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -53,67 +56,160 @@
                     </svg>
                 </button>
 
-                @foreach (var tab in _tabs)
-                {
-                    int cnt = tab.Status == null
-                        ? UserListService.GetAll().Count(e => e.Status.HasValue || e.CustomListIds.Any())
-                        : UserListService.Count(tab.Status.Value);
-
-                    bool isActive = activeStatus == tab.Status && activeCustomListId == null;
-                    string color  = GetStatusColor(tab.Status);
-
-                    <button class="lists-tab @(isActive ? "active" : "")"
-                            style="--tab-color:@color;"
-                            @onclick="() => SetTab(tab.Status)">
-                        @GlowDot(color)
-                        <span class="lists-tab-label">@tab.Label</span>
-                        @if (cnt > 0)
+                <!-- Status dropdown (single-select) -->
+                <div class="lf-dd lf-dd-status">
+                    @{
+                        string statusTriggerColor = _activeStatusColor;
+                        bool statusActive = _selectedStatus.HasValue || _selectedStatusCustomId != null;
+                    }
+                    <button class="lf-trigger @(statusActive ? "lf-trigger-active" : "")"
+                            style="@(statusActive ? $"border-color:{statusTriggerColor}40;color:{statusTriggerColor};" : "")"
+                            @onclick="ToggleStatusDropdown">
+                        @if (statusActive)
                         {
-                            <span class="lists-tab-count">@cnt</span>
+                            @GlowDot(statusTriggerColor)
                         }
+                        <span class="lf-trigger-label">@GetStatusTriggerLabel()</span>
+                        <svg class="lf-chevron @(_statusDropdownOpen ? "open" : "")"
+                             width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
-                }
 
-                <!-- CUSTOM LIST TABS -->
-                @foreach (var cl in UserListService.GetCustomLists())
-                {
-                    bool isActive = activeCustomListId == cl.Id;
+                    @if (_statusDropdownOpen)
+                    {
+                        <div class="lf-dd-menu" @onclick:stopPropagation="true">
+                            <!-- All -->
+                            <button class="lf-dd-option @(!statusActive ? "lf-dd-selected" : "")"
+                                    @onclick="() => SelectStatus(null, null)">
+                                <span class="lf-dd-dot" style="background:rgba(255,255,255,0.3);"></span>
+                                <span class="lf-dd-option-label">All</span>
+                                @if (!statusActive) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                            </button>
 
-                    <button class="lists-tab @(isActive ? "active" : "")"
-                            style="--tab-color:@cl.Color;"
-                            @onclick="() => SetCustomTab(cl.Id)">
-                        @GlowDot(cl.Color)
-                        <span>@cl.Name</span>
-                        @if (UserListService.GetCountForCustomList(cl.Id) > 0)
-                        {
-                            <span class="lists-tab-count">
-                                @UserListService.GetCountForCustomList(cl.Id)
-                            </span>
-                        }
+                            <!-- Built-in statuses -->
+                            @foreach (var setting in UserListService.GetStatusSettings())
+                            {
+                                if (!Enum.TryParse<ListStatus>(setting.Key, out var ls)) continue;
+                                bool isSel = _selectedStatus == ls && _selectedStatusCustomId == null;
+                                <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
+                                        style="@(isSel ? $"background:color-mix(in srgb,{setting.Color} 10%,transparent);color:{setting.Color};" : "")"
+                                        @onclick="() => SelectStatus(ls, null)">
+                                    @GlowDot(setting.Color)
+                                    <span class="lf-dd-option-label">@setting.DisplayName</span>
+                                    @if (isSel) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                </button>
+                            }
+
+                            <!-- User-created status-type lists -->
+                            @{
+                                var statusTypeLists = UserListService.GetStatusTypeLists();
+                            }
+                            @if (statusTypeLists.Any())
+                            {
+                                <div class="lf-dd-separator"></div>
+                                @foreach (var stl in statusTypeLists)
+                                {
+                                    bool isSel = _selectedStatusCustomId == stl.Id;
+                                    <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
+                                            style="@(isSel ? $"background:color-mix(in srgb,{stl.Color} 10%,transparent);color:{stl.Color};" : "")"
+                                            @onclick="() => SelectStatus(null, stl.Id)">
+                                        @GlowDot(stl.Color)
+                                        <span class="lf-dd-option-label">@stl.Name</span>
+                                        @if (isSel) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                    </button>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Custom Lists dropdown (multi-select) -->
+                <div class="lf-dd lf-dd-custom">
+                    @{
+                        var regularLists = UserListService.GetRegularCustomLists();
+                        bool customActive = _selectedCustomListIds.Any();
+                    }
+                    <button class="lf-trigger @(customActive ? "lf-trigger-active" : "")"
+                            style="@(customActive ? "border-color:rgba(99,102,241,0.4);color:#818cf8;" : "")"
+                            @onclick="ToggleCustomDropdown">
+                        <span class="lf-trigger-label">
+                            Lists
+                            @if (customActive)
+                            {
+                                <span class="lf-count-badge">@_selectedCustomListIds.Count</span>
+                            }
+                        </span>
+                        <svg class="lf-chevron @(_customDropdownOpen ? "open" : "")"
+                             width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </button>
-                }
 
+                    @if (_customDropdownOpen)
+                    {
+                        <div class="lf-dd-menu lf-dd-menu-right" @onclick:stopPropagation="true">
+                            @if (!regularLists.Any())
+                            {
+                                <div class="lf-dd-empty">No custom lists yet</div>
+                            }
+                            else
+                            {
+                                @foreach (var cl in regularLists)
+                                {
+                                    bool isSel = _selectedCustomListIds.Contains(cl.Id);
+                                    <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
+                                            style="@(isSel ? $"background:color-mix(in srgb,{cl.Color} 10%,transparent);color:{cl.Color};" : "")"
+                                            @onclick="() => ToggleCustomList(cl.Id)">
+                                        @GlowDot(cl.Color)
+                                        <span class="lf-dd-option-label">@cl.Name</span>
+                                        @if (isSel)
+                                        {
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        }
+                                    </button>
+                                }
+                            }
+
+                            @if (customActive)
+                            {
+                                <div class="lf-dd-separator"></div>
+                                <button class="lf-dd-clear" @onclick="ClearCustomFilters">
+                                    Clear filters
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
 
             <div class="lists-header-divider"></div>
 
-            <!-- ── Entries ────────────────────────────────────────────────────── -->
-            <div class="lists-content">
+            <!-- ── Entries ──────────────────────────────────────── -->
+            <div class="lists-content" @onclick="CloseAllDropdowns">
                 @{
-                    var entries =
-                        activeCustomListId != null
-                            ? UserListService.GetEntriesForCustomList(activeCustomListId)
-                            : activeStatus == null
-                                ? UserListService.GetAll().Where(e => e.Status.HasValue || e.CustomListIds.Any()).ToList()
-                                : UserListService.GetByStatus(activeStatus.Value);
+                    var entries = GetFilteredEntries().ToList();
                 }
 
                 @if (!entries.Any())
                 {
                     <div class="lists-empty">
-                        <div class="lists-empty-icon">@GetEmptyIcon(activeStatus)</div>
-                        <p class="lists-empty-title">@GetEmptyTitle(activeStatus)</p>
-                        <p class="lists-empty-sub">@GetEmptySub(activeStatus)</p>
+                        <div class="lists-empty-icon">
+                            @((_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any())
+                                ? "🔍" : "📺")
+                        </div>
+                        <p class="lists-empty-title">
+                            @(UserListService.Count() == 0
+                                ? "Your list is empty"
+                                : "No results for these filters")
+                        </p>
+                        <p class="lists-empty-sub">
+                            @(UserListService.Count() == 0
+                                ? "Browse anime and tap \"Add to List\""
+                                : "Try adjusting the status or custom list filters")
+                        </p>
                     </div>
                 }
                 else
@@ -123,16 +219,13 @@
                         var e = entry;
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
 
-                            <!-- Poster -->
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
                                         @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
 
-                            <!-- Info -->
                             <div class="entry-info">
                                 <div class="entry-title">@e.Anime.Title</div>
-
                                 @{
                                     var metaParts = new List<string>();
                                     if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score))
@@ -151,13 +244,32 @@
 
                                 @if (e.Status.HasValue)
                                 {
-                                    <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status.Value)">
+                                    var sc = GetStatusColor(e.Status.Value);
+                                    <div class="entry-status-badge"
+                                         style="color:@sc;background:color-mix(in srgb,@(sc) 12%,transparent);border:1px solid color-mix(in srgb,@(sc) 30%,transparent);">
                                         @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
+                                    </div>
+                                }
+
+                                @{
+                                    var entryCustomLists = UserListService.GetRegularCustomLists()
+                                        .Where(cl => e.CustomListIds.Contains(cl.Id))
+                                        .ToList();
+                                }
+                                @if (entryCustomLists.Any())
+                                {
+                                    <div class="entry-custom-tags">
+                                        @foreach (var cl in entryCustomLists)
+                                        {
+                                            <span class="entry-custom-tag"
+                                                  style="color:@cl.Color;background:color-mix(in srgb,@(cl.Color) 12%,transparent);border:1px solid color-mix(in srgb,@(cl.Color) 30%,transparent);">
+                                                @cl.Name
+                                            </span>
+                                        }
                                     </div>
                                 }
                             </div>
 
-                            <!-- Remove button -->
                             <button class="entry-remove-btn"
                                     title="Remove"
                                     @onclick:stopPropagation="true"
@@ -177,7 +289,7 @@
         </div>
     </div>
 
-    @* FIX: outside lists-overlay so its backdrop click doesn't bubble and close ListsPanel *@
+    <!-- CustomListManager outside overlay -->
     <CustomListManager IsVisible="showCustomListManager"
                        OnClose="CloseCustomListManager" />
 }
@@ -187,60 +299,26 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<AnimeCard> OnAnimeSelected { get; set; }
 
-    private ListStatus? activeStatus = null;
+    // ── Filter state ──────────────────────────────────────────────────────
+    private ListStatus?    _selectedStatus         = null;  // null = All
+    private string?        _selectedStatusCustomId = null;  // user-created status-type list
+    private HashSet<string> _selectedCustomListIds = new();
+
+    private bool _statusDropdownOpen = false;
+    private bool _customDropdownOpen = false;
 
     private bool showCustomListManager = false;
-    private void OpenCustomListManager() => showCustomListManager = true;
+    private void OpenCustomListManager() { CloseAllDropdowns(); showCustomListManager = true; }
     private void CloseCustomListManager() { showCustomListManager = false; StateHasChanged(); }
-    private string? activeCustomListId = null;
 
-    // ─── Pull-to-close ────────────────────────────────────────────────────────
+    // ── Pull-to-close ─────────────────────────────────────────────────────
     private double pullOffset    = 0;
     private double pullStartY    = 0;
     private bool   isPulling     = false;
     private bool   isPullActive  = false;
     private const double PULL_CLOSE_THRESHOLD = 80;
 
-    // ─── Tab definitions ──────────────────────────────────────────────────────
-    private sealed record TabDef(string Label, ListStatus? Status, string CssKey);
-
-    private static readonly TabDef[] _tabs =
-    {
-        new("All",        null,                  "all"),
-        new("Watching",   ListStatus.Watching,   "watching"),
-        new("Rewatching", ListStatus.Rewatching, "rewatching"),
-        new("Completed",  ListStatus.Completed,  "completed"),
-        new("Planning",   ListStatus.Planning,   "planning"),
-        new("Paused",     ListStatus.Paused,     "paused"),
-        new("Dropped",    ListStatus.Dropped,    "dropped"),
-    };
-
-    // ─── Universal glow dot ───────────────────────────────────────────────────
-
-    /// Renders a dot that always glows at full brightness.
-    /// Active vs inactive state is expressed solely by the tab container's CSS (.active).
-    private static MarkupString GlowDot(string color)
-    {
-        var style =
-            $"display:inline-block;" +
-            $"width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-            $"background:{color};" +
-            $"box-shadow:0 0 6px {color}99,0 0 2px {color};";
-        return new MarkupString($"<span style=\"{style}\"></span>");
-    }
-
-    /// Resolves the hex color for a given status from the user's (possibly customised) settings.
-    private string GetStatusColor(ListStatus? status)
-    {
-        if (status == null) return "#6b7280"; // "All" — neutral grey
-        var key = status.Value.ToString();    // "Watching", "Completed", etc.
-        return UserListService.GetStatusSettings()
-                   .FirstOrDefault(s => s.Key == key)?.Color
-               ?? "#6366f1";
-    }
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
-
+    // ── Lifecycle ─────────────────────────────────────────────────────────
     protected override void OnInitialized()
     {
         UserListService.OnChanged += HandleListChanged;
@@ -248,37 +326,134 @@
 
     protected override void OnParametersSet()
     {
-        if (IsVisible)
-        {
-            pullOffset = 0;
-            isPulling  = false;
-        }
+        if (IsVisible) { pullOffset = 0; isPulling = false; }
     }
 
     public void Dispose() => UserListService.OnChanged -= HandleListChanged;
 
-    private void HandleListChanged()
+    private void HandleListChanged() => InvokeAsync(StateHasChanged);
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private static MarkupString GlowDot(string color)
     {
-        var lists = UserListService.GetCustomLists();
-        Console.WriteLine($"[ListsPanel] HandleListChanged fired — custom lists: {string.Join(", ", lists.Select(c => $"{c.Name}(Order={c.Order})"))}");
-        InvokeAsync(StateHasChanged);
+        var style = $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+                    $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};";
+        return new MarkupString($"<span style=\"{style}\"></span>");
     }
 
-    // ─── Interactions ─────────────────────────────────────────────────────────
-
-    private void SetTab(ListStatus? status)
+    private string GetStatusColor(ListStatus s)
     {
-        activeCustomListId = null;
-        activeStatus = status;
+        var key = s.ToString();
+        return UserListService.GetStatusSettings().FirstOrDefault(x => x.Key == key)?.Color
+               ?? s switch
+               {
+                   ListStatus.Watching   => "#22c55e",
+                   ListStatus.Rewatching => "#06b6d4",
+                   ListStatus.Completed  => "#3b82f6",
+                   ListStatus.Planning   => "#a855f7",
+                   ListStatus.Paused     => "#f97316",
+                   ListStatus.Dropped    => "#ef4444",
+                   _                     => "#6366f1"
+               };
+    }
+
+    private string _activeStatusColor
+    {
+        get
+        {
+            if (_selectedStatusCustomId != null)
+            {
+                var cl = UserListService.GetStatusTypeLists().FirstOrDefault(l => l.Id == _selectedStatusCustomId);
+                return cl?.Color ?? "#6366f1";
+            }
+            if (_selectedStatus.HasValue) return GetStatusColor(_selectedStatus.Value);
+            return "#6b7280";
+        }
+    }
+
+    private string GetStatusTriggerLabel()
+    {
+        if (_selectedStatusCustomId != null)
+        {
+            var cl = UserListService.GetStatusTypeLists().FirstOrDefault(l => l.Id == _selectedStatusCustomId);
+            return cl?.Name ?? "Status";
+        }
+        if (_selectedStatus.HasValue)
+        {
+            var key = _selectedStatus.Value.ToString();
+            var setting = UserListService.GetStatusSettings().FirstOrDefault(s => s.Key == key);
+            return setting?.DisplayName ?? GetStatusLabel(_selectedStatus.Value);
+        }
+        return "Status";
+    }
+
+    // ── Filtering ─────────────────────────────────────────────────────────
+
+    private IEnumerable<UserListEntry> GetFilteredEntries()
+    {
+        IEnumerable<UserListEntry> entries = UserListService.GetAll()
+            .Where(e => e.Status.HasValue || e.CustomListIds.Any());
+
+        // Status filter (single-select)
+        if (_selectedStatusCustomId != null)
+            entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
+        else if (_selectedStatus.HasValue)
+            entries = entries.Where(e => e.Status == _selectedStatus.Value);
+
+        // Custom list AND filter (multi-select)
+        foreach (var id in _selectedCustomListIds)
+            entries = entries.Where(e => e.CustomListIds.Contains(id));
+
+        return entries;
+    }
+
+    // ── Dropdown interactions ─────────────────────────────────────────────
+
+    private void ToggleStatusDropdown()
+    {
+        _statusDropdownOpen = !_statusDropdownOpen;
+        if (_statusDropdownOpen) _customDropdownOpen = false;
         StateHasChanged();
     }
 
-    private void SetCustomTab(string id)
+    private void ToggleCustomDropdown()
     {
-        activeStatus = null;
-        activeCustomListId = id;
+        _customDropdownOpen = !_customDropdownOpen;
+        if (_customDropdownOpen) _statusDropdownOpen = false;
         StateHasChanged();
     }
+
+    private void CloseAllDropdowns()
+    {
+        _statusDropdownOpen = false;
+        _customDropdownOpen = false;
+        StateHasChanged();
+    }
+
+    private void SelectStatus(ListStatus? status, string? customId)
+    {
+        _selectedStatus         = status;
+        _selectedStatusCustomId = customId;
+        _statusDropdownOpen     = false;
+        StateHasChanged();
+    }
+
+    private void ToggleCustomList(string id)
+    {
+        if (!_selectedCustomListIds.Remove(id))
+            _selectedCustomListIds.Add(id);
+        StateHasChanged();
+    }
+
+    private void ClearCustomFilters()
+    {
+        _selectedCustomListIds.Clear();
+        _customDropdownOpen = false;
+        StateHasChanged();
+    }
+
+    // ── Panel interactions ────────────────────────────────────────────────
 
     private void Close() => OnClose.InvokeAsync();
 
@@ -286,11 +461,11 @@
 
     private async Task HandleEntryClick(UserListEntry entry)
     {
-        await JS.InvokeVoidAsync("console.log", $"[ListsPanel] Entry clicked: {entry.Anime.Title}");
+        CloseAllDropdowns();
         await OnAnimeSelected.InvokeAsync(entry.Anime);
     }
 
-    // ─── Touch gestures ───────────────────────────────────────────────────────
+    // ── Touch gestures ────────────────────────────────────────────────────
 
     private void HandleTouchStart(TouchEventArgs e)
     {
@@ -327,14 +502,10 @@
             pullOffset = 0;
             await OnClose.InvokeAsync();
         }
-        else
-        {
-            pullOffset = 0;
-            StateHasChanged();
-        }
+        else { pullOffset = 0; StateHasChanged(); }
     }
 
-    // ─── Static helpers ───────────────────────────────────────────────────────
+    // ── Static helpers ────────────────────────────────────────────────────
 
     private static string GetStatusLabel(ListStatus s) => s switch
     {
@@ -347,17 +518,6 @@
         _                     => s.ToString()
     };
 
-    private static string GetStatusCssKey(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "watching",
-        ListStatus.Rewatching => "rewatching",
-        ListStatus.Completed  => "completed",
-        ListStatus.Planning   => "planning",
-        ListStatus.Paused     => "paused",
-        ListStatus.Dropped    => "dropped",
-        _                     => "all"
-    };
-
     private static string GetStatusIcon(ListStatus s) => s switch
     {
         ListStatus.Watching   => "▶",
@@ -366,41 +526,6 @@
         ListStatus.Planning   => "☆",
         ListStatus.Paused     => "⏸",
         ListStatus.Dropped    => "✕",
-        _                     => ""
-    };
-
-    private static string GetEmptyIcon(ListStatus? s) => s switch
-    {
-        ListStatus.Watching   => "▶",
-        ListStatus.Rewatching => "↻",
-        ListStatus.Completed  => "✓",
-        ListStatus.Planning   => "☆",
-        ListStatus.Paused     => "⏸",
-        ListStatus.Dropped    => "✕",
-        _                     => "📺"
-    };
-
-    private static string GetEmptyTitle(ListStatus? s) => s switch
-    {
-        null                  => "Your list is empty",
-        ListStatus.Watching   => "Nothing currently watching",
-        ListStatus.Rewatching => "No rewatches tracked",
-        ListStatus.Completed  => "Nothing completed yet",
-        ListStatus.Planning   => "Nothing planned yet",
-        ListStatus.Paused     => "Nothing on hold",
-        ListStatus.Dropped    => "Nothing dropped",
-        _                     => "Nothing here"
-    };
-
-    private static string GetEmptySub(ListStatus? s) => s switch
-    {
-        null                  => "Browse anime and tap \"Add to List\"",
-        ListStatus.Watching   => "Mark shows you're currently watching",
-        ListStatus.Rewatching => "Track your rewatches here",
-        ListStatus.Completed  => "Finish something to see it here",
-        ListStatus.Planning   => "Save anime you want to watch later",
-        ListStatus.Paused     => "Shows you've temporarily put on hold",
-        ListStatus.Dropped    => "Shows you decided to stop watching",
         _                     => ""
     };
 }

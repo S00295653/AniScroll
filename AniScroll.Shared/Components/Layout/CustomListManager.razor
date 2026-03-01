@@ -28,109 +28,189 @@
                         </svg>
                     </button>
                 </div>
+
+                <!-- ── Tab buttons ── -->
+                <div class="clm-tab-bar">
+                    <button class="clm-tab-btn @(_activeTab == "status" ? "clm-tab-active" : "")"
+                            @onclick='() => SwitchTab("status")'
+                            @onclick:stopPropagation="true">
+                        Status
+                    </button>
+                    <button class="clm-tab-btn @(_activeTab == "custom" ? "clm-tab-active" : "")"
+                            @onclick='() => SwitchTab("custom")'
+                            @onclick:stopPropagation="true">
+                        Custom Lists
+                    </button>
+                </div>
             </div>
 
             <!-- ── Body (scrollable) ───────────────────────────────── -->
             <div class="clm-body" @ref="_bodyRef">
 
-                <!-- NEW LIST ROW — FIX 2: @ref so we can pass its bounds to startRowDrag as top boundary -->
-                <div class="clm2-row clm2-row-new" @ref="_newListRowRef">
-
-                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
-                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
-                         @ref="_newSwatchRef"
-                         @onclick:stopPropagation="true"
-                         @onclick="OpenPickerForNewRow">
-                        @if (string.IsNullOrEmpty(_newColor))
-                        {
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                 stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="8" x2="12" y2="16"></line>
-                                <line x1="8" y1="12" x2="16" y2="12"></line>
-                            </svg>
-                        }
-                    </div>
-
-                    <input class="clm2-name-input"
-                           placeholder="New list name…"
-                           value="@_newName"
-                           @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
-                           @onkeydown="OnNewKeyDown"
-                           @onclick:stopPropagation="true" />
-
-                    <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
-                            disabled="@(!CanAdd)"
-                            @onclick="AddList"
-                            @onclick:stopPropagation="true">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- LIST ROWS -->
-                @for (int i = 0; i < _rows.Count; i++)
+                @if (_activeTab == "status")
                 {
-                    var ri    = i;
-                    var row   = _rows[i];
-                    var color = row.Color;
+                    <!-- STATUS ROWS (built-in + user-created status-type) -->
+                    @for (int i = 0; i < _statusRows.Count; i++)
+                    {
+                        var ri    = i;
+                        var row   = _statusRows[i];
+                        var color = row.Color;
+                        var cnt   = row.IsBuiltIn
+                            ? UserListService.Count(ParseStatus(row.Status!.Key))
+                            : UserListService.GetCountForCustomList(row.Custom!.Id);
 
-                    var cnt = row.IsStatus
-                        ? UserListService.Count(ParseStatus(row.Status!.Key))
-                        : UserListService.GetCountForCustomList(row.Custom!.Id);
+                        <div class="clm2-row" data-row-index="@ri">
+                            <div class="clm2-drag"
+                                 style="touch-action:none; cursor:grab;"
+                                 @ref="_statusHandleRefs[ri]"
+                                 @onpointerdown="e => OnHandlePointerDown(e, ri)"
+                                 @onpointerdown:stopPropagation="true">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="9"  y1="5"  x2="15" y2="5"></line>
+                                    <line x1="9"  y1="12" x2="15" y2="12"></line>
+                                    <line x1="9"  y1="19" x2="15" y2="19"></line>
+                                </svg>
+                            </div>
 
-                    <div class="clm2-row" data-row-index="@ri">
+                            <div class="clm2-swatch clm2-swatch-filled"
+                                 style="background:@color;"
+                                 @ref="_statusSwatchRefs[ri]"
+                                 @onclick:stopPropagation="true"
+                                 @onclick="() => OpenPickerForRow(ri, color, true,
+                                               c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
+                            </div>
 
-                        <div class="clm2-drag"
-                             style="touch-action:none; cursor:grab;"
-                             @ref="_handleRefs[ri]"
-                             @onpointerdown="e => OnHandlePointerDown(e, ri)"
-                             @onpointerdown:stopPropagation="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <line x1="9"  y1="5"  x2="15" y2="5"></line>
-                                <line x1="9"  y1="12" x2="15" y2="12"></line>
-                                <line x1="9"  y1="19" x2="15" y2="19"></line>
-                            </svg>
+                            <input class="clm2-name-input"
+                                   value="@row.Name"
+                                   readonly="@row.IsBuiltIn"
+                                   style="@(row.IsBuiltIn ? "opacity:0.7;cursor:default;" : "")"
+                                   @oninput="e => { if(!row.IsBuiltIn) row.SetName(e.Value?.ToString() ?? row.Name); }"
+                                   @onchange="e => { if(!row.IsBuiltIn) { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); } }"
+                                   @onclick:stopPropagation="true" />
+
+                            @if (cnt > 0)
+                            {
+                                <span class="clm2-count"
+                                      style="border-color:@(color)66; color:@color;">@cnt</span>
+                            }
+
+                            @if (row.IsBuiltIn)
+                            {
+                                <div class="clm2-lock">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                         stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="clm2-delete-btn"
+                                        @onclick="() => DeleteStatusRow(ri)"
+                                        @onclick:stopPropagation="true">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6l-1 14H6L5 6"></path>
+                                        <path d="M10 11v6M14 11v6"></path>
+                                        <path d="M9 6V4h6v2"></path>
+                                    </svg>
+                                </button>
+                            }
                         </div>
+                    }
 
-                        <div class="clm2-swatch clm2-swatch-filled"
-                             style="background:@color;"
-                             @ref="_swatchRefs[ri]"
+                    <!-- NEW STATUS ROW (at bottom) -->
+                    <div class="clm2-row clm2-row-new" @ref="_newStatusRowRef">
+                        <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                             style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
+                             @ref="_newStatusSwatchRef"
                              @onclick:stopPropagation="true"
-                             @onclick="() => OpenPickerForRow(ri, color,
-                                           c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
+                             @onclick="OpenPickerForNewRow">
+                            @if (string.IsNullOrEmpty(_newColor))
+                            {
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                            }
                         </div>
 
                         <input class="clm2-name-input"
-                               value="@row.Name"
-                               @oninput="e => row.SetName(e.Value?.ToString() ?? row.Name)"
-                               @onchange="e => { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); }"
+                               placeholder="New status name…"
+                               value="@_newName"
+                               @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
+                               @onkeydown="OnNewKeyDown"
                                @onclick:stopPropagation="true" />
 
-                        @if (cnt > 0)
-                        {
-                            <span class="clm2-count"
-                                  style="border-color:@(color)66; color:@color;">@cnt</span>
-                        }
+                        <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
+                                disabled="@(!CanAdd)"
+                                @onclick="AddList"
+                                @onclick:stopPropagation="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- CUSTOM LIST ROWS -->
+                    @if (!_customRows.Any())
+                    {
+                        <div class="clm-empty-hint">No custom lists yet. Create one below!</div>
+                    }
 
-                        @if (row.IsStatus)
-                        {
-                            <div class="clm2-lock">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                     stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    @for (int i = 0; i < _customRows.Count; i++)
+                    {
+                        var ri    = i;
+                        var row   = _customRows[i];
+                        var color = row.Color;
+                        var cnt   = UserListService.GetCountForCustomList(row.Custom!.Id);
+
+                        <div class="clm2-row" data-row-index="@ri">
+                            <div class="clm2-drag"
+                                 style="touch-action:none; cursor:grab;"
+                                 @ref="_customHandleRefs[ri]"
+                                 @onpointerdown="e => OnHandlePointerDown(e, ri)"
+                                 @onpointerdown:stopPropagation="true">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="9"  y1="5"  x2="15" y2="5"></line>
+                                    <line x1="9"  y1="12" x2="15" y2="12"></line>
+                                    <line x1="9"  y1="19" x2="15" y2="19"></line>
                                 </svg>
                             </div>
-                        }
-                        else
-                        {
+
+                            <div class="clm2-swatch clm2-swatch-filled"
+                                 style="background:@color;"
+                                 @ref="_customSwatchRefs[ri]"
+                                 @onclick:stopPropagation="true"
+                                 @onclick="() => OpenPickerForRow(ri, color, false,
+                                               c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
+                            </div>
+
+                            <input class="clm2-name-input"
+                                   value="@row.Name"
+                                   @oninput="e => row.SetName(e.Value?.ToString() ?? row.Name)"
+                                   @onchange="e => { row.SetName(e.Value?.ToString() ?? row.Name); SaveAll(); }"
+                                   @onclick:stopPropagation="true" />
+
+                            @if (cnt > 0)
+                            {
+                                <span class="clm2-count"
+                                      style="border-color:@(color)66; color:@color;">@cnt</span>
+                            }
+
                             <button class="clm2-delete-btn"
-                                    @onclick="() => DeleteRow(ri)"
+                                    @onclick="() => DeleteCustomRow(ri)"
                                     @onclick:stopPropagation="true">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                      stroke="currentColor" stroke-width="2"
@@ -141,7 +221,44 @@
                                     <path d="M9 6V4h6v2"></path>
                                 </svg>
                             </button>
-                        }
+                        </div>
+                    }
+
+                    <!-- NEW CUSTOM LIST ROW (at bottom) -->
+                    <div class="clm2-row clm2-row-new" @ref="_newCustomRowRef">
+                        <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                             style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
+                             @ref="_newCustomSwatchRef"
+                             @onclick:stopPropagation="true"
+                             @onclick="OpenPickerForNewRow">
+                            @if (string.IsNullOrEmpty(_newColor))
+                            {
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                            }
+                        </div>
+
+                        <input class="clm2-name-input"
+                               placeholder="New list name…"
+                               value="@_newName"
+                               @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
+                               @onkeydown="OnNewKeyDown"
+                               @onclick:stopPropagation="true" />
+
+                        <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
+                                disabled="@(!CanAdd)"
+                                @onclick="AddList"
+                                @onclick:stopPropagation="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
                     </div>
                 }
 
@@ -164,26 +281,44 @@
     // ── Row wrapper ──────────────────────────────────────────────────────
     private class Row
     {
-        public bool IsStatus;
+        public bool IsBuiltIn;             // true = StatusListSetting (lock icon, name readonly)
         public StatusListSetting? Status;
         public UserCustomList?    Custom;
 
-        public string Color => IsStatus ? (Status!.Color ?? "#6366f1") : (Custom!.Color ?? "#6366f1");
-        public string Name  => IsStatus ? Status!.DisplayName           : Custom!.Name;
+        public string Color => IsBuiltIn ? (Status?.Color ?? "#6366f1") : (Custom?.Color ?? "#6366f1");
+        public string Name  => IsBuiltIn ? (Status?.DisplayName ?? "")  : (Custom?.Name  ?? "");
 
-        public void SetColor(string c) { if (IsStatus) Status!.Color = c; else Custom!.Color = c; }
-        public void SetName(string n)  { if (IsStatus) Status!.DisplayName = n; else Custom!.Name = n; }
+        public void SetColor(string c)
+        {
+            if (IsBuiltIn) { if (Status != null) Status.Color = c; }
+            else           { if (Custom != null) Custom.Color = c; }
+        }
+        public void SetName(string n)
+        {
+            if (IsBuiltIn) { if (Status != null) Status.DisplayName = n; }
+            else           { if (Custom != null) Custom.Name = n; }
+        }
     }
 
-    private List<Row> _rows = new();
+    private string _activeTab = "status";   // "status" | "custom"
+    private List<Row> _statusRows = new();  // built-in statuses + IsStatusList custom lists
+    private List<Row> _customRows = new();  // regular custom lists
 
     // Element refs
-    private ElementReference   _panelRef;
-    private ElementReference   _bodyRef;
-    private ElementReference   _newSwatchRef;
-    private ElementReference   _newListRowRef;   // FIX 2: reference to the new-list row (top drag boundary)
-    private ElementReference[] _swatchRefs = new ElementReference[64];
-    private ElementReference[] _handleRefs = new ElementReference[64];
+    private ElementReference _panelRef;
+    private ElementReference _bodyRef;
+
+    // Status tab refs
+    private ElementReference   _newStatusRowRef;
+    private ElementReference   _newStatusSwatchRef;
+    private ElementReference[] _statusSwatchRefs = new ElementReference[64];
+    private ElementReference[] _statusHandleRefs = new ElementReference[64];
+
+    // Custom tab refs
+    private ElementReference   _newCustomRowRef;
+    private ElementReference   _newCustomSwatchRef;
+    private ElementReference[] _customSwatchRefs = new ElementReference[64];
+    private ElementReference[] _customHandleRefs = new ElementReference[64];
 
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
 
@@ -221,18 +356,30 @@
 
     private void RebuildRows()
     {
-        _rows = UserListService.GetStatusSettings()
-            .Select(s => new Row { IsStatus = true,  Status = s })
-            .Concat(UserListService.GetCustomLists()
-                .Select(c => new Row { IsStatus = false, Custom = c }))
+        _statusRows = UserListService.GetStatusSettings()
+            .Select(s => new Row { IsBuiltIn = true, Status = s })
+            .Concat(UserListService.GetStatusTypeLists()
+                .Select(c => new Row { IsBuiltIn = false, Custom = c }))
+            .ToList();
+
+        _customRows = UserListService.GetRegularCustomLists()
+            .Select(c => new Row { IsBuiltIn = false, Custom = c })
             .ToList();
     }
 
+    private void SwitchTab(string tab)
+    {
+        _activeTab = tab;
+        _newName   = "";
+        _newColor  = null;
+        CloseColorPicker();
+        StateHasChanged();
+    }
+
     // ── Drag ─────────────────────────────────────────────────────────────
-    // FIX 2: Pass _newListRowRef as the top boundary so the drag cannot visually
-    //        go above the "new list" creation row.
     private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
+        var newRowRef = _activeTab == "status" ? _newStatusRowRef : _newCustomRowRef;
         try
         {
             await JS.InvokeVoidAsync(
@@ -243,7 +390,7 @@
                 e.PointerId,
                 rowIndex,
                 ROW_H,
-                _newListRowRef);   // ← new parameter: top boundary element
+                newRowRef);
         }
         catch { }
     }
@@ -251,46 +398,42 @@
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
-        Console.WriteLine($"[CLM] OnDragComplete called: from={fromIndex} to={toIndex} totalRows={_rows.Count}");
+        var activeRows = _activeTab == "status" ? _statusRows : _customRows;
 
         if (fromIndex < 0 || toIndex < 0
-            || fromIndex >= _rows.Count
-            || toIndex > _rows.Count
+            || fromIndex >= activeRows.Count
+            || toIndex > activeRows.Count
             || fromIndex == toIndex)
         {
-            Console.WriteLine($"[CLM] EARLY RETURN — reason: from={fromIndex} to={toIndex} count={_rows.Count} sameIndex={fromIndex == toIndex}");
             InvokeAsync(StateHasChanged);
             return;
         }
 
-        var item = _rows[fromIndex];
-        Console.WriteLine($"[CLM] Moving row '{item.Name}' (isStatus={item.IsStatus}) from {fromIndex} to {toIndex}");
-
-        _rows.RemoveAt(fromIndex);
-        _rows.Insert(Math.Clamp(toIndex, 0, _rows.Count), item);
-
-        Console.WriteLine($"[CLM] New _rows order: {string.Join(", ", _rows.Select(r => r.Name))}");
+        // Dans l'onglet Status, les built-in sont draggables mais ne peuvent pas
+        // passer après les user-created status-type items (optionnel, on laisse libre).
+        var item = activeRows[fromIndex];
+        activeRows.RemoveAt(fromIndex);
+        activeRows.Insert(Math.Clamp(toIndex, 0, activeRows.Count), item);
 
         SaveAll();
         InvokeAsync(StateHasChanged);
     }
-
 
     private const int ROW_H = 64;
 
     // ── Color picker ─────────────────────────────────────────────────────
     private void OpenPickerForNewRow()
     {
-        _pickerAnchor    = _newSwatchRef;
+        _pickerAnchor    = _activeTab == "status" ? _newStatusSwatchRef : _newCustomSwatchRef;
         _pickerInitColor = _newColor ?? "#6366f1";
         _pickerCallback  = c => { _newColor = c; StateHasChanged(); };
         _pickerOpen      = true;
         StateHasChanged();
     }
 
-    private void OpenPickerForRow(int ri, string currentColor, Action<string> callback)
+    private void OpenPickerForRow(int ri, string currentColor, bool isStatusTab, Action<string> callback)
     {
-        _pickerAnchor    = _swatchRefs[ri];
+        _pickerAnchor    = isStatusTab ? _statusSwatchRefs[ri] : _customSwatchRefs[ri];
         _pickerInitColor = currentColor;
         _pickerCallback  = callback;
         _pickerOpen      = true;
@@ -309,20 +452,22 @@
     // ── Persist ──────────────────────────────────────────────────────────
     private void SaveAll()
     {
-        var statusRows = _rows.Where(r => r.IsStatus).Select(r => r.Status!).ToList();
-        for (int i = 0; i < statusRows.Count; i++) statusRows[i].Order = i;
+        // 1. Save built-in status settings (keep their Order based on position in _statusRows)
+        var statusSettings = _statusRows.Where(r => r.IsBuiltIn).Select(r => r.Status!).ToList();
+        int statusOrder = 0;
+        foreach (var s in statusSettings) s.Order = statusOrder++;
+        UserListService.SaveStatusSettings(statusSettings);
 
-        var customRows = _rows.Where(r => !r.IsStatus).Select(r => r.Custom!).ToList();
-        for (int i = 0; i < customRows.Count; i++) customRows[i].Order = i;
+        // 2. Save all custom lists (status-type + regular)
+        var statusTypeCustom = _statusRows.Where(r => !r.IsBuiltIn).Select(r => r.Custom!).ToList();
+        int stOrder = 0;
+        foreach (var c in statusTypeCustom) { c.Order = stOrder++; c.IsStatusList = true; }
 
-        Console.WriteLine($"[CLM] SaveAll — customRows to save: {string.Join(", ", customRows.Select(c => $"{c.Name}(Order={c.Order})"))}");
+        var regularCustom = _customRows.Select(r => r.Custom!).ToList();
+        int rcOrder = 0;
+        foreach (var c in regularCustom) { c.Order = rcOrder++; c.IsStatusList = false; }
 
-        UserListService.SaveStatusSettings(statusRows);
-        UserListService.SaveCustomLists(customRows);
-
-        // Vérifie ce que le service retourne immédiatement après save
-        var check = UserListService.GetCustomLists();
-        Console.WriteLine($"[CLM] After save, GetCustomLists() returns: {string.Join(", ", check.Select(c => $"{c.Name}(Order={c.Order})"))}");
+        UserListService.SaveCustomLists(statusTypeCustom.Concat(regularCustom).ToList());
     }
 
     // ── Add / Delete ─────────────────────────────────────────────────────
@@ -332,17 +477,22 @@
 
         string color = _newColor ?? await GetRandomColorAsync();
 
-        _rows.Add(new Row
+        var newItem = new UserCustomList
         {
-            IsStatus = false,
-            Custom   = new UserCustomList
-            {
-                Id    = Guid.NewGuid().ToString(),
-                Name  = _newName.Trim(),
-                Color = color,
-                Order = _rows.Count
-            }
-        });
+            Id          = Guid.NewGuid().ToString(),
+            Name        = _newName.Trim(),
+            Color       = color,
+            IsStatusList = _activeTab == "status",
+            Order       = _activeTab == "status"
+                              ? _statusRows.Count(r => !r.IsBuiltIn)
+                              : _customRows.Count
+        };
+
+        if (_activeTab == "status")
+            _statusRows.Add(new Row { IsBuiltIn = false, Custom = newItem });
+        else
+            _customRows.Add(new Row { IsBuiltIn = false, Custom = newItem });
+
         SaveAll();
         _newName  = "";
         _newColor = null;
@@ -355,10 +505,18 @@
         catch { return "#6366f1"; }
     }
 
-    private void DeleteRow(int idx)
+    private void DeleteStatusRow(int idx)
     {
-        if (idx < 0 || idx >= _rows.Count || _rows[idx].IsStatus) return;
-        _rows.RemoveAt(idx);
+        if (idx < 0 || idx >= _statusRows.Count || _statusRows[idx].IsBuiltIn) return;
+        _statusRows.RemoveAt(idx);
+        SaveAll();
+        StateHasChanged();
+    }
+
+    private void DeleteCustomRow(int idx)
+    {
+        if (idx < 0 || idx >= _customRows.Count) return;
+        _customRows.RemoveAt(idx);
         SaveAll();
         StateHasChanged();
     }
