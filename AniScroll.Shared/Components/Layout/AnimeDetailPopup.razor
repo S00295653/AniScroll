@@ -528,7 +528,16 @@
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">STATUS</span>
 
-                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")" @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
+                    @{
+                        string _triggerBorderColor = editStatus.HasValue
+                            ? GetStatusHexColor(editStatus.Value)
+                            : _editCustomListIds.Any()
+                                ? (UserListService.GetCustomLists().FirstOrDefault(c => _editCustomListIds.Contains(c.Id))?.Color ?? "rgba(255,255,255,0.1)")
+                                : "rgba(255,255,255,0.1)";
+                    }
+                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
+                            style="border-color: @_triggerBorderColor;"
+                            @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @{
                             var _triggerCl = !editStatus.HasValue && _editCustomListIds.Any()
                                 ? UserListService.GetCustomLists().FirstOrDefault(c => _editCustomListIds.Contains(c.Id))
@@ -596,8 +605,6 @@
                             }
                             @if (customLists.Any())
                             {
-                                <div style="height:1px;background:rgba(255,255,255,0.07);margin:4px 0;"></div>
-
                                 @foreach (var cl in customLists)
                                 {
                                     bool isInCl = _editCustomListIds.Contains(cl.Id);
