@@ -266,127 +266,125 @@ window.cpRandomSwatchColor = function () {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  ROW DRAG — live visual reorder + scroll-aware
+//
+//  FIX: On touch devices both `pointerup` AND `touchend` fire for the
+//  same finger-lift. Without a guard, `OnDragComplete` was called twice
+//  with identical indices — the second call immediately undid the first
+//  reorder, making the list appear to snap back to its original order.
+//  The `ended` flag ensures the completion callback fires exactly once.
 // ═══════════════════════════════════════════════════════════════════════
 
-window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, rowH) {
-    const allRows = Array.from(bodyEl.querySelectorAll('.clm2-row[data-row-index]'));
-    const count   = allRows.length;
-    if (!count) return;
+window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
+    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
+    if (!rows[fromIndex]) return;
 
-    const draggedEl = allRows.find(r => parseInt(r.dataset.rowIndex) === fromIndex);
-    if (!draggedEl) return;
-
-    const draggedRect = draggedEl.getBoundingClientRect();
-
-    // Ghost clone
-    const ghost = draggedEl.cloneNode(true);
-    Object.assign(ghost.style, {
-        position:      'fixed',
-        left:          draggedRect.left   + 'px',
-        top:           draggedRect.top    + 'px',
-        width:         draggedRect.width  + 'px',
-        height:        draggedRect.height + 'px',
-        zIndex:        '99999',
-        pointerEvents: 'none',
-        opacity:       '0.93',
-        boxShadow:     '0 8px 32px rgba(0,0,0,0.55)',
-        borderRadius:  '10px',
-        background:    '#2a2a3a',
-        transition:    'none',
-        willChange:    'top',
-    });
-    document.body.appendChild(ghost);
-
-    draggedEl.style.opacity       = '0';
-    draggedEl.style.pointerEvents = 'none';
-
-    const halfH = draggedRect.height / 2;
-    let targetIndex = fromIndex;
-    let lastClientY = draggedRect.top + halfH;
-
-    // FIX: measure the new-row height so rows below it are offset correctly.
-    // The ghost must never go above row index 0 (the first sortable row).
-    const newRowEl = bodyEl.querySelector('.clm2-row-new');
-    const newRowH  = newRowEl ? newRowEl.offsetHeight : 0;
-
-    const SCROLL_ZONE = 60, SCROLL_SPEED = 8;
-    let scrollRaf = null;
-
-    const applyShifts = () => {
-        // Ghost centre in scroll-space (bodyEl.scrollTop accounts for current scroll)
-        const bodyTopScrolled     = bodyEl.getBoundingClientRect().top - bodyEl.scrollTop;
-        const ghostCentreInScroll = lastClientY - bodyTopScrolled;
-
-        // Natural (un-transformed) centre of sortable row i:
-        //   newRowH  = height of the "add new list" row (offset below it)
-        //   i*rowH   = row i starts at newRowH + i*rowH
-        let best = fromIndex, bestDist = Infinity;
-        for (let i = 0; i < count; i++) {
-            const naturalCentre = newRowH + i * rowH + rowH / 2;
-            const dist = Math.abs(ghostCentreInScroll - naturalCentre);
-            if (dist < bestDist) { bestDist = dist; best = i; }
+    // ── Top boundary: ghost must never appear above the "new list" row ──
+    let minTopPx = 0;
+    try {
+        if (topBoundaryEl) {
+            const boundRect = topBoundaryEl.getBoundingClientRect();
+            const bodyRect  = body.getBoundingClientRect();
+            minTopPx = boundRect.bottom - bodyRect.top + body.scrollTop;
         }
-        // Clamp: never above row 0, never below last row
-        targetIndex = Math.max(0, Math.min(count - 1, best));
+    } catch (e) { /* ignore */ }
 
-        // FIX: also clamp the ghost visual so it never appears above clm2-row-new
-        const minGhostTop = bodyEl.getBoundingClientRect().top + newRowH;
-        const maxGhostTop = bodyEl.getBoundingClientRect().bottom - rowH;
-        const clampedGhostTop = Math.max(minGhostTop, Math.min(maxGhostTop, lastClientY - halfH));
-        ghost.style.top = clampedGhostTop + 'px';
+    const dragged   = rows[fromIndex];
+    const origRect  = dragged.getBoundingClientRect();
+    const bodyRect  = body.getBoundingClientRect();
 
-        // Shift siblings
-        allRows.forEach((row, i) => {
-            if (i === fromIndex) { row.style.transform = ''; return; }
-            let shift = 0;
-            if (fromIndex < targetIndex) {
-                if (i > fromIndex && i <= targetIndex) shift = -rowH;
-            } else {
-                if (i >= targetIndex && i < fromIndex) shift = +rowH;
-            }
-            row.style.transition = 'transform 0.12s ease';
-            row.style.transform  = shift ? `translateY(${shift}px)` : '';
-        });
-    };
+    // Lift the dragged row out of normal flow
+    const origIndex   = fromIndex;
+    let   currentY    = origRect.top - bodyRect.top + body.scrollTop;
 
-    const scrollTick = () => {
-        const br     = bodyEl.getBoundingClientRect();
-        const dTop   = lastClientY - br.top;
-        const dBot   = br.bottom - lastClientY;
-        const maxTop = bodyEl.scrollHeight - bodyEl.clientHeight;
-        if (dTop < SCROLL_ZONE && bodyEl.scrollTop > 0) {
-            bodyEl.scrollTop -= SCROLL_SPEED * Math.max(0.05, 1 - dTop / SCROLL_ZONE);
-            applyShifts();
-        } else if (dBot < SCROLL_ZONE && bodyEl.scrollTop < maxTop) {
-            bodyEl.scrollTop += SCROLL_SPEED * Math.max(0.05, 1 - dBot / SCROLL_ZONE);
-            applyShifts();
-        }
-        scrollRaf = requestAnimationFrame(scrollTick);
-    };
-    scrollRaf = requestAnimationFrame(scrollTick);
+    dragged.style.position  = 'absolute';
+    dragged.style.left      = '0';
+    dragged.style.right     = '0';
+    dragged.style.zIndex    = '100';
+    dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    dragged.style.top       = currentY + 'px';
+    body.style.position     = 'relative';
 
-    const onMove = (clientX, clientY) => {
-        lastClientY = clientY;
-        applyShifts(); // ghost.style.top set inside applyShifts with clamping
-    };
+    // Placeholder to maintain layout height while item is floating
+    const placeholder        = document.createElement('div');
+    placeholder.style.height    = rowH + 'px';
+    placeholder.style.flexShrink = '0';
+    body.insertBefore(placeholder, dragged);
 
-    const onEnd = () => {
-        cancelAnimationFrame(scrollRaf);
+    let pointerStartY  = null;
+    let dragStartBodyY = currentY;
+    let toIndex        = fromIndex;
+
+    // ── Guard: ensure onEnd() fires at most once ──────────────────────
+    let ended = false;
+
+    function onEnd() {
+        if (ended) return;
+        ended = true;
+
+        // Remove all listeners first
         document.removeEventListener('pointermove',   onPM);
         document.removeEventListener('pointerup',     onPU);
         document.removeEventListener('pointercancel', onPU);
         document.removeEventListener('touchmove',     onTM);
         document.removeEventListener('touchend',      onTE);
-        allRows.forEach(r => { r.style.transform = ''; r.style.transition = ''; });
-        draggedEl.style.opacity       = '';
-        draggedEl.style.pointerEvents = '';
-        ghost.remove();
-        dotNet.invokeMethodAsync('OnDragComplete', fromIndex, targetIndex);
-    };
 
-    const onPM = e => onMove(e.clientX, e.clientY);
+        // Restore dragged element to normal flow
+        dragged.style.position  = '';
+        dragged.style.left      = '';
+        dragged.style.right     = '';
+        dragged.style.zIndex    = '';
+        dragged.style.boxShadow = '';
+        dragged.style.top       = '';
+        body.style.position     = '';
+        placeholder.remove();
+
+        try { dragged.releasePointerCapture && dragged.releasePointerCapture(pointerId); } catch (_) {}
+
+        // Notify Blazor — called exactly once
+        dotNet.invokeMethodAsync('OnDragComplete', origIndex, toIndex);
+    }
+
+    function onMove(e) {
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        // Capture start position on the very first move event
+        if (pointerStartY === null) { pointerStartY = clientY; return; }
+
+        const delta  = clientY - pointerStartY;
+        const newTop = Math.max(minTopPx, dragStartBodyY + delta);
+        dragged.style.top = newTop + 'px';
+
+        // Ghost centre in body-scroll space
+        const centreY = newTop + rowH / 2;
+
+        // Fresh query so placeholder-shifted offsetTops are accurate
+        const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
+                               .filter(r => r !== dragged);
+
+        // Count how many rows have their midpoint above our ghost centre
+        let best = 0;
+        for (let i = 0; i < otherRows.length; i++) {
+            if (centreY > otherRows[i].offsetTop + rowH / 2) best = i + 1;
+        }
+        toIndex = best;
+
+        // Move placeholder to the target drop position
+        const insertBefore = otherRows[best] || null;
+        if (insertBefore) {
+            body.insertBefore(placeholder, insertBefore);
+        } else {
+            const lastRow = otherRows[otherRows.length - 1];
+            if (lastRow && lastRow.nextSibling) {
+                body.insertBefore(placeholder, lastRow.nextSibling);
+            } else {
+                body.appendChild(placeholder);
+            }
+        }
+    }
+
+    const onPM = e => onMove(e);
     const onPU = () => onEnd();
-    const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e); } };
     const onTE = () => onEnd();
 
     document.addEventListener('pointermove',   onPM);
@@ -394,7 +392,10 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     document.addEventListener('pointercancel', onPU);
     document.addEventListener('touchmove',     onTM, { passive: false });
     document.addEventListener('touchend',      onTE);
+
+    try { dragged.setPointerCapture(pointerId); } catch (_) {}
 };
+
 
 // ═══════════════════════════════════════════════════════════════════════
 //  MODAL SCROLL — stop momentum + edge swipe intercept
@@ -487,110 +488,4 @@ window.removeWheelScrollPrevention = function (el) {
     if (!el || !el._noWheel) return;
     el.removeEventListener('wheel', el._noWheel);
     delete el._noWheel;
-};
-
-// ── Fix 2: startRowDrag – add topBoundaryEl so rows can't be dragged above the new-list row ──
-// Replace (or patch) your existing startRowDrag with this version.
-// New signature: startRowDrag(dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl)
-window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
-    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
-    if (!rows[fromIndex]) return;
-
-    // Pixel boundary: the bottom edge of the "new list" row.
-    // Fall back to 0 if topBoundaryEl is not provided or not in DOM.
-    let minTopPx = 0;
-    try {
-        if (topBoundaryEl) {
-            const boundRect = topBoundaryEl.getBoundingClientRect();
-            const bodyRect  = body.getBoundingClientRect();
-            minTopPx = boundRect.bottom - bodyRect.top + body.scrollTop;
-        }
-    } catch (e) { /* ignore */ }
-
-    const dragged   = rows[fromIndex];
-    const origRect  = dragged.getBoundingClientRect();
-    const bodyRect  = body.getBoundingClientRect();
-
-    // Lift the dragged row out of flow
-    const origIndex = fromIndex;
-    let   currentY  = origRect.top - bodyRect.top + body.scrollTop;
-
-    dragged.style.position  = 'absolute';
-    dragged.style.left      = '0';
-    dragged.style.right     = '0';
-    dragged.style.zIndex    = '100';
-    dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
-    dragged.style.top       = currentY + 'px';
-    body.style.position     = 'relative';
-
-    // Create placeholder
-    const placeholder       = document.createElement('div');
-    placeholder.style.height = rowH + 'px';
-    placeholder.style.flexShrink = '0';
-    body.insertBefore(placeholder, dragged);
-
-    let pointerStartY = null;
-    let dragStartBodyY = currentY;
-    let toIndex = fromIndex;
-
-    function onMove(e) {
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        if (pointerStartY === null) { pointerStartY = clientY; return; }
-
-        const delta   = clientY - pointerStartY;
-        const newTop  = Math.max(minTopPx, dragStartBodyY + delta);
-        dragged.style.top = newTop + 'px';
-
-        // Recalculate target index
-        const centreY = newTop + rowH / 2;
-        const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
-                               .filter(r => r !== dragged);
-
-        let best = 0;
-        for (let i = 0; i < otherRows.length; i++) {
-            const r = otherRows[i];
-            const rTop = r.offsetTop;
-            if (centreY > rTop + rowH / 2) best = i + 1;
-        }
-        // Account for that placeholder shifts indices
-        toIndex = best;
-
-        // Move placeholder to indicate drop position
-        const insertBefore = otherRows[best] || null;
-        if (insertBefore) {
-            body.insertBefore(placeholder, insertBefore);
-        } else {
-            // Append after last real row (but before anything after)
-            const lastRow = otherRows[otherRows.length - 1];
-            if (lastRow && lastRow.nextSibling) {
-                body.insertBefore(placeholder, lastRow.nextSibling);
-            } else {
-                body.appendChild(placeholder);
-            }
-        }
-    }
-
-    function onUp() {
-        dragged.style.position  = '';
-        dragged.style.left      = '';
-        dragged.style.right     = '';
-        dragged.style.zIndex    = '';
-        dragged.style.boxShadow = '';
-        dragged.style.top       = '';
-        body.style.position     = '';
-        placeholder.remove();
-
-        try { dragged.releasePointerCapture && dragged.releasePointerCapture(pointerId); } catch(_) {}
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup',   onUp);
-        document.removeEventListener('touchmove',   onMove);
-        document.removeEventListener('touchend',    onUp);
-
-        dotNet.invokeMethodAsync('OnDragComplete', origIndex, toIndex);
-    }
-
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup',   onUp);
-
-    try { dragged.setPointerCapture(pointerId); } catch(_) {}
 };
