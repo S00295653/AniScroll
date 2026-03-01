@@ -104,7 +104,7 @@
                         activeCustomListId != null
                             ? UserListService.GetEntriesForCustomList(activeCustomListId)
                             : activeStatus == null
-                                ? UserListService.GetAll().Where(e => e.Status.HasValue).ToList()
+                                ? UserListService.GetAll().Where(e => e.Status.HasValue || e.CustomListIds.Any()).ToList()
                                 : UserListService.GetByStatus(activeStatus.Value);
                 }
 

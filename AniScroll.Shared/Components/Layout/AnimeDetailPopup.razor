@@ -543,7 +543,7 @@
                                 : "rgba(255,255,255,0.1)";
                     }
                     <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
-                            style="border-color: @_triggerBorderColor;"
+                            style="border-color: @_triggerBorderColor; @(!editStatus.HasValue && _editCustomListIds.Any() ? $"color:{_triggerBorderColor};" : "")"
                             @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @{
                             var _triggerCl = !editStatus.HasValue && _editCustomListIds.Any()
