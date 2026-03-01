@@ -303,7 +303,6 @@
     background: linear-gradient(135deg,
         color-mix(in srgb, var(--status-color) 28%, #000000),
         color-mix(in srgb, var(--status-color) 13%, #000000));
-    border: 1px solid color-mix(in srgb, var(--status-color) 38%, transparent);
     color: var(--status-color);
     box-shadow: 0 3px 12px color-mix(in srgb, var(--status-color) 22%, transparent);
 }

@@ -56,7 +56,7 @@
                 @foreach (var tab in _tabs)
                 {
                     int cnt = tab.Status == null
-                        ? UserListService.GetAll().Count(e => e.Status.HasValue)
+                        ? UserListService.GetAll().Count(e => e.Status.HasValue || e.CustomListIds.Any())
                         : UserListService.Count(tab.Status.Value);
 
                     bool isActive = activeStatus == tab.Status && activeCustomListId == null;
