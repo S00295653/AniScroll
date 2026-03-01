@@ -133,90 +133,164 @@ window.setInputValue = function (element, value) {
 };
 
 window.startRowDrag = function (dotnetRef, panelEl, pointerId, dragIdx, rowHeight) {
-    // Collect all non-"new" rows inside the panel body
-    const rows = Array.from(panelEl.querySelectorAll('.clm-body .clm2-row:not(.clm2-row-new)'));
+    const rows = Array.from(
+        panelEl.querySelectorAll('.clm-body .clm2-row:not(.clm2-row-new)')
+    );
     if (!rows[dragIdx]) return;
 
-    const dragRow  = rows[dragIdx];
+    const dragRow   = rows[dragIdx];
     let   targetIdx = dragIdx;
-    let   startY   = null;           // set on first pointermove
+    let   startY    = null;   // calibrated on first move so there is no jump
 
-    // Capture the pointer on the dragged row so events keep firing even when
-    // the pointer moves outside the element.
+    // Capture the pointer on the dragged row so pointermove / pointerup keep
+    // firing even when the pointer moves off the element quickly.
     dragRow.setPointerCapture(pointerId);
 
-    // Elevate the dragged row visually
-    dragRow.style.transition  = 'none';
-    dragRow.style.zIndex      = '10';
-    dragRow.style.boxShadow   = '0 8px 32px rgba(0,0,0,0.5)';
+    dragRow.style.transition = 'none';
+    dragRow.style.zIndex     = '100';
+    dragRow.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+    dragRow.style.opacity    = '0.96';
+
+    function applyShifts() {
+        rows.forEach((row, i) => {
+            if (i === dragIdx) return;
+            row.style.transition = 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)';
+            if (dragIdx < targetIdx && i > dragIdx && i <= targetIdx) {
+                row.style.transform = `translateY(${-rowHeight}px)`;
+            } else if (dragIdx > targetIdx && i >= targetIdx && i < dragIdx) {
+                row.style.transform = `translateY(${rowHeight}px)`;
+            } else {
+                row.style.transform = 'translateY(0px)';
+            }
+        });
+    }
 
     function onMove(e) {
         if (startY === null) startY = e.clientY;
         const dy = e.clientY - startY;
 
-        // Move the dragged row with the pointer
+        // The dragged row follows the pointer exactly, no transition.
         dragRow.style.transform = `translateY(${dy}px)`;
 
-        // Decide which slot it hovers over
-        const newTarget = Math.round(dragIdx + dy / rowHeight);
-        const clamped   = Math.max(0, Math.min(rows.length - 1, newTarget));
-
+        // Recalculate the landing slot.
+        const raw     = dragIdx + dy / rowHeight;
+        const clamped = Math.max(0, Math.min(rows.length - 1, Math.round(raw)));
         if (clamped !== targetIdx) {
             targetIdx = clamped;
-
-            // Shift sibling rows to open a gap
-            rows.forEach((row, i) => {
-                if (i === dragIdx) return;
-                row.style.transition = 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)';
-                if (dragIdx < targetIdx && i > dragIdx && i <= targetIdx) {
-                    row.style.transform = `translateY(${-rowHeight}px)`;
-                } else if (dragIdx > targetIdx && i >= targetIdx && i < dragIdx) {
-                    row.style.transform = `translateY(${rowHeight}px)`;
-                } else {
-                    row.style.transform = 'translateY(0px)';
-                }
-            });
+            applyShifts();
         }
     }
 
-    function onUp() {
-        dragRow.removeEventListener('pointermove', onMove);
-        dragRow.removeEventListener('pointerup',   onUp);
-        dragRow.removeEventListener('pointercancel', onUp);
-
-        // Reset all inline transforms — Blazor will re-render the correct order
+    function cleanup() {
+        dragRow.removeEventListener('pointermove',   onMove);
+        dragRow.removeEventListener('pointerup',     onUp);
+        dragRow.removeEventListener('pointercancel', onCancel);
         rows.forEach(row => {
             row.style.transform  = '';
             row.style.transition = '';
             row.style.zIndex     = '';
             row.style.boxShadow  = '';
+            row.style.opacity    = '';
         });
+    }
 
-        // Tell Blazor to commit the reorder
+    function onUp() {
+        cleanup();
         dotnetRef.invokeMethodAsync('OnDragComplete', dragIdx, targetIdx);
+    }
+
+    function onCancel() {
+        cleanup();
+        dotnetRef.invokeMethodAsync('OnDragComplete', dragIdx, dragIdx);
     }
 
     dragRow.addEventListener('pointermove',   onMove);
     dragRow.addEventListener('pointerup',     onUp);
-    dragRow.addEventListener('pointercancel', onUp);
+    dragRow.addEventListener('pointercancel', onCancel);
 };
 
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Returns the bounding rect of an element plus the current viewport dimensions.
-// Used by CustomListManager to position the color picker above the swatch.
+//  JSCOLORPICKER  (jscolorpicker.com, button style, no alpha)
+//
+//  showClmColorPicker(anchorEl, currentColor, dotnetRef)
+//    • Loads the library once (ES module from jscolorpicker.com CDN).
+//    • Opens the picker dialog anchored ABOVE the swatch element.
+//    • prompt() returns a Promise — resolves when the user picks or cancels.
+//    • Calls dotnetRef.OnColorSelected(hexString) on confirmation.
 // ─────────────────────────────────────────────────────────────────────────────
+let _clmPickerClass = null;
+
+async function loadJsColorPicker() {
+    if (_clmPickerClass) return _clmPickerClass;
+
+    // Base stylesheet
+    if (!document.getElementById('jscp-stylesheet')) {
+        const link = document.createElement('link');
+        link.id   = 'jscp-stylesheet';
+        link.rel  = 'stylesheet';
+        link.href = 'https://www.jscolorpicker.com/css/colorpicker.min.css';
+        document.head.appendChild(link);
+    }
+
+    // Hide the alpha slider row
+    if (!document.getElementById('jscp-no-alpha')) {
+        const style = document.createElement('style');
+        style.id    = 'jscp-no-alpha';
+        style.textContent = `
+            .cp-alpha-group,
+            .cp-alpha-slider,
+            [class*="cp-alpha"] { display: none !important; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Match the app's dark theme
+    if (!document.documentElement.hasAttribute('data-cp-theme')) {
+        document.documentElement.setAttribute('data-cp-theme', 'dark');
+    }
+
+    const mod       = await import('https://www.jscolorpicker.com/js/colorpicker.min.js');
+    _clmPickerClass = mod.default;
+    return _clmPickerClass;
+}
+
+window.showClmColorPicker = async function (anchorEl, currentColor, dotnetRef) {
+    if (!anchorEl) return;
+
+    let ColorPicker;
+    try {
+        ColorPicker = await loadJsColorPicker();
+    } catch (err) {
+        console.error('[AniScroll] Failed to load jscolorpicker:', err);
+        return;
+    }
+
+    // headless: no toggle rendered; dialogPlacement: dialog appears above anchor.
+    // prompt(true) opens dialog, resolves Promise when closed, then destroys instance.
+    const picker = new ColorPicker(anchorEl, {
+        headless        : true,
+        dialogPlacement : 'top',
+        color           : currentColor || null,
+    });
+
+    const color = await picker.prompt(true);
+
+    if (color !== null && color !== undefined) {
+        dotnetRef.invokeMethodAsync('OnColorSelected', color.string('hex'));
+    }
+};
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Misc helpers used elsewhere in the app
+// ─────────────────────────────────────────────────────────────────────────────
+
 window.getElementBoundingRect = function (el) {
     const r = el.getBoundingClientRect();
     return {
-        top:            r.top,
-        bottom:         r.bottom,
-        left:           r.left,
-        right:          r.right,
-        width:          r.width,
-        height:         r.height,
-        viewportWidth:  window.innerWidth,
-        viewportHeight: window.innerHeight
+        top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+        width: r.width, height: r.height,
+        viewportWidth: window.innerWidth, viewportHeight: window.innerHeight
     };
 };
-
-
