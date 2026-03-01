@@ -154,6 +154,18 @@ window.cpGetRect = function (el) {
     return { left: r.left, top: r.top, width: r.width, height: r.height };
 };
 
+/**
+ * Position the color picker popup near an anchor element.
+ *
+ * KEY FIX: instead of trusting the estimated popupH passed from Blazor
+ * (which is wrong because the popup hasn't painted yet), we find the
+ * actual .cp-popup element in the DOM and measure it directly.
+ * The popup must be in the DOM (even off-screen) before this is called.
+ *
+ * - Prefers BELOW the anchor (gap 8px).
+ * - Falls back to ABOVE: BOTTOM of popup = TOP of anchor - gap.
+ * - Clamps horizontally within viewport.
+ */
 window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const MARGIN = 12;
     const GAP    = 8;
@@ -162,6 +174,7 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
+    // Measure the real rendered popup height instead of the estimate
     const popupEl = document.querySelector('.cp-popup');
     const popupH  = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
     const w       = Math.min(popupW, vw - 2 * MARGIN);
@@ -171,9 +184,11 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
 
     let top;
     if (spaceBelow >= popupH || spaceBelow >= spaceAbove) {
+        // Place below
         top = a.bottom + GAP;
         if (top + popupH > vh - MARGIN) top = vh - MARGIN - popupH;
     } else {
+        // Place above: BOTTOM of popup = TOP of anchor - gap
         top = a.top - GAP - popupH;
         if (top < MARGIN) top = MARGIN;
     }
@@ -237,6 +252,7 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
 
 window.cpStopDrag = function () { _cpSvActive = false; _cpHueActive = false; };
 
+// Random vivid swatch color (used when user adds a list without picking a color)
 window.cpRandomSwatchColor = function () {
     const swatches = [
         '#ef4444','#f97316','#f59e0b','#eab308',
@@ -252,7 +268,7 @@ window.cpRandomSwatchColor = function () {
 //  ROW DRAG — live visual reorder + scroll-aware
 // ═══════════════════════════════════════════════════════════════════════
 
-window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, rowH, topBoundaryEl) {
+window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, rowH) {
     const allRows = Array.from(bodyEl.querySelectorAll('.clm2-row[data-row-index]'));
     const count   = allRows.length;
     if (!count) return;
@@ -288,7 +304,8 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     let targetIndex = fromIndex;
     let lastClientY = draggedRect.top + halfH;
 
-    // Measure the new-row height so ghost cannot go above first sortable row
+    // FIX: measure the new-row height so rows below it are offset correctly.
+    // The ghost must never go above row index 0 (the first sortable row).
     const newRowEl = bodyEl.querySelector('.clm2-row-new');
     const newRowH  = newRowEl ? newRowEl.offsetHeight : 0;
 
@@ -296,20 +313,23 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     let scrollRaf = null;
 
     const applyShifts = () => {
-        // Ghost centre in scroll-space
+        // Ghost centre in scroll-space (bodyEl.scrollTop accounts for current scroll)
         const bodyTopScrolled     = bodyEl.getBoundingClientRect().top - bodyEl.scrollTop;
         const ghostCentreInScroll = lastClientY - bodyTopScrolled;
 
-        // Find closest row by natural centre position
+        // Natural (un-transformed) centre of sortable row i:
+        //   newRowH  = height of the "add new list" row (offset below it)
+        //   i*rowH   = row i starts at newRowH + i*rowH
         let best = fromIndex, bestDist = Infinity;
         for (let i = 0; i < count; i++) {
             const naturalCentre = newRowH + i * rowH + rowH / 2;
             const dist = Math.abs(ghostCentreInScroll - naturalCentre);
             if (dist < bestDist) { bestDist = dist; best = i; }
         }
+        // Clamp: never above row 0, never below last row
         targetIndex = Math.max(0, Math.min(count - 1, best));
 
-        // Clamp ghost visual so it never appears above the new-list row
+        // FIX: also clamp the ghost visual so it never appears above clm2-row-new
         const minGhostTop = bodyEl.getBoundingClientRect().top + newRowH;
         const maxGhostTop = bodyEl.getBoundingClientRect().bottom - rowH;
         const clampedGhostTop = Math.max(minGhostTop, Math.min(maxGhostTop, lastClientY - halfH));
@@ -347,7 +367,7 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
 
     const onMove = (clientX, clientY) => {
         lastClientY = clientY;
-        applyShifts();
+        applyShifts(); // ghost.style.top set inside applyShifts with clamping
     };
 
     const onEnd = () => {
@@ -376,30 +396,53 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     document.addEventListener('touchend',      onTE);
 };
 
-
 // ═══════════════════════════════════════════════════════════════════════
 //  MODAL SCROLL — stop momentum + edge swipe intercept
 // ═══════════════════════════════════════════════════════════════════════
 
+/**
+ * Stop iOS momentum scroll on an element immediately.
+ * Called from Blazor when the list-editor opens or when we need to
+ * kill scroll inertia before starting an edge swipe.
+ */
 window.stopMomentumScroll = function (el) {
     if (!el) return;
+    // Reading and re-setting scrollTop immediately stops iOS inertia
     el.scrollTop = el.scrollTop;
 };
 
+/**
+ * Register a native (synchronous) touchstart listener on the
+ * modal-scroll-container that:
+ *   1. Stops momentum scroll when the finger lands on the LEFT EDGE (<= 40px).
+ *   2. Prevents the scroll container from stealing touches during an edge swipe.
+ *
+ * Must be called once after the modal opens (from OnAfterRenderAsync).
+ * Returns a cleanup function — call window.unregisterEdgeSwipeInterceptor()
+ * when the modal closes.
+ *
+ * @param {Element} scrollEl - the .modal-scroll-container element
+ * @param {number}  edgeZone - width of the edge zone in px (default 40)
+ */
 let _edgeSwipeCleanup = null;
 
 window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
     if (!scrollEl) return;
     edgeZone = edgeZone || 40;
 
+    // Remove previous listener if any
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 
     const onTouchStart = (e) => {
         if (!e.touches.length) return;
         const x = e.touches[0].clientX;
         if (x <= edgeZone) {
+            // Kill momentum scroll immediately (synchronous, no await)
             scrollEl.scrollTop = scrollEl.scrollTop;
+            // Prevent the scroll container from handling this touch
+            // so Blazor's ontouchstart fires correctly
             scrollEl.style.overflowY = 'hidden';
+            // Restore after a short delay so normal scroll still works later
             const restore = () => {
                 scrollEl.style.overflowY = '';
                 document.removeEventListener('touchend',    restore);
@@ -410,6 +453,8 @@ window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
         }
     };
 
+    // passive: false would let us preventDefault, but we only need to stop scroll capture.
+    // We use capture:true so we run BEFORE the scroll container's own handler.
     scrollEl.addEventListener('touchstart', onTouchStart, { passive: true, capture: true });
 
     _edgeSwipeCleanup = () => {
@@ -422,9 +467,10 @@ window.unregisterEdgeSwipeInterceptor = function () {
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 };
 
-window.preventWheelScroll = function (el) {
+window.preventWheelScroll = function (el) { 
     if (!el || el._noWheel) return;
     el._noWheel = function (e) {
+        // Allow wheel on any scrollable child (e.g. le-dd-list)
         let node = e.target;
         while (node && node !== el) {
             const oy = window.getComputedStyle(node).overflowY;
@@ -437,9 +483,114 @@ window.preventWheelScroll = function (el) {
     };
     el.addEventListener('wheel', el._noWheel, { passive: false });
 };
-
 window.removeWheelScrollPrevention = function (el) {
     if (!el || !el._noWheel) return;
     el.removeEventListener('wheel', el._noWheel);
     delete el._noWheel;
+};
+
+// ── Fix 2: startRowDrag – add topBoundaryEl so rows can't be dragged above the new-list row ──
+// Replace (or patch) your existing startRowDrag with this version.
+// New signature: startRowDrag(dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl)
+window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
+    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
+    if (!rows[fromIndex]) return;
+
+    // Pixel boundary: the bottom edge of the "new list" row.
+    // Fall back to 0 if topBoundaryEl is not provided or not in DOM.
+    let minTopPx = 0;
+    try {
+        if (topBoundaryEl) {
+            const boundRect = topBoundaryEl.getBoundingClientRect();
+            const bodyRect  = body.getBoundingClientRect();
+            minTopPx = boundRect.bottom - bodyRect.top + body.scrollTop;
+        }
+    } catch (e) { /* ignore */ }
+
+    const dragged   = rows[fromIndex];
+    const origRect  = dragged.getBoundingClientRect();
+    const bodyRect  = body.getBoundingClientRect();
+
+    // Lift the dragged row out of flow
+    const origIndex = fromIndex;
+    let   currentY  = origRect.top - bodyRect.top + body.scrollTop;
+
+    dragged.style.position  = 'absolute';
+    dragged.style.left      = '0';
+    dragged.style.right     = '0';
+    dragged.style.zIndex    = '100';
+    dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    dragged.style.top       = currentY + 'px';
+    body.style.position     = 'relative';
+
+    // Create placeholder
+    const placeholder       = document.createElement('div');
+    placeholder.style.height = rowH + 'px';
+    placeholder.style.flexShrink = '0';
+    body.insertBefore(placeholder, dragged);
+
+    let pointerStartY = null;
+    let dragStartBodyY = currentY;
+    let toIndex = fromIndex;
+
+    function onMove(e) {
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        if (pointerStartY === null) { pointerStartY = clientY; return; }
+
+        const delta   = clientY - pointerStartY;
+        const newTop  = Math.max(minTopPx, dragStartBodyY + delta);
+        dragged.style.top = newTop + 'px';
+
+        // Recalculate target index
+        const centreY = newTop + rowH / 2;
+        const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
+                               .filter(r => r !== dragged);
+
+        let best = 0;
+        for (let i = 0; i < otherRows.length; i++) {
+            const r = otherRows[i];
+            const rTop = r.offsetTop;
+            if (centreY > rTop + rowH / 2) best = i + 1;
+        }
+        // Account for that placeholder shifts indices
+        toIndex = best;
+
+        // Move placeholder to indicate drop position
+        const insertBefore = otherRows[best] || null;
+        if (insertBefore) {
+            body.insertBefore(placeholder, insertBefore);
+        } else {
+            // Append after last real row (but before anything after)
+            const lastRow = otherRows[otherRows.length - 1];
+            if (lastRow && lastRow.nextSibling) {
+                body.insertBefore(placeholder, lastRow.nextSibling);
+            } else {
+                body.appendChild(placeholder);
+            }
+        }
+    }
+
+    function onUp() {
+        dragged.style.position  = '';
+        dragged.style.left      = '';
+        dragged.style.right     = '';
+        dragged.style.zIndex    = '';
+        dragged.style.boxShadow = '';
+        dragged.style.top       = '';
+        body.style.position     = '';
+        placeholder.remove();
+
+        try { dragged.releasePointerCapture && dragged.releasePointerCapture(pointerId); } catch(_) {}
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup',   onUp);
+        document.removeEventListener('touchmove',   onMove);
+        document.removeEventListener('touchend',    onUp);
+
+        dotNet.invokeMethodAsync('OnDragComplete', origIndex, toIndex);
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup',   onUp);
+
+    try { dragged.setPointerCapture(pointerId); } catch(_) {}
 };
