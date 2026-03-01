@@ -60,10 +60,12 @@
                         : UserListService.Count(tab.Status.Value);
 
                     bool active = activeStatus == tab.Status;
+                    string color = GetStatusColor(tab.Status);
 
-                    <button class="lists-tab lists-tab-@tab.CssKey @(active ? "active" : "")"
+                    <button class="lists-tab @(active ? "active" : "")"
+                            style="@(active ? $"--tab-active-color:{color};" : "")"
                             @onclick="() => SetTab(tab.Status)">
-                        <span class="le-dd-dot le-dd-dot-@tab.CssKey"></span>
+                        @DotMarkup(color, active)
                         <span class="lists-tab-label">@tab.Label</span>
                         @if (cnt > 0)
                         {
@@ -72,13 +74,15 @@
                     </button>
                 }
 
-                <!-- 🔥 CUSTOM LIST TABS -->
+                <!-- CUSTOM LIST TABS -->
                 @foreach (var cl in UserListService.GetCustomLists())
                 {
-                    <button class="lists-tab lists-tab-custom @(activeCustomListId == cl.Id ? "active" : "")"
-                            style="--cl-color:@cl.Color;"
+                    bool active = activeCustomListId == cl.Id;
+
+                    <button class="lists-tab @(active ? "active" : "")"
+                            style="@(active ? $"--tab-active-color:{cl.Color};" : "")"
                             @onclick="() => SetCustomTab(cl.Id)">
-                        <span class="le-dd-dot" style="background:@cl.Color; box-shadow:0 0 6px @(cl.Color)80;"></span>
+                        @DotMarkup(cl.Color, active)
                         <span>@cl.Name</span>
                         @if (UserListService.GetCountForCustomList(cl.Id) > 0)
                         {
@@ -147,8 +151,9 @@
 
                                 @if (e.Status.HasValue)
                                 {
-                                    <div class="entry-status-badge entry-status-@GetStatusCssKey(e.Status.Value)">
-                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
+                                    string dotColor = GetStatusColor(e.Status);
+                                    <div class="entry-status-badge" style="border-color:@(dotColor)40; color:@dotColor;">
+                                        @DotMarkup(dotColor, true) @GetStatusLabel(e.Status.Value)
                                     </div>
                                 }
                             </div>
@@ -210,6 +215,32 @@
         new("Paused",     ListStatus.Paused,     "paused"),
         new("Dropped",    ListStatus.Dropped,    "dropped"),
     };
+
+    // ─── Universal dot color resolution ──────────────────────────────────────
+
+    /// Returns the hex color for a given status (or a neutral grey for "All").
+    /// Reads live from UserListService so custom colors are always up-to-date.
+    private string GetStatusColor(ListStatus? status)
+    {
+        if (status == null) return "#6b7280"; // "All" tab — neutral grey
+        var key = status.Value.ToString(); // e.g. "Watching"
+        return UserListService.GetStatusSettings()
+                   .FirstOrDefault(s => s.Key == key)?.Color
+               ?? "#6366f1";
+    }
+
+    /// Renders a universal dot as a MarkupString.
+    /// active=true  → full brightness + glow
+    /// active=false → 35% opacity, no glow (resting state)
+    private static MarkupString DotMarkup(string color, bool active)
+    {
+        string style = active
+            ? $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+              $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};"
+            : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+              $"background:{color};opacity:0.35;";
+        return new MarkupString($"<span style=\"{style}\"></span>");
+    }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -312,17 +343,6 @@
         ListStatus.Paused     => "Paused",
         ListStatus.Dropped    => "Dropped",
         _                     => s.ToString()
-    };
-
-    private static string GetStatusCssKey(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "watching",
-        ListStatus.Rewatching => "rewatching",
-        ListStatus.Completed  => "completed",
-        ListStatus.Planning   => "planning",
-        ListStatus.Paused     => "paused",
-        ListStatus.Dropped    => "dropped",
-        _                     => "all"
     };
 
     private static string GetStatusIcon(ListStatus s) => s switch

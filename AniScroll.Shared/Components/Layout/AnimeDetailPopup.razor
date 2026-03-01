@@ -42,7 +42,7 @@
                                     <div class="btn-add-to-list-inner">
                                         @if (isInList && currentListStatus.HasValue)
                                         {
-                                            <span class="status-btn-dot status-dot-@GetStatusCssKey(currentListStatus.Value)"></span>
+                                            @StatusDotMarkup(currentListStatus.Value, true)
                                             <span>@GetStatusLabel(currentListStatus.Value)</span>
                                         }
                                         else
@@ -520,11 +520,11 @@
                 <!-- Status Dropdown -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">Status</span>
-                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + GetStatusCssKey(editStatus.Value) : "")"
+                    <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-active" : "")"
                             @onclick="() => { statusDropdownOpen = !statusDropdownOpen; StateHasChanged(); }">
                         @if (editStatus.HasValue)
                         {
-                            <span class="le-dd-dot le-dd-dot-@GetStatusCssKey(editStatus.Value)"></span>
+                            @StatusDotMarkup(editStatus.Value, true)
                         }
                         else
                         {
@@ -544,7 +544,7 @@
                             {
                                 var sk = GetStatusCssKey(s);
                                 var isSel = editStatus == s;
-                                <button class="le-dd-option @(isSel ? "selected" : "") le-opt-@sk"
+                                <button class="le-dd-option @(isSel ? "selected" : "")"
                                         @onclick="async () => {
                                             var prev = editStatus;
                                             editStatus = s;
@@ -557,7 +557,7 @@
                                             await AutoSave();
                                             StateHasChanged();
                                         }">
-                                    <span class="le-dd-dot le-dd-dot-@sk"></span>
+                                    @StatusDotMarkup(s, isSel)
                                     <span class="le-dd-option-text">@GetStatusLabel(s)</span>
                                     @if (isSel)
                                     {
@@ -1429,6 +1429,36 @@
         ListStatus.Dropped    => "dropped",
         _                     => "all"
     };
+
+    /// Résout la couleur d'un statut depuis les settings utilisateur (couleur personnalisable).
+    private string GetStatusHexColor(ListStatus s)
+    {
+        var key = s.ToString(); // "Watching", "Completed", etc.
+        return UserListService.GetStatusSettings()
+                   .FirstOrDefault(x => x.Key == key)?.Color
+               ?? s switch
+               {
+                   ListStatus.Watching   => "#22c55e",
+                   ListStatus.Rewatching => "#06b6d4",
+                   ListStatus.Completed  => "#3b82f6",
+                   ListStatus.Planning   => "#a855f7",
+                   ListStatus.Paused     => "#f97316",
+                   ListStatus.Dropped    => "#ef4444",
+                   _                     => "#6366f1"
+               };
+    }
+
+    /// Dot universelle : active = pleine + glow, inactive = 35% opacité.
+    private MarkupString StatusDotMarkup(ListStatus s, bool active)
+    {
+        string color = GetStatusHexColor(s);
+        string style = active
+            ? $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+              $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};"
+            : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
+              $"background:{color};opacity:0.35;";
+        return new MarkupString($"<span style=\"{style}\"></span>");
+    }
 
     private string GetStatusText(string status) => status switch
     {
