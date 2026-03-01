@@ -539,7 +539,7 @@
 
                     @if (_statusDropdownOpen)
                     {
-                        <div class="le-dd-list">
+                        <div class="le-dd-list" style="max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;">
 
                             <!-- Statuts standards -->
                             @foreach (var s in GetAvailableStatuses())
@@ -581,10 +581,10 @@
 
                                 @foreach (var cl in customLists)
                                 {
-                                    bool isInCl = editAnime != null && UserListService.IsInCustomList(editAnime.Id, cl.Id);
+                                    bool isInCl = _editCustomListIds.Contains(cl.Id);
                                     <button class="le-dd-option @(isInCl ? "selected" : "")"
                                             style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
-                                            @onclick="() => ToggleCustomList(cl.Id)"
+                                            @onclick="async () => await ToggleCustomList(cl.Id)"
                                             @onclick:stopPropagation="true">
                                         @GlowDot(cl.Color)
                                         <span class="le-dd-option-text">@cl.Name</span>
@@ -851,6 +851,7 @@
     private DateTime? editFinishDate = null;
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
+    private HashSet<string> _editCustomListIds = new();
 
     // Element refs
     private ElementReference _listEditorOverlayRef;
@@ -999,6 +1000,7 @@
         existing.FinishDate          = editFinishDate;
         existing.IsPrivate           = editIsPrivate;
         existing.HideFromStatusLists = editHideFromLists;
+        existing.CustomListIds       = _editCustomListIds.ToList();
 
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
@@ -1032,27 +1034,29 @@
         var existing = UserListService.GetEntry(CurrentAnime.Id);
         if (existing != null)
         {
-            editStatus        = existing.Status;
-            editScore         = existing.Score;
-            editEpisodes      = existing.EpisodesWatched;
-            editRewatches     = existing.TotalRewatches;
-            editNotes         = existing.Notes;
-            editStartDate     = existing.StartDate;
-            editFinishDate    = existing.FinishDate;
-            editIsPrivate     = existing.IsPrivate;
-            editHideFromLists = existing.HideFromStatusLists;
+            editStatus         = existing.Status;
+            editScore          = existing.Score;
+            editEpisodes       = existing.EpisodesWatched;
+            editRewatches      = existing.TotalRewatches;
+            editNotes          = existing.Notes;
+            editStartDate      = existing.StartDate;
+            editFinishDate     = existing.FinishDate;
+            editIsPrivate      = existing.IsPrivate;
+            editHideFromLists  = existing.HideFromStatusLists;
+            _editCustomListIds = new HashSet<string>(existing.CustomListIds);
         }
         else
         {
-            editStatus        = null;
-            editScore         = 0;
-            editEpisodes      = 0;
-            editRewatches     = 0;
-            editNotes         = "";
-            editStartDate     = null;
-            editFinishDate    = null;
-            editIsPrivate     = false;
-            editHideFromLists = false;
+            editStatus         = null;
+            editScore          = 0;
+            editEpisodes       = 0;
+            editRewatches      = 0;
+            editNotes          = "";
+            editStartDate      = null;
+            editFinishDate     = null;
+            editIsPrivate      = false;
+            editHideFromLists  = false;
+            _editCustomListIds = new();
         }
 
         if (CurrentAnime.Status == "NOT_YET_RELEASED")
@@ -1090,14 +1094,11 @@
     }
 
     // ── Custom Lists ──────────────────────────────────────────────────────────
-    private void ToggleCustomList(string customListId)
+    private async Task ToggleCustomList(string customListId)
     {
-        if (editAnime == null) return;
-        if (UserListService.IsInCustomList(editAnime.Id, customListId))
-            UserListService.RemoveFromCustomList(editAnime.Id, customListId);
-        else
-            UserListService.AddToCustomList(editAnime.Id, customListId);
-        StateHasChanged();
+        if (!_editCustomListIds.Remove(customListId))
+            _editCustomListIds.Add(customListId);
+        await AutoSave();
     }
 
     // ── Score ─────────────────────────────────────────────────────────────────
