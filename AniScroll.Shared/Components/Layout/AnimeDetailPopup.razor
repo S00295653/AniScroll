@@ -475,12 +475,14 @@
 {
     <!-- FIX: stop touch events from reaching the underlying info popup scroll container -->
     <div class="list-editor-overlay"
+         @onwheel:stopPropagation="true"
          @onpointerdown="() => _pointerDownOnModal = false"
          @onclick="async () => { if (!_pointerDownOnModal) await CloseAndSave(); _pointerDownOnModal = false; }"
          @ontouchstart:stopPropagation="true"
          @ontouchmove:stopPropagation="true"
          @ontouchend:stopPropagation="true">
         <div class="list-editor-modal"
+             @onwheel:stopPropagation="true"
              @onpointerdown="() => _pointerDownOnModal = true"
              @onpointerdown:stopPropagation="true"
              @onclick:stopPropagation="true">
@@ -1323,6 +1325,9 @@
 
         if (touch.ClientX <= EDGE_ZONE_WIDTH)
         {
+            isPullTrackingActive = false;
+            isPulling = false;
+            pullOffset = 0;
             isEdgeSwipeTrackingActive = true;
             isEdgeSwiping = false;
             edgeSwipeStartX = touch.ClientX;

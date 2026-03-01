@@ -156,18 +156,28 @@ window.cpGetRect = function (el) {
 
 /**
  * Position the color picker popup near an anchor element.
- * - Prefers BELOW the anchor.
- * - Falls back to ABOVE: bottom of popup = top of anchor - gap.
+ *
+ * KEY FIX: instead of trusting the estimated popupH passed from Blazor
+ * (which is wrong because the popup hasn't painted yet), we find the
+ * actual .cp-popup element in the DOM and measure it directly.
+ * The popup must be in the DOM (even off-screen) before this is called.
+ *
+ * - Prefers BELOW the anchor (gap 8px).
+ * - Falls back to ABOVE: BOTTOM of popup = TOP of anchor - gap.
  * - Clamps horizontally within viewport.
  */
-window.cpGetPosition = function (anchorEl, popupW, popupH) {
+window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const MARGIN = 12;
     const GAP    = 8;
 
     const a  = anchorEl.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const w  = Math.min(popupW, vw - 2 * MARGIN);
+
+    // Measure the real rendered popup height instead of the estimate
+    const popupEl = document.querySelector('.cp-popup');
+    const popupH  = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
+    const w       = Math.min(popupW, vw - 2 * MARGIN);
 
     const spaceBelow = vh - a.bottom - GAP;
     const spaceAbove = a.top - GAP;
@@ -258,17 +268,6 @@ window.cpRandomSwatchColor = function () {
 //  ROW DRAG — live visual reorder + scroll-aware
 // ═══════════════════════════════════════════════════════════════════════
 
-/**
- * Drag-to-reorder with live visual feedback.
- *
- * • Ghost clone follows the pointer (position:fixed).
- * • The dragged row becomes an invisible spacer.
- * • Sibling rows slide with translateY to show the insertion point.
- * • Auto-scrolls bodyEl when the ghost reaches the edge zone.
- *
- * Signature kept backward-compatible: panelEl is accepted but unused
- * (bodyEl is what we actually need for scroll-aware positioning).
- */
 window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, rowH) {
     const allRows = Array.from(bodyEl.querySelectorAll('.clm2-row[data-row-index]'));
     const count   = allRows.length;
@@ -306,20 +305,16 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
     let targetIndex = fromIndex;
     let lastClientY = draggedRect.top + halfH;
 
-    // Measure "new list" row height once so natural positions are accurate
     const newRowEl = bodyEl.querySelector('.clm2-row-new');
     const newRowH  = newRowEl ? newRowEl.offsetHeight : 0;
 
-    // Auto-scroll
     const SCROLL_ZONE = 60, SCROLL_SPEED = 8;
     let scrollRaf = null;
 
     const applyShifts = () => {
-        // Ghost centre in scroll-space (accounts for current bodyEl.scrollTop)
         const bodyTopScrolled     = bodyEl.getBoundingClientRect().top - bodyEl.scrollTop;
         const ghostCentreInScroll = lastClientY - bodyTopScrolled;
 
-        // Find closest natural row slot
         let best = fromIndex, bestDist = Infinity;
         for (let i = 0; i < count; i++) {
             const naturalCentre = newRowH + i * rowH + rowH / 2;
@@ -328,7 +323,6 @@ window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, r
         }
         targetIndex = best;
 
-        // Shift siblings to open the gap
         allRows.forEach((row, i) => {
             if (i === fromIndex) { row.style.transform = ''; return; }
             let shift = 0;

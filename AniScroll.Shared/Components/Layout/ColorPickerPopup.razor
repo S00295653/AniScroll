@@ -271,7 +271,7 @@
     {
         try
         {
-            await Task.Delay(10);
+            await Task.Delay(30);
             var pos = await JS.InvokeAsync<PickerPos>("cpGetPosition", AnchorRef, 290, 420);
             _posStyle = $"left:{pos.Left.ToString(IC)}px;top:{pos.Top.ToString(IC)}px;";
             StateHasChanged();
