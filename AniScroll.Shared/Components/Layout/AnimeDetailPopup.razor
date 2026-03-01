@@ -37,7 +37,14 @@
                             </div>
 
                             <div class="modal-action-buttons">
-                                <button class="btn-add-to-list @(isInList && currentListStatus.HasValue ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus.Value) : isInList && currentCustomListId != null ? "btn-in-list" : "")" @onclick="OpenListEditor">
+                                @{
+                                    var _btnCustomList = (isInList && !currentListStatus.HasValue && currentCustomListId != null)
+                                        ? UserListService.GetCustomLists().FirstOrDefault(c => c.Id == currentCustomListId)
+                                        : null;
+                                }
+                                <button class="btn-add-to-list @(isInList && currentListStatus.HasValue ? "btn-in-list btn-status-" + GetStatusCssKey(currentListStatus.Value) : isInList && currentCustomListId != null ? "btn-in-list" : "")"
+                                        style="@(_btnCustomList != null ? $"--status-color:{_btnCustomList.Color};border-color:{_btnCustomList.Color}40;background:color-mix(in srgb,{_btnCustomList.Color} 12%,transparent);color:{_btnCustomList.Color};" : "")"
+                                        @onclick="OpenListEditor">
                                     <div class="btn-add-to-list-inner">
                                         @if (isInList && currentListStatus.HasValue)
                                         {
