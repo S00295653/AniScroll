@@ -82,8 +82,7 @@
                         ? UserListService.Count(ParseStatus(row.Status!.Key))
                         : UserListService.GetCountForCustomList(row.Custom!.Id);
 
-                    <div class="clm2-row @(_draggingIndex == ri ? "clm2-row-dragging" : "")"
-                         data-row-index="@ri">
+                    <div class="clm2-row" data-row-index="@ri">
 
                         <div class="clm2-drag"
                              style="touch-action:none; cursor:grab;"
@@ -150,7 +149,7 @@
         </div><!-- /clm-panel -->
     </div><!-- /clm-overlay -->
 
-    <!-- Color picker rendered outside overlay so its clicks don't bubble to close handler -->
+    <!-- Color picker outside overlay so its clicks don't bubble -->
     <ColorPickerPopup IsVisible="_pickerOpen"
                       InitialColor="@_pickerInitColor"
                       AnchorRef="_pickerAnchor"
@@ -185,15 +184,11 @@
     private ElementReference[] _swatchRefs = new ElementReference[64];
     private ElementReference[] _handleRefs = new ElementReference[64];
 
-    // DotNet ref passed to JS for drag callbacks
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
-
-    // Currently dragging row index (for visual highlight)
-    private int _draggingIndex = -1;
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
-    private string? _newColor = null;
+    private string? _newColor = null;   // null = no colour chosen yet (random on Add)
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
 
     // ── Color picker state ───────────────────────────────────────────────
@@ -214,13 +209,11 @@
     {
         bool justOpened = IsVisible && !_prevIsVisible;
         _prevIsVisible = IsVisible;
-
         if (!justOpened) return;
 
         RebuildRows();
         _newName  = "";
         _newColor = null;
-        _draggingIndex = -1;
     }
 
     public void Dispose() => _dotNetRef?.Dispose();
@@ -234,14 +227,11 @@
             .ToList();
     }
 
-    // ── Drag — scroll-aware, driven by JS ────────────────────────────────
+    // ── Drag ─────────────────────────────────────────────────────────────
     private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
-        _draggingIndex = rowIndex;
-        StateHasChanged();
         try
         {
-            // Pass bodyRef so JS can read scrollTop for accurate positioning
             await JS.InvokeVoidAsync(
                 "startRowDrag",
                 _dotNetRef,
@@ -254,23 +244,9 @@
         catch { }
     }
 
-    // Called by JS while dragging (to update visual highlight)
-    [JSInvokable]
-    public void OnDragMove(int overIndex)
-    {
-        if (_draggingIndex != overIndex)
-        {
-            _draggingIndex = overIndex;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    // Called by JS after the user releases the dragged row.
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
-        _draggingIndex = -1;
-
         if (fromIndex == toIndex
             || fromIndex < 0 || toIndex < 0
             || fromIndex >= _rows.Count || toIndex >= _rows.Count)
@@ -281,8 +257,7 @@
 
         var item = _rows[fromIndex];
         _rows.RemoveAt(fromIndex);
-        int at = Math.Clamp(toIndex, 0, _rows.Count);
-        _rows.Insert(at, item);
+        _rows.Insert(Math.Clamp(toIndex, 0, _rows.Count), item);
 
         SaveAll();
         InvokeAsync(StateHasChanged);
@@ -332,9 +307,13 @@
     }
 
     // ── Add / Delete ─────────────────────────────────────────────────────
-    private void AddList()
+    private async Task AddList()
     {
         if (!CanAdd) return;
+
+        // If user never chose a colour, pick a random vivid swatch
+        string color = _newColor ?? await GetRandomColorAsync();
+
         _rows.Add(new Row
         {
             IsStatus = false,
@@ -342,7 +321,7 @@
             {
                 Id    = Guid.NewGuid().ToString(),
                 Name  = _newName.Trim(),
-                Color = _newColor ?? "#6366f1",
+                Color = color,
                 Order = _rows.Count
             }
         });
@@ -350,6 +329,12 @@
         _newName  = "";
         _newColor = null;
         StateHasChanged();
+    }
+
+    private async Task<string> GetRandomColorAsync()
+    {
+        try { return await JS.InvokeAsync<string>("cpRandomSwatchColor"); }
+        catch { return "#6366f1"; }
     }
 
     private void DeleteRow(int idx)
@@ -361,7 +346,7 @@
     }
 
     // ── Keyboard ─────────────────────────────────────────────────────────
-    private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddList(); }
+    private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") _ = AddList(); }
 
     // ── Panel close ──────────────────────────────────────────────────────
     private void HandleOverlayClick()
