@@ -7,7 +7,6 @@
 
 @if (IsVisible)
 {
-
     <div class="lists-overlay" @onclick="Close">
         <div class="lists-panel"
              @onclick:stopPropagation="true"
@@ -43,56 +42,54 @@
             <!-- ── Status tabs ────────────────────────────────────────────────── -->
             <div class="lists-tabs-row">
 
-            <!-- Custom list manager button -->
-            <button class="lists-add-btn"
-                    @onclick="OpenCustomListManager"
-                    title="Manage custom lists">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </button>
-
-            @foreach (var tab in _tabs)
-            {
-                int cnt = tab.Status == null
-                    ? UserListService.GetAll().Count(e => e.Status.HasValue)
-                    : UserListService.Count(tab.Status.Value);
-
-                bool active = activeStatus == tab.Status;
-
-                <button class="lists-tab lists-tab-@tab.CssKey @(active ? "active" : "")"
-                        @onclick="() => SetTab(tab.Status)">
-                    <span class="lists-tab-dot"></span>
-                    <span class="lists-tab-label">@tab.Label</span>
-                    @if (cnt > 0)
-                    {
-                        <span class="lists-tab-count">@cnt</span>
-                    }
+                <!-- Custom list manager button -->
+                <button class="lists-add-btn"
+                        @onclick="OpenCustomListManager"
+                        title="Manage custom lists">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                 </button>
-            }
 
-            <!-- 🔥 CUSTOM LIST TABS -->
-            @foreach (var cl in UserListService.GetCustomLists())
-            {
-                <button class="lists-tab lists-tab-custom @(activeCustomListId == cl.Id ? "active" : "")"
-                        style="--cl-color:@cl.Color;"
-                        @onclick="() => SetCustomTab(cl.Id)">
+                @foreach (var tab in _tabs)
+                {
+                    int cnt = tab.Status == null
+                        ? UserListService.GetAll().Count(e => e.Status.HasValue)
+                        : UserListService.Count(tab.Status.Value);
 
-                    <span class="lists-tab-dot"></span>
-                    <span>@cl.Name</span>
+                    bool active = activeStatus == tab.Status;
 
-                    @if (UserListService.GetCountForCustomList(cl.Id) > 0)
-                    {
-                        <span class="lists-tab-count">
-                            @UserListService.GetCountForCustomList(cl.Id)
-                        </span>
-                    }
-                </button>
-            }
+                    <button class="lists-tab lists-tab-@tab.CssKey @(active ? "active" : "")"
+                            @onclick="() => SetTab(tab.Status)">
+                        <span class="lists-tab-dot"></span>
+                        <span class="lists-tab-label">@tab.Label</span>
+                        @if (cnt > 0)
+                        {
+                            <span class="lists-tab-count">@cnt</span>
+                        }
+                    </button>
+                }
 
-        </div>
+                <!-- 🔥 CUSTOM LIST TABS -->
+                @foreach (var cl in UserListService.GetCustomLists())
+                {
+                    <button class="lists-tab lists-tab-custom @(activeCustomListId == cl.Id ? "active" : "")"
+                            style="--cl-color:@cl.Color;"
+                            @onclick="() => SetCustomTab(cl.Id)">
+                        <span class="lists-tab-dot"></span>
+                        <span>@cl.Name</span>
+                        @if (UserListService.GetCountForCustomList(cl.Id) > 0)
+                        {
+                            <span class="lists-tab-count">
+                                @UserListService.GetCountForCustomList(cl.Id)
+                            </span>
+                        }
+                    </button>
+                }
+
+            </div>
 
             <div class="lists-header-divider"></div>
 
@@ -174,10 +171,11 @@
                 }
             </div>
         </div>
-        <CustomListManager IsVisible="showCustomListManager"
-                        OnClose="CloseCustomListManager" />
-
     </div>
+
+    @* FIX: outside lists-overlay so its backdrop click doesn't bubble and close ListsPanel *@
+    <CustomListManager IsVisible="showCustomListManager"
+                       OnClose="CloseCustomListManager" />
 }
 
 @code {
@@ -188,9 +186,9 @@
     private ListStatus? activeStatus = null;
 
     private bool showCustomListManager = false;
-     private void OpenCustomListManager() => showCustomListManager = true;
-     private void CloseCustomListManager() { showCustomListManager = false; StateHasChanged(); }
-     private string? activeCustomListId = null;
+    private void OpenCustomListManager() => showCustomListManager = true;
+    private void CloseCustomListManager() { showCustomListManager = false; StateHasChanged(); }
+    private string? activeCustomListId = null;
 
     // ─── Pull-to-close ────────────────────────────────────────────────────────
     private double pullOffset    = 0;

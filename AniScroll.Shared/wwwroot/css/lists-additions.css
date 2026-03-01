@@ -1079,16 +1079,22 @@
 .lists-add-btn:hover  { background: rgba(255,255,255,0.13); color: white; }
 .lists-add-btn:active { transform: scale(0.88); }
 
-/* Custom list tab pills (dynamic status colours) */
-.lists-tab-custom { }
+
 .lists-tab-custom.active {
-    background: rgba(var(--cl-rgb, 99,102,241), 0.12);
-    border-color: rgba(var(--cl-rgb, 99,102,241), 0.4);
-    color: rgb(var(--cl-rgb, 99,102,241));
+    color: var(--cl-color, white);
+    background: transparent;
+    border-bottom-color: var(--cl-color, rgba(255,255,255,0.5));
+}
+.lists-tab-custom.active .lists-tab-dot {
+    background: var(--cl-color, white);
+    box-shadow: 0 0 6px var(--cl-color, transparent);
+}
+.lists-tab-custom.active .lists-tab-count {
+    background: color-mix(in srgb, var(--cl-color, #6366f1) 18%, transparent);
+    color: var(--cl-color, white);
 }
 .lists-tab-custom .lists-tab-dot {
-    background: var(--cl-color, #6366f1);
-    box-shadow: 0 0 6px var(--cl-color, #6366f1);
+    background: var(--cl-color, rgba(255,255,255,0.3));
 }
 
 /* ======================================================
@@ -1403,9 +1409,8 @@
     transform: rotate(180deg);
 }
 
-/* Entries container */
 .clm-entries {
-    padding: 4px 6px 10px 44px; /* indent to align with list name */
+    padding: 4px 6px 10px 44px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1436,7 +1441,7 @@
 }
 .clm-entry-row:hover { background: rgba(255,255,255,0.06); }
 
-.clm-entry-poster {
+clm-entry-poster {
     width: 30px;
     height: 44px;
     border-radius: 5px;
@@ -1497,3 +1502,63 @@
 }
 .clm-entry-remove-btn:hover  { color: #ef4444; background: rgba(239,68,68,0.1); }
 .clm-entry-remove-btn:active { transform: scale(0.9); }
+
+.clm-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    padding: 2px 4px 6px 4px;
+    margin: 0;
+}
+
+.clm-section-divider-spaced {
+    margin: 12px 0 10px;
+}
+
+/* Status dot per status */
+.clm-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.clm-status-dot-all        { background: rgba(255,255,255,0.4); }
+.clm-status-dot-watching   { background: #22c55e; }
+.clm-status-dot-rewatching { background: #06b6d4; }
+.clm-status-dot-completed  { background: #3b82f6; }
+.clm-status-dot-planning   { background: #a855f7; }
+.clm-status-dot-paused     { background: #f97316; }
+.clm-status-dot-dropped    { background: #ef4444; }
+
+.clm-status-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.8);
+}
+
+/* Entry count badge — per status color */
+.clm-entry-count-all        { border-color: rgba(255,255,255,0.2);  color: rgba(255,255,255,0.5); }
+.clm-entry-count-watching   { border-color: rgba(34,197,94,0.35);   color: #22c55e; }
+.clm-entry-count-rewatching { border-color: rgba(6,182,212,0.35);   color: #06b6d4; }
+.clm-entry-count-completed  { border-color: rgba(59,130,246,0.35);  color: #3b82f6; }
+.clm-entry-count-planning   { border-color: rgba(168,85,247,0.35);  color: #a855f7; }
+.clm-entry-count-paused     { border-color: rgba(249,115,22,0.35);  color: #f97316; }
+.clm-entry-count-dropped    { border-color: rgba(239,68,68,0.35);   color: #ef4444; }
+
+/* Status list row (clickable header) */
+.clm-row-status {
+    cursor: pointer;
+    gap: 10px;
+}
+.clm-row-status:hover {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+}
+
+/* Entries indented slightly less for status lists */
+.clm-entries-status {
+    padding-left: 26px;
+}
