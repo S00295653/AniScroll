@@ -466,3 +466,120 @@ window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
 window.unregisterEdgeSwipeInterceptor = function () {
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 };
+
+window.preventWheelScroll = function (el) {
+    if (!el || el._noWheel) return;
+    el._noWheel = function (e) { e.preventDefault(); };
+    el.addEventListener('wheel', el._noWheel, { passive: false });
+};
+window.removeWheelScrollPrevention = function (el) {
+    if (!el || !el._noWheel) return;
+    el.removeEventListener('wheel', el._noWheel);
+    delete el._noWheel;
+};
+
+// ── Fix 2: startRowDrag – add topBoundaryEl so rows can't be dragged above the new-list row ──
+// Replace (or patch) your existing startRowDrag with this version.
+// New signature: startRowDrag(dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl)
+window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
+    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
+    if (!rows[fromIndex]) return;
+
+    // Pixel boundary: the bottom edge of the "new list" row.
+    // Fall back to 0 if topBoundaryEl is not provided or not in DOM.
+    let minTopPx = 0;
+    try {
+        if (topBoundaryEl) {
+            const boundRect = topBoundaryEl.getBoundingClientRect();
+            const bodyRect  = body.getBoundingClientRect();
+            minTopPx = boundRect.bottom - bodyRect.top + body.scrollTop;
+        }
+    } catch (e) { /* ignore */ }
+
+    const dragged   = rows[fromIndex];
+    const origRect  = dragged.getBoundingClientRect();
+    const bodyRect  = body.getBoundingClientRect();
+
+    // Lift the dragged row out of flow
+    const origIndex = fromIndex;
+    let   currentY  = origRect.top - bodyRect.top + body.scrollTop;
+
+    dragged.style.position  = 'absolute';
+    dragged.style.left      = '0';
+    dragged.style.right     = '0';
+    dragged.style.zIndex    = '100';
+    dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    dragged.style.top       = currentY + 'px';
+    body.style.position     = 'relative';
+
+    // Create placeholder
+    const placeholder       = document.createElement('div');
+    placeholder.style.height = rowH + 'px';
+    placeholder.style.flexShrink = '0';
+    body.insertBefore(placeholder, dragged);
+
+    let pointerStartY = null;
+    let dragStartBodyY = currentY;
+    let toIndex = fromIndex;
+
+    function onMove(e) {
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        if (pointerStartY === null) { pointerStartY = clientY; return; }
+
+        const delta   = clientY - pointerStartY;
+        const newTop  = Math.max(minTopPx, dragStartBodyY + delta);
+        dragged.style.top = newTop + 'px';
+
+        // Recalculate target index
+        const centreY = newTop + rowH / 2;
+        const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
+                               .filter(r => r !== dragged);
+
+        let best = 0;
+        for (let i = 0; i < otherRows.length; i++) {
+            const r = otherRows[i];
+            const rTop = r.offsetTop;
+            if (centreY > rTop + rowH / 2) best = i + 1;
+        }
+        // Account for that placeholder shifts indices
+        toIndex = best;
+
+        // Move placeholder to indicate drop position
+        const insertBefore = otherRows[best] || null;
+        if (insertBefore) {
+            body.insertBefore(placeholder, insertBefore);
+        } else {
+            // Append after last real row (but before anything after)
+            const lastRow = otherRows[otherRows.length - 1];
+            if (lastRow && lastRow.nextSibling) {
+                body.insertBefore(placeholder, lastRow.nextSibling);
+            } else {
+                body.appendChild(placeholder);
+            }
+        }
+    }
+
+    function onUp() {
+        dragged.style.position  = '';
+        dragged.style.left      = '';
+        dragged.style.right     = '';
+        dragged.style.zIndex    = '';
+        dragged.style.boxShadow = '';
+        dragged.style.top       = '';
+        body.style.position     = '';
+        placeholder.remove();
+
+        try { dragged.releasePointerCapture && dragged.releasePointerCapture(pointerId); } catch(_) {}
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup',   onUp);
+        document.removeEventListener('touchmove',   onMove);
+        document.removeEventListener('touchend',    onUp);
+
+        dotNet.invokeMethodAsync('OnDragComplete', origIndex, toIndex);
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup',   onUp);
+
+    try { dragged.setPointerCapture(pointerId); } catch(_) {}
+};

@@ -33,8 +33,8 @@
             <!-- ── Body (scrollable) ───────────────────────────────── -->
             <div class="clm-body" @ref="_bodyRef">
 
-                <!-- NEW LIST ROW -->
-                <div class="clm2-row clm2-row-new">
+                <!-- NEW LIST ROW — FIX 2: @ref so we can pass its bounds to startRowDrag as top boundary -->
+                <div class="clm2-row clm2-row-new" @ref="_newListRowRef">
 
                     <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
                          style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
@@ -181,6 +181,7 @@
     private ElementReference   _panelRef;
     private ElementReference   _bodyRef;
     private ElementReference   _newSwatchRef;
+    private ElementReference   _newListRowRef;   // FIX 2: reference to the new-list row (top drag boundary)
     private ElementReference[] _swatchRefs = new ElementReference[64];
     private ElementReference[] _handleRefs = new ElementReference[64];
 
@@ -188,7 +189,7 @@
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
-    private string? _newColor = null;   // null = no colour chosen yet (random on Add)
+    private string? _newColor = null;
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
 
     // ── Color picker state ───────────────────────────────────────────────
@@ -228,6 +229,8 @@
     }
 
     // ── Drag ─────────────────────────────────────────────────────────────
+    // FIX 2: Pass _newListRowRef as the top boundary so the drag cannot visually
+    //        go above the "new list" creation row.
     private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
         try
@@ -239,7 +242,8 @@
                 _bodyRef,
                 e.PointerId,
                 rowIndex,
-                ROW_H);
+                ROW_H,
+                _newListRowRef);   // ← new parameter: top boundary element
         }
         catch { }
     }
@@ -311,7 +315,6 @@
     {
         if (!CanAdd) return;
 
-        // If user never chose a colour, pick a random vivid swatch
         string color = _newColor ?? await GetRandomColorAsync();
 
         _rows.Add(new Row

@@ -6,7 +6,8 @@
 {
     <div class="cp-overlay" @onclick="HandleClose"></div>
 
-    <div class="cp-popup" style="@_posStyle"
+    <!-- FIX 1: opacity:0 while positioning, then fade in once position is known -->
+    <div class="cp-popup" style="@_posStyle; opacity:@(_isPositioned ? "1" : "0"); transition:opacity 0.13s ease;"
          @onclick:stopPropagation="true"
          @ontouchstart:stopPropagation="true"
          @ontouchmove:stopPropagation="true"
@@ -212,6 +213,9 @@
     private string _tab      = "HEX";
     private string _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);";
 
+    // FIX 1: false until PositionAsync() resolves — keeps picker invisible during async position calc.
+    private bool _isPositioned = false;
+
     private ElementReference _svRef, _hueRef;
     private bool _prevVisible;
 
@@ -219,16 +223,12 @@
 
     private static readonly string[] _tabs = { "HEX", "RGB", "HSV", "HSL" };
 
-    // 24 swatches: 3 rows of 8 — reds · oranges · yellows · greens · cyans · blues · purples · pinks
     private static readonly string[] _presets =
     {
-        // row 1 — warm
         "#ef4444", "#f97316", "#f59e0b", "#eab308",
         "#84cc16", "#22c55e", "#10b981", "#14b8a6",
-        // row 2 — cool
         "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1",
         "#8b5cf6", "#a855f7", "#d946ef", "#ec4899",
-        // row 3 — neutrals & extras
         "#ffffff", "#d1d5db", "#6b7280", "#374151",
         "#1f2937", "#111827", "#000000", "#713f12",
     };
@@ -255,18 +255,28 @@
     {
         if (IsVisible && !_prevVisible)
         {
+            // FIX 1: mark as not positioned — opacity:0 until we know where to place it
+            _isPositioned = false;
+            StateHasChanged();
+
             if (TryParseHex(InitialColor, out var h, out var s, out var v))
             { _h = h; _s = s; _v = v; _hexInput = HexColor; }
+
             await PositionAsync();
+
+            // Position is now computed — reveal the picker
+            _isPositioned = true;
+            StateHasChanged();
         }
         if (!IsVisible && _prevVisible)
         {
+            _isPositioned = false;
             await JS.InvokeVoidAsync("cpStopDrag");
         }
         _prevVisible = IsVisible;
     }
 
-    /* ─── Positioning: smart anchor-aware, mobile-safe ──────────────────── */
+    /* ─── Positioning ────────────────────────────────────────────────────── */
     private async Task PositionAsync()
     {
         try

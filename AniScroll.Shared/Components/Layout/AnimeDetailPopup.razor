@@ -475,6 +475,7 @@
 {
     <!-- FIX: touch-action:none stops iOS scroll momentum from passing through overlay -->
     <div class="list-editor-overlay"
+         @ref="_listEditorOverlayRef"
          style="touch-action:none;overscroll-behavior:contain;"
          @onwheel:stopPropagation="true"
          @onpointerdown="() => _pointerDownOnModal = false"
@@ -819,6 +820,8 @@
     private bool editHideFromLists = false;
 
     // Element refs
+    private ElementReference _listEditorOverlayRef;   // FIX 3: wheel prevention
+    private bool _wheelListenerActive = false;         // FIX 3: wheel prevention
     private ElementReference scoreBarRef;
     private ElementReference epBarRef;
     private ElementReference scoreInputRef;
@@ -901,6 +904,19 @@
     // which fixes the "swipe from left edge doesn't work when scroll is still moving" bug.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // FIX 3: add/remove a non-passive wheel listener so the mouse wheel
+        // cannot scroll the modal-scroll-container through the list-editor-overlay.
+        if (showListEditor && !_wheelListenerActive)
+        {
+            _wheelListenerActive = true;
+            try { await JS.InvokeVoidAsync("preventWheelScroll", _listEditorOverlayRef); } catch { }
+        }
+        else if (!showListEditor && _wheelListenerActive)
+        {
+            _wheelListenerActive = false;
+            try { await JS.InvokeVoidAsync("removeWheelScrollPrevention", _listEditorOverlayRef); } catch { }
+        }
+
         if (IsVisible && !_edgeInterceptorRegistered)
         {
             _edgeInterceptorRegistered = true;
