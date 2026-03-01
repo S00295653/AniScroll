@@ -1,0 +1,505 @@
+@using System.Globalization
+@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="cp-overlay" @onclick="HandleClose"></div>
+
+    <div class="cp-popup" style="@_posStyle"
+         @onclick:stopPropagation="true"
+         @ontouchstart:stopPropagation="true"
+         @ontouchmove:stopPropagation="true"
+         @ontouchend:stopPropagation="true">
+
+        <!-- ── Saturation / Value square ──────────────────────────── -->
+        <div class="cp-sv"
+             @ref="_svRef"
+             style="background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%),
+                                linear-gradient(to right, rgba(255,255,255,1) 0%, hsl(@F0(_h), 100%, 50%) 100%);"
+             @onpointerdown="SvDown"
+             @onpointermove="SvMove"
+             @onpointerup="SvUp"
+             @onpointercancel="@(() => _svDrag = false)">
+            <div class="cp-sv-dot" style="left:@Pct(_s);top:@Pct(1 - _v);"></div>
+        </div>
+
+        <!-- ── Hue slider ─────────────────────────────────────────── -->
+        <div class="cp-hue-track"
+             @ref="_hueRef"
+             @onpointerdown="HueDown"
+             @onpointermove="HueMove"
+             @onpointerup="HueUp"
+             @onpointercancel="@(() => _hueDrag = false)">
+            <div class="cp-hue-thumb" style="left:@Pct(_h / 360.0);"></div>
+        </div>
+
+        <!-- ── Preview + Presets ──────────────────────────────────── -->
+        <div class="cp-preview-row">
+            <div class="cp-color-dot" style="background:@HexColor;"></div>
+            <div class="cp-swatches">
+                @foreach (var p in _presets)
+                {
+                    var px = p;
+                    <button class="cp-swatch" style="background:@px;" @onclick="() => SetFromHex(px)"></button>
+                }
+            </div>
+        </div>
+
+        <!-- ── Mode tabs ──────────────────────────────────────────── -->
+        <div class="cp-tabs">
+            @foreach (var t in _tabs)
+            {
+                var tx = t;
+                <button class="cp-tab @(_tab == tx ? "cp-tab-on" : "")" @onclick="() => _tab = tx">@tx</button>
+            }
+        </div>
+
+        <!-- ── Inputs ─────────────────────────────────────────────── -->
+        <div class="cp-inputs">
+
+            @if (_tab == "HEX")
+            {
+                <div class="cp-hex-row">
+                    <input class="cp-hex-in" value="@_hexInput" maxlength="7"
+                           @oninput="HexTyping" @onchange="HexCommit" />
+                    <button class="cp-clear-btn" @onclick="ResetBlack">⌫</button>
+                </div>
+            }
+
+            @if (_tab == "RGB")
+            {
+                @{
+                    var (rr, gg, bb) = HsvToRgb(_h, _s, _v);
+                    int ri = Ri(rr), gi = Ri(gg), bi = Ri(bb);
+                }
+                <div class="cp-chan-row">
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="255" value="@ri"
+                               @onchange="e => SetFromRgb(Clamp(e.Value, 0, 255, ri), gi, bi)" />
+                        <span class="cp-chan-lbl">R</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="255" value="@gi"
+                               @onchange="e => SetFromRgb(ri, Clamp(e.Value, 0, 255, gi), bi)" />
+                        <span class="cp-chan-lbl">G</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="255" value="@bi"
+                               @onchange="e => SetFromRgb(ri, gi, Clamp(e.Value, 0, 255, bi))" />
+                        <span class="cp-chan-lbl">B</span>
+                    </div>
+                </div>
+            }
+
+            @if (_tab == "HSV")
+            {
+                @{
+                    int hi = (int)Math.Round(_h);
+                    int si = (int)Math.Round(_s * 100);
+                    int vi = (int)Math.Round(_v * 100);
+                }
+                <div class="cp-chan-row">
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="360" value="@hi"
+                               @onchange="e => { _h = ClampD(e.Value, 0, 360, _h); SyncHex(); Emit(); }" />
+                        <span class="cp-chan-lbl">H</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="100" value="@si"
+                               @onchange="e => { _s = ClampD(e.Value, 0, 100, _s * 100) / 100.0; SyncHex(); Emit(); }" />
+                        <span class="cp-chan-lbl">S</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="100" value="@vi"
+                               @onchange="e => { _v = ClampD(e.Value, 0, 100, _v * 100) / 100.0; SyncHex(); Emit(); }" />
+                        <span class="cp-chan-lbl">V</span>
+                    </div>
+                </div>
+            }
+
+            @if (_tab == "HSL")
+            {
+                @{
+                    var (hl, sl, ll) = HsvToHsl(_h, _s, _v);
+                    int hli = (int)Math.Round(hl);
+                    int sli = (int)Math.Round(sl * 100);
+                    int lli = (int)Math.Round(ll * 100);
+                }
+                <div class="cp-chan-row">
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="360" value="@hli"
+                               @onchange="e => SetFromHsl(ClampD(e.Value, 0, 360, hl), sl, ll)" />
+                        <span class="cp-chan-lbl">H</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="100" value="@sli"
+                               @onchange="e => SetFromHsl(hl, ClampD(e.Value, 0, 100, sl * 100) / 100.0, ll)" />
+                        <span class="cp-chan-lbl">S</span>
+                    </div>
+                    <div class="cp-chan">
+                        <input class="cp-chan-in" type="number" min="0" max="100" value="@lli"
+                               @onchange="e => SetFromHsl(hl, sl, ClampD(e.Value, 0, 100, ll * 100) / 100.0)" />
+                        <span class="cp-chan-lbl">L</span>
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+}
+
+<style>
+    .cp-overlay  { position:fixed;inset:0;z-index:9990;background:transparent; }
+    .cp-popup    { position:fixed;z-index:9991;width:272px;background:#2b2b2b;border-radius:10px;
+                   padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.65);user-select:none; }
+
+    /* SV square */
+    .cp-sv       { position:relative;width:100%;padding-bottom:60%;border-radius:6px;
+                   cursor:crosshair;touch-action:none;overflow:hidden; }
+    .cp-sv-dot   { position:absolute;width:14px;height:14px;border-radius:50%;
+                   border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.4);
+                   transform:translate(-50%,-50%);pointer-events:none; }
+
+    /* Hue strip */
+    .cp-hue-track { position:relative;height:14px;border-radius:7px;margin-top:10px;touch-action:none;
+                    background:linear-gradient(to right,
+                      hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),hsl(90,100%,50%),
+                      hsl(120,100%,50%),hsl(150,100%,50%),hsl(180,100%,50%),hsl(210,100%,50%),
+                      hsl(240,100%,50%),hsl(270,100%,50%),hsl(300,100%,50%),hsl(330,100%,50%),
+                      hsl(360,100%,50%));cursor:pointer; }
+    .cp-hue-thumb { position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:#fff;
+                    border:2px solid rgba(0,0,0,.3);box-shadow:0 1px 4px rgba(0,0,0,.5);
+                    transform:translate(-50%,-50%);pointer-events:none; }
+
+    /* Preview + presets */
+    .cp-preview-row { display:flex;align-items:center;gap:8px;margin-top:10px; }
+    .cp-color-dot   { width:32px;height:32px;border-radius:50%;flex-shrink:0;
+                      border:2px solid rgba(255,255,255,.15); }
+    .cp-swatches    { display:flex;gap:5px;flex-wrap:wrap;flex:1; }
+    .cp-swatch      { width:26px;height:26px;border-radius:4px;border:none;cursor:pointer;
+                      padding:0;transition:transform .1s;flex-shrink:0; }
+    .cp-swatch:hover { transform:scale(1.15); }
+
+    /* Tabs */
+    .cp-tabs     { display:flex;gap:2px;margin-top:10px;background:#222;border-radius:6px;padding:2px; }
+    .cp-tab      { flex:1;background:transparent;border:none;color:rgba(255,255,255,.45);font-size:11px;
+                   font-weight:600;padding:5px 0;border-radius:4px;cursor:pointer;transition:all .15s; }
+    .cp-tab-on   { background:#444;color:#fff; }
+
+    /* Inputs */
+    .cp-inputs   { margin-top:8px; }
+    .cp-hex-row  { display:flex;gap:6px;align-items:center; }
+    .cp-hex-in   { flex:1;background:#1a1a1a;border:1px solid #444;color:#fff;padding:7px 10px;
+                   border-radius:6px;font-size:13px;font-family:monospace;letter-spacing:.05em;outline:none; }
+    .cp-hex-in:focus { border-color:#666; }
+    .cp-clear-btn { background:#333;border:1px solid #444;color:rgba(255,255,255,.5);width:32px;height:34px;
+                    border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;
+                    justify-content:center;flex-shrink:0;transition:color .15s; }
+    .cp-clear-btn:hover { color:#fff; }
+    .cp-chan-row  { display:flex;gap:6px; }
+    .cp-chan      { display:flex;flex-direction:column;align-items:center;gap:3px;flex:1; }
+    .cp-chan-in   { width:100%;background:#1a1a1a;border:1px solid #444;color:#fff;padding:6px 4px;
+                   border-radius:5px;font-size:12px;text-align:center;outline:none; }
+    .cp-chan-in:focus { border-color:#666; }
+    .cp-chan-lbl  { color:rgba(255,255,255,.3);font-size:10px;font-weight:600;letter-spacing:.05em; }
+
+    /* Remove number input arrows */
+    .cp-chan-in::-webkit-outer-spin-button,
+    .cp-chan-in::-webkit-inner-spin-button { -webkit-appearance:none;margin:0; }
+    .cp-chan-in[type=number] { -moz-appearance:textfield; }
+</style>
+
+@code {
+    /* ─── Parameters ──────────────────────────────────────────────────────── */
+    [Parameter] public bool            IsVisible       { get; set; }
+    [Parameter] public string          InitialColor    { get; set; } = "#6366f1";
+    [Parameter] public ElementReference AnchorRef     { get; set; }
+    [Parameter] public EventCallback<string> OnColorChanged { get; set; }
+    [Parameter] public EventCallback   OnClose         { get; set; }
+
+    /* ─── Internal state ──────────────────────────────────────────────────── */
+    private static readonly CultureInfo IC = CultureInfo.InvariantCulture;
+
+    private double _h = 0, _s = 0, _v = 1;   // HSV  h:0-360  s,v:0-1
+    private string _hexInput = "#ffffff";
+    private string _tab      = "HEX";
+    private string _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);";
+
+    private bool _svDrag, _hueDrag;
+    private ElementReference _svRef, _hueRef;
+    private FullRect? _svBounds, _hueBounds;
+    private bool _prevVisible;
+
+    private static readonly string[] _tabs = { "HEX", "RGB", "HSV", "HSL" };
+
+    private static readonly string[] _presets =
+    {
+        "#e57373", "#f4a351", "#ffd54f", "#aed581",
+        "#4dd0e1", "#90caf9", "#ce93d8", "#f48fb1"
+    };
+
+    /* ─── Computed ────────────────────────────────────────────────────────── */
+    private string HexColor
+    {
+        get
+        {
+            var (r, g, b) = HsvToRgb(_h, _s, _v);
+            return $"#{Ri(r):x2}{Ri(g):x2}{Ri(b):x2}";
+        }
+    }
+
+    /* ─── Lifecycle ───────────────────────────────────────────────────────── */
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && !_prevVisible)
+        {
+            if (TryParseHex(InitialColor, out var h, out var s, out var v))
+            {
+                _h = h; _s = s; _v = v;
+                _hexInput = HexColor;
+            }
+            await PositionAsync();
+        }
+        _prevVisible = IsVisible;
+    }
+
+    private async Task PositionAsync()
+    {
+        try
+        {
+            var b = await JS.InvokeAsync<FullRect>("getFullBounds", AnchorRef);
+            double left = b.Left;
+            double top  = b.Top + b.Height + 6;
+            if (left + 278 > b.ViewW) left = b.ViewW - 282;
+            if (left < 4)             left = 4;
+            if (top  + 390 > b.ViewH) top  = b.Top - 396;
+            if (top  < 4)             top  = 4;
+            _posStyle = $"left:{left.ToString(IC)}px;top:{top.ToString(IC)}px;";
+        }
+        catch
+        {
+            _posStyle = "left:50%;top:50%;transform:translate(-50%,-50%);";
+        }
+    }
+
+    /* ─── SV square drag ──────────────────────────────────────────────────── */
+    private async Task SvDown(PointerEventArgs e)
+    {
+        _svDrag = true;
+        try
+        {
+            _svBounds = await JS.InvokeAsync<FullRect>("getFullBounds", _svRef);
+            await JS.InvokeVoidAsync("capturePointer", _svRef, e.PointerId);
+        }
+        catch { }
+        ApplySv(e.ClientX, e.ClientY);
+        Emit();
+    }
+
+    private void SvMove(PointerEventArgs e)
+    {
+        if (!_svDrag || _svBounds is null) return;
+        ApplySv(e.ClientX, e.ClientY);
+        Emit();
+    }
+
+    private void SvUp(PointerEventArgs e)
+    {
+        _svDrag = false;
+        _svBounds = null;
+    }
+
+    private void ApplySv(double cx, double cy)
+    {
+        if (_svBounds is null || _svBounds.W <= 0 || _svBounds.H <= 0) return;
+        _s = Math.Clamp((cx - _svBounds.Left) / _svBounds.W, 0, 1);
+        _v = Math.Clamp(1 - (cy - _svBounds.Top)  / _svBounds.H, 0, 1);
+        SyncHex();
+    }
+
+    /* ─── Hue slider drag ─────────────────────────────────────────────────── */
+    private async Task HueDown(PointerEventArgs e)
+    {
+        _hueDrag = true;
+        try
+        {
+            _hueBounds = await JS.InvokeAsync<FullRect>("getFullBounds", _hueRef);
+            await JS.InvokeVoidAsync("capturePointer", _hueRef, e.PointerId);
+        }
+        catch { }
+        ApplyHue(e.ClientX);
+        Emit();
+    }
+
+    private void HueMove(PointerEventArgs e)
+    {
+        if (!_hueDrag || _hueBounds is null) return;
+        ApplyHue(e.ClientX);
+        Emit();
+    }
+
+    private void HueUp(PointerEventArgs e)
+    {
+        _hueDrag = false;
+        _hueBounds = null;
+    }
+
+    private void ApplyHue(double cx)
+    {
+        if (_hueBounds is null || _hueBounds.W <= 0) return;
+        _h = Math.Clamp((cx - _hueBounds.Left) / _hueBounds.W, 0, 1) * 360;
+        SyncHex();
+    }
+
+    /* ─── Hex input ───────────────────────────────────────────────────────── */
+    private void HexTyping(ChangeEventArgs e)
+    {
+        _hexInput = e.Value?.ToString() ?? _hexInput;
+        if (TryParseHex(_hexInput, out var h, out var s, out var v))
+        {
+            _h = h; _s = s; _v = v;
+            Emit();
+        }
+    }
+
+    private void HexCommit(ChangeEventArgs e)
+    {
+        // Normalise to full 6-digit lower-case hex on blur
+        if (TryParseHex(e.Value?.ToString() ?? "", out var h, out var s, out var v))
+        {
+            _h = h; _s = s; _v = v;
+        }
+        _hexInput = HexColor;
+        Emit();
+    }
+
+    private void ResetBlack()
+    {
+        _h = 0; _s = 0; _v = 0;
+        _hexInput = "#000000";
+        Emit();
+    }
+
+    /* ─── Preset ──────────────────────────────────────────────────────────── */
+    private void SetFromHex(string hex)
+    {
+        if (!TryParseHex(hex, out var h, out var s, out var v)) return;
+        _h = h; _s = s; _v = v;
+        SyncHex();
+        Emit();
+    }
+
+    /* ─── RGB / HSV / HSL setters ─────────────────────────────────────────── */
+    private void SetFromRgb(int r, int g, int b)
+    {
+        (_h, _s, _v) = RgbToHsv(r, g, b);
+        SyncHex(); Emit();
+    }
+
+    private void SetFromHsl(double h, double sl, double l)
+    {
+        var v = l + sl * Math.Min(l, 1.0 - l);
+        var s = v == 0 ? 0 : 2.0 * (1.0 - l / v);
+        _h = Math.Clamp(h, 0, 360);
+        _s = Math.Clamp(s, 0, 1);
+        _v = Math.Clamp(v, 0, 1);
+        SyncHex(); Emit();
+    }
+
+    /* ─── Helpers ─────────────────────────────────────────────────────────── */
+    private void SyncHex() => _hexInput = HexColor;
+    private void Emit()    { _ = OnColorChanged.InvokeAsync(HexColor); StateHasChanged(); }
+    private void HandleClose() => _ = OnClose.InvokeAsync();
+
+    private static string Pct(double v)  => v.ToString("F2", IC) + "%";
+    private static string F0(double v)   => v.ToString("F0", IC);
+    private static int    Ri(double v)   => (int)Math.Round(Math.Clamp(v, 0, 255));
+    private static int    Clamp(object? raw, int min, int max, int fallback)
+        => int.TryParse(raw?.ToString(), out var n) ? Math.Clamp(n, min, max) : fallback;
+    private static double ClampD(object? raw, double min, double max, double fallback)
+        => double.TryParse(raw?.ToString(), NumberStyles.Any, IC, out var n)
+           ? Math.Clamp(n, min, max) : fallback;
+
+    /* ─── Color math ──────────────────────────────────────────────────────── */
+    private static (double r, double g, double b) HsvToRgb(double h, double s, double v)
+    {
+        if (s <= 0) { var c = v * 255; return (c, c, c); }
+        var hh = h / 60.0;
+        var i  = (int)hh;
+        var ff = hh - i;
+        var p  = v * (1 - s);
+        var q  = v * (1 - s * ff);
+        var t  = v * (1 - s * (1 - ff));
+        return i switch
+        {
+            0 => (v * 255, t * 255, p * 255),
+            1 => (q * 255, v * 255, p * 255),
+            2 => (p * 255, v * 255, t * 255),
+            3 => (p * 255, q * 255, v * 255),
+            4 => (t * 255, p * 255, v * 255),
+            _ => (v * 255, p * 255, q * 255)
+        };
+    }
+
+    private static (double h, double s, double v) RgbToHsv(double r, double g, double b)
+    {
+        r /= 255; g /= 255; b /= 255;
+        var max   = Math.Max(r, Math.Max(g, b));
+        var min   = Math.Min(r, Math.Min(g, b));
+        var delta = max - min;
+        double h = 0, s = max == 0 ? 0 : delta / max, v = max;
+        if (delta > 0)
+        {
+            if      (max == r) h = (g - b) / delta % 6;
+            else if (max == g) h = (b - r) / delta + 2;
+            else               h = (r - g) / delta + 4;
+            h *= 60;
+            if (h < 0) h += 360;
+        }
+        return (h, s, v);
+    }
+
+    private static (double h, double s, double l) HsvToHsl(double h, double s, double v)
+    {
+        var l  = v * (1.0 - s / 2.0);
+        var sl = (l == 0 || l == 1) ? 0 : (v - l) / Math.Min(l, 1.0 - l);
+        return (h, sl, l);
+    }
+
+    private static bool TryParseHex(string hex, out double h, out double s, out double v)
+    {
+        h = s = v = 0;
+        if (string.IsNullOrWhiteSpace(hex)) return false;
+        hex = hex.Trim().TrimStart('#');
+        if (hex.Length == 3) hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+        if (hex.Length != 6) return false;
+        try
+        {
+            var r = Convert.ToInt32(hex[0..2], 16);
+            var g = Convert.ToInt32(hex[2..4], 16);
+            var b = Convert.ToInt32(hex[4..6], 16);
+            (h, s, v) = RgbToHsv(r, g, b);
+            return true;
+        }
+        catch { return false; }
+    }
+
+    /* ─── JS interop model ────────────────────────────────────────────────── */
+    // Requires this function in your app's JS file:
+    //
+    // window.getFullBounds = function (el) {
+    //     var r = el.getBoundingClientRect();
+    //     return { Left: r.left, Top: r.top, W: r.width, H: r.height,
+    //              ViewW: window.innerWidth, ViewH: window.innerHeight };
+    // };
+
+    private class FullRect
+    {
+        public double Left  { get; set; }
+        public double Top   { get; set; }
+        public double W     { get; set; }
+        public double H     { get; set; }
+        public double ViewW { get; set; }
+        public double ViewH { get; set; }
+    }
+}

@@ -36,14 +36,11 @@
                 <!-- NEW LIST ROW -->
                 <div class="clm2-row clm2-row-new">
 
-                    <!-- Swatch for the new-list row — native color picker -->
-                    <label class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
-                           style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
-                           @onclick:stopPropagation="true">
-                        <input type="color"
-                               style="opacity:0;position:absolute;width:0;height:0;pointer-events:none;"
-                               value="@(_newColor ?? "#6366f1")"
-                               @oninput="e => { _newColor = e.Value?.ToString(); StateHasChanged(); }" />
+                    <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                         style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
+                         @ref="_newSwatchRef"
+                         @onclick:stopPropagation="true"
+                         @onclick="OpenPickerForNewRow">
                         @if (string.IsNullOrEmpty(_newColor))
                         {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -53,7 +50,7 @@
                                 <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
                         }
-                    </label>
+                    </div>
 
                     <input class="clm2-name-input"
                            placeholder="New list name…"
@@ -74,7 +71,7 @@
                     </button>
                 </div>
 
-                <!-- LIST ROWS — data-row-index lets JS identify each row during drag -->
+                <!-- LIST ROWS -->
                 @for (int i = 0; i < _rows.Count; i++)
                 {
                     var ri    = i;
@@ -87,7 +84,6 @@
 
                     <div class="clm2-row" data-row-index="@ri">
 
-                        <!-- Drag handle: touch-action:none prevents browser scroll stealing -->
                         <div class="clm2-drag"
                              style="touch-action:none; cursor:grab;"
                              @ref="_handleRefs[ri]"
@@ -101,15 +97,13 @@
                             </svg>
                         </div>
 
-                        <!-- Swatch: native color picker anchored to label -->
-                        <label class="clm2-swatch clm2-swatch-filled"
-                               style="background:@color; cursor:pointer;"
-                               @onclick:stopPropagation="true">
-                            <input type="color"
-                                   style="opacity:0;position:absolute;width:0;height:0;pointer-events:none;"
-                                   value="@color"
-                                   @oninput="e => { row.SetColor(e.Value?.ToString() ?? color); SaveAll(); StateHasChanged(); }" />
-                        </label>
+                        <div class="clm2-swatch clm2-swatch-filled"
+                             style="background:@color;"
+                             @ref="_swatchRefs[ri]"
+                             @onclick:stopPropagation="true"
+                             @onclick="() => OpenPickerForRow(ri, color,
+                                           c => { row.SetColor(c); SaveAll(); StateHasChanged(); })">
+                        </div>
 
                         <input class="clm2-name-input"
                                value="@row.Name"
@@ -154,6 +148,13 @@
             </div><!-- /clm-body -->
         </div><!-- /clm-panel -->
     </div><!-- /clm-overlay -->
+
+    <!-- Color picker (rendered outside clm-overlay so clicks don't bubble to close handler) -->
+    <ColorPickerPopup IsVisible="_pickerOpen"
+                      InitialColor="@_pickerInitColor"
+                      AnchorRef="_pickerAnchor"
+                      OnColorChanged="OnPickerColorChanged"
+                      OnClose="CloseColorPicker" />
 }
 
 @code {
@@ -178,15 +179,23 @@
 
     // Element refs
     private ElementReference   _panelRef;
-    private ElementReference[] _handleRefs = new ElementReference[64];
+    private ElementReference   _newSwatchRef;
+    private ElementReference[] _swatchRefs  = new ElementReference[64];
+    private ElementReference[] _handleRefs  = new ElementReference[64];
 
-    // DotNet ref passed to JS for drag callbacks only
+    // DotNet ref passed to JS for drag callbacks
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
     private string? _newColor = null;
     private bool CanAdd => !string.IsNullOrWhiteSpace(_newName);
+
+    // ── Color picker state ───────────────────────────────────────────────
+    private bool             _pickerOpen      = false;
+    private string           _pickerInitColor = "#6366f1";
+    private ElementReference _pickerAnchor;
+    private Action<string>?  _pickerCallback;
 
     // ── Lifecycle ────────────────────────────────────────────────────────
     protected override void OnInitialized()
@@ -229,7 +238,6 @@
         catch { }
     }
 
-    // Called by JS after the user releases the dragged row.
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
@@ -250,7 +258,43 @@
         StateHasChanged();
     }
 
-    private const int ROW_H = 64; // keep in sync with CSS
+    private const int ROW_H = 64;
+
+    // ── Color picker ─────────────────────────────────────────────────────
+
+    private void OpenPickerForNewRow()
+    {
+        _pickerAnchor    = _newSwatchRef;
+        _pickerInitColor = _newColor ?? "#6366f1";
+        _pickerCallback  = c =>
+        {
+            _newColor = c;
+            StateHasChanged();
+        };
+        _pickerOpen = true;
+        StateHasChanged();
+    }
+
+    private void OpenPickerForRow(int ri, string currentColor, Action<string> callback)
+    {
+        _pickerAnchor    = _swatchRefs[ri];
+        _pickerInitColor = currentColor;
+        _pickerCallback  = callback;
+        _pickerOpen      = true;
+        StateHasChanged();
+    }
+
+    private void OnPickerColorChanged(string hex)
+    {
+        _pickerCallback?.Invoke(hex);
+    }
+
+    private void CloseColorPicker()
+    {
+        _pickerOpen     = false;
+        _pickerCallback = null;
+        StateHasChanged();
+    }
 
     // ── Persist ──────────────────────────────────────────────────────────
     private void SaveAll()
@@ -298,7 +342,12 @@
     private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") AddList(); }
 
     // ── Panel close ──────────────────────────────────────────────────────
-    private void HandleOverlayClick() => _ = Close();
+    private void HandleOverlayClick()
+    {
+        if (_pickerOpen) { CloseColorPicker(); return; }
+        _ = Close();
+    }
+
     private async Task Close() => await OnClose.InvokeAsync();
 
     // ── Status parser ─────────────────────────────────────────────────────
