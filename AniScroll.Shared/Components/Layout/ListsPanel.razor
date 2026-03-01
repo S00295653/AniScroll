@@ -63,7 +63,7 @@
 
                     <button class="lists-tab lists-tab-@tab.CssKey @(active ? "active" : "")"
                             @onclick="() => SetTab(tab.Status)">
-                        <span class="lists-tab-dot"></span>
+                        <span class="le-dd-dot le-dd-dot-@tab.CssKey"></span>
                         <span class="lists-tab-label">@tab.Label</span>
                         @if (cnt > 0)
                         {
@@ -78,7 +78,7 @@
                     <button class="lists-tab lists-tab-custom @(activeCustomListId == cl.Id ? "active" : "")"
                             style="--cl-color:@cl.Color;"
                             @onclick="() => SetCustomTab(cl.Id)">
-                        <span class="lists-tab-dot"></span>
+                        <span class="le-dd-dot" style="background:@cl.Color; box-shadow:0 0 6px @(cl.Color)80;"></span>
                         <span>@cl.Name</span>
                         @if (UserListService.GetCountForCustomList(cl.Id) > 0)
                         {
