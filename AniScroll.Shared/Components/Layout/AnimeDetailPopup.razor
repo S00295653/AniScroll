@@ -539,7 +539,7 @@
 
                     @if (_statusDropdownOpen)
                     {
-                        <div class="le-dd-list" style="max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;">
+                        <div class="le-dd-list" style="max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;" @onwheel:stopPropagation="true">
 
                             <!-- Statuts standards -->
                             @foreach (var s in GetAvailableStatuses())
@@ -981,7 +981,8 @@
             || editRewatches > 0
             || !string.IsNullOrEmpty(editNotes)
             || editStartDate.HasValue
-            || editFinishDate.HasValue;
+            || editFinishDate.HasValue
+            || _editCustomListIds.Any();   // ← ADD THIS LINE
 
         if (!hasContent) return;
 
