@@ -251,27 +251,30 @@
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
-        // toIndex is an insertion index in the post-RemoveAt array (size N-1),
-        // so valid range is [0, _rows.Count - 1] after removal, meaning
-        // toIndex can legally equal _rows.Count - 1 (append to end).
-        // We use Math.Clamp on the Insert call to be safe.
+        Console.WriteLine($"[CLM] OnDragComplete called: from={fromIndex} to={toIndex} totalRows={_rows.Count}");
+
         if (fromIndex < 0 || toIndex < 0
             || fromIndex >= _rows.Count
-            || toIndex > _rows.Count   // allow == _rows.Count only after removal shrinks the list
+            || toIndex > _rows.Count
             || fromIndex == toIndex)
         {
+            Console.WriteLine($"[CLM] EARLY RETURN — reason: from={fromIndex} to={toIndex} count={_rows.Count} sameIndex={fromIndex == toIndex}");
             InvokeAsync(StateHasChanged);
             return;
         }
 
         var item = _rows[fromIndex];
+        Console.WriteLine($"[CLM] Moving row '{item.Name}' (isStatus={item.IsStatus}) from {fromIndex} to {toIndex}");
+
         _rows.RemoveAt(fromIndex);
-        // After RemoveAt, valid insertion indices are [0, _rows.Count] (inclusive)
         _rows.Insert(Math.Clamp(toIndex, 0, _rows.Count), item);
+
+        Console.WriteLine($"[CLM] New _rows order: {string.Join(", ", _rows.Select(r => r.Name))}");
 
         SaveAll();
         InvokeAsync(StateHasChanged);
     }
+
 
     private const int ROW_H = 64;
 
@@ -312,8 +315,14 @@
         var customRows = _rows.Where(r => !r.IsStatus).Select(r => r.Custom!).ToList();
         for (int i = 0; i < customRows.Count; i++) customRows[i].Order = i;
 
+        Console.WriteLine($"[CLM] SaveAll — customRows to save: {string.Join(", ", customRows.Select(c => $"{c.Name}(Order={c.Order})"))}");
+
         UserListService.SaveStatusSettings(statusRows);
         UserListService.SaveCustomLists(customRows);
+
+        // Vérifie ce que le service retourne immédiatement après save
+        var check = UserListService.GetCustomLists();
+        Console.WriteLine($"[CLM] After save, GetCustomLists() returns: {string.Join(", ", check.Select(c => $"{c.Name}(Order={c.Order})"))}");
     }
 
     // ── Add / Delete ─────────────────────────────────────────────────────

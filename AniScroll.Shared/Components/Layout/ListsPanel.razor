@@ -257,7 +257,12 @@
 
     public void Dispose() => UserListService.OnChanged -= HandleListChanged;
 
-    private void HandleListChanged() => InvokeAsync(StateHasChanged);
+    private void HandleListChanged()
+    {
+        var lists = UserListService.GetCustomLists();
+        Console.WriteLine($"[ListsPanel] HandleListChanged fired — custom lists: {string.Join(", ", lists.Select(c => $"{c.Name}(Order={c.Order})"))}");
+        InvokeAsync(StateHasChanged);
+    }
 
     // ─── Interactions ─────────────────────────────────────────────────────────
 
