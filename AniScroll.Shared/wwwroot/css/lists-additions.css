@@ -134,9 +134,9 @@
     gap: 6px;
     padding: 7px 13px;
     border-radius: 20px;
-     border: 1px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);       /* ← était transparent */
+    background: rgba(255, 255, 255, 0.06);              /* ← était transparent */
     color: rgba(255, 255, 255, 0.45);
-    background: transparent;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     font-size: 12px;
     font-weight: 600;
