@@ -583,9 +583,9 @@
                                 {
                                     bool isInCl = _editCustomListIds.Contains(cl.Id);
                                     <button class="le-dd-option @(isInCl ? "selected" : "")"
-                                            style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
-                                            @onclick="async () => await ToggleCustomList(cl.Id)"
-                                            @onclick:stopPropagation="true">
+                                        style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
+                                        @onclick="async () => { await ToggleCustomList(cl.Id); _statusDropdownOpen = false; StateHasChanged(); }"
+                                        @onclick:stopPropagation="true">
                                         @GlowDot(cl.Color)
                                         <span class="le-dd-option-text">@cl.Name</span>
                                         @if (isInCl)
@@ -975,22 +975,21 @@
     {
         if (CurrentAnime == null) return;
 
-        bool hasContent = editStatus.HasValue
+        var existing = UserListService.GetEntry(CurrentAnime.Id);
+
+        bool hasContent = existing != null
+            || editStatus.HasValue
             || editScore > 0
             || editEpisodes > 0
             || editRewatches > 0
             || !string.IsNullOrEmpty(editNotes)
             || editStartDate.HasValue
             || editFinishDate.HasValue
-            || _editCustomListIds.Any();   // ← ADD THIS LINE
+            || _editCustomListIds.Any();
 
         if (!hasContent) return;
 
-        var existing = UserListService.GetEntry(CurrentAnime.Id) ?? new UserListEntry
-        {
-            Anime   = CurrentAnime,
-            AddedAt = DateTime.Now
-        };
+        existing ??= new UserListEntry { Anime = CurrentAnime, AddedAt = DateTime.Now };
 
         existing.Status              = editStatus;
         existing.Score               = editScore;

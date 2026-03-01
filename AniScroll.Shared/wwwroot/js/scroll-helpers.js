@@ -467,9 +467,20 @@ window.unregisterEdgeSwipeInterceptor = function () {
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 };
 
-window.preventWheelScroll = function (el) {
+window.preventWheelScroll = function (el) { 
     if (!el || el._noWheel) return;
-    el._noWheel = function (e) { e.preventDefault(); };
+    el._noWheel = function (e) {
+        // Allow wheel on any scrollable child (e.g. le-dd-list)
+        let node = e.target;
+        while (node && node !== el) {
+            const oy = window.getComputedStyle(node).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) {
+                return;
+            }
+            node = node.parentElement;
+        }
+        e.preventDefault();
+    };
     el.addEventListener('wheel', el._noWheel, { passive: false });
 };
 window.removeWheelScrollPrevention = function (el) {
