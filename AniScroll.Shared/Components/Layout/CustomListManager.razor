@@ -30,8 +30,8 @@
                 </div>
             </div>
 
-            <!-- ── Body ───────────────────────────────────────────── -->
-            <div class="clm-body">
+            <!-- ── Body (scrollable) ───────────────────────────────── -->
+            <div class="clm-body" @ref="_bodyRef">
 
                 <!-- NEW LIST ROW -->
                 <div class="clm2-row clm2-row-new">
@@ -82,7 +82,8 @@
                         ? UserListService.Count(ParseStatus(row.Status!.Key))
                         : UserListService.GetCountForCustomList(row.Custom!.Id);
 
-                    <div class="clm2-row" data-row-index="@ri">
+                    <div class="clm2-row @(_draggingIndex == ri ? "clm2-row-dragging" : "")"
+                         data-row-index="@ri">
 
                         <div class="clm2-drag"
                              style="touch-action:none; cursor:grab;"
@@ -179,12 +180,16 @@
 
     // Element refs
     private ElementReference   _panelRef;
+    private ElementReference   _bodyRef;
     private ElementReference   _newSwatchRef;
     private ElementReference[] _swatchRefs = new ElementReference[64];
     private ElementReference[] _handleRefs = new ElementReference[64];
 
     // DotNet ref passed to JS for drag callbacks
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
+
+    // Currently dragging row index (for visual highlight)
+    private int _draggingIndex = -1;
 
     // ── New list form ────────────────────────────────────────────────────
     private string  _newName  = "";
@@ -203,9 +208,6 @@
         _dotNetRef = DotNetObjectReference.Create(this);
     }
 
-    // FIX: only rebuild _rows when the panel is OPENED, not on every parent re-render.
-    // Previously, RebuildRows() was called on every OnParametersSet while IsVisible=true,
-    // which reset _rows and broke drag state for newly added rows.
     private bool _prevIsVisible = false;
 
     protected override void OnParametersSet()
@@ -218,6 +220,7 @@
         RebuildRows();
         _newName  = "";
         _newColor = null;
+        _draggingIndex = -1;
     }
 
     public void Dispose() => _dotNetRef?.Dispose();
@@ -231,15 +234,19 @@
             .ToList();
     }
 
-    // ── Drag — entirely driven by JS ─────────────────────────────────────
+    // ── Drag — scroll-aware, driven by JS ────────────────────────────────
     private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
+        _draggingIndex = rowIndex;
+        StateHasChanged();
         try
         {
+            // Pass bodyRef so JS can read scrollTop for accurate positioning
             await JS.InvokeVoidAsync(
                 "startRowDrag",
                 _dotNetRef,
                 _panelRef,
+                _bodyRef,
                 e.PointerId,
                 rowIndex,
                 ROW_H);
@@ -247,15 +254,28 @@
         catch { }
     }
 
+    // Called by JS while dragging (to update visual highlight)
+    [JSInvokable]
+    public void OnDragMove(int overIndex)
+    {
+        if (_draggingIndex != overIndex)
+        {
+            _draggingIndex = overIndex;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
     // Called by JS after the user releases the dragged row.
     [JSInvokable]
     public void OnDragComplete(int fromIndex, int toIndex)
     {
+        _draggingIndex = -1;
+
         if (fromIndex == toIndex
             || fromIndex < 0 || toIndex < 0
             || fromIndex >= _rows.Count || toIndex >= _rows.Count)
         {
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
             return;
         }
 
@@ -265,7 +285,7 @@
         _rows.Insert(at, item);
 
         SaveAll();
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 
     private const int ROW_H = 64;

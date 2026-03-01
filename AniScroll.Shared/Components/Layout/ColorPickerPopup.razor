@@ -139,7 +139,7 @@
 
 <style>
     .cp-overlay  { position:fixed;inset:0;z-index:9990;background:transparent; }
-    .cp-popup    { position:fixed;z-index:9991;width:280px;background:#2b2b2b;border-radius:10px;
+    .cp-popup    { position:fixed;z-index:9991;width:min(280px, calc(100vw - 24px));background:#2b2b2b;border-radius:10px;
                    padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.65);user-select:none; }
 
     /* SV square — height via aspect-ratio so getBoundingClientRect has real height */
@@ -266,12 +266,11 @@
         _prevVisible = IsVisible;
     }
 
-    /* ─── Positioning: anchored below (or above) the swatch ─────────────── */
+    /* ─── Positioning: smart anchor-aware, mobile-safe ──────────────────── */
     private async Task PositionAsync()
     {
         try
         {
-            // Small delay so the popup is in the DOM and has a measurable size
             await Task.Delay(10);
             var pos = await JS.InvokeAsync<PickerPos>("cpGetPosition", AnchorRef, 290, 420);
             _posStyle = $"left:{pos.Left.ToString(IC)}px;top:{pos.Top.ToString(IC)}px;";
@@ -286,10 +285,7 @@
     /* ─── JS-driven drag: SV ─────────────────────────────────────────────── */
     private async Task SvPointerDown(PointerEventArgs e)
     {
-        // Immediate update on click
         await UpdateSvFromClient(e.ClientX, e.ClientY);
-
-        // Hand off to JS document-level drag; JS calls OnSvDrag on every move
         await JS.InvokeVoidAsync("cpStartSvDrag", _svRef, _dotNetRef);
     }
 

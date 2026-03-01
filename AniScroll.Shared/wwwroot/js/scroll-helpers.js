@@ -392,3 +392,326 @@ window.getElementBoundingRect = function (el) {
     window.cpStopDrag = _cpStopDrag;
 
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  COLOR PICKER helpers
+// ═══════════════════════════════════════════════════════════════════════
+
+window.cpGetRect = function (el) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+};
+
+/**
+ * Position the color picker popup near an anchor element.
+ *
+ * Strategy:
+ *  1. Measure anchor + viewport
+ *  2. Prefer BELOW the anchor (gap of 8px)
+ *  3. If not enough room below → place ABOVE (gap of 8px above the anchor)
+ *  4. Horizontally: align left edge with anchor, but clamp to stay inside
+ *     viewport with a 12px safety margin on all sides.
+ *  5. On very small screens (mobile) where even above/below doesn't fit well,
+ *     center horizontally and use the position with more available space.
+ *
+ * @param {Element} anchorEl   - the swatch / button that was clicked
+ * @param {number}  popupW     - expected popup width  (px)
+ * @param {number}  popupH     - expected popup height (px)
+ */
+window.cpGetPosition = function (anchorEl, popupW, popupH) {
+    const MARGIN = 12;   // min gap from viewport edges
+    const GAP    = 8;    // gap between anchor and popup
+
+    const a  = anchorEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Clamp popup width to available viewport
+    const w = Math.min(popupW, vw - 2 * MARGIN);
+
+    // ── Vertical: prefer below, fall back to above ──────────────────────
+    const spaceBelow = vh - a.bottom - GAP;
+    const spaceAbove = a.top - GAP;
+
+    let top;
+    if (spaceBelow >= popupH || spaceBelow >= spaceAbove) {
+        // Place below anchor
+        top = a.bottom + GAP;
+        // If it overflows bottom, push it up (but never above margin)
+        if (top + popupH > vh - MARGIN) {
+            top = Math.max(MARGIN, vh - MARGIN - popupH);
+        }
+    } else {
+        // Place above anchor
+        top = a.top - GAP - popupH;
+        // If it overflows top, push it down (but never below margin)
+        if (top < MARGIN) {
+            top = MARGIN;
+        }
+    }
+
+    // ── Horizontal: left-align with anchor, clamp to viewport ──────────
+    let left = a.left;
+    // Shift left if it overflows right edge
+    if (left + w > vw - MARGIN) {
+        left = vw - MARGIN - w;
+    }
+    // Shift right if it overflows left edge
+    if (left < MARGIN) {
+        left = MARGIN;
+    }
+
+    return { left, top };
+};
+
+// ── SV drag ──────────────────────────────────────────────────────────────────
+let _cpSvDotNet  = null;
+let _cpSvEl      = null;
+let _cpSvActive  = false;
+
+window.cpStartSvDrag = function (svEl, dotNet) {
+    _cpSvEl     = svEl;
+    _cpSvDotNet = dotNet;
+    _cpSvActive = true;
+
+    const onMove = (cx, cy) => {
+        const r = _cpSvEl.getBoundingClientRect();
+        const px = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+        const py = Math.max(0, Math.min(1, (cy - r.top)  / r.height));
+        _cpSvDotNet.invokeMethodAsync('OnSvDrag', px, py);
+    };
+
+    const onMouseMove = e => { if (_cpSvActive) onMove(e.clientX, e.clientY); };
+    const onTouchMove = e => { if (_cpSvActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const stop = () => { _cpSvActive = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', stop); document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', stop); };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   stop);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  stop);
+};
+
+// ── Hue drag ─────────────────────────────────────────────────────────────────
+let _cpHueDotNet = null;
+let _cpHueEl     = null;
+let _cpHueActive = false;
+
+window.cpStartHueDrag = function (hueEl, dotNet) {
+    _cpHueEl     = hueEl;
+    _cpHueDotNet = dotNet;
+    _cpHueActive = true;
+
+    const onMove = cx => {
+        const r  = _cpHueEl.getBoundingClientRect();
+        const px = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+        _cpHueDotNet.invokeMethodAsync('OnHueDrag', px);
+    };
+
+    const onMouseMove = e => { if (_cpHueActive) onMove(e.clientX); };
+    const onTouchMove = e => { if (_cpHueActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX); } };
+    const stop = () => { _cpHueActive = false; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', stop); document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', stop); };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   stop);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  stop);
+};
+
+window.cpStopDrag = function () {
+    _cpSvActive  = false;
+    _cpHueActive = false;
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ROW DRAG (CustomListManager) — scroll-aware
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Drag-to-reorder rows inside a scrollable container.
+ *
+ * Changes vs original:
+ *  - Accepts a `bodyEl` parameter (the scrollable .clm-body div)
+ *  - All Y calculations use clientY (viewport-relative) so they work
+ *    regardless of how far the list has been scrolled
+ *  - Auto-scrolls the body when the ghost is dragged near the top or bottom
+ *  - Calls OnDragMove(overIndex) on every move for live visual feedback
+ *
+ * @param {DotNetObjectReference} dotNet
+ * @param {Element} panelEl   - .clm-panel  (used only as context, kept for compat)
+ * @param {Element} bodyEl    - .clm-body   (the scrollable container)
+ * @param {number}  pointerId
+ * @param {number}  fromIndex
+ * @param {number}  rowH      - row height in px (ROW_H constant)
+ */
+window.startRowDrag = function (dotNet, panelEl, bodyEl, pointerId, fromIndex, rowH) {
+    // ── Collect all row elements inside bodyEl ───────────────────────────────
+    const getRows = () => Array.from(bodyEl.querySelectorAll('.clm2-row[data-row-index]'));
+
+    const rows = getRows();
+    if (!rows.length) return;
+
+    // ── Identify the dragged row & its starting position ─────────────────────
+    const draggedEl = rows.find(r => parseInt(r.dataset.rowIndex) === fromIndex);
+    if (!draggedEl) return;
+
+    const draggedRect = draggedEl.getBoundingClientRect();
+
+    // ── Create a floating ghost clone ────────────────────────────────────────
+    const ghost = draggedEl.cloneNode(true);
+    ghost.style.cssText = `
+        position: fixed;
+        left: ${draggedRect.left}px;
+        top:  ${draggedRect.top}px;
+        width: ${draggedRect.width}px;
+        height: ${draggedRect.height}px;
+        z-index: 99999;
+        pointer-events: none;
+        opacity: 0.92;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        border-radius: 10px;
+        background: #2a2a3a;
+        transition: none;
+    `;
+    document.body.appendChild(ghost);
+
+    // Style dragged row as placeholder
+    draggedEl.style.opacity    = '0.3';
+    draggedEl.style.background = 'rgba(255,255,255,0.04)';
+
+    // Offset from pointer to ghost top
+    let startClientY = 0;
+    // We'll receive the first move event to init startClientY from the stored pointer
+    let lastClientY  = draggedRect.top + draggedRect.height / 2;
+    let currentOver  = fromIndex;
+
+    // Auto-scroll state
+    let scrollRaf = null;
+    const SCROLL_ZONE = 60; // px from edge to start auto-scrolling
+    const SCROLL_SPEED = 6; // px per frame
+
+    const autoScroll = () => {
+        const bodyRect = bodyEl.getBoundingClientRect();
+        const distTop    = lastClientY - bodyRect.top;
+        const distBottom = bodyRect.bottom - lastClientY;
+
+        if (distTop < SCROLL_ZONE && bodyEl.scrollTop > 0) {
+            bodyEl.scrollTop -= SCROLL_SPEED * (1 - distTop / SCROLL_ZONE);
+        } else if (distBottom < SCROLL_ZONE && bodyEl.scrollTop < bodyEl.scrollHeight - bodyEl.clientHeight) {
+            bodyEl.scrollTop += SCROLL_SPEED * (1 - distBottom / SCROLL_ZONE);
+        }
+
+        scrollRaf = requestAnimationFrame(autoScroll);
+    };
+    scrollRaf = requestAnimationFrame(autoScroll);
+
+    // ── Move handler ─────────────────────────────────────────────────────────
+    const onMove = (clientX, clientY) => {
+        lastClientY = clientY;
+
+        // Move ghost
+        ghost.style.top = `${clientY - rowH / 2}px`;
+
+        // Compute which row we're hovering over using *viewport* Y
+        const bodyRect = bodyEl.getBoundingClientRect();
+        const relY     = clientY - bodyRect.top + bodyEl.scrollTop;
+        // Skip the "new list" row at top (it's not a sortable row)
+        const newRowH  = bodyEl.querySelector('.clm2-row-new')?.offsetHeight ?? rowH;
+        const adjusted = relY - newRowH;
+
+        let over = Math.floor(adjusted / rowH);
+        over = Math.max(0, Math.min(rows.length - 1 - 1 /* skip new-row */, over));
+
+        if (over !== currentOver) {
+            currentOver = over;
+            dotNet.invokeMethodAsync('OnDragMove', over);
+        }
+    };
+
+    // ── End handler ──────────────────────────────────────────────────────────
+    const onEnd = () => {
+        cancelAnimationFrame(scrollRaf);
+
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup',   onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
+        document.removeEventListener('touchmove',   onTouchMove);
+        document.removeEventListener('touchend',    onTouchEnd);
+
+        ghost.remove();
+        draggedEl.style.opacity    = '';
+        draggedEl.style.background = '';
+
+        dotNet.invokeMethodAsync('OnDragComplete', fromIndex, currentOver);
+    };
+
+    // ── Event listeners ──────────────────────────────────────────────────────
+    const onPointerMove   = e => onMove(e.clientX, e.clientY);
+    const onPointerUp     = () => onEnd();
+    const onTouchMove     = e => { if (e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const onTouchEnd      = () => onEnd();
+
+    document.addEventListener('pointermove',   onPointerMove);
+    document.addEventListener('pointerup',     onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('touchmove',     onTouchMove,  { passive: false });
+    document.addEventListener('touchend',      onTouchEnd);
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Other existing helpers (unchanged — kept for compatibility)
+// ═══════════════════════════════════════════════════════════════════════
+
+window.getElementBounds = function (el) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, width: r.width };
+};
+
+window.capturePointer = function (el, pointerId) {
+    try { el.setPointerCapture(pointerId); } catch (e) { }
+};
+
+window.setBarWidth = function (containerEl, selector, pct, color) {
+    const fill = containerEl.querySelector(selector);
+    if (!fill) return;
+    fill.style.width = pct.toFixed(1) + '%';
+    if (color) fill.style.background = color;
+};
+
+window.setInputValue = function (el, value) {
+    if (!el) return;
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    nativeInputValueSetter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
+window.setAndSelectInput = function (el, value) {
+    if (!el) return;
+    window.setInputValue(el, value);
+    el.select();
+};
+
+window.selectInputContent = function (el) {
+    if (!el) return;
+    el.select();
+};
+
+window.isModalScrollAtTop = function (el) {
+    return !el || el.scrollTop <= 2;
+};
+
+window.focusElement = function (el) {
+    if (el) el.focus();
+};
+
+window.getViewportHeight = function () {
+    return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+};
+
+window.preloadImages = function (urls) {
+    urls.forEach(url => {
+        const img = new Image();
+        img.src = url;
+    });
+};
