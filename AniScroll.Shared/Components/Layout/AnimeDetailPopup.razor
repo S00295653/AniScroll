@@ -44,8 +44,7 @@
                                         : null;
                                 }
 
-                                @* PATCH B: fix btn-in-list condition — only apply when status or custom list is actually set *@
-                                <button class="btn-add-to-list @(isInList && (currentListStatus.HasValue || currentCustomListId != null) ? "btn-in-list" : "")"
+                                <button class="btn-add-to-list @(isInList ? "btn-in-list" : "")"
                                         style="@(isInList && currentListStatus.HasValue
                                                     ? $"--status-color:{GetStatusHexColor(currentListStatus.Value)};"
                                                     : _btnCustomList != null
@@ -553,7 +552,7 @@
                     }
                     <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
                             style="border-color: @_triggerBorderColor; @(_editStatusTypeCustomId != null && !editStatus.HasValue ? $"color:{_triggerBorderColor};" : "")"
-                            @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; _customListsDropdownOpen = false; StateHasChanged(); }">
+                            @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @{
                             var _triggerCl = !editStatus.HasValue && _editStatusTypeCustomId != null
                                 ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)
@@ -658,62 +657,36 @@
                     }
                 </div>
 
-                @* PATCH C: Custom Lists — dropdown instead of pills *@
+                <!-- ── Custom Lists (multi-select pills) ── -->
                 @{
                     var _regularLists = UserListService.GetRegularCustomLists();
                 }
                 @if (_regularLists.Any())
                 {
-                    <div class="le-dd-field" @onclick:stopPropagation="true">
+                    <div class="le-custom-lists-section" @onclick:stopPropagation="true">
                         <span class="list-editor-label">CUSTOM LISTS</span>
-
-                        @{
-                            var _selectedListNames = _regularLists
-                                .Where(cl => _editCustomListIds.Contains(cl.Id))
-                                .Select(cl => cl.Name)
-                                .ToList();
-                        }
-                        <button class="le-dd-trigger"
-                                @onclick="() => { _customListsDropdownOpen = !_customListsDropdownOpen; _statusDropdownOpen = false; StateHasChanged(); }">
-                            @if (_selectedListNames.Any())
+                        <div class="le-custom-pills">
+                            @foreach (var cl in _regularLists)
                             {
-                                <span class="le-dd-trigger-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                    @string.Join(", ", _selectedListNames)
-                                </span>
+                                bool isActive = _editCustomListIds.Contains(cl.Id);
+                                <button class="le-custom-pill @(isActive ? "le-custom-pill-on" : "")"
+                                        style="@(isActive
+                                            ? $"border-color:{cl.Color};color:{cl.Color};background:color-mix(in srgb,{cl.Color} 13%,transparent);"
+                                            : $"border-color:{cl.Color}33;")"
+                                        @onclick="async () => await ToggleCustomList(cl.Id)"
+                                        @onclick:stopPropagation="true">
+                                    @GlowDot(cl.Color)
+                                    <span>@cl.Name</span>
+                                    @if (isActive)
+                                    {
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    }
+                                </button>
                             }
-                            else
-                            {
-                                <span class="le-dd-trigger-text" style="color:rgba(255,255,255,0.3);">— none —</span>
-                            }
-                            <svg class="le-dd-chevron @(_customListsDropdownOpen ? "open" : "")" width="14" height="14"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </button>
-
-                        @if (_customListsDropdownOpen)
-                        {
-                            <div class="le-dd-list" style="max-height:200px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;" @onwheel:stopPropagation="true">
-                                @foreach (var cl in _regularLists)
-                                {
-                                    bool isActive = _editCustomListIds.Contains(cl.Id);
-                                    <button class="le-dd-option @(isActive ? "selected" : "")"
-                                            style="@(isActive ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
-                                            @onclick="async () => { await ToggleCustomList(cl.Id); StateHasChanged(); }"
-                                            @onclick:stopPropagation="true">
-                                        @GlowDot(cl.Color)
-                                        <span class="le-dd-option-text">@cl.Name</span>
-                                        @if (isActive)
-                                        {
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                                 stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                        }
-                                    </button>
-                                }
-                            </div>
-                        }
+                        </div>
                     </div>
                 }
 
@@ -957,15 +930,13 @@
     private bool showDeleteConfirm = false;
     private bool _deleteAnimVisible = false;
     private bool _statusDropdownOpen = false;
-    // PATCH A: new state field for custom lists dropdown
-    private bool _customListsDropdownOpen = false;
     private bool _pointerDownOnModal = false;
 
     private bool _edgeInterceptorRegistered = false;
 
     // Edit form fields
     private ListStatus? editStatus = null;
-    private string? _editStatusTypeCustomId = null;
+    private string? _editStatusTypeCustomId = null;  // ← selected status-type custom list (mutually exclusive)
     private double editScore = 0;
     private int editEpisodes = 0;
     private int editRewatches = 0;
@@ -974,7 +945,7 @@
     private DateTime? editFinishDate = null;
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
-    private HashSet<string> _editCustomListIds = new();
+    private HashSet<string> _editCustomListIds = new();  // ← regular custom lists only (multi-select)
 
     // Element refs
     private ElementReference _listEditorOverlayRef;
@@ -1091,6 +1062,7 @@
         var entry = UserListService.GetEntry(CurrentAnime.Id);
         isInList = entry != null;
         currentListStatus = entry?.Status;
+        // Display the status-type custom list in the header button (first match)
         var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
         currentCustomListId = entry?.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
     }
@@ -1127,6 +1099,7 @@
         existing.IsPrivate           = editIsPrivate;
         existing.HideFromStatusLists = editHideFromLists;
 
+        // Combine status-type selection + regular custom list selections
         var allCustomIds = new List<string>(_editCustomListIds);
         if (_editStatusTypeCustomId != null) allCustomIds.Add(_editStatusTypeCustomId);
         existing.CustomListIds = allCustomIds;
@@ -1147,14 +1120,12 @@
     private async Task CloseAndSave()
     {
         if (CurrentAnime != null) await AutoSave();
-        showListEditor           = false;
-        _statusDropdownOpen      = false;
-        // PATCH D: reset custom lists dropdown on close
-        _customListsDropdownOpen = false;
-        _scoreBarDragging        = false;
-        _epBarDragging           = false;
-        _cachedScoreBounds       = null;
-        _cachedEpBounds          = null;
+        showListEditor      = false;
+        _statusDropdownOpen = false;
+        _scoreBarDragging   = false;
+        _epBarDragging      = false;
+        _cachedScoreBounds  = null;
+        _cachedEpBounds     = null;
         StateHasChanged();
     }
 
@@ -1176,6 +1147,7 @@
             editIsPrivate      = existing.IsPrivate;
             editHideFromLists  = existing.HideFromStatusLists;
 
+            // Split saved IDs into status-type vs regular
             var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
             _editStatusTypeCustomId = existing.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
             _editCustomListIds = new HashSet<string>(existing.CustomListIds.Where(id => !statusTypeIds.Contains(id)));
@@ -1201,11 +1173,9 @@
             editRewatches = 0;
         }
 
-        _statusDropdownOpen      = false;
-        // PATCH D: reset custom lists dropdown on open
-        _customListsDropdownOpen = false;
-        _deleteAnimVisible       = false;
-        showListEditor           = true;
+        _statusDropdownOpen = false;
+        _deleteAnimVisible  = false;
+        showListEditor      = true;
         StateHasChanged();
         if (isInList) _ = TriggerDeleteAnimAsync();
     }
@@ -1233,6 +1203,7 @@
     }
 
     // ── Custom Lists ──────────────────────────────────────────────────────────
+    // Toggles a regular custom list on/off (does not affect status or status-type lists)
     private async Task ToggleCustomList(string customListId)
     {
         if (!_editCustomListIds.Remove(customListId))
