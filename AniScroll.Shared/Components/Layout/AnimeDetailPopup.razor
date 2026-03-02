@@ -44,7 +44,7 @@
                                         : null;
                                 }
 
-                                <button class="btn-add-to-list @(isInList ? "btn-in-list" : "")"
+                                <button class="btn-add-to-list @(isInList && (currentListStatus.HasValue || currentCustomListId != null) ? "btn-in-list" : "")"
                                         style="@(isInList && currentListStatus.HasValue
                                                     ? $"--status-color:{GetStatusHexColor(currentListStatus.Value)};"
                                                     : _btnCustomList != null

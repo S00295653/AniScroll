@@ -525,7 +525,7 @@
 }
 @media (min-width: 700px) {
     .list-editor-grid {
-        grid-template-columns: 1.4fr 1fr 1fr auto;
+        grid-template-columns: 24% 24% 24% 24%;
     }
 }
 @media (min-width: 900px) {
@@ -2326,6 +2326,7 @@ clm-entry-poster {
 /* Body (scrollable list area) ────────────────────────────────────────────── */
 .clm-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 4px 12px 20px;
