@@ -2206,14 +2206,18 @@ clm-entry-poster {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Overlay ────────────────────────────────────────────────────────────────── */
+/* Overlay ────────────────────────────────────────────────────────────────── */
 .clm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 4500;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    animation: overlayFadeIn 0.18s ease;
 }
 
 /* Panel ──────────────────────────────────────────────────────────────────── */
