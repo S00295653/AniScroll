@@ -25,9 +25,6 @@
             <div class="lists-header">
                 <div class="lists-header-left">
                     <h2 class="lists-title">My Lists</h2>
-                    @{
-                        var totalCount = GetFilteredEntries().Count();
-                    }
                     @if (UserListService.Count() > 0)
                     {
                         <span class="lists-total-badge">@UserListService.Count()</span>
@@ -270,18 +267,8 @@
                                 }
                             </div>
 
-                            <button class="entry-remove-btn"
-                                    title="Remove"
-                                    @onclick:stopPropagation="true"
-                                    @onclick="() => RemoveEntry(e.Anime.Id)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                    <path d="M10 11v6M14 11v6"></path>
-                                    <path d="M9 6V4h6v2"></path>
-                                </svg>
-                            </button>
+                            <!-- delete button removed — click the entry to edit instead -->
+
                         </div>
                     }
                 }
@@ -300,8 +287,8 @@
     [Parameter] public EventCallback<AnimeCard> OnAnimeSelected { get; set; }
 
     // ── Filter state ──────────────────────────────────────────────────────
-    private ListStatus?    _selectedStatus         = null;  // null = All
-    private string?        _selectedStatusCustomId = null;  // user-created status-type list
+    private ListStatus?    _selectedStatus         = null;
+    private string?        _selectedStatusCustomId = null;
     private HashSet<string> _selectedCustomListIds = new();
 
     private bool _statusDropdownOpen = false;
@@ -395,13 +382,11 @@
         IEnumerable<UserListEntry> entries = UserListService.GetAll()
             .Where(e => e.Status.HasValue || e.CustomListIds.Any());
 
-        // Status filter (single-select)
         if (_selectedStatusCustomId != null)
             entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
         else if (_selectedStatus.HasValue)
             entries = entries.Where(e => e.Status == _selectedStatus.Value);
 
-        // Custom list AND filter (multi-select)
         foreach (var id in _selectedCustomListIds)
             entries = entries.Where(e => e.CustomListIds.Contains(id));
 
@@ -456,8 +441,6 @@
     // ── Panel interactions ────────────────────────────────────────────────
 
     private void Close() => OnClose.InvokeAsync();
-
-    private void RemoveEntry(int animeId) => UserListService.Remove(animeId);
 
     private async Task HandleEntryClick(UserListEntry entry)
     {

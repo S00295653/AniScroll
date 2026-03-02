@@ -249,67 +249,100 @@ window.cpRandomSwatchColor = function () {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-//  ROW DRAG — live visual reorder + scroll-aware
+//  ROW DRAG — live visual reorder for CustomListManager
 //
-//  FIX 1: pointerStartY was initialized to null and the first pointermove
-//  was wasted just capturing the start position. For short drags, toIndex
-//  stayed at fromIndex → C# early-returned without saving anything.
-//  Solution: capture dragStartClientY immediately from the dragged row's
-//  bounding rect centre, so every move event contributes to positioning.
+//  The dragged row is lifted to position:absolute inside the body
+//  container. A placeholder div maintains the layout height. Other rows
+//  stay in normal flow — the placeholder moves between them to show the
+//  drop target. On pointer-up, Blazor's OnDragComplete(fromIndex, toIndex)
+//  is called exactly once.
 //
-//  FIX 2: The ended guard ensures OnDragComplete fires exactly once even
-//  when both pointerup and touchend fire for the same finger-lift.
-//
-//  INDEX SPACE: `best` is an index into `otherRows` (all rows minus the
-//  dragged element), which has length N-1. This maps directly to the
-//  post-RemoveAt array in C#. C# should NOT decrement toIndex.
+//  Signature (matches Blazor call):
+//    startRowDrag(dotNet, panelRef, bodyRef, pointerId, fromIndex, startClientY)
 // ═══════════════════════════════════════════════════════════════════════
 
-window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH, topBoundaryEl) {
-    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
-    if (!rows[fromIndex]) return;
+window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, startClientY) {
+    if (!body) return;
 
-    // ── Top boundary: ghost must never appear above the "new list" row ──
-    let minTopPx = 0;
-    try {
-        if (topBoundaryEl) {
-            const boundRect = topBoundaryEl.getBoundingClientRect();
-            const bodyRect  = body.getBoundingClientRect();
-            minTopPx = boundRect.bottom - bodyRect.top + body.scrollTop;
-        }
-    } catch (e) { /* ignore */ }
+    const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
+    if (fromIndex < 0 || fromIndex >= rows.length) return;
 
     const dragged  = rows[fromIndex];
-    const origRect = dragged.getBoundingClientRect();
     const bodyRect = body.getBoundingClientRect();
+    const origRect = dragged.getBoundingClientRect();
 
-    const origIndex    = fromIndex;
+    // Height of one row slot (including gap)
+    let rowH = dragged.offsetHeight + 8;
+    if (rows.length > 1) {
+        const r0 = rows[0].getBoundingClientRect();
+        const r1 = rows[Math.min(1, rows.length - 1)].getBoundingClientRect();
+        if (rows.length > 1) rowH = r1.top - r0.top;
+    }
+
+    // Position in body-scroll space where the row started
     const initialBodyY = origRect.top - bodyRect.top + body.scrollTop;
 
-    // FIX 1: capture the drag start Y from the row's centre immediately,
-    // so the very first pointermove event already contributes to movement.
-    const dragStartClientY = origRect.top + rowH / 2;
+    // Make body a positioning context
+    body.style.position = 'relative';
 
-    let toIndex = fromIndex;
-
-    // Lift the dragged row out of normal flow
+    // Lift the dragged row out of flow
     dragged.style.position  = 'absolute';
     dragged.style.left      = '0';
     dragged.style.right     = '0';
-    dragged.style.zIndex    = '100';
-    dragged.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+    dragged.style.zIndex    = '50';
     dragged.style.top       = initialBodyY + 'px';
-    body.style.position     = 'relative';
+    dragged.style.opacity   = '0.5';
+    dragged.style.boxShadow = '0 8px 28px rgba(0,0,0,0.55)';
+    dragged.style.transition = 'none';
 
-    // Placeholder to maintain layout height while item is floating
-    const placeholder         = document.createElement('div');
-    placeholder.style.height    = rowH + 'px';
-    placeholder.style.flexShrink = '0';
-    body.insertBefore(placeholder, dragged);
+    // Placeholder keeps the layout height while the row is floating
+    const ph           = document.createElement('div');
+    ph.style.height    = rowH + 'px';
+    ph.style.flexShrink = '0';
+    body.insertBefore(ph, dragged);
 
-    // ── Guard: ensure onEnd() fires at most once ──────────────────────
-    let ended = false;
+    let toIndex = fromIndex;
+    let ended   = false;
 
+    // ── Pointer capture ───────────────────────────────────────────────
+    try { dragged.setPointerCapture(pointerId); } catch (_) {}
+
+    // ── Move ──────────────────────────────────────────────────────────
+    function onMove(clientY) {
+        const delta  = clientY - startClientY;
+        const newTop = Math.max(0, initialBodyY + delta);
+        dragged.style.top = newTop + 'px';
+
+        const centreY = newTop + rowH / 2;
+
+        // Other rows in DOM order (excludes the floating dragged row)
+        const others = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
+                            .filter(r => r !== dragged);
+
+        // Count how many others have their midpoint above our ghost centre
+        let best = 0;
+        for (let i = 0; i < others.length; i++) {
+            const mid = others[i].offsetTop + rowH / 2;
+            if (centreY > mid) best = i + 1;
+        }
+        toIndex = best;
+
+        // Slide placeholder to show the drop gap
+        const anchor = others[best] ?? null;
+        if (anchor) {
+            body.insertBefore(ph, anchor);
+        } else {
+            // After last other row — find its next sibling (could be the new-row)
+            const last = others[others.length - 1];
+            if (last && last.nextSibling) {
+                body.insertBefore(ph, last.nextSibling);
+            } else {
+                body.appendChild(ph);
+            }
+        }
+    }
+
+    // ── End ───────────────────────────────────────────────────────────
     function onEnd() {
         if (ended) return;
         ended = true;
@@ -324,67 +357,28 @@ window.startRowDrag = function (dotNet, panel, body, pointerId, fromIndex, rowH,
         dragged.style.left      = '';
         dragged.style.right     = '';
         dragged.style.zIndex    = '';
-        dragged.style.boxShadow = '';
         dragged.style.top       = '';
+        dragged.style.opacity   = '';
+        dragged.style.boxShadow = '';
+        dragged.style.transition = '';
         body.style.position     = '';
-        placeholder.remove();
+        ph.remove();
 
-        try { dragged.releasePointerCapture && dragged.releasePointerCapture(pointerId); } catch (_) {}
+        try { dragged.releasePointerCapture(pointerId); } catch (_) {}
 
-        // Notify Blazor — called exactly once
-        dotNet.invokeMethodAsync('OnDragComplete', origIndex, toIndex);
+        dotNet.invokeMethodAsync('OnDragComplete', fromIndex, toIndex);
     }
 
-    function onMove(e) {
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        // FIX 1: delta from the captured start position, applied to initial body position
-        const delta  = clientY - dragStartClientY;
-        const newTop = Math.max(minTopPx, initialBodyY + delta);
-        dragged.style.top = newTop + 'px';
-
-        // Ghost centre in body-scroll space
-        const centreY = newTop + rowH / 2;
-
-        // Fresh query so placeholder-shifted offsetTops are accurate
-        const otherRows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
-                               .filter(r => r !== dragged);
-
-        // Count how many rows have their midpoint above our ghost centre.
-        // `best` is an index into otherRows (size N-1), which maps directly
-        // to the post-RemoveAt insertion index expected by C#.
-        let best = 0;
-        for (let i = 0; i < otherRows.length; i++) {
-            if (centreY > otherRows[i].offsetTop + rowH / 2) best = i + 1;
-        }
-        toIndex = best;
-
-        // Move placeholder to the target drop position
-        const insertBefore = otherRows[best] || null;
-        if (insertBefore) {
-            body.insertBefore(placeholder, insertBefore);
-        } else {
-            const lastRow = otherRows[otherRows.length - 1];
-            if (lastRow && lastRow.nextSibling) {
-                body.insertBefore(placeholder, lastRow.nextSibling);
-            } else {
-                body.appendChild(placeholder);
-            }
-        }
-    }
-
-    const onPM = e => onMove(e);
-    const onPU = () => onEnd();
-    const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e); } };
-    const onTE = () => onEnd();
+    const onPM = e => onMove(e.clientY);
+    const onPU = ()  => onEnd();
+    const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientY); } };
+    const onTE = ()  => onEnd();
 
     document.addEventListener('pointermove',   onPM);
     document.addEventListener('pointerup',     onPU);
     document.addEventListener('pointercancel', onPU);
     document.addEventListener('touchmove',     onTM, { passive: false });
     document.addEventListener('touchend',      onTE);
-
-    try { dragged.setPointerCapture(pointerId); } catch (_) {}
 };
 
 
@@ -433,7 +427,7 @@ window.unregisterEdgeSwipeInterceptor = function () {
     if (_edgeSwipeCleanup) { _edgeSwipeCleanup(); _edgeSwipeCleanup = null; }
 };
 
-window.preventWheelScroll = function (el) { 
+window.preventWheelScroll = function (el) {
     if (!el || el._noWheel) return;
     el._noWheel = function (e) {
         let node = e.target;
@@ -448,6 +442,7 @@ window.preventWheelScroll = function (el) {
     };
     el.addEventListener('wheel', el._noWheel, { passive: false });
 };
+
 window.removeWheelScrollPrevention = function (el) {
     if (!el || !el._noWheel) return;
     el.removeEventListener('wheel', el._noWheel);

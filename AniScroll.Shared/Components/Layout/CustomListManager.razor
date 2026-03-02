@@ -44,12 +44,11 @@
                 </div>
             </div>
 
-            <!-- ── Body (scrollable) ───────────────────────────────── -->
+            <!-- ── Body (scrollable rows only, no new-row) ────────── -->
             <div class="clm-body" @ref="_bodyRef">
 
                 @if (_activeTab == "status")
                 {
-                    <!-- STATUS ROWS (built-in + user-created status-type) -->
                     @for (int i = 0; i < _statusRows.Count; i++)
                     {
                         var ri    = i;
@@ -62,7 +61,6 @@
                         <div class="clm2-row" data-row-index="@ri">
                             <div class="clm2-drag"
                                  style="touch-action:none; cursor:grab;"
-                                 @ref="_statusHandleRefs[ri]"
                                  @onpointerdown="e => OnHandlePointerDown(e, ri)"
                                  @onpointerdown:stopPropagation="true">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -108,7 +106,7 @@
                             else
                             {
                                 <button class="clm2-delete-btn"
-                                        @onclick="() => DeleteStatusRow(ri)"
+                                        @onclick="() => ShowDeleteConfirm(ri, true)"
                                         @onclick:stopPropagation="true">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                          stroke="currentColor" stroke-width="2"
@@ -122,44 +120,6 @@
                             }
                         </div>
                     }
-
-                    <!-- NEW STATUS ROW (at bottom) -->
-                    <div class="clm2-row clm2-row-new" @ref="_newStatusRowRef">
-                        <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
-                             style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
-                             @ref="_newStatusSwatchRef"
-                             @onclick:stopPropagation="true"
-                             @onclick="OpenPickerForNewRow">
-                            @if (string.IsNullOrEmpty(_newColor))
-                            {
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                     stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                                </svg>
-                            }
-                        </div>
-
-                        <!-- FIX: StateHasChanged() forces re-render so CanAdd updates and button enables -->
-                        <input class="clm2-name-input"
-                               placeholder="New status name…"
-                               value="@_newName"
-                               @oninput="e => { _newName = e.Value?.ToString() ?? string.Empty; StateHasChanged(); }"
-                               @onkeydown="OnNewKeyDown"
-                               @onclick:stopPropagation="true" />
-
-                        <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
-                                disabled="@(!CanAdd)"
-                                @onclick="AddList"
-                                @onclick:stopPropagation="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </button>
-                    </div>
                 }
                 else
                 {
@@ -179,7 +139,6 @@
                         <div class="clm2-row" data-row-index="@ri">
                             <div class="clm2-drag"
                                  style="touch-action:none; cursor:grab;"
-                                 @ref="_customHandleRefs[ri]"
                                  @onpointerdown="e => OnHandlePointerDown(e, ri)"
                                  @onpointerdown:stopPropagation="true">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -211,7 +170,7 @@
                             }
 
                             <button class="clm2-delete-btn"
-                                    @onclick="() => DeleteCustomRow(ri)"
+                                    @onclick="() => ShowDeleteConfirm(ri, false)"
                                     @onclick:stopPropagation="true">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                                      stroke="currentColor" stroke-width="2"
@@ -224,9 +183,53 @@
                             </button>
                         </div>
                     }
+                }
 
-                    <!-- NEW CUSTOM LIST ROW (at bottom) -->
-                    <div class="clm2-row clm2-row-new" @ref="_newCustomRowRef">
+            </div><!-- /clm-body -->
+
+            <!-- ── Footer: new-row always visible, never scrolls away ── -->
+            <div class="clm-footer">
+                @if (_activeTab == "status")
+                {
+                    <div class="clm2-row clm2-row-new">
+                        <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
+                             style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
+                             @ref="_newStatusSwatchRef"
+                             @onclick:stopPropagation="true"
+                             @onclick="OpenPickerForNewRow">
+                            @if (string.IsNullOrEmpty(_newColor))
+                            {
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                            }
+                        </div>
+
+                        <input class="clm2-name-input"
+                               placeholder="New status name…"
+                               value="@_newName"
+                               @oninput="e => { _newName = e.Value?.ToString() ?? string.Empty; StateHasChanged(); }"
+                               @onkeydown="OnNewKeyDown"
+                               @onclick:stopPropagation="true" />
+
+                        <button class="clm2-add-btn @(CanAdd ? "" : "clm2-add-btn-off")"
+                                disabled="@(!CanAdd)"
+                                @onclick="AddList"
+                                @onclick:stopPropagation="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="clm2-row clm2-row-new">
                         <div class="clm2-swatch @(string.IsNullOrEmpty(_newColor) ? "clm2-swatch-empty" : "clm2-swatch-filled")"
                              style="@(!string.IsNullOrEmpty(_newColor) ? $"background:{_newColor};" : "")"
                              @ref="_newCustomSwatchRef"
@@ -243,7 +246,6 @@
                             }
                         </div>
 
-                        <!-- FIX: StateHasChanged() forces re-render so CanAdd updates and button enables -->
                         <input class="clm2-name-input"
                                placeholder="New list name…"
                                value="@_newName"
@@ -263,10 +265,36 @@
                         </button>
                     </div>
                 }
+            </div><!-- /clm-footer -->
 
-            </div><!-- /clm-body -->
         </div><!-- /clm-panel -->
     </div><!-- /clm-overlay -->
+
+    <!-- ── Delete confirmation dialog ─────────────────────────────── -->
+    @if (_confirmDeleteVisible)
+    {
+        <div class="delete-confirm-overlay" @onclick="CancelDelete">
+            <div class="delete-confirm-box" @onclick:stopPropagation="true">
+                <div class="delete-confirm-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-1 14H6L5 6"></path>
+                        <path d="M10 11v6M14 11v6"></path>
+                        <path d="M9 6V4h6v2"></path>
+                    </svg>
+                </div>
+                <div class="delete-confirm-title">Delete "@_confirmDeleteName"?</div>
+                <div class="delete-confirm-text">
+                    This list will be permanently deleted and cannot be restored.
+                </div>
+                <div class="delete-confirm-btns">
+                    <button class="delete-confirm-cancel" @onclick="CancelDelete">Cancel</button>
+                    <button class="delete-confirm-delete" @onclick="ConfirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Color picker outside overlay so its clicks don't bubble -->
     <ColorPickerPopup IsVisible="_pickerOpen"
@@ -310,15 +338,10 @@
     private ElementReference _panelRef;
     private ElementReference _bodyRef;
 
-    private ElementReference   _newStatusRowRef;
     private ElementReference   _newStatusSwatchRef;
-    private ElementReference[] _statusSwatchRefs = new ElementReference[64];
-    private ElementReference[] _statusHandleRefs = new ElementReference[64];
-
-    private ElementReference   _newCustomRowRef;
     private ElementReference   _newCustomSwatchRef;
+    private ElementReference[] _statusSwatchRefs = new ElementReference[64];
     private ElementReference[] _customSwatchRefs = new ElementReference[64];
-    private ElementReference[] _customHandleRefs = new ElementReference[64];
 
     private DotNetObjectReference<CustomListManager>? _dotNetRef;
 
@@ -332,6 +355,12 @@
     private string           _pickerInitColor = "#6366f1";
     private ElementReference _pickerAnchor;
     private Action<string>?  _pickerCallback;
+
+    // ── Delete confirmation state ────────────────────────────────────────
+    private bool   _confirmDeleteVisible    = false;
+    private int    _confirmDeleteIndex      = -1;
+    private bool   _confirmDeleteIsStatus   = false;
+    private string _confirmDeleteName       = "";
 
     // ── Lifecycle ────────────────────────────────────────────────────────
     protected override void OnInitialized()
@@ -350,6 +379,7 @@
         RebuildRows();
         _newName  = "";
         _newColor = null;
+        _confirmDeleteVisible = false;
     }
 
     public void Dispose() => _dotNetRef?.Dispose();
@@ -379,7 +409,6 @@
     // ── Drag ─────────────────────────────────────────────────────────────
     private async Task OnHandlePointerDown(PointerEventArgs e, int rowIndex)
     {
-        var newRowRef = _activeTab == "status" ? _newStatusRowRef : _newCustomRowRef;
         try
         {
             await JS.InvokeVoidAsync(
@@ -389,8 +418,7 @@
                 _bodyRef,
                 e.PointerId,
                 rowIndex,
-                ROW_H,
-                newRowRef);
+                e.ClientY);
         }
         catch { }
     }
@@ -416,8 +444,6 @@
         SaveAll();
         InvokeAsync(StateHasChanged);
     }
-
-    private const int ROW_H = 64;
 
     // ── Color picker ─────────────────────────────────────────────────────
     private void OpenPickerForNewRow()
@@ -501,6 +527,33 @@
         catch { return "#6366f1"; }
     }
 
+    // ── Delete confirmation ───────────────────────────────────────────────
+    private void ShowDeleteConfirm(int idx, bool isStatus)
+    {
+        _confirmDeleteIndex    = idx;
+        _confirmDeleteIsStatus = isStatus;
+        _confirmDeleteName     = isStatus
+            ? (_statusRows.ElementAtOrDefault(idx)?.Name ?? "")
+            : (_customRows.ElementAtOrDefault(idx)?.Name ?? "");
+        _confirmDeleteVisible  = true;
+        StateHasChanged();
+    }
+
+    private void CancelDelete()
+    {
+        _confirmDeleteVisible = false;
+        StateHasChanged();
+    }
+
+    private void ConfirmDelete()
+    {
+        _confirmDeleteVisible = false;
+        if (_confirmDeleteIsStatus)
+            DeleteStatusRow(_confirmDeleteIndex);
+        else
+            DeleteCustomRow(_confirmDeleteIndex);
+    }
+
     private void DeleteStatusRow(int idx)
     {
         if (idx < 0 || idx >= _statusRows.Count || _statusRows[idx].IsBuiltIn) return;
@@ -523,6 +576,7 @@
     // ── Panel close ──────────────────────────────────────────────────────
     private void HandleOverlayClick()
     {
+        if (_confirmDeleteVisible) { CancelDelete(); return; }
         if (_pickerOpen) { CloseColorPicker(); return; }
         _ = Close();
     }
