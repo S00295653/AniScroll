@@ -13,13 +13,10 @@
     justify-content: center;
     animation: overlayFadeIn 0.2s ease;
 }
-
-@media (min-width: 768px) {
-    .anime-detail-overlay { align-items: center; }
-}
+@media (min-width: 768px) { .anime-detail-overlay { align-items: center; } }
 
 /* ========================================
-   ANIME DETAIL MODAL (container)
+   MODAL CONTAINER
    ======================================== */
 .anime-detail-modal {
     width: 100%;
@@ -30,27 +27,20 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: sheetSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
 }
-
 @media (min-width: 768px) {
-    .anime-detail-modal {
-        border-radius: 20px;
-        max-height: 85vh;
-        animation: modalFadeScale 0.25s ease;
-    }
+    .anime-detail-modal { border-radius: 20px; max-height: 86vh; }
 }
 
 .modal-close-btn {
     position: absolute;
     top: 12px;
     right: 14px;
-    z-index: 10;
+    z-index: 20;
     background: rgba(0, 0, 0, 0.55);
     border: none;
     color: white;
-    font-size: 20px;
     width: 34px;
     height: 34px;
     border-radius: 50%;
@@ -58,53 +48,51 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    flex-shrink: 0;
 }
 
-.anime-detail-scroll {
+.modal-scroll-container {
     overflow-y: auto;
     flex: 1;
     -webkit-overflow-scrolling: touch;
 }
 
 /* ========================================
-   BANNER
+   MODAL HEADER (banner + poster + info)
    ======================================== */
-.anime-banner {
+.modal-header { position: relative; }
+
+.modal-banner {
     width: 100%;
-    height: 180px;
+    height: 160px;
     background-size: cover;
     background-position: center top;
     position: relative;
     flex-shrink: 0;
 }
-
-.anime-banner::after {
+.modal-banner::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(13,13,13,0.95) 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(13,13,13,1) 100%);
 }
 
-/* ========================================
-   HEADER (poster + info)
-   ======================================== */
-.anime-detail-header {
+.modal-header-content {
     display: flex;
-    gap: 14px;
-    padding: 0 16px 16px;
-    margin-top: -60px;
+    gap: 12px;
+    padding: 0 14px 14px;
+    margin-top: -50px;
     position: relative;
     z-index: 2;
 }
 
-.anime-poster-col { flex-shrink: 0; }
+.modal-poster-section { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 
-.anime-poster-large {
-    width: 90px;
-    height: 128px;
+.modal-poster {
+    width: 88px;
+    height: 124px;
     border-radius: 8px;
     background-size: cover;
     background-position: center;
@@ -112,29 +100,72 @@
     border: 2px solid rgba(255,255,255,0.08);
 }
 
-.anime-detail-info {
+/* ── Add-to-list button ── */
+.modal-action-buttons { display: flex; flex-direction: column; gap: 7px; }
+
+.btn-add-to-list {
+    background: #E94560;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+.btn-add-to-list:active { transform: scale(0.97); opacity: 0.85; }
+
+.btn-add-to-list.btn-in-list {
+    background: color-mix(in srgb, var(--status-color, #6366f1) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-color, #6366f1) 40%, transparent);
+}
+
+.btn-add-to-list-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+}
+
+.btn-list-chevron { margin-left: 2px; opacity: 0.7; flex-shrink: 0; }
+
+/* ── Secondary buttons ── */
+.modal-secondary-btns { display: flex; gap: 7px; }
+
+.btn-share, .btn-favorite {
     flex: 1;
-    min-width: 0;
-    padding-top: 60px;
-}
-
-.anime-detail-title {
-    font-size: 17px;
-    font-weight: bold;
-    line-height: 1.25;
-    margin-bottom: 6px;
-    word-break: break-word;
-}
-
-.anime-detail-title-native {
+    padding: 8px 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.75);
     font-size: 12px;
-    color: #888;
-    margin-bottom: 6px;
-    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background 0.15s ease;
+}
+.btn-share:active, .btn-favorite:active { background: rgba(255,255,255,0.1); }
+.btn-favorite.is-favorited { background: rgba(233,69,96,0.15); border-color: rgba(233,69,96,0.4); color: #E94560; }
+
+/* ── Info column ── */
+.modal-info-section { flex: 1; min-width: 0; padding-top: 52px; }
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 5px;
     word-break: break-word;
 }
 
-.anime-detail-season {
+.modal-airing-info {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -143,171 +174,114 @@
     margin-bottom: 4px;
 }
 
-.anime-status-dot {
-    width: 8px;
-    height: 8px;
+.popup-status-dot {
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
 }
-
-.anime-status-dot.releasing {
+.popup-dot-releasing {
     background: rgb(0, 230, 0);
-    box-shadow: 0 0 6px rgba(0, 255, 0, 0.8);
-    animation: pulse-green-modal 2s ease-in-out infinite;
+    box-shadow: 0 0 6px rgba(0,255,0,0.8);
+    animation: pulse-green-popup 2s ease-in-out infinite;
+}
+.popup-dot-upcoming {
+    background: rgb(230,0,0);
+    box-shadow: 0 0 6px rgba(255,0,0,0.8);
+    animation: pulse-red-popup 2s ease-in-out infinite;
+}
+@keyframes pulse-green-popup {
+    0%,100% { box-shadow: 0 0 3px rgba(0,255,0,0.5); }
+    50%      { box-shadow: 0 0 8px rgba(0,255,0,1); }
+}
+@keyframes pulse-red-popup {
+    0%,100% { box-shadow: 0 0 3px rgba(255,0,0,0.5); }
+    50%      { box-shadow: 0 0 8px rgba(255,0,0,1); }
 }
 
-.anime-status-dot.upcoming {
-    background: rgb(230, 0, 0);
-    box-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
-    animation: pulse-red-modal 2s ease-in-out infinite;
-}
+.modal-season-plain { font-size: 12px; color: #888; }
 
-@keyframes pulse-green-modal {
-    0%, 100% { box-shadow: 0 0 3px rgba(0, 255, 0, 0.5); }
-    50%       { box-shadow: 0 0 8px rgba(0, 255, 0, 1); }
+.next-ep-banner {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    width: fit-content;
 }
-@keyframes pulse-red-modal {
-    0%, 100% { box-shadow: 0 0 3px rgba(255, 0, 0, 0.5); }
-    50%       { box-shadow: 0 0 8px rgba(255, 0, 0, 1); }
-}
+.next-ep-ep { font-weight: 600; color: rgba(255,255,255,0.8); }
+.next-ep-time { color: rgba(255,255,255,0.45); }
 
-.anime-detail-genres {
-    font-size: 12px;
-    color: #E94560;
+.rank-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.rank-badge {
+    font-size: 10px;
     font-weight: 600;
-    margin-bottom: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
+.rank-rated   { background: rgba(255,215,0,0.12); color: #FFD700; border: 1px solid rgba(255,215,0,0.25); }
+.rank-popular { background: rgba(233,69,96,0.12); color: #E94560; border: 1px solid rgba(233,69,96,0.25); }
 
-.anime-detail-stats { display: flex; gap: 6px; flex-wrap: wrap; }
+/* Info grid (Score / Favorites / Episodes…) */
+.modal-info-grid { display: flex; gap: 10px; }
+.info-col { display: flex; flex-direction: column; gap: 3px; }
+.info-field { display: flex; flex-direction: column; }
+.info-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+.info-val  { font-size: 12px; font-weight: 600; color: #ddd; }
 
 /* ========================================
-   ACTION BUTTONS
+   MODAL CONTENT (sections)
    ======================================== */
-.modal-action-buttons { padding: 0 16px 14px; }
+.modal-content { padding: 4px 0 12px; }
 
-.btn-add-to-list-inner {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: opacity 0.15s ease, transform 0.15s ease;
-    background: #E94560;
-    color: white;
-    margin-bottom: 8px;
-}
+.modal-section { padding: 0 14px 16px; }
 
-.btn-add-to-list-inner:active { transform: scale(0.98); opacity: 0.85; }
-
-.btn-add-to-list-inner.in-list {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.modal-secondary-btns { display: flex; gap: 8px; }
-
-.btn-share,
-.btn-favorite {
-    flex: 1;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: background 0.15s ease;
-}
-
-.btn-share:active, .btn-favorite:active { background: rgba(255, 255, 255, 0.1); }
-
-.btn-favorite.is-favorite {
-    background: rgba(233, 69, 96, 0.15);
-    border-color: rgba(233, 69, 96, 0.4);
-    color: #E94560;
-}
-
-/* ========================================
-   SECTION TITLE (commun à tout le modal)
-   ======================================== */
-.modal-section-title {
-    font-size: 13px;
+.section-title {
+    font-size: 12px;
     font-weight: 700;
-    color: #888;
+    color: #666;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     margin-bottom: 8px;
 }
+.relation-count { color: #444; font-weight: 400; }
 
-/* ========================================
-   SYNOPSIS
-   ======================================== */
-.anime-synopsis-section { padding: 0 16px 16px; }
+/* Synopsis */
+.synopsis-text { font-size: 13px; color: #ccc; line-height: 1.65; }
 
-.anime-synopsis { font-size: 13px; color: #ccc; line-height: 1.6; }
-
-.synopsis-toggle-btn {
-    background: none;
-    border: none;
-    color: #E94560;
-    font-size: 13px;
-    cursor: pointer;
-    padding: 4px 0 0;
-    display: block;
-}
-
-/* ========================================
-   RELATIONS
-   ======================================== */
-.anime-relations-section { padding: 0 0 16px; }
-
+/* Relations */
 .relations-scroll {
     display: flex;
     gap: 10px;
     overflow-x: auto;
-    padding: 0 16px;
+    padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
 .relations-scroll::-webkit-scrollbar { display: none; }
 
-.relation-cards { display: flex; gap: 10px; }
+.relation-card { flex-shrink: 0; width: 80px; cursor: pointer; }
 
-.relation-card { flex-shrink: 0; width: 90px; cursor: pointer; }
-
-.relation-thumb {
-    width: 90px;
-    height: 126px;
+.relation-cover {
+    width: 80px;
+    height: 112px;
     border-radius: 6px;
     background-size: cover;
     background-position: center;
     margin-bottom: 5px;
     border: 1px solid rgba(255,255,255,0.07);
+    background-color: rgba(255,255,255,0.05);
 }
 
-.relation-type {
-    font-size: 9px;
-    color: #E94560;
-    font-weight: 700;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-}
-
-.relation-title {
+.relation-info {}
+.relation-type   { font-size: 9px; color: #E94560; font-weight: 700; text-transform: uppercase; margin-bottom: 1px; }
+.relation-format { font-size: 9px; color: #666; margin-bottom: 1px; }
+.relation-title  {
     font-size: 10px;
     color: #ccc;
     line-height: 1.3;
@@ -317,295 +291,506 @@
     -webkit-box-orient: vertical;
 }
 
-/* ========================================
-   GENRES & STUDIOS
-   ======================================== */
-.anime-genres-section, .anime-studios-section { padding: 0 16px 16px; }
-
-.modal-tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
-
-.modal-tag {
+/* Genres */
+.genres-container { display: flex; flex-wrap: wrap; gap: 6px; }
+.genre-pill {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
-    background: rgba(233, 69, 96, 0.15);
-    border: 1px solid rgba(233, 69, 96, 0.35);
+    background: rgba(233,69,96,0.12);
+    border: 1px solid rgba(233,69,96,0.3);
     color: #E94560;
 }
 
-.modal-studio-tag {
+/* Studios */
+.studios-container { display: flex; flex-wrap: wrap; gap: 6px; }
+.studio-badge {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
     color: #ccc;
 }
 
-/* ========================================
-   TRAILER
-   ======================================== */
-.anime-trailer-section { padding: 0 16px 16px; }
-
-.anime-trailer-embed {
+/* Trailer */
+.trailer-container { border-radius: 10px; overflow: hidden; }
+.youtube-embed-wrapper {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.07);
 }
-.anime-trailer-embed iframe { width: 100%; height: 100%; border: none; display: block; }
+.youtube-embed-wrapper iframe { width: 100%; height: 100%; border: none; display: block; }
 
-/* ========================================
-   DETAILS GRID
-   ======================================== */
-.anime-details-section { padding: 0 16px 16px; }
-
-.anime-details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+/* Details grid */
+.details-grid { display: flex; flex-direction: column; gap: 6px; }
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 7px;
 }
+.detail-lbl { font-size: 11px; color: #555; flex-shrink: 0; }
+.detail-val { font-size: 12px; color: #ccc; text-align: right; }
+.detail-val-native { font-family: 'Noto Sans JP', sans-serif; }
 
-.anime-detail-cell {
-    background: rgba(255,255,255,0.04);
-    border-radius: 8px;
-    padding: 10px 12px;
-}
-
-.detail-label {
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 3px;
-}
-
-.detail-value { font-size: 13px; color: #ddd; font-weight: 500; }
-
-/* ========================================
-   TAGS (avec spoilers)
-   ======================================== */
-.anime-tags-section { padding: 0 16px 16px; }
-
-.anime-tag-pill {
+/* Tags */
+.tags-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag-pill {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
     background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #aaa;
+    border: 1px solid rgba(255,255,255,0.09);
+    color: #999;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.tag-pct { font-size: 9px; color: #555; }
+.tag-pill-spoiler-revealed {
+    background: rgba(255,180,0,0.08);
+    border-color: rgba(255,180,0,0.22);
+    color: #ccc;
+}
+.tag-spoiler-btn {
+    background: rgba(255,180,0,0.08);
+    border: 1px solid rgba(255,180,0,0.2);
+    border-radius: 20px;
+    color: rgba(255,180,0,0.75);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 5px 14px;
 }
 
-.anime-tag-pill.spoiler {
-    background: rgba(255, 180, 0, 0.08);
-    border-color: rgba(255, 180, 0, 0.25);
-    color: #888;
-    font-style: italic;
-}
+/* Watch & More */
+.links-sublabel { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
 
-.anime-tag-pill.spoiler.revealed { color: #ccc; font-style: normal; }
+.platform-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 
-/* ========================================
-   PLATEFORMES
-   ======================================== */
-.anime-platforms-section { padding: 0 16px 24px; }
-
-.anime-platforms-row { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.anime-platform-link {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: white;
+.platform-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
     text-decoration: none;
+    color: white;
     cursor: pointer;
     transition: background 0.15s ease;
 }
-.anime-platform-link:active { background: rgba(255,255,255,0.12); }
+.platform-row:active { background: rgba(255,255,255,0.08); }
+
+.platform-icon-box {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.platform-name-label { flex: 1; font-size: 13px; font-weight: 500; }
+
+.info-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.info-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: #aaa;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.info-chip:active { background: rgba(255,255,255,0.09); }
+.chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
 /* ========================================
-   LIST EDITOR (modal dans modal)
+   LIST EDITOR MODAL
    ======================================== */
 .list-editor-overlay {
     position: fixed;
     inset: 0;
     z-index: 500;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0,0,0,0.7);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    animation: overlayFadeIn 0.2s ease;
+    animation: overlayFadeIn 0.18s ease;
 }
-
 @media (min-width: 768px) { .list-editor-overlay { align-items: center; } }
 
 .list-editor-modal {
     width: 100%;
-    max-width: 560px;
-    background: #141414;
+    max-width: 580px;
+    background: #111;
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
-    animation: sheetSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-height: 85vh;
+    max-height: 88vh;
     overflow: hidden;
+    animation: sheetSlideUp 0.28s cubic-bezier(0.34,1.4,0.64,1);
 }
-
 @media (min-width: 768px) {
-    .list-editor-modal { border-radius: 20px; animation: modalFadeScale 0.25s ease; }
+    .list-editor-modal { border-radius: 20px; animation: modalFadeScale 0.22s ease; }
 }
 
-.list-editor-header {
+/* Header: banner + poster + title + fav + save */
+.list-editor-header { position: relative; flex-shrink: 0; }
+
+.list-editor-banner {
+    width: 100%;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+.list-editor-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(17,17,17,1) 100%);
+}
+
+.list-editor-header-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px 10px;
-    flex-shrink: 0;
+    gap: 10px;
+    padding: 0 14px 12px;
+    margin-top: -32px;
+    position: relative;
+    z-index: 2;
 }
 
-.list-editor-title { font-size: 16px; font-weight: 700; }
+.list-editor-poster {
+    width: 44px;
+    height: 62px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+}
 
-.list-editor-close {
+.list-editor-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-width: 0;
+}
+
+.list-editor-fav-btn {
     background: none;
     border: none;
-    color: #888;
-    font-size: 20px;
+    color: rgba(255,255,255,0.35);
     cursor: pointer;
-    padding: 2px;
-    line-height: 1;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
 }
+.list-editor-fav-btn.is-fav { color: #E94560; }
 
+.list-editor-save-btn {
+    background: #E94560;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+}
+.list-editor-save-btn:active { opacity: 0.8; }
+
+/* Body */
 .list-editor-body {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 16px;
+    padding: 6px 14px 24px;
     -webkit-overflow-scrolling: touch;
-}
-
-.list-editor-footer {
-    padding: 12px 16px 24px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
     display: flex;
-    gap: 10px;
-    flex-shrink: 0;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.le-list-select {
+.list-editor-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+/* ── Status dropdown ── */
+.le-dd-field { position: relative; }
+
+.le-dd-trigger {
     width: 100%;
-    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
     color: white;
     font-size: 14px;
     cursor: pointer;
-    margin-bottom: 14px;
-    appearance: none;
-    outline: none;
+    text-align: left;
+    transition: border-color 0.15s ease;
+}
+.le-dd-trigger-text { flex: 1; text-align: left; }
+.le-dd-dot-none { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+.le-dd-chevron { transition: transform 0.2s ease; flex-shrink: 0; opacity: 0.5; }
+.le-dd-chevron.open { transform: rotate(180deg); }
+
+.le-dd-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    z-index: 10;
+    overflow: hidden;
+    animation: ddOpen 0.18s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 
-.le-score-row { margin-bottom: 14px; }
-
-.le-score-label { font-size: 12px; color: #888; margin-bottom: 6px; }
-
-.le-score-bar { display: flex; gap: 4px; }
-
-.le-score-dot {
-    flex: 1;
-    height: 32px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.07);
+.le-dd-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: none;
     border: none;
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
     cursor: pointer;
-    transition: background 0.12s ease;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.1s ease;
 }
-.le-score-dot.active { background: #E94560; }
+.le-dd-option:last-child { border-bottom: none; }
+.le-dd-option:active, .le-dd-option.selected { background: rgba(255,255,255,0.07); }
+.le-dd-option-text { flex: 1; }
 
-.le-eps-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+/* Custom pills */
+.le-custom-lists-section {}
+.le-custom-pills { display: flex; flex-wrap: wrap; gap: 7px; }
 
-.le-eps-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.08);
+.le-custom-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
     border: 1px solid rgba(255,255,255,0.12);
+    background: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.le-custom-pill:active { opacity: 0.8; }
+
+/* Score + Episodes grid */
+.list-editor-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+.list-editor-grid-2 { grid-template-columns: 1fr 1fr; }
+
+.list-editor-field { display: flex; flex-direction: column; }
+
+.le-score-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.le-score-step-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
     color: white;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: background 0.1s ease;
 }
+.le-score-step-btn:active { background: rgba(255,255,255,0.12); }
+.le-score-step-btn:disabled { opacity: 0.3; cursor: default; }
 
-.le-eps-input {
+.le-score-input {
     flex: 1;
     text-align: center;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: white;
-    font-size: 14px;
-    padding: 8px;
-    outline: none;
-}
-
-.le-checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    cursor: pointer;
-}
-
-.le-checkbox {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.12s ease;
-}
-.le-checkbox.checked { background: #E94560; border-color: #E94560; }
-
-.le-checkbox-label { font-size: 14px; color: #ccc; }
-
-.le-save-btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    background: #E94560;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
     color: white;
     font-size: 14px;
     font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s ease;
+    padding: 6px 4px;
+    outline: none;
+    min-width: 0;
 }
-.le-save-btn:active { opacity: 0.8; }
+.le-score-input::placeholder { color: #444; }
+.le-score-input:disabled { opacity: 0.35; }
+
+/* Score color classes */
+.le-score-input-score-bar-red    { color: #ef4444; }
+.le-score-input-score-bar-orange { color: #f97316; }
+.le-score-input-score-bar-yellow { color: #eab308; }
+.le-score-input-score-bar-lime   { color: #84cc16; }
+.le-score-input-score-bar-green  { color: #22c55e; }
+
+/* Score drag bar */
+.le-score-bar-click {
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    cursor: pointer;
+    position: relative;
+    touch-action: none;
+}
+.le-score-bar-click.dragging { height: 8px; border-radius: 4px; }
+.le-score-bar-fill-click {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.05s ease;
+    min-width: 4px;
+}
+
+/* Episode bar */
+.list-editor-ep-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    cursor: pointer;
+    position: relative;
+    touch-action: none;
+    overflow: hidden;
+}
+.list-editor-ep-bar.dragging { height: 8px; border-radius: 4px; }
+.le-ep-bar-disabled { opacity: 0.3; cursor: default; }
+.le-ep-bar-clickable {}
+.list-editor-ep-fill {
+    height: 100%;
+    background: #E94560;
+    border-radius: 3px;
+    transition: width 0.05s ease;
+}
+
+/* Dates */
+.list-editor-date-wrapper {}
+.list-editor-date-input {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    color-scheme: dark;
+}
+
+/* Checkboxes */
+.list-editor-custom-lists { display: flex; flex-direction: column; gap: 8px; }
+.list-editor-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #aaa;
+    cursor: pointer;
+}
+.list-editor-checkbox-row input { accent-color: #E94560; cursor: pointer; }
+
+/* Textarea */
+.list-editor-textarea {
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+.list-editor-textarea::placeholder { color: #444; }
+
+/* Delete section */
+.le-delete-section {
+    display: flex;
+    justify-content: center;
+    padding-top: 4px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+.le-delete-section.le-delete-visible { max-height: 60px; opacity: 1; }
 
 .le-delete-btn {
-    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
     border-radius: 10px;
-    border: 1px solid rgba(255,100,100,0.35);
-    background: rgba(255,100,100,0.1);
-    color: #ff6464;
-    font-size: 14px;
+    border: 1px solid rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.07);
+    color: #ef4444;
+    font-size: 13px;
     cursor: pointer;
     transition: background 0.15s ease;
 }
-.le-delete-btn:active { background: rgba(255,100,100,0.2); }
+.le-delete-btn:active { background: rgba(239,68,68,0.14); }
 
 /* ========================================
    DELETE CONFIRMATION
@@ -624,8 +809,8 @@
 
 .delete-confirm-box {
     background: #1a1a1a;
-    border: 1px solid rgba(255,100,100,0.25);
-    border-radius: 16px;
+    border: 1px solid rgba(239,68,68,0.22);
+    border-radius: 18px;
     padding: 24px 20px;
     max-width: 340px;
     width: 100%;
@@ -633,13 +818,12 @@
     animation: modalFadeScale 0.2s ease;
 }
 
+.delete-confirm-icon { margin-bottom: 12px; display: flex; justify-content: center; }
 .delete-confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-
 .delete-confirm-text { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
-
 .delete-confirm-btns { display: flex; gap: 10px; }
 
-.delete-cancel-btn {
+.delete-confirm-cancel {
     flex: 1;
     padding: 11px;
     border-radius: 10px;
@@ -649,8 +833,7 @@
     font-size: 14px;
     cursor: pointer;
 }
-
-.delete-ok-btn {
+.delete-confirm-delete {
     flex: 1;
     padding: 11px;
     border-radius: 10px;

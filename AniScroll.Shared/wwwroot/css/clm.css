@@ -1,64 +1,52 @@
 ﻿/* ========================================
-   CLM — OVERLAY & PANEL
+   CUSTOM LIST MANAGER — OVERLAY + PANEL
    ======================================== */
 .clm-overlay {
     position: fixed;
     inset: 0;
-    z-index: 450;
+    z-index: 400;
     background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     animation: overlayFadeIn 0.2s ease;
 }
 
 .clm-panel {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 90vh;
+    width: 100%;
+    max-width: 640px;
+    max-height: 88vh;
     background: #111;
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
-    animation: sheetSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     overflow: hidden;
-}
-
-@media (min-width: 768px) {
-    .clm-panel {
-        max-width: 540px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-    }
-}
-
-/* Handle */
-.clm-handle {
-    width: 40px;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    margin: 10px auto 0;
-    flex-shrink: 0;
+    animation: sheetSlideUp 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 /* ========================================
-   CLM HEADER & TABS
+   HEADER
    ======================================== */
 .clm-header {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 16px 0;
     flex-shrink: 0;
+    padding: 10px 14px 0;
 }
 
-.clm-header-top {
+.clm-handle-bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    margin: 0 auto 10px;
+}
+
+.clm-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .clm-title {
@@ -67,189 +55,228 @@
 }
 
 .clm-close-btn {
-    background: rgba(255,255,255,0.08);
+    background: none;
     border: none;
-    color: #aaa;
-    font-size: 18px;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.45);
     cursor: pointer;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    transition: color 0.15s ease;
 }
+.clm-close-btn:active { color: white; }
 
-/* Tabs */
-.clm-tabs {
+/* ========================================
+   TAB BAR
+   ======================================== */
+.clm-tab-bar {
     display: flex;
     gap: 4px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 10px;
     padding: 3px;
-    margin-bottom: 0;
+    margin-bottom: 10px;
 }
 
-.clm-tab {
+.clm-tab-btn {
     flex: 1;
-    padding: 8px;
+    padding: 7px 10px;
     border: none;
     border-radius: 8px;
     background: none;
-    color: #777;
+    color: rgba(255, 255, 255, 0.4);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
     text-align: center;
 }
-
-.clm-tab.active {
-    background: rgba(233, 69, 96, 0.2);
-    color: #E94560;
+.clm-tab-active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 /* ========================================
-   CLM BODY
+   BODY (scrollable rows)
    ======================================== */
 .clm-body {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 12px 0 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    padding: 4px 0;
 }
 
 .clm-empty-hint {
-    padding: 30px 20px;
+    padding: 32px 20px;
     text-align: center;
-    color: #555;
-    font-size: 14px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.35);
 }
 
 /* ========================================
-   CLM FOOTER (Add button)
-   ======================================== */
-.clm-footer {
-    padding: 10px 16px 24px;
-    flex-shrink: 0;
-    border-top: 1px solid rgba(255,255,255,0.06);
-}
-
-.clm-add-btn {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px dashed rgba(233, 69, 96, 0.4);
-    background: rgba(233, 69, 96, 0.08);
-    color: #E94560;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    transition: background 0.15s ease;
-}
-
-.clm-add-btn:active { background: rgba(233, 69, 96, 0.15); }
-
-/* ========================================
-   CLM2 ROW — List item
+   ROW
    ======================================== */
 .clm2-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    transition: background 0.12s ease;
-    animation: clmRowSlideIn 0.2s ease;
-    background: #111;
+    gap: 8px;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 46px;
+    background: transparent;
+    transition: background 0.1s ease;
 }
-
 .clm2-row:last-child { border-bottom: none; }
+.clm2-row-new { border-top: 1px solid rgba(255,255,255,0.06); border-bottom: none; }
 
 /* Drag handle */
-.clm2-drag-handle {
-    cursor: grab;
-    color: #444;
-    font-size: 16px;
+.clm2-drag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: rgba(255, 255, 255, 0.2);
     flex-shrink: 0;
-    padding: 2px 4px;
-    touch-action: none;
+    user-select: none;
 }
-
-.clm2-drag-handle:active { cursor: grabbing; }
 
 /* Color swatch */
-.clm2-color-swatch {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+.clm2-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
     flex-shrink: 0;
-    border: 2px solid rgba(255,255,255,0.15);
     cursor: pointer;
-    transition: transform 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+    border: 1px solid rgba(255,255,255,0.08);
 }
-
-.clm2-color-swatch:active { transform: scale(1.15); }
+.clm2-swatch:active { transform: scale(0.9); opacity: 0.8; }
+.clm2-swatch-empty {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px dashed rgba(255, 255, 255, 0.2);
+}
+.clm2-swatch-filled { border: none; }
 
 /* Name input */
 .clm2-name-input {
     flex: 1;
+    min-width: 0;
     background: none;
     border: none;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
     outline: none;
-    min-width: 0;
-    caret-color: #E94560;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 4px 0;
 }
+.clm2-name-input::placeholder { color: rgba(255, 255, 255, 0.25); }
 
-.clm2-name-input::placeholder { color: #444; }
-
-/* Item count */
-.clm2-item-count {
-    font-size: 11px;
-    color: #555;
+/* Count badge */
+.clm2-count {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    border: 1px solid transparent;
     flex-shrink: 0;
     white-space: nowrap;
+}
+
+/* Lock icon (built-in rows) */
+.clm2-lock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
 }
 
 /* Delete button */
 .clm2-delete-btn {
     background: none;
     border: none;
-    color: #444;
-    font-size: 16px;
+    color: rgba(255, 255, 255, 0.2);
     cursor: pointer;
     padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
     flex-shrink: 0;
-    line-height: 1;
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.clm2-delete-btn:active { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+/* Add button */
+.clm2-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #E94560;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+}
+.clm2-add-btn:active { opacity: 0.8; }
+.clm2-add-btn-off {
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.25);
+    cursor: not-allowed;
 }
 
-.clm2-delete-btn:active { color: #E94560; }
+/* ========================================
+   FOOTER (new-row area, never scrolls away)
+   ======================================== */
+.clm-footer {
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* ========================================
-   CLM2 DRAG STATES
+   DRAG GHOST / PLACEHOLDER (JS-driven)
    ======================================== */
-.clm2-dragging {
+.clm2-row-ghost {
     opacity: 0.4;
-    background: rgba(233, 69, 96, 0.08);
+    background: rgba(255, 255, 255, 0.03);
 }
-
-.clm2-drag-over {
-    border-top: 2px solid #E94560;
-    background: rgba(233, 69, 96, 0.06);
+.clm2-row-dragging {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #1e1e1e;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    left: 0;
+    right: 0;
 }
 
 /* ========================================
-   ANIMATIONS
+   KEYFRAMES (shared; declared here for completeness)
    ======================================== */
-@keyframes clmRowSlideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes sheetSlideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+@keyframes modalFadeScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
 }

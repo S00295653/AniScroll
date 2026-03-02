@@ -1,81 +1,84 @@
 ﻿/* ========================================
-   NAV SECTION — fixed bottom
+   NAV SECTION WRAPPER
    ======================================== */
 .nav-section {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    z-index: 100;
+    pointer-events: none;
 }
 
+/* ========================================
+   MAIN NAV BAR
+   ======================================== */
 .main-nav-bar {
-    background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 75%, transparent 100%);
-    padding: 8px 20px 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    pointer-events: auto;
 }
 
 /* ========================================
-   SEARCH ROW — collapsible
+   SEARCH ROW (above nav buttons)
    ======================================== */
 .search-row {
+    width: 100%;
+    max-width: 600px;
     display: flex;
     justify-content: center;
-    overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transition: max-height 0.45s cubic-bezier(0.25,0.46,0.45,0.94),
-                opacity 0.3s ease;
-}
-
-.main-nav-bar.search-open .search-row {
-    max-height: 60px;
-    opacity: 1;
+    padding: 0 16px 6px;
+    pointer-events: none;
 }
 
 /* ========================================
-   MORPHING PILL
+   MORPHING SEARCH PILL
    ======================================== */
 .search-morphing-pill {
-    width: 0;
-    max-width: 500px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 30px;
+    width: 46px;
+    height: 46px;
+    border-radius: 23px;
+    background: rgba(20, 20, 30, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
-    transition: width 0.5s cubic-bezier(0.34,1.2,0.64,1),
-                background 0.3s ease,
-                border-color 0.3s ease;
+    transition: width 0.55s cubic-bezier(0.34, 1.2, 0.64, 1),
+                border-radius 0.55s cubic-bezier(0.34, 1.2, 0.64, 1),
+                opacity 0.3s ease;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
 }
 
 .search-morphing-pill.expanded {
-    width: 100%;
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.22);
+    width: min(calc(100vw - 32px), 568px);
+    border-radius: 14px;
+    pointer-events: auto;
 }
 
+/* Pill inner content */
 .search-pill-content {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 11px 16px;
+    padding: 0 14px;
+    width: 100%;
     opacity: 0;
-    transition: opacity 0.2s ease 0.12s;
-    white-space: nowrap;
+    transition: opacity 0.25s ease 0.2s;
+    pointer-events: none;
 }
 
 .search-pill-content.visible {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .search-pill-icon {
-    color: rgba(255,255,255,0.45);
+    color: rgba(255, 255, 255, 0.45);
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
 }
 
 .search-field {
@@ -85,29 +88,27 @@
     outline: none;
     color: white;
     font-size: 15px;
-    caret-color: #E94560;
+    font-family: inherit;
+    padding: 11px 0;
     min-width: 0;
 }
-
-.search-field::placeholder {
-    color: rgba(255,255,255,0.3);
-}
+.search-field::placeholder { color: rgba(255, 255, 255, 0.3); }
 
 .clear-search-btn {
-    background: none;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    color: rgba(255,255,255,0.35);
-    cursor: pointer;
-    padding: 2px;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
     flex-shrink: 0;
-    transition: color 0.15s ease;
+    transition: background 0.12s ease;
 }
-
-.clear-search-btn:active {
-    color: rgba(255,255,255,0.8);
-}
+.clear-search-btn:active { background: rgba(255, 255, 255, 0.18); }
 
 /* ========================================
    NAV BUTTONS ROW
@@ -115,13 +116,20 @@
 .nav-buttons-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    max-width: 500px;
-    margin: 0 auto;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px 10px;
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     width: 100%;
-    padding: 0 10px;
+    max-width: 600px;
+    border-radius: 20px 20px 0 0;
+    pointer-events: auto;
 }
 
+/* Side nav buttons */
 .nav-btn {
     display: flex;
     flex-direction: column;
@@ -129,18 +137,14 @@
     gap: 3px;
     background: none;
     border: none;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255, 255, 255, 0.45);
     cursor: pointer;
-    padding: 8px 18px;
+    padding: 6px 16px;
     border-radius: 12px;
     transition: color 0.15s ease, background 0.15s ease;
-    min-width: 64px;
+    flex: 1;
 }
-
-.nav-btn:active {
-    color: white;
-    background: rgba(255,255,255,0.07);
-}
+.nav-btn:active { background: rgba(255, 255, 255, 0.06); color: white; }
 
 .nav-btn-icon {
     display: flex;
@@ -154,169 +158,44 @@
     letter-spacing: 0.2px;
 }
 
-/* Centre button — circle search toggle */
+/* Centre search toggle button */
 .nav-center-btn {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    border: none;
     background: #E94560;
+    border: none;
     color: white;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 18px rgba(233,69,96,0.5);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(233, 69, 96, 0.45);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    margin: 0 8px;
 }
-
-.nav-center-btn:active {
-    transform: scale(0.92);
-    box-shadow: 0 2px 8px rgba(233,69,96,0.3);
-}
-
+.nav-center-btn:active { transform: scale(0.93); box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3); }
 .nav-center-btn.is-active {
-    background: rgba(255,255,255,0.1);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    background: rgba(233, 69, 96, 0.18);
+    box-shadow: 0 0 0 1px rgba(233, 69, 96, 0.4);
+    color: #E94560;
 }
 
-/* ========================================
-   SEARCH RESULTS PANEL — (Index.razor)
-   ======================================== */
+/* Search results panel (if shown in this component) */
 .search-results-panel {
     position: fixed;
-    inset: 0;
-    z-index: 49;
-    background: rgba(0,0,0,0.9);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    left: 0;
+    right: 0;
+    bottom: 80px;
+    z-index: 90;
+    max-height: 60vh;
     overflow-y: auto;
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
     -webkit-overflow-scrolling: touch;
-    padding: 20px 0 160px;
-    display: none;
-    flex-direction: column;
-}
-
-.search-results-panel.visible {
-    display: flex;
-    animation: overlayFadeIn 0.2s ease;
-}
-
-.search-results-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 50px 20px;
-    color: rgba(255,255,255,0.45);
-    font-size: 14px;
-}
-
-.search-no-results {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 70px 20px;
-    color: rgba(255,255,255,0.3);
-    font-size: 14px;
-    text-align: center;
-}
-
-.search-no-results-hint {
-    font-size: 12px;
-    color: rgba(255,255,255,0.18);
-}
-
-.search-result-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 20px;
-    cursor: pointer;
-    transition: background 0.12s ease;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.search-result-item:active {
-    background: rgba(233,69,96,0.12);
-}
-
-.search-result-thumb {
-    width: 40px;
-    height: 56px;
-    border-radius: 5px;
-    background-size: cover;
-    background-position: center;
-    background-color: rgba(255,255,255,0.06);
-    flex-shrink: 0;
-}
-
-.search-result-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.search-result-title {
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 3px;
-}
-
-.search-result-meta {
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-}
-
-.search-results-updating {
-    text-align: center;
-    padding: 14px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.28);
-}
-
-/* ========================================
-   SEARCH FETCH OVERLAY
-   ======================================== */
-.search-fetch-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 299;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: overlayFadeIn 0.15s ease;
-}
-
-/* ========================================
-   SEARCH ACTIVE — nav stays on top
-   ======================================== */
-.search-is-active .nav-section {
-    z-index: 50;
-}
-
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-@media (min-width: 768px) {
-    .main-nav-bar {
-        padding: 10px 30px 22px;
-    }
-
-    .nav-buttons-row {
-        padding: 0 30px;
-    }
-
-    .nav-center-btn {
-        width: 56px;
-        height: 56px;
-    }
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
