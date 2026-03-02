@@ -202,22 +202,23 @@
 
     @if (!showDetailPopup)
     {
-        <NavigationBar OnSearchToggled="HandleSearchToggled"
-                       OnListsClicked="HandleListsClicked"
-                       OnProfileClicked="HandleProfileClicked"
-                       OnSearchQueryChanged="HandleSearchQueryChanged" />
+        <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
+                                                          OnListsClicked="HandleListsClicked"
+                                                          OnProfileClicked="HandleProfileClicked"
+                                                          OnSearchQueryChanged="HandleSearchQueryChanged" />
     }
 
-    <AnimeDetailPopup CurrentAnime="selectedAnime"
-                      IsVisible="showDetailPopup"
-                      OnClose="CloseDetailPopup" />
+    <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
+                                                         IsVisible="showDetailPopup"
+                                                         OnClose="CloseDetailPopup" />
 
     <ListsPanel IsVisible="showListsPanel"
-                OnClose="CloseListsPanel"
-                OnAnimeSelected="HandleListsAnimeSelected" />
+            OnClose="CloseListsPanel"
+            OnAnimeSelected="HandleListsAnimeSelected" />
 
-    <DebugPanel IsVisible="showDebugPanel"
-                OnHide="@(() => showDebugPanel = false)" />
+
+    <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
+                                                   OnHide="@(() => showDebugPanel = false)" />
 </div>
 
 @code {
@@ -261,6 +262,7 @@
 
     // ─── Popup ───────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
+
     private bool showListsPanel = false;
     private AnimeCard? selectedAnime = null;
 
@@ -559,6 +561,9 @@
 
     private async Task ShowAnimeDetails(AnimeCard anime)
     {
+        // Bulk load already fetches relations — only do an extra call as a fallback
+        // for cards loaded via GetRandomAnimeAsync that somehow lack them, or
+        // for cards that came from search results (which are Jikan stubs).
         bool isJikanStub = anime.Id == 0;
         bool missingData = !isJikanStub && anime.Relations.Count == 0
                            && string.IsNullOrEmpty(anime.Format)

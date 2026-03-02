@@ -104,10 +104,10 @@
     text-align: center;
 }
 
-.clm-tab.active {
-    background: rgba(233, 69, 96, 0.2);
-    color: #E94560;
-}
+    .clm-tab.active {
+        background: rgba(233, 69, 96, 0.2);
+        color: #E94560;
+    }
 
 /* ========================================
    CLM BODY
@@ -152,7 +152,9 @@
     transition: background 0.15s ease;
 }
 
-.clm-add-btn:active { background: rgba(233, 69, 96, 0.15); }
+    .clm-add-btn:active {
+        background: rgba(233, 69, 96, 0.15);
+    }
 
 /* ========================================
    CLM2 ROW — List item
@@ -168,7 +170,9 @@
     background: #111;
 }
 
-.clm2-row:last-child { border-bottom: none; }
+    .clm2-row:last-child {
+        border-bottom: none;
+    }
 
 /* Drag handle */
 .clm2-drag-handle {
@@ -180,7 +184,9 @@
     touch-action: none;
 }
 
-.clm2-drag-handle:active { cursor: grabbing; }
+    .clm2-drag-handle:active {
+        cursor: grabbing;
+    }
 
 /* Color swatch */
 .clm2-color-swatch {
@@ -193,7 +199,9 @@
     transition: transform 0.15s ease;
 }
 
-.clm2-color-swatch:active { transform: scale(1.15); }
+    .clm2-color-swatch:active {
+        transform: scale(1.15);
+    }
 
 /* Name input */
 .clm2-name-input {
@@ -208,7 +216,9 @@
     caret-color: #E94560;
 }
 
-.clm2-name-input::placeholder { color: #444; }
+    .clm2-name-input::placeholder {
+        color: #444;
+    }
 
 /* Item count */
 .clm2-item-count {
@@ -231,7 +241,9 @@
     transition: color 0.15s ease;
 }
 
-.clm2-delete-btn:active { color: #E94560; }
+    .clm2-delete-btn:active {
+        color: #E94560;
+    }
 
 /* ========================================
    CLM2 DRAG STATES
@@ -250,6 +262,13 @@
    ANIMATIONS
    ======================================== */
 @keyframes clmRowSlideIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
