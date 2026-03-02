@@ -1,7 +1,7 @@
 ﻿/* ========================================
-   MODAL OVERLAY
+   ANIME DETAIL OVERLAY
    ======================================== */
-.modal-overlay {
+.anime-detail-overlay {
     position: fixed;
     inset: 0;
     z-index: 300;
@@ -15,15 +15,13 @@
 }
 
 @media (min-width: 768px) {
-    .modal-overlay {
-        align-items: center;
-    }
+    .anime-detail-overlay { align-items: center; }
 }
 
 /* ========================================
-   MODAL CONTAINER
+   ANIME DETAIL MODAL (container)
    ======================================== */
-.modal-container {
+.anime-detail-modal {
     width: 100%;
     max-width: 700px;
     max-height: 92vh;
@@ -37,7 +35,7 @@
 }
 
 @media (min-width: 768px) {
-    .modal-container {
+    .anime-detail-modal {
         border-radius: 20px;
         max-height: 85vh;
         animation: modalFadeScale 0.25s ease;
@@ -65,16 +63,16 @@
     -webkit-backdrop-filter: blur(6px);
 }
 
-.modal-scroll-container {
+.anime-detail-scroll {
     overflow-y: auto;
     flex: 1;
     -webkit-overflow-scrolling: touch;
 }
 
 /* ========================================
-   MODAL BANNER
+   BANNER
    ======================================== */
-.modal-banner {
+.anime-banner {
     width: 100%;
     height: 180px;
     background-size: cover;
@@ -83,17 +81,17 @@
     flex-shrink: 0;
 }
 
-    .modal-banner::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(13,13,13,0.95) 100%);
-    }
+.anime-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(13,13,13,0.95) 100%);
+}
 
 /* ========================================
-   MODAL HEADER
+   HEADER (poster + info)
    ======================================== */
-.modal-header-content {
+.anime-detail-header {
     display: flex;
     gap: 14px;
     padding: 0 16px 16px;
@@ -102,11 +100,9 @@
     z-index: 2;
 }
 
-.modal-poster-section {
-    flex-shrink: 0;
-}
+.anime-poster-col { flex-shrink: 0; }
 
-.modal-poster {
+.anime-poster-large {
     width: 90px;
     height: 128px;
     border-radius: 8px;
@@ -116,13 +112,13 @@
     border: 2px solid rgba(255,255,255,0.08);
 }
 
-.modal-info-section {
+.anime-detail-info {
     flex: 1;
     min-width: 0;
     padding-top: 60px;
 }
 
-.modal-title {
+.anime-detail-title {
     font-size: 17px;
     font-weight: bold;
     line-height: 1.25;
@@ -130,7 +126,7 @@
     word-break: break-word;
 }
 
-.modal-title-native {
+.anime-detail-title-native {
     font-size: 12px;
     color: #888;
     margin-bottom: 6px;
@@ -138,7 +134,7 @@
     word-break: break-word;
 }
 
-.modal-season {
+.anime-detail-season {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -147,47 +143,35 @@
     margin-bottom: 4px;
 }
 
-/* Status dot — dans le modal */
-.modal-status-dot {
+.anime-status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-    .modal-status-dot.releasing {
-        background: rgb(0, 230, 0);
-        box-shadow: 0 0 6px rgba(0, 255, 0, 0.8);
-        animation: pulse-green 2s ease-in-out infinite;
-    }
-
-    .modal-status-dot.upcoming {
-        background: rgb(230, 0, 0);
-        box-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
-        animation: pulse-red 2s ease-in-out infinite;
-    }
-
-@keyframes pulse-green {
-    0%, 100% {
-        box-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
-    }
-
-    50% {
-        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
-    }
+.anime-status-dot.releasing {
+    background: rgb(0, 230, 0);
+    box-shadow: 0 0 6px rgba(0, 255, 0, 0.8);
+    animation: pulse-green-modal 2s ease-in-out infinite;
 }
 
-@keyframes pulse-red {
-    0%, 100% {
-        box-shadow: 0 0 3px rgba(255, 0, 0, 0.5);
-    }
-
-    50% {
-        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
-    }
+.anime-status-dot.upcoming {
+    background: rgb(230, 0, 0);
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
+    animation: pulse-red-modal 2s ease-in-out infinite;
 }
 
-.modal-genres {
+@keyframes pulse-green-modal {
+    0%, 100% { box-shadow: 0 0 3px rgba(0, 255, 0, 0.5); }
+    50%       { box-shadow: 0 0 8px rgba(0, 255, 0, 1); }
+}
+@keyframes pulse-red-modal {
+    0%, 100% { box-shadow: 0 0 3px rgba(255, 0, 0, 0.5); }
+    50%       { box-shadow: 0 0 8px rgba(255, 0, 0, 1); }
+}
+
+.anime-detail-genres {
     font-size: 12px;
     color: #E94560;
     font-weight: 600;
@@ -197,20 +181,14 @@
     text-overflow: ellipsis;
 }
 
-.modal-stats {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
+.anime-detail-stats { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ========================================
-   MODAL ACTIONS (Add to list button)
+   ACTION BUTTONS
    ======================================== */
-.modal-actions {
-    padding: 0 16px 16px;
-}
+.modal-action-buttons { padding: 0 16px 14px; }
 
-.btn-add-to-list {
+.btn-add-to-list-inner {
     width: 100%;
     padding: 12px;
     border-radius: 10px;
@@ -225,27 +203,47 @@
     transition: opacity 0.15s ease, transform 0.15s ease;
     background: #E94560;
     color: white;
+    margin-bottom: 8px;
 }
 
-    .btn-add-to-list:active {
-        transform: scale(0.98);
-        opacity: 0.85;
-    }
+.btn-add-to-list-inner:active { transform: scale(0.98); opacity: 0.85; }
 
-    /* État : déjà dans la liste */
-    .btn-add-to-list.in-list {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-    }
+.btn-add-to-list-inner.in-list {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.modal-secondary-btns { display: flex; gap: 8px; }
+
+.btn-share,
+.btn-favorite {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s ease;
+}
+
+.btn-share:active, .btn-favorite:active { background: rgba(255, 255, 255, 0.1); }
+
+.btn-favorite.is-favorite {
+    background: rgba(233, 69, 96, 0.15);
+    border-color: rgba(233, 69, 96, 0.4);
+    color: #E94560;
+}
 
 /* ========================================
-   SYNOPSIS
+   SECTION TITLE (commun à tout le modal)
    ======================================== */
-.modal-synopsis-section {
-    padding: 0 16px 16px;
-}
-
 .modal-section-title {
     font-size: 13px;
     font-weight: 700;
@@ -255,11 +253,12 @@
     margin-bottom: 8px;
 }
 
-.modal-synopsis {
-    font-size: 13px;
-    color: #ccc;
-    line-height: 1.6;
-}
+/* ========================================
+   SYNOPSIS
+   ======================================== */
+.anime-synopsis-section { padding: 0 16px 16px; }
+
+.anime-synopsis { font-size: 13px; color: #ccc; line-height: 1.6; }
 
 .synopsis-toggle-btn {
     background: none;
@@ -274,11 +273,9 @@
 /* ========================================
    RELATIONS
    ======================================== */
-.modal-relations-section {
-    padding: 0 0 16px;
-}
+.anime-relations-section { padding: 0 0 16px; }
 
-.modal-relations-scroll {
+.relations-scroll {
     display: flex;
     gap: 10px;
     overflow-x: auto;
@@ -286,18 +283,13 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
+.relations-scroll::-webkit-scrollbar { display: none; }
 
-    .modal-relations-scroll::-webkit-scrollbar {
-        display: none;
-    }
+.relation-cards { display: flex; gap: 10px; }
 
-.modal-relation-card {
-    flex-shrink: 0;
-    width: 90px;
-    cursor: pointer;
-}
+.relation-card { flex-shrink: 0; width: 90px; cursor: pointer; }
 
-.modal-relation-thumb {
+.relation-thumb {
     width: 90px;
     height: 126px;
     border-radius: 6px;
@@ -307,7 +299,7 @@
     border: 1px solid rgba(255,255,255,0.07);
 }
 
-.modal-relation-type {
+.relation-type {
     font-size: 9px;
     color: #E94560;
     font-weight: 700;
@@ -315,7 +307,7 @@
     margin-bottom: 2px;
 }
 
-.modal-relation-title {
+.relation-title {
     font-size: 10px;
     color: #ccc;
     line-height: 1.3;
@@ -328,16 +320,9 @@
 /* ========================================
    GENRES & STUDIOS
    ======================================== */
-.modal-genres-section,
-.modal-studios-section {
-    padding: 0 16px 16px;
-}
+.anime-genres-section, .anime-studios-section { padding: 0 16px 16px; }
 
-.modal-tags-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
+.modal-tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .modal-tag {
     padding: 4px 10px;
@@ -361,45 +346,35 @@
 /* ========================================
    TRAILER
    ======================================== */
-.modal-trailer-section {
-    padding: 0 16px 16px;
-}
+.anime-trailer-section { padding: 0 16px 16px; }
 
-.modal-trailer-embed {
+.anime-trailer-embed {
     width: 100%;
     aspect-ratio: 16 / 9;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.07);
 }
-
-    .modal-trailer-embed iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        display: block;
-    }
+.anime-trailer-embed iframe { width: 100%; height: 100%; border: none; display: block; }
 
 /* ========================================
    DETAILS GRID
    ======================================== */
-.modal-details-section {
-    padding: 0 16px 16px;
-}
+.anime-details-section { padding: 0 16px 16px; }
 
-.modal-details-grid {
+.anime-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
 
-.modal-detail-item {
+.anime-detail-cell {
     background: rgba(255,255,255,0.04);
     border-radius: 8px;
     padding: 10px 12px;
 }
 
-.modal-detail-label {
+.detail-label {
     font-size: 10px;
     color: #666;
     text-transform: uppercase;
@@ -407,20 +382,14 @@
     margin-bottom: 3px;
 }
 
-.modal-detail-value {
-    font-size: 13px;
-    color: #ddd;
-    font-weight: 500;
-}
+.detail-value { font-size: 13px; color: #ddd; font-weight: 500; }
 
 /* ========================================
    TAGS (avec spoilers)
    ======================================== */
-.modal-tags-section {
-    padding: 0 16px 16px;
-}
+.anime-tags-section { padding: 0 16px 16px; }
 
-.modal-tag-item {
+.anime-tag-pill {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
@@ -430,32 +399,23 @@
     cursor: pointer;
 }
 
-    .modal-tag-item.spoiler {
-        background: rgba(255, 180, 0, 0.08);
-        border-color: rgba(255, 180, 0, 0.25);
-        color: #888;
-        font-style: italic;
-    }
+.anime-tag-pill.spoiler {
+    background: rgba(255, 180, 0, 0.08);
+    border-color: rgba(255, 180, 0, 0.25);
+    color: #888;
+    font-style: italic;
+}
 
-        .modal-tag-item.spoiler.revealed {
-            color: #ccc;
-            font-style: normal;
-        }
+.anime-tag-pill.spoiler.revealed { color: #ccc; font-style: normal; }
 
 /* ========================================
    PLATEFORMES
    ======================================== */
-.modal-platforms-section {
-    padding: 0 16px 24px;
-}
+.anime-platforms-section { padding: 0 16px 24px; }
 
-.modal-platforms-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
+.anime-platforms-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.modal-platform-link {
+.anime-platform-link {
     padding: 6px 14px;
     border-radius: 8px;
     font-size: 12px;
@@ -467,7 +427,237 @@
     cursor: pointer;
     transition: background 0.15s ease;
 }
+.anime-platform-link:active { background: rgba(255,255,255,0.12); }
 
-    .modal-platform-link:active {
-        background: rgba(255,255,255,0.12);
-    }
+/* ========================================
+   LIST EDITOR (modal dans modal)
+   ======================================== */
+.list-editor-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: overlayFadeIn 0.2s ease;
+}
+
+@media (min-width: 768px) { .list-editor-overlay { align-items: center; } }
+
+.list-editor-modal {
+    width: 100%;
+    max-width: 560px;
+    background: #141414;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    animation: sheetSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: 85vh;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .list-editor-modal { border-radius: 20px; animation: modalFadeScale 0.25s ease; }
+}
+
+.list-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    flex-shrink: 0;
+}
+
+.list-editor-title { font-size: 16px; font-weight: 700; }
+
+.list-editor-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+}
+
+.list-editor-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.list-editor-footer {
+    padding: 12px 16px 24px;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.le-list-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    appearance: none;
+    outline: none;
+}
+
+.le-score-row { margin-bottom: 14px; }
+
+.le-score-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+
+.le-score-bar { display: flex; gap: 4px; }
+
+.le-score-dot {
+    flex: 1;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.07);
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.le-score-dot.active { background: #E94560; }
+
+.le-eps-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+
+.le-eps-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.le-eps-input {
+    flex: 1;
+    text-align: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    padding: 8px;
+    outline: none;
+}
+
+.le-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    cursor: pointer;
+}
+
+.le-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.12s ease;
+}
+.le-checkbox.checked { background: #E94560; border-color: #E94560; }
+
+.le-checkbox-label { font-size: 14px; color: #ccc; }
+
+.le-save-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #E94560;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+.le-save-btn:active { opacity: 0.8; }
+
+.le-delete-btn {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,100,100,0.35);
+    background: rgba(255,100,100,0.1);
+    color: #ff6464;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.le-delete-btn:active { background: rgba(255,100,100,0.2); }
+
+/* ========================================
+   DELETE CONFIRMATION
+   ======================================== */
+.delete-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: overlayFadeIn 0.15s ease;
+}
+
+.delete-confirm-box {
+    background: #1a1a1a;
+    border: 1px solid rgba(255,100,100,0.25);
+    border-radius: 16px;
+    padding: 24px 20px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    animation: modalFadeScale 0.2s ease;
+}
+
+.delete-confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+
+.delete-confirm-text { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+
+.delete-confirm-btns { display: flex; gap: 10px; }
+
+.delete-cancel-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.delete-ok-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    background: #E94560;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
