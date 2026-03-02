@@ -38,8 +38,9 @@
 
                             <div class="modal-action-buttons">
                                 @{
+                                    // Only show status-type custom list in the header button
                                     var _btnCustomList = (isInList && !currentListStatus.HasValue && currentCustomListId != null)
-                                        ? UserListService.GetCustomLists().FirstOrDefault(c => c.Id == currentCustomListId)
+                                        ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == currentCustomListId)
                                         : null;
                                 }
 
@@ -59,7 +60,7 @@
                                         }
                                         else if (isInList && currentCustomListId != null)
                                         {
-                                            var _btnCl = UserListService.GetCustomLists().FirstOrDefault(c => c.Id == currentCustomListId);
+                                            var _btnCl = UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == currentCustomListId);
                                             if (_btnCl != null)
                                             {
                                                 @GlowDot(_btnCl.Color)
@@ -538,23 +539,23 @@
             <!-- Body -->
             <div class="list-editor-body">
 
-                <!-- ── Status Dropdown (standards + custom lists) ── -->
+                <!-- ── Status Dropdown (status-type lists only) ── -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">STATUS</span>
 
                     @{
                         string _triggerBorderColor = editStatus.HasValue
                             ? GetStatusHexColor(editStatus.Value)
-                            : _editCustomListIds.Any()
-                                ? (UserListService.GetCustomLists().FirstOrDefault(c => _editCustomListIds.Contains(c.Id))?.Color ?? "rgba(255,255,255,0.1)")
+                            : _editStatusTypeCustomId != null
+                                ? (UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)?.Color ?? "rgba(255,255,255,0.1)")
                                 : "rgba(255,255,255,0.1)";
                     }
                     <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
-                            style="border-color: @_triggerBorderColor; @(!editStatus.HasValue && _editCustomListIds.Any() ? $"color:{_triggerBorderColor};" : "")"
+                            style="border-color: @_triggerBorderColor; @(_editStatusTypeCustomId != null && !editStatus.HasValue ? $"color:{_triggerBorderColor};" : "")"
                             @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @{
-                            var _triggerCl = !editStatus.HasValue && _editCustomListIds.Any()
-                                ? UserListService.GetCustomLists().FirstOrDefault(c => _editCustomListIds.Contains(c.Id))
+                            var _triggerCl = !editStatus.HasValue && _editStatusTypeCustomId != null
+                                ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)
                                 : null;
                         }
                         @if (editStatus.HasValue)
@@ -582,7 +583,7 @@
                     {
                         <div class="le-dd-list" style="max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;" @onwheel:stopPropagation="true">
 
-                            <!-- Statuts standards -->
+                            <!-- Standard statuses -->
                             @foreach (var s in GetAvailableStatuses())
                             {
                                 bool isSel = editStatus == s;
@@ -590,7 +591,7 @@
                                         @onclick="async () => {
                                             var prev = editStatus;
                                             editStatus = s;
-                                            _editCustomListIds.Clear();   // ← ADD: deselect any custom list
+                                            _editStatusTypeCustomId = null;
                                             if (s == ListStatus.Completed) {
                                                 int tot = GetTotalEpisodes();
                                                 if (tot > 0) editEpisodes = tot;
@@ -613,27 +614,26 @@
                                 </button>
                             }
 
-                            <!-- Séparateur + Custom lists -->
+                            <!-- Status-type custom lists (mutually exclusive with standard statuses) -->
                             @{
-                                var customLists = UserListService.GetCustomLists().ToList();
+                                var statusTypeLists = UserListService.GetStatusTypeLists().ToList();
                             }
-                            @if (customLists.Any())
+                            @if (statusTypeLists.Any())
                             {
-                                @foreach (var cl in customLists)
+                                @foreach (var cl in statusTypeLists)
                                 {
-                                    bool isInCl = _editCustomListIds.Contains(cl.Id);
+                                    bool isInCl = _editStatusTypeCustomId == cl.Id;
                                     <button class="le-dd-option @(isInCl ? "selected" : "")"
                                         style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
                                         @onclick="async () => {
-                                            if (_editCustomListIds.Contains(cl.Id))
+                                            if (_editStatusTypeCustomId == cl.Id)
                                             {
-                                                _editCustomListIds.Clear();
+                                                _editStatusTypeCustomId = null;
                                             }
                                             else
                                             {
                                                 editStatus = null;
-                                                _editCustomListIds.Clear();
-                                                _editCustomListIds.Add(cl.Id);
+                                                _editStatusTypeCustomId = cl.Id;
                                             }
                                             await AutoSave();
                                             _statusDropdownOpen = false;
@@ -656,6 +656,39 @@
                         </div>
                     }
                 </div>
+
+                <!-- ── Custom Lists (multi-select pills) ── -->
+                @{
+                    var _regularLists = UserListService.GetRegularCustomLists();
+                }
+                @if (_regularLists.Any())
+                {
+                    <div class="le-custom-lists-section" @onclick:stopPropagation="true">
+                        <span class="list-editor-label">CUSTOM LISTS</span>
+                        <div class="le-custom-pills">
+                            @foreach (var cl in _regularLists)
+                            {
+                                bool isActive = _editCustomListIds.Contains(cl.Id);
+                                <button class="le-custom-pill @(isActive ? "le-custom-pill-on" : "")"
+                                        style="@(isActive
+                                            ? $"border-color:{cl.Color};color:{cl.Color};background:color-mix(in srgb,{cl.Color} 13%,transparent);"
+                                            : $"border-color:{cl.Color}33;")"
+                                        @onclick="async () => await ToggleCustomList(cl.Id)"
+                                        @onclick:stopPropagation="true">
+                                    @GlowDot(cl.Color)
+                                    <span>@cl.Name</span>
+                                    @if (isActive)
+                                    {
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
 
                 <!-- Score & Episode Progress -->
                 <div class="list-editor-grid list-editor-grid-2">
@@ -861,9 +894,9 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    private string? currentCustomListId = null;   // ← ADD
+    // Tracks the status-type custom list ID shown in the header button
+    private string? currentCustomListId = null;
 
-    // Alias used in custom list toggle (same reference as CurrentAnime)
     private AnimeCard? editAnime => CurrentAnime;
 
     private bool isFavorited = false;
@@ -903,6 +936,7 @@
 
     // Edit form fields
     private ListStatus? editStatus = null;
+    private string? _editStatusTypeCustomId = null;  // ← selected status-type custom list (mutually exclusive)
     private double editScore = 0;
     private int editEpisodes = 0;
     private int editRewatches = 0;
@@ -911,7 +945,7 @@
     private DateTime? editFinishDate = null;
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
-    private HashSet<string> _editCustomListIds = new();
+    private HashSet<string> _editCustomListIds = new();  // ← regular custom lists only (multi-select)
 
     // Element refs
     private ElementReference _listEditorOverlayRef;
@@ -1028,7 +1062,9 @@
         var entry = UserListService.GetEntry(CurrentAnime.Id);
         isInList = entry != null;
         currentListStatus = entry?.Status;
-        currentCustomListId = entry?.CustomListIds.FirstOrDefault();  // ← ADD
+        // Display the status-type custom list in the header button (first match)
+        var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
+        currentCustomListId = entry?.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
     }
 
     // ── Auto-save ─────────────────────────────────────────────────────────────
@@ -1040,6 +1076,7 @@
 
         bool hasContent = existing != null
             || editStatus.HasValue
+            || _editStatusTypeCustomId != null
             || editScore > 0
             || editEpisodes > 0
             || editRewatches > 0
@@ -1061,11 +1098,15 @@
         existing.FinishDate          = editFinishDate;
         existing.IsPrivate           = editIsPrivate;
         existing.HideFromStatusLists = editHideFromLists;
-        existing.CustomListIds       = _editCustomListIds.ToList();
+
+        // Combine status-type selection + regular custom list selections
+        var allCustomIds = new List<string>(_editCustomListIds);
+        if (_editStatusTypeCustomId != null) allCustomIds.Add(_editStatusTypeCustomId);
+        existing.CustomListIds = allCustomIds;
 
         UserListService.SaveEntry(existing);
         currentListStatus = editStatus;
-        currentCustomListId = _editCustomListIds.FirstOrDefault();
+        currentCustomListId = _editStatusTypeCustomId;
         isInList = true;
 
         if (!_deleteAnimVisible && showListEditor)
@@ -1105,20 +1146,25 @@
             editFinishDate     = existing.FinishDate;
             editIsPrivate      = existing.IsPrivate;
             editHideFromLists  = existing.HideFromStatusLists;
-            _editCustomListIds = new HashSet<string>(existing.CustomListIds);
+
+            // Split saved IDs into status-type vs regular
+            var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
+            _editStatusTypeCustomId = existing.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
+            _editCustomListIds = new HashSet<string>(existing.CustomListIds.Where(id => !statusTypeIds.Contains(id)));
         }
         else
         {
-            editStatus         = null;
-            editScore          = 0;
-            editEpisodes       = 0;
-            editRewatches      = 0;
-            editNotes          = "";
-            editStartDate      = null;
-            editFinishDate     = null;
-            editIsPrivate      = false;
-            editHideFromLists  = false;
-            _editCustomListIds = new();
+            editStatus              = null;
+            editScore               = 0;
+            editEpisodes            = 0;
+            editRewatches           = 0;
+            editNotes               = "";
+            editStartDate           = null;
+            editFinishDate          = null;
+            editIsPrivate           = false;
+            editHideFromLists       = false;
+            _editStatusTypeCustomId = null;
+            _editCustomListIds      = new();
         }
 
         if (CurrentAnime.Status == "NOT_YET_RELEASED")
@@ -1150,17 +1196,20 @@
         UserListService.Remove(CurrentAnime.Id);
         isInList = false;
         currentListStatus = null;
+        currentCustomListId = null;
         showDeleteConfirm = false;
         showListEditor = false;
         StateHasChanged();
     }
 
     // ── Custom Lists ──────────────────────────────────────────────────────────
+    // Toggles a regular custom list on/off (does not affect status or status-type lists)
     private async Task ToggleCustomList(string customListId)
     {
         if (!_editCustomListIds.Remove(customListId))
             _editCustomListIds.Add(customListId);
         await AutoSave();
+        StateHasChanged();
     }
 
     // ── Score ─────────────────────────────────────────────────────────────────
@@ -1546,7 +1595,6 @@
                };
     }
 
-    /// Dot with glow for active state, dimmed for inactive.
     private MarkupString StatusDotMarkup(ListStatus s, bool active)
     {
         string color = GetStatusHexColor(s);
@@ -1558,13 +1606,12 @@
         return new MarkupString($"<span style=\"{style}\"></span>");
     }
 
-    /// Universal glow dot (used in dropdown options and trigger button).
     private static MarkupString GlowDot(string color)
     {
         var style =
             $"display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;" +
             $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};";
-        return new MarkupString($"<span style=\"{style}\"></span>");
+        return new MarkupString($"<span class=\"le-dd-dot\" style=\"{style}\"></span>");
     }
 
     private string GetStatusText(string status) => status switch

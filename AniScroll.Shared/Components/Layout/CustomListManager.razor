@@ -141,10 +141,11 @@
                             }
                         </div>
 
+                        <!-- FIX: StateHasChanged() forces re-render so CanAdd updates and button enables -->
                         <input class="clm2-name-input"
                                placeholder="New status name…"
                                value="@_newName"
-                               @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
+                               @oninput="e => { _newName = e.Value?.ToString() ?? string.Empty; StateHasChanged(); }"
                                @onkeydown="OnNewKeyDown"
                                @onclick:stopPropagation="true" />
 
@@ -242,10 +243,11 @@
                             }
                         </div>
 
+                        <!-- FIX: StateHasChanged() forces re-render so CanAdd updates and button enables -->
                         <input class="clm2-name-input"
                                placeholder="New list name…"
                                value="@_newName"
-                               @oninput="e => _newName = e.Value?.ToString() ?? string.Empty"
+                               @oninput="e => { _newName = e.Value?.ToString() ?? string.Empty; StateHasChanged(); }"
                                @onkeydown="OnNewKeyDown"
                                @onclick:stopPropagation="true" />
 
@@ -281,7 +283,7 @@
     // ── Row wrapper ──────────────────────────────────────────────────────
     private class Row
     {
-        public bool IsBuiltIn;             // true = StatusListSetting (lock icon, name readonly)
+        public bool IsBuiltIn;
         public StatusListSetting? Status;
         public UserCustomList?    Custom;
 
@@ -300,21 +302,19 @@
         }
     }
 
-    private string _activeTab = "status";   // "status" | "custom"
-    private List<Row> _statusRows = new();  // built-in statuses + IsStatusList custom lists
-    private List<Row> _customRows = new();  // regular custom lists
+    private string _activeTab = "status";
+    private List<Row> _statusRows = new();
+    private List<Row> _customRows = new();
 
     // Element refs
     private ElementReference _panelRef;
     private ElementReference _bodyRef;
 
-    // Status tab refs
     private ElementReference   _newStatusRowRef;
     private ElementReference   _newStatusSwatchRef;
     private ElementReference[] _statusSwatchRefs = new ElementReference[64];
     private ElementReference[] _statusHandleRefs = new ElementReference[64];
 
-    // Custom tab refs
     private ElementReference   _newCustomRowRef;
     private ElementReference   _newCustomSwatchRef;
     private ElementReference[] _customSwatchRefs = new ElementReference[64];
@@ -409,8 +409,6 @@
             return;
         }
 
-        // Dans l'onglet Status, les built-in sont draggables mais ne peuvent pas
-        // passer après les user-created status-type items (optionnel, on laisse libre).
         var item = activeRows[fromIndex];
         activeRows.RemoveAt(fromIndex);
         activeRows.Insert(Math.Clamp(toIndex, 0, activeRows.Count), item);
@@ -452,13 +450,11 @@
     // ── Persist ──────────────────────────────────────────────────────────
     private void SaveAll()
     {
-        // 1. Save built-in status settings (keep their Order based on position in _statusRows)
         var statusSettings = _statusRows.Where(r => r.IsBuiltIn).Select(r => r.Status!).ToList();
         int statusOrder = 0;
         foreach (var s in statusSettings) s.Order = statusOrder++;
         UserListService.SaveStatusSettings(statusSettings);
 
-        // 2. Save all custom lists (status-type + regular)
         var statusTypeCustom = _statusRows.Where(r => !r.IsBuiltIn).Select(r => r.Custom!).ToList();
         int stOrder = 0;
         foreach (var c in statusTypeCustom) { c.Order = stOrder++; c.IsStatusList = true; }
