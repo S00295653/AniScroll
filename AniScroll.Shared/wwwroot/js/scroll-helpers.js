@@ -19,7 +19,7 @@ window.getScrollSectionHeight = function () {
 window.getScrollInfo = function (element) {
     if (!element) return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
     return {
-        scrollTop:    element.scrollTop,
+        scrollTop: element.scrollTop,
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight
     };
@@ -156,15 +156,15 @@ window.cpGetRect = function (el) {
 
 window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const MARGIN = 12;
-    const GAP    = 8;
+    const GAP = 8;
 
-    const a  = anchorEl.getBoundingClientRect();
+    const a = anchorEl.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
     const popupEl = document.querySelector('.cp-popup');
-    const popupH  = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
-    const w       = Math.min(popupW, vw - 2 * MARGIN);
+    const popupH = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
+    const w = Math.min(popupW, vw - 2 * MARGIN);
 
     const spaceBelow = vh - a.bottom - GAP;
     const spaceAbove = a.top - GAP;
@@ -180,7 +180,7 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
 
     let left = a.left;
     if (left + w > vw - MARGIN) left = vw - MARGIN - w;
-    if (left < MARGIN)          left = MARGIN;
+    if (left < MARGIN) left = MARGIN;
 
     return { left, top };
 };
@@ -194,21 +194,21 @@ window.cpStartSvDrag = function (svEl, dotNet) {
         const r = _cpSvEl.getBoundingClientRect();
         _cpSvDotNet.invokeMethodAsync('OnSvDrag',
             Math.max(0, Math.min(1, (cx - r.left) / r.width)),
-            Math.max(0, Math.min(1, (cy - r.top)  / r.height)));
+            Math.max(0, Math.min(1, (cy - r.top) / r.height)));
     };
     const onMM = e => { if (_cpSvActive) onMove(e.clientX, e.clientY); };
     const onTM = e => { if (_cpSvActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
     const stop = () => {
         _cpSvActive = false;
         document.removeEventListener('mousemove', onMM);
-        document.removeEventListener('mouseup',   stop);
+        document.removeEventListener('mouseup', stop);
         document.removeEventListener('touchmove', onTM);
-        document.removeEventListener('touchend',  stop);
+        document.removeEventListener('touchend', stop);
     };
     document.addEventListener('mousemove', onMM);
-    document.addEventListener('mouseup',   stop);
+    document.addEventListener('mouseup', stop);
     document.addEventListener('touchmove', onTM, { passive: false });
-    document.addEventListener('touchend',  stop);
+    document.addEventListener('touchend', stop);
 };
 
 // Hue drag
@@ -225,24 +225,24 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
     const stop = () => {
         _cpHueActive = false;
         document.removeEventListener('mousemove', onMM);
-        document.removeEventListener('mouseup',   stop);
+        document.removeEventListener('mouseup', stop);
         document.removeEventListener('touchmove', onTM);
-        document.removeEventListener('touchend',  stop);
+        document.removeEventListener('touchend', stop);
     };
     document.addEventListener('mousemove', onMM);
-    document.addEventListener('mouseup',   stop);
+    document.addEventListener('mouseup', stop);
     document.addEventListener('touchmove', onTM, { passive: false });
-    document.addEventListener('touchend',  stop);
+    document.addEventListener('touchend', stop);
 };
 
 window.cpStopDrag = function () { _cpSvActive = false; _cpHueActive = false; };
 
 window.cpRandomSwatchColor = function () {
     const swatches = [
-        '#ef4444','#f97316','#f59e0b','#eab308',
-        '#84cc16','#22c55e','#10b981','#14b8a6',
-        '#06b6d4','#0ea5e9','#3b82f6','#6366f1',
-        '#8b5cf6','#a855f7','#d946ef','#ec4899',
+        '#ef4444', '#f97316', '#f59e0b', '#eab308',
+        '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+        '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
+        '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
     ];
     return swatches[Math.floor(Math.random() * swatches.length)];
 };
@@ -267,7 +267,7 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
     if (fromIndex < 0 || fromIndex >= rows.length) return;
 
-    const dragged  = rows[fromIndex];
+    const dragged = rows[fromIndex];
     const bodyRect = body.getBoundingClientRect();
     const origRect = dragged.getBoundingClientRect();
 
@@ -286,30 +286,30 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     body.style.position = 'relative';
 
     // Lift the dragged row out of flow
-    dragged.style.position  = 'absolute';
-    dragged.style.left      = '0';
-    dragged.style.right     = '0';
-    dragged.style.zIndex    = '50';
-    dragged.style.top       = initialBodyY + 'px';
-    dragged.style.opacity   = '0.5';
+    dragged.style.position = 'absolute';
+    dragged.style.left = '0';
+    dragged.style.right = '0';
+    dragged.style.zIndex = '50';
+    dragged.style.top = initialBodyY + 'px';
+    dragged.style.opacity = '0.5';
     dragged.style.boxShadow = '0 8px 28px rgba(0,0,0,0.55)';
     dragged.style.transition = 'none';
 
     // Placeholder keeps the layout height while the row is floating
-    const ph           = document.createElement('div');
-    ph.style.height    = rowH + 'px';
+    const ph = document.createElement('div');
+    ph.style.height = rowH + 'px';
     ph.style.flexShrink = '0';
     body.insertBefore(ph, dragged);
 
     let toIndex = fromIndex;
-    let ended   = false;
+    let ended = false;
 
     // ── Pointer capture ───────────────────────────────────────────────
-    try { dragged.setPointerCapture(pointerId); } catch (_) {}
+    try { dragged.setPointerCapture(pointerId); } catch (_) { }
 
     // ── Move ──────────────────────────────────────────────────────────
     function onMove(clientY) {
-        const delta  = clientY - startClientY;
+        const delta = clientY - startClientY;
         const newTop = Math.max(0, initialBodyY + delta);
         dragged.style.top = newTop + 'px';
 
@@ -317,7 +317,7 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
 
         // Other rows in DOM order (excludes the floating dragged row)
         const others = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
-                            .filter(r => r !== dragged);
+            .filter(r => r !== dragged);
 
         // Count how many others have their midpoint above our ghost centre
         let best = 0;
@@ -347,38 +347,38 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         if (ended) return;
         ended = true;
 
-        document.removeEventListener('pointermove',   onPM);
-        document.removeEventListener('pointerup',     onPU);
+        document.removeEventListener('pointermove', onPM);
+        document.removeEventListener('pointerup', onPU);
         document.removeEventListener('pointercancel', onPU);
-        document.removeEventListener('touchmove',     onTM);
-        document.removeEventListener('touchend',      onTE);
+        document.removeEventListener('touchmove', onTM);
+        document.removeEventListener('touchend', onTE);
 
-        dragged.style.position  = '';
-        dragged.style.left      = '';
-        dragged.style.right     = '';
-        dragged.style.zIndex    = '';
-        dragged.style.top       = '';
-        dragged.style.opacity   = '';
+        dragged.style.position = '';
+        dragged.style.left = '';
+        dragged.style.right = '';
+        dragged.style.zIndex = '';
+        dragged.style.top = '';
+        dragged.style.opacity = '';
         dragged.style.boxShadow = '';
         dragged.style.transition = '';
-        body.style.position     = '';
+        body.style.position = '';
         ph.remove();
 
-        try { dragged.releasePointerCapture(pointerId); } catch (_) {}
+        try { dragged.releasePointerCapture(pointerId); } catch (_) { }
 
         dotNet.invokeMethodAsync('OnDragComplete', fromIndex, toIndex);
     }
 
     const onPM = e => onMove(e.clientY);
-    const onPU = ()  => onEnd();
+    const onPU = () => onEnd();
     const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientY); } };
-    const onTE = ()  => onEnd();
+    const onTE = () => onEnd();
 
-    document.addEventListener('pointermove',   onPM);
-    document.addEventListener('pointerup',     onPU);
+    document.addEventListener('pointermove', onPM);
+    document.addEventListener('pointerup', onPU);
     document.addEventListener('pointercancel', onPU);
-    document.addEventListener('touchmove',     onTM, { passive: false });
-    document.addEventListener('touchend',      onTE);
+    document.addEventListener('touchmove', onTM, { passive: false });
+    document.addEventListener('touchend', onTE);
 };
 
 
@@ -407,10 +407,10 @@ window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
             scrollEl.style.overflowY = 'hidden';
             const restore = () => {
                 scrollEl.style.overflowY = '';
-                document.removeEventListener('touchend',    restore);
+                document.removeEventListener('touchend', restore);
                 document.removeEventListener('touchcancel', restore);
             };
-            document.addEventListener('touchend',    restore, { once: true });
+            document.addEventListener('touchend', restore, { once: true });
             document.addEventListener('touchcancel', restore, { once: true });
         }
     };
