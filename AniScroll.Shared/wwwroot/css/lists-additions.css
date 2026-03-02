@@ -2571,7 +2571,7 @@ clm-entry-poster {
     font-weight: 600;
 }
 
-/* Checkmark svg inside the pill */
+/* Checkmark svg inside the pills */
 .le-custom-pill svg {
     flex-shrink: 0;
     opacity: 0.9;
