@@ -322,28 +322,8 @@
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private static MarkupString GlowDot(string color)
-    {
-        var style = $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-                    $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};";
-        return new MarkupString($"<span style=\"{style}\"></span>");
-    }
-
-    private string GetStatusColor(ListStatus s)
-    {
-        var key = s.ToString();
-        return UserListService.GetStatusSettings().FirstOrDefault(x => x.Key == key)?.Color
-               ?? s switch
-               {
-                   ListStatus.Watching   => "#22c55e",
-                   ListStatus.Rewatching => "#06b6d4",
-                   ListStatus.Completed  => "#3b82f6",
-                   ListStatus.Planning   => "#a855f7",
-                   ListStatus.Paused     => "#f97316",
-                   ListStatus.Dropped    => "#ef4444",
-                   _                     => "#6366f1"
-               };
-    }
+    private MarkupString GlowDot(string color)   => UiHelpers.GlowDot(color);
+    private string GetStatusColor(ListStatus s) => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
 
     private string _activeStatusColor
     {
@@ -490,25 +470,7 @@
 
     // ── Static helpers ────────────────────────────────────────────────────
 
-    private static string GetStatusLabel(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "Watching",
-        ListStatus.Rewatching => "Rewatching",
-        ListStatus.Completed  => "Completed",
-        ListStatus.Planning   => "Planning",
-        ListStatus.Paused     => "Paused",
-        ListStatus.Dropped    => "Dropped",
-        _                     => s.ToString()
-    };
+    private string GetStatusLabel(ListStatus s)  => UiHelpers.GetStatusLabel(s);
 
-    private static string GetStatusIcon(ListStatus s) => s switch
-    {
-        ListStatus.Watching   => "▶",
-        ListStatus.Rewatching => "↻",
-        ListStatus.Completed  => "✓",
-        ListStatus.Planning   => "☆",
-        ListStatus.Paused     => "⏸",
-        ListStatus.Dropped    => "✕",
-        _                     => ""
-    };
+    private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
 }
