@@ -73,19 +73,19 @@
             </button>
 
             <!-- Profile -->
-            <button class="nav-icon-btn" @onclick="OnProfileClicked" title="Profile">
-                <!-- existing profile SVG icon -->
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                </svg>
-
-                @* Optional: show a green dot when authenticated *@
-                @if (IsAniListConnected)
-                {
-                    <span class="nav-profile-dot"></span>
-                }
+            <button class="nav-btn" @onclick="HandleProfileClick" @onclick:stopPropagation="true">
+                <div class="nav-btn-icon" style="position:relative;">
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    @if (IsAniListConnected)
+                    {
+                        <span class="nav-profile-dot"></span>
+                    }
+                </div>
+                <span class="nav-btn-label">Profile</span>
             </button>
 
         </div>

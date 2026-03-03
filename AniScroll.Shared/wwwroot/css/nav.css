@@ -230,27 +230,6 @@
         transform: scale(0.86);
     }
 
-.nav-icon-btn {
-    position: relative;
-    background: transparent;
-    border: none;
-    color: white;
-    opacity: 0.42;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 18px;
-    border-radius: 12px;
-    flex: 1;
-    min-width: 0;
-    transition: opacity 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-    .nav-icon-btn:active {
-        opacity: 0.85;
-    }
-
 .nav-profile-dot {
     position: absolute;
     bottom: 1px;
