@@ -171,6 +171,22 @@
                         </button>
                     </div>
                 }
+                else if (_state == PanelState.WaitingForPin)
+                {
+                    <div class="pp-connect-section">
+                        <p class="pp-connect-title">Paste your token</p>
+                        <p class="pp-connect-sub">
+                            AniList has opened in a new tab. After authorizing,
+                            copy the token shown and paste it below.
+                        </p>
+                        <input class="pp-token-input"
+                               placeholder="Paste token here..."
+                               @bind="_pastedToken" />
+                        <button class="pp-anilist-btn" @onclick="SubmitToken">
+                            Connect
+                        </button>
+                    </div>
+                }
 
             </div>
         </div>
@@ -181,13 +197,34 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error }
+    private string _pastedToken = "";
+    private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
     private PanelState _state = PanelState.NotConnected;
     private string _loadingText = "Loading…";
     private string _errorMessage = "";
     private int _importTotal = 0;
     private int _importDone = 0;
     private int _listsCreated = 0;
+
+    private async Task SubmitToken()
+    {
+        if (string.IsNullOrWhiteSpace(_pastedToken)) return;
+        AniListAuth.SetToken(_pastedToken.Trim());
+        _state = PanelState.Loading;
+        _loadingText = "Fetching your profile…";
+        StateHasChanged();
+        var user = await AniListAuth.FetchCurrentUserAsync();
+        if (user == null)
+        {
+            _state = PanelState.Error;
+            _errorMessage = "Invalid token or could not fetch profile.";
+        }
+        else
+        {
+            _state = PanelState.Connected;
+        }
+        StateHasChanged();
+    }
 
     // cp-swatches vibrant palette (matches ColorPickerPopup._presets)
     private static readonly string[] _swatches =
@@ -234,10 +271,10 @@
     {
         try
         {
-            var origin = await JS.InvokeAsync<string>("eval", "window.location.origin");
-            var redirectUri = origin + "/";
-            var authUrl = AniListAuth.GetAuthUrl(redirectUri);
-            await JS.InvokeVoidAsync("open", authUrl, "_self");
+            var authUrl = AniListAuth.GetAuthUrl();
+            await JS.InvokeVoidAsync("open", authUrl, "_blank");
+            _state = PanelState.WaitingForPin;
+            StateHasChanged();
         }
         catch (Exception ex)
         {

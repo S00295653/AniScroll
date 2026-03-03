@@ -32,10 +32,9 @@ public class AniListAuthService
 
     // ── Token management ──────────────────────────────────────────────────
 
-    public string GetAuthUrl(string redirectUri) =>
+    public string GetAuthUrl() =>
         $"https://anilist.co/api/v2/oauth/authorize" +
         $"?client_id={CLIENT_ID}" +
-        $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
         $"&response_type=token";
 
     public void SetToken(string token) { _accessToken = token; }
