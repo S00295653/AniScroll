@@ -81,6 +81,11 @@
                     <circle cx="12" cy="7" r="4" />
                 </svg>
 
+                @* Optional: show a green dot when authenticated *@
+                @if (IsAniListConnected)
+                {
+                    <span class="nav-profile-dot"></span>
+                }
             </button>
 
         </div>
@@ -92,6 +97,7 @@
     [Parameter] public EventCallback OnListsClicked { get; set; }
     [Parameter] public EventCallback OnProfileClicked { get; set; }
     [Parameter] public EventCallback<string> OnSearchQueryChanged { get; set; }
+    [Parameter] public bool IsAniListConnected { get; set; }
 
     private bool isSearchOpen = false;
     private string searchQuery = string.Empty;
