@@ -250,15 +250,6 @@ window.cpRandomSwatchColor = function () {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  ROW DRAG — live visual reorder for CustomListManager
-//
-//  The dragged row is lifted to position:absolute inside the body
-//  container. A placeholder div maintains the layout height. Other rows
-//  stay in normal flow — the placeholder moves between them to show the
-//  drop target. On pointer-up, Blazor's OnDragComplete(fromIndex, toIndex)
-//  is called exactly once.
-//
-//  Signature (matches Blazor call):
-//    startRowDrag(dotNet, panelRef, bodyRef, pointerId, fromIndex, startClientY)
 // ═══════════════════════════════════════════════════════════════════════
 
 window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, startClientY) {
@@ -271,7 +262,6 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     const bodyRect = body.getBoundingClientRect();
     const origRect = dragged.getBoundingClientRect();
 
-    // Height of one row slot (including gap)
     let rowH = dragged.offsetHeight + 8;
     if (rows.length > 1) {
         const r0 = rows[0].getBoundingClientRect();
@@ -279,13 +269,10 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         if (rows.length > 1) rowH = r1.top - r0.top;
     }
 
-    // Position in body-scroll space where the row started
     const initialBodyY = origRect.top - bodyRect.top + body.scrollTop;
 
-    // Make body a positioning context
     body.style.position = 'relative';
 
-    // Lift the dragged row out of flow
     dragged.style.position  = 'absolute';
     dragged.style.left      = '0';
     dragged.style.right     = '0';
@@ -295,7 +282,6 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     dragged.style.boxShadow = '0 8px 28px rgba(0,0,0,0.55)';
     dragged.style.transition = 'none';
 
-    // Placeholder keeps the layout height while the row is floating
     const ph           = document.createElement('div');
     ph.style.height    = rowH + 'px';
     ph.style.flexShrink = '0';
@@ -304,10 +290,8 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     let toIndex = fromIndex;
     let ended   = false;
 
-    // ── Pointer capture ───────────────────────────────────────────────
     try { dragged.setPointerCapture(pointerId); } catch (_) {}
 
-    // ── Move ──────────────────────────────────────────────────────────
     function onMove(clientY) {
         const delta  = clientY - startClientY;
         const newTop = Math.max(0, initialBodyY + delta);
@@ -315,11 +299,9 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
 
         const centreY = newTop + rowH / 2;
 
-        // Other rows in DOM order (excludes the floating dragged row)
         const others = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
                             .filter(r => r !== dragged);
 
-        // Count how many others have their midpoint above our ghost centre
         let best = 0;
         for (let i = 0; i < others.length; i++) {
             const mid = others[i].offsetTop + rowH / 2;
@@ -327,12 +309,10 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         }
         toIndex = best;
 
-        // Slide placeholder to show the drop gap
         const anchor = others[best] ?? null;
         if (anchor) {
             body.insertBefore(ph, anchor);
         } else {
-            // After last other row — find its next sibling (could be the new-row)
             const last = others[others.length - 1];
             if (last && last.nextSibling) {
                 body.insertBefore(ph, last.nextSibling);
@@ -342,7 +322,6 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         }
     }
 
-    // ── End ───────────────────────────────────────────────────────────
     function onEnd() {
         if (ended) return;
         ended = true;
@@ -449,18 +428,14 @@ window.removeWheelScrollPrevention = function (el) {
     delete el._noWheel;
 };
 
-// ============================================================
-// oauth-helpers.js
-// ADD THIS ENTIRE BLOCK at the bottom of scroll-helpers.js
-// ============================================================
-
-// ── AniList OAuth helpers ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+//  AniList OAuth helpers
+// ═══════════════════════════════════════════════════════════════════════
 
 /**
- * Called on app startup (Index.razor OnAfterRenderAsync).
- * 1. Checks the URL hash for a fresh access_token from AniList OAuth redirect.
- * 2. If found: persists it to localStorage, cleans the URL, returns the token.
- * 3. If not found: returns a previously saved token from localStorage (or null).
+ * Returns { token: string|null, isNewAuth: bool }
+ * isNewAuth=true  → fresh OAuth redirect  → show ProfilePanel so user sees "Import"
+ * isNewAuth=false → previously saved token → silent auto-import in background
  */
 window.aniListGetToken = function () {
     try {
@@ -474,15 +449,16 @@ window.aniListGetToken = function () {
                 // Persist & clean URL so the token doesn't show in browser history
                 localStorage.setItem('anilist_token', token);
                 history.replaceState(null, '', window.location.pathname + window.location.search);
-                return token;
+                return { token: token, isNewAuth: true };
             }
         }
 
-        // Fall back to a previously saved token
-        return localStorage.getItem('anilist_token') || null;
+        // Fall back to a previously saved token (silent auto-import path)
+        const saved = localStorage.getItem('anilist_token');
+        return { token: saved || null, isNewAuth: false };
     } catch (e) {
         console.warn('[oauth-helpers] aniListGetToken error:', e);
-        return null;
+        return { token: null, isNewAuth: false };
     }
 };
 

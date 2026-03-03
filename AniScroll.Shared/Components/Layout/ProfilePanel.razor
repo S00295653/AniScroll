@@ -246,7 +246,7 @@
             _state = PanelState.Connected;
     }
 
-    // ── Called from Index.razor after OAuth redirect ─────────────────────
+    // ── Called from Index.razor after fresh OAuth redirect ───────────────
     public async Task OnTokenReceived()
     {
         _state = PanelState.Loading;
@@ -266,12 +266,30 @@
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Silent background import — called on startup when a saved token exists.
+    /// The panel stays hidden; no UI state is shown to the user.
+    /// </summary>
+    public async Task TryAutoImportAsync()
+    {
+        if (!AniListAuth.IsAuthenticated) return;
+
+        // Ensure we have a user profile
+        if (AniListAuth.CurrentUser == null)
+        {
+            var user = await AniListAuth.FetchCurrentUserAsync();
+            if (user == null) return;
+        }
+
+        await DoImportAsync(showUI: false);
+    }
+
     // ── OAuth redirect ────────────────────────────────────────────────────
     private async Task StartOAuth()
     {
         try
         {
-            var authUrl = AniListAuth.GetAuthUrl(); // ← aucun argument
+            var authUrl = AniListAuth.GetAuthUrl();
             await JS.InvokeVoidAsync("open", authUrl, "_blank");
             _state = PanelState.WaitingForPin;
             StateHasChanged();
@@ -296,66 +314,78 @@
         _listsCreated = 0;
         StateHasChanged();
 
-        // 1. Fetch all entries (includes which custom lists each belongs to)
+        await DoImportAsync(showUI: true);
+    }
+
+    /// <summary>
+    /// Core import logic shared by StartImport (with UI) and TryAutoImportAsync (silent).
+    /// </summary>
+    private async Task DoImportAsync(bool showUI)
+    {
+        if (AniListAuth.CurrentUser == null) return;
+
+        // 1. Fetch all entries
         var entries = await AniListAuth.FetchAnimeListAsync(AniListAuth.CurrentUser.Id);
         if (entries.Count == 0)
         {
-            _state = PanelState.Error;
-            _errorMessage = "Your AniList is empty or could not be fetched.";
-            StateHasChanged();
+            if (showUI)
+            {
+                _state = PanelState.Error;
+                _errorMessage = "Your AniList is empty or could not be fetched.";
+                StateHasChanged();
+            }
             return;
         }
 
-        // 2. Collect all unique custom-list names referenced across entries
+        // 2. Collect all unique custom-list names
         var allCustomNames = entries
             .SelectMany(e => e.CustomListNames)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        // 3. Create custom lists, reusing existing ones where possible
-        var customListMap = BuildCustomListMap(allCustomNames); // name → UserCustomList.Id
-        _listsCreated = customListMap.Count(kvp =>
-        {
-            var existing = UserListService.GetCustomLists()
-                .FirstOrDefault(c => string.Equals(c.Name, kvp.Key, StringComparison.OrdinalIgnoreCase));
-            return existing == null;
-        });
+        // 3. Create custom lists, tracking how many are brand-new
+        var (customListMap, newListsCount) = BuildCustomListMap(allCustomNames);
+        _listsCreated = newListsCount;
 
         // 4. Import anime entries
         _importTotal = entries.Count;
-        _loadingText = "Importing anime…";
-        StateHasChanged();
+        if (showUI)
+        {
+            _loadingText = "Importing anime…";
+            StateHasChanged();
+        }
 
         foreach (var importEntry in entries)
         {
             ApplyEntry(importEntry, customListMap);
             _importDone++;
 
-            // Yield to UI every 20 items
-            if (_importDone % 20 == 0)
+            if (showUI && _importDone % 20 == 0)
             {
                 StateHasChanged();
                 await Task.Yield();
             }
         }
 
-        _state = PanelState.Done;
-        StateHasChanged();
+        if (showUI)
+        {
+            _state = PanelState.Done;
+            StateHasChanged();
+        }
     }
 
     /// <summary>
-    /// Ensures all custom lists exist in UserListService and returns name→id map.
-    /// Assigns colors from cp-swatches without repeating already-used colors.
+    /// Ensures all custom lists exist in UserListService and returns (name→id map, newListsCount).
+    /// newListsCount is computed BEFORE saving so it accurately reflects what was created.
     /// </summary>
-    private Dictionary<string, string> BuildCustomListMap(List<string> names)
+    private (Dictionary<string, string> map, int newCount) BuildCustomListMap(List<string> names)
     {
-        if (names.Count == 0) return new();
+        if (names.Count == 0) return (new(), 0);
 
         var existingLists = UserListService.GetCustomLists();
         var usedColors = existingLists.Select(l => l.Color).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var availColors = _swatches.Where(c => !usedColors.Contains(c)).ToList();
 
-        // If we've used all colors, start over
         if (availColors.Count == 0) availColors = _swatches.ToList();
 
         var rng = new Random();
@@ -364,7 +394,6 @@
 
         foreach (var name in names)
         {
-            // Reuse existing list if name matches
             var existing = existingLists.FirstOrDefault(c =>
                 string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
 
@@ -400,13 +429,16 @@
             map[name] = newList.Id;
         }
 
+        // newCount is captured before saving — accurately reflects newly created lists
+        int newCount = toAdd.Count;
+
         if (toAdd.Count > 0)
         {
             var allLists = existingLists.Concat(toAdd).ToList();
             UserListService.SaveCustomLists(allLists);
         }
 
-        return map;
+        return (map, newCount);
     }
 
     /// <summary>Converts an AniList entry into a UserListEntry and saves it.</summary>
@@ -414,13 +446,11 @@
     {
         if (src.AnimeCard.Id == 0 && src.MediaId == 0) return;
 
-        // Prefer AniList ID; fall back to mediaId
         if (src.AnimeCard.Id == 0) src.AnimeCard.Id = src.MediaId;
 
         var existing = UserListService.GetEntry(src.AnimeCard.Id)
                     ?? new UserListEntry { Anime = src.AnimeCard, AddedAt = DateTime.Now };
 
-        // Don't overwrite if local entry is newer / has more data — but import always wins
         existing.Anime = src.AnimeCard;
         existing.Status = MapStatus(src.AniListStatus);
         existing.Score = src.Score;
@@ -432,7 +462,6 @@
         existing.StartDate = src.StartedAt;
         existing.FinishDate = src.CompletedAt;
 
-        // Map custom list names to local IDs
         existing.CustomListIds = src.CustomListNames
             .Where(n => customListMap.ContainsKey(n))
             .Select(n => customListMap[n])

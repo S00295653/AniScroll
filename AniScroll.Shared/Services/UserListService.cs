@@ -113,6 +113,14 @@ namespace AniScroll.Shared.Services
                 ? _entries.Count
                 : _entries.Values.Count(e => e.Status == status);
 
+        /// <summary>
+        /// Count of entries that are actually tracked (have a status or belong to at
+        /// least one custom list). This is what the "My Lists" badge should show —
+        /// it excludes entries created purely as AniList stubs with no local status.
+        /// </summary>
+        public int CountTracked() =>
+            _entries.Values.Count(e => e.Status.HasValue || e.CustomListIds.Any());
+
         // ── Custom list entry helpers ─────────────────────────────────────────
 
         public List<UserListEntry> GetEntriesForCustomList(string id) =>

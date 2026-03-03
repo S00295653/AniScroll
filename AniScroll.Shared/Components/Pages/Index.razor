@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
+@using System.Text.Json
 @inject AniListService AniListService
 @inject AniListAuthService AniListAuth
 @inject HttpClient Http
@@ -328,18 +329,47 @@
         }
         previousIndex = currentIndex;
 
-        // OAuth token handling (runs once)
+        // OAuth token handling (runs once after first render)
         if (!_oauthHandled)
         {
             _oauthHandled = true;
-            string? token = await JS.InvokeAsync<string?>("aniListGetToken");
-            if (!string.IsNullOrEmpty(token))
+            await HandleOAuthTokenAsync();
+        }
+    }
+
+    /// <summary>
+    /// Checks for an AniList token (fresh OAuth redirect or saved in localStorage).
+    /// - Fresh redirect (isNewAuth=true)  → show ProfilePanel so user can review/import.
+    /// - Saved token   (isNewAuth=false)  → silently auto-import in the background.
+    /// </summary>
+    private async Task HandleOAuthTokenAsync()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<JsonElement>("aniListGetToken");
+            var token = result.GetProperty("token").GetString();
+            var isNewAuth = result.GetProperty("isNewAuth").GetBoolean();
+
+            if (string.IsNullOrEmpty(token)) return;
+
+            AniListAuth.SetToken(token);
+
+            if (isNewAuth)
             {
-                AniListAuth.SetToken(token);
+                // Fresh OAuth redirect — show the panel (user just connected)
                 _showProfilePanel = true;
                 StateHasChanged();
                 await _profilePanel.OnTokenReceived();
             }
+            else
+            {
+                // Saved token — silently import in background, no UI interruption
+                _ = _profilePanel.TryAutoImportAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"OAuth token handling error: {ex.Message}");
         }
     }
 
@@ -586,9 +616,6 @@
 
     private async Task ShowAnimeDetails(AnimeCard anime)
     {
-        // Bulk load already fetches relations — only do an extra call as a fallback
-        // for cards loaded via GetRandomAnimeAsync that somehow lack them, or
-        // for cards that came from search results (which are Jikan stubs).
         bool isJikanStub = anime.Id == 0;
         bool missingData = !isJikanStub && anime.Relations.Count == 0
                            && string.IsNullOrEmpty(anime.Format)

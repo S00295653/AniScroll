@@ -25,9 +25,9 @@
             <div class="lists-header">
                 <div class="lists-header-left">
                     <h2 class="lists-title">My Lists</h2>
-                    @if (UserListService.Count() > 0)
+                    @if (UserListService.CountTracked() > 0)
                     {
-                        <span class="lists-total-badge">@UserListService.Count()</span>
+                        <span class="lists-total-badge">@UserListService.CountTracked()</span>
                     }
                 </div>
                 <button class="lists-close-btn" @onclick="Close">
@@ -211,12 +211,12 @@
                                 ? "🔍" : "📺")
                         </div>
                         <p class="lists-empty-title">
-                            @(UserListService.Count() == 0
+                            @(UserListService.CountTracked() == 0
                                 ? "Your list is empty"
                                 : "No results for these filters")
                         </p>
                         <p class="lists-empty-sub">
-                            @(UserListService.Count() == 0
+                            @(UserListService.CountTracked() == 0
                                 ? "Browse anime and tap \"Add to List\""
                                 : "Try adjusting the status or custom list filters")
                         </p>
@@ -279,8 +279,6 @@
                                     </div>
                                 }
                             </div>
-
-                            <!-- delete button removed — click the entry to edit instead -->
 
                         </div>
                     }
