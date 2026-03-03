@@ -17,7 +17,7 @@ namespace AniScroll.Shared.Services;
 public class AniListAuthService
 {
     // ── ⚙️  CONFIGURE THIS ──────────────────────────────────────────────────
-    private const string CLIENT_ID = "YOUR_CLIENT_ID_HERE"; // ← replace with your app's ID
+    private const string CLIENT_ID = "36730"; // ← replace with your app's ID
     // ────────────────────────────────────────────────────────────────────────
 
     private readonly HttpClient _httpClient;
