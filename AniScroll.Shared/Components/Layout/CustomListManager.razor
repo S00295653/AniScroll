@@ -7,13 +7,14 @@
 
 @if (IsVisible)
 {
-    <div class="clm-overlay" @onclick="HandleOverlayClick">
+    <div class="clm-overlay"
+         @onpointerdown="() => _pointerDownOnPanel = false"
+         @onpointerup="() => { if (!_pointerDownOnPanel) Close(); }">
 
         <div class="clm-panel"
-             @ref="_panelRef"
-             @onclick:stopPropagation="true"
-             @ontouchstart:stopPropagation="true"
-             @ontouchmove:stopPropagation="true">
+             @onpointerdown:stopPropagation="true"
+             @onpointerdown="() => _pointerDownOnPanel = true"
+             @onpointerup:stopPropagation="true">
 
             <!-- ── Header ──────────────────────────────────────────── -->
             <div class="clm-header">
@@ -308,6 +309,8 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _pointerDownOnPanel;
 
     // ── Row wrapper ──────────────────────────────────────────────────────
     private class Row
