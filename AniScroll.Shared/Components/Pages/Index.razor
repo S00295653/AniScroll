@@ -224,7 +224,9 @@
     <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
                                                    OnHide="@(() => showDebugPanel = false)" />
 
-    
+    <ProfilePanel IsVisible="_showProfilePanel"
+                  OnClose="@(() => _showProfilePanel = false)"
+                  @ref="_profilePanel" />
 </div>
 
 @code {
@@ -299,23 +301,43 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Call your existing base / first-render logic here first…
+        if (firstRender)
+        {
+            try
+            {
+                CARD_HEIGHT = await JS.InvokeAsync<double>("getViewportHeight");
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Viewport height error: {ex.Message}");
+            }
+        }
 
+        _ = PreloadNearbyImages();
+
+        if (previousIndex != currentIndex && previousIndex >= 0)
+        {
+            if (animes.Count > 0 &&
+                currentIndex >= animes.Count - PRELOAD_THRESHOLD &&
+                !isPreloading &&
+                !AniListService.IsRateLimited())
+            {
+                _ = PreloadNextBatch();
+            }
+        }
+        previousIndex = currentIndex;
+
+        // OAuth token handling (runs once)
         if (!_oauthHandled)
         {
             _oauthHandled = true;
-
-            // Try to retrieve a token from the URL hash or localStorage
             string? token = await JS.InvokeAsync<string?>("aniListGetToken");
-
             if (!string.IsNullOrEmpty(token))
             {
                 AniListAuth.SetToken(token);
-
-                // Open panel and let it finish fetching user profile
                 _showProfilePanel = true;
                 StateHasChanged();
-
                 await _profilePanel.OnTokenReceived();
             }
         }
