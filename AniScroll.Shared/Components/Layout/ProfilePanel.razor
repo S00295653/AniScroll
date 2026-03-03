@@ -271,7 +271,7 @@
     {
         try
         {
-            var authUrl = AniListAuth.GetAuthUrl();
+            var authUrl = AniListAuth.GetAuthUrl(); // ← aucun argument
             await JS.InvokeVoidAsync("open", authUrl, "_blank");
             _state = PanelState.WaitingForPin;
             StateHasChanged();
