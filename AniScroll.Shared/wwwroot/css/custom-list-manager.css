@@ -45,7 +45,6 @@
     width: 100%;
     max-width: 540px;
     max-height: 80dvh;
-    border-radius: 22px 22px 0 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -109,12 +108,12 @@
 /* Scrollable body */
 .clm-body {
     flex: 1;
+    display: block;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 14px 28px;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    display: flex;
     flex-direction: column;
     gap: 0;
 }
@@ -658,11 +657,16 @@ clm-entry-poster {
     margin-bottom: 8px;
     position: relative;
     box-sizing: border-box;
-
     /* Kill all browser focus outlines */
     outline: none !important;
     -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+    margin-bottom: 6px;
 }
+
+    .clm2-row:last-child {
+        margin-bottom: 0;
+    }
 
 /* Keep row visuals identical regardless of focused child input */
 .clm2-row:focus,
