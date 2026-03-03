@@ -1,6 +1,7 @@
 @using AniScroll.Shared.Models
 @inject IJSRuntime JS
 
+
 <div class="nav-section">
     <div class="main-nav-bar @(isSearchOpen ? "search-open" : "")">
 
@@ -80,11 +81,6 @@
                     <circle cx="12" cy="7" r="4" />
                 </svg>
 
-                @* Optional: show a green dot when authenticated *@
-                @if (IsAniListConnected)
-                {
-                    <span class="nav-profile-dot"></span>
-                }
             </button>
 
         </div>
