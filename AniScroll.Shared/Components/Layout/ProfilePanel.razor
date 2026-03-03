@@ -1,0 +1,433 @@
+﻿@using AniScroll.Shared.Models
+@using AniScroll.Shared.Services
+@inject AniListAuthService AniListAuth
+@inject UserListService UserListService
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (IsVisible)
+{
+    <div class="pp-overlay" @onclick="HandleOverlayClick">
+        <div class="pp-panel" @onclick:stopPropagation="true">
+
+            <!-- Handle bar -->
+            <div class="pp-handle-zone">
+                <div class="pp-handle-bar"></div>
+            </div>
+
+            <!-- ── Header ───────────────────────────────────────── -->
+            <div class="pp-header">
+                <span class="pp-title">Profile</span>
+                <button class="pp-close-btn" @onclick="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="pp-divider"></div>
+
+            <!-- ── Body ─────────────────────────────────────────── -->
+            <div class="pp-body">
+
+                @if (_state == PanelState.NotConnected)
+                {
+                    <!-- Not connected -->
+                    <div class="pp-connect-section">
+                        <div class="pp-anilist-logo">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                                <rect width="48" height="48" rx="12" fill="#02a9ff" fill-opacity="0.12" />
+                                <path d="M10 36V12h8l14 18V12h6v24h-8L16 18v18H10z" fill="#02a9ff" />
+                            </svg>
+                        </div>
+                        <p class="pp-connect-title">Connect with AniList</p>
+                        <p class="pp-connect-sub">
+                            Sign in to import your anime list, custom lists, scores, episodes, and notes.
+                        </p>
+                        <button class="pp-anilist-btn" @onclick="StartOAuth">
+                            <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                                <path d="M10 36V12h8l14 18V12h6v24h-8L16 18v18H10z" fill="white" />
+                            </svg>
+                            Connect with AniList
+                        </button>
+                    </div>
+                }
+                else if (_state == PanelState.Loading)
+                {
+                    <!-- Loading -->
+                    <div class="pp-loading-section">
+                        <div class="pp-spinner"></div>
+                        <p class="pp-loading-text">@_loadingText</p>
+                    </div>
+                }
+                else if (_state == PanelState.Connected)
+                {
+                    <!-- Connected: user card + import -->
+                    <div class="pp-user-card">
+                        @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.AvatarUrl))
+                        {
+                            <div class="pp-avatar"
+                                 style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
+                        }
+                        else
+                        {
+                            <div class="pp-avatar pp-avatar-placeholder">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                        }
+                        <div class="pp-user-info">
+                            <span class="pp-username">@(AniListAuth.CurrentUser?.Name ?? "AniList User")</span>
+                            <a class="pp-anilist-link"
+                               href="https://anilist.co/user/@(AniListAuth.CurrentUser?.Name)"
+                               target="_blank">
+                                <span class="pp-al-dot"></span>AniList profile
+                            </a>
+                        </div>
+                    </div>
+
+                    <button class="pp-import-btn" @onclick="StartImport">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <path d="M12 2v13M7 10l5 5 5-5" />
+                            <rect x="3" y="16" width="18" height="5" rx="1" />
+                        </svg>
+                        Import My List
+                    </button>
+
+                    <button class="pp-disconnect-btn" @onclick="Disconnect">
+                        Disconnect
+                    </button>
+                }
+                else if (_state == PanelState.Importing)
+                {
+                    <!-- Import progress -->
+                    <div class="pp-import-progress">
+                        <div class="pp-spinner"></div>
+                        <p class="pp-loading-text">@_loadingText</p>
+                        @if (_importTotal > 0)
+                        {
+                            <div class="pp-progress-bar-wrap">
+                                <div class="pp-progress-bar"
+                                     style="width:@((_importDone * 100.0 / _importTotal).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                </div>
+                            </div>
+                            <p class="pp-progress-count">@_importDone / @_importTotal</p>
+                        }
+                    </div>
+                }
+                else if (_state == PanelState.Done)
+                {
+                    <!-- Import complete -->
+                    <div class="pp-done-section">
+                        <div class="pp-done-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                 stroke="#22c55e" stroke-width="2.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="9 12 11.5 14.5 15.5 9.5" />
+                            </svg>
+                        </div>
+                        <p class="pp-done-title">Import Complete!</p>
+                        <div class="pp-done-stats">
+                            <div class="pp-stat">
+                                <span class="pp-stat-num">@_importDone</span>
+                                <span class="pp-stat-lbl">anime imported</span>
+                            </div>
+                            <div class="pp-stat">
+                                <span class="pp-stat-num">@_listsCreated</span>
+                                <span class="pp-stat-lbl">lists created</span>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.Name))
+                        {
+                            <div class="pp-user-mini">
+                                @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser.AvatarUrl))
+                                {
+                                    <div class="pp-avatar-mini"
+                                         style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
+                                }
+                                <span class="pp-username-mini">@AniListAuth.CurrentUser.Name</span>
+                            </div>
+                        }
+
+                        <button class="pp-done-close-btn" @onclick="Close">Done</button>
+                        <button class="pp-disconnect-btn" @onclick="Disconnect">Disconnect</button>
+                    </div>
+                }
+                else if (_state == PanelState.Error)
+                {
+                    <div class="pp-error-section">
+                        <div class="pp-error-icon">⚠️</div>
+                        <p class="pp-error-title">Something went wrong</p>
+                        <p class="pp-error-sub">@_errorMessage</p>
+                        <button class="pp-anilist-btn" @onclick="() => _state = PanelState.NotConnected">
+                            Try Again
+                        </button>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error }
+    private PanelState _state = PanelState.NotConnected;
+    private string _loadingText = "Loading…";
+    private string _errorMessage = "";
+    private int _importTotal = 0;
+    private int _importDone = 0;
+    private int _listsCreated = 0;
+
+    // cp-swatches vibrant palette (matches ColorPickerPopup._presets)
+    private static readonly string[] _swatches =
+    {
+        "#ef4444","#f97316","#f59e0b","#eab308",
+        "#84cc16","#22c55e","#10b981","#14b8a6",
+        "#06b6d4","#0ea5e9","#3b82f6","#6366f1",
+        "#8b5cf6","#a855f7","#d946ef","#ec4899",
+    };
+
+    private bool _prevVisible = false;
+
+    protected override void OnParametersSet()
+    {
+        bool justOpened = IsVisible && !_prevVisible;
+        _prevVisible = IsVisible;
+
+        if (justOpened && AniListAuth.IsAuthenticated && _state == PanelState.NotConnected)
+            _state = PanelState.Connected;
+    }
+
+    // ── Called from Index.razor after OAuth redirect ─────────────────────
+    public async Task OnTokenReceived()
+    {
+        _state = PanelState.Loading;
+        _loadingText = "Fetching your profile…";
+        StateHasChanged();
+
+        var user = await AniListAuth.FetchCurrentUserAsync();
+        if (user == null)
+        {
+            _state = PanelState.Error;
+            _errorMessage = "Could not fetch your AniList profile. Please try again.";
+            StateHasChanged();
+            return;
+        }
+
+        _state = PanelState.Connected;
+        StateHasChanged();
+    }
+
+    // ── OAuth redirect ────────────────────────────────────────────────────
+    private async Task StartOAuth()
+    {
+        try
+        {
+            var origin = await JS.InvokeAsync<string>("eval", "window.location.origin");
+            var redirectUri = origin + "/";
+            var authUrl = AniListAuth.GetAuthUrl(redirectUri);
+            await JS.InvokeVoidAsync("open", authUrl, "_self");
+        }
+        catch (Exception ex)
+        {
+            _state = PanelState.Error;
+            _errorMessage = "Could not open AniList login: " + ex.Message;
+            StateHasChanged();
+        }
+    }
+
+    // ── Import ────────────────────────────────────────────────────────────
+    private async Task StartImport()
+    {
+        if (AniListAuth.CurrentUser == null) return;
+
+        _state = PanelState.Importing;
+        _loadingText = "Fetching your anime list…";
+        _importDone = 0;
+        _importTotal = 0;
+        _listsCreated = 0;
+        StateHasChanged();
+
+        // 1. Fetch all entries (includes which custom lists each belongs to)
+        var entries = await AniListAuth.FetchAnimeListAsync(AniListAuth.CurrentUser.Id);
+        if (entries.Count == 0)
+        {
+            _state = PanelState.Error;
+            _errorMessage = "Your AniList is empty or could not be fetched.";
+            StateHasChanged();
+            return;
+        }
+
+        // 2. Collect all unique custom-list names referenced across entries
+        var allCustomNames = entries
+            .SelectMany(e => e.CustomListNames)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // 3. Create custom lists, reusing existing ones where possible
+        var customListMap = BuildCustomListMap(allCustomNames); // name → UserCustomList.Id
+        _listsCreated = customListMap.Count(kvp =>
+        {
+            var existing = UserListService.GetCustomLists()
+                .FirstOrDefault(c => string.Equals(c.Name, kvp.Key, StringComparison.OrdinalIgnoreCase));
+            return existing == null;
+        });
+
+        // 4. Import anime entries
+        _importTotal = entries.Count;
+        _loadingText = "Importing anime…";
+        StateHasChanged();
+
+        foreach (var importEntry in entries)
+        {
+            ApplyEntry(importEntry, customListMap);
+            _importDone++;
+
+            // Yield to UI every 20 items
+            if (_importDone % 20 == 0)
+            {
+                StateHasChanged();
+                await Task.Yield();
+            }
+        }
+
+        _state = PanelState.Done;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Ensures all custom lists exist in UserListService and returns name→id map.
+    /// Assigns colors from cp-swatches without repeating already-used colors.
+    /// </summary>
+    private Dictionary<string, string> BuildCustomListMap(List<string> names)
+    {
+        if (names.Count == 0) return new();
+
+        var existingLists = UserListService.GetCustomLists();
+        var usedColors = existingLists.Select(l => l.Color).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var availColors = _swatches.Where(c => !usedColors.Contains(c)).ToList();
+
+        // If we've used all colors, start over
+        if (availColors.Count == 0) availColors = _swatches.ToList();
+
+        var rng = new Random();
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var toAdd = new List<UserCustomList>();
+
+        foreach (var name in names)
+        {
+            // Reuse existing list if name matches
+            var existing = existingLists.FirstOrDefault(c =>
+                string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+
+            if (existing != null)
+            {
+                map[name] = existing.Id;
+                continue;
+            }
+
+            // Pick a random unused color
+            string color;
+            if (availColors.Count > 0)
+            {
+                int idx = rng.Next(availColors.Count);
+                color = availColors[idx];
+                availColors.RemoveAt(idx);
+            }
+            else
+            {
+                color = _swatches[rng.Next(_swatches.Length)];
+            }
+
+            var newList = new UserCustomList
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = name,
+                Color = color,
+                IsStatusList = false,
+                Order = existingLists.Count + toAdd.Count
+            };
+
+            toAdd.Add(newList);
+            map[name] = newList.Id;
+        }
+
+        if (toAdd.Count > 0)
+        {
+            var allLists = existingLists.Concat(toAdd).ToList();
+            UserListService.SaveCustomLists(allLists);
+        }
+
+        return map;
+    }
+
+    /// <summary>Converts an AniList entry into a UserListEntry and saves it.</summary>
+    private void ApplyEntry(AniListImportEntry src, Dictionary<string, string> customListMap)
+    {
+        if (src.AnimeCard.Id == 0 && src.MediaId == 0) return;
+
+        // Prefer AniList ID; fall back to mediaId
+        if (src.AnimeCard.Id == 0) src.AnimeCard.Id = src.MediaId;
+
+        var existing = UserListService.GetEntry(src.AnimeCard.Id)
+                    ?? new UserListEntry { Anime = src.AnimeCard, AddedAt = DateTime.Now };
+
+        // Don't overwrite if local entry is newer / has more data — but import always wins
+        existing.Anime = src.AnimeCard;
+        existing.Status = MapStatus(src.AniListStatus);
+        existing.Score = src.Score;
+        existing.EpisodesWatched = src.Progress;
+        existing.TotalRewatches = src.Repeat;
+        existing.Notes = src.Notes;
+        existing.IsPrivate = src.IsPrivate;
+        existing.HideFromStatusLists = src.HideFromStatusLists;
+        existing.StartDate = src.StartedAt;
+        existing.FinishDate = src.CompletedAt;
+
+        // Map custom list names to local IDs
+        existing.CustomListIds = src.CustomListNames
+            .Where(n => customListMap.ContainsKey(n))
+            .Select(n => customListMap[n])
+            .ToList();
+
+        UserListService.SaveEntry(existing);
+    }
+
+    private static ListStatus? MapStatus(string s) => s switch
+    {
+        "CURRENT" => ListStatus.Watching,
+        "REPEATING" => ListStatus.Rewatching,
+        "COMPLETED" => ListStatus.Completed,
+        "PLANNING" => ListStatus.Planning,
+        "PAUSED" => ListStatus.Paused,
+        "DROPPED" => ListStatus.Dropped,
+        _ => null
+    };
+
+    // ── Misc ──────────────────────────────────────────────────────────────
+
+    private void Disconnect()
+    {
+        AniListAuth.ClearToken();
+        _state = PanelState.NotConnected;
+        _importDone = 0;
+        _importTotal = 0;
+        _listsCreated = 0;
+        StateHasChanged();
+    }
+
+    private void HandleOverlayClick() => Close();
+    private void Close() => OnClose.InvokeAsync();
+    public void Dispose() { }
+}

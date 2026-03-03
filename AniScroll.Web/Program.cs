@@ -7,6 +7,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+builder.Services.AddScoped<AniListAuthService>();
+
 builder.Services.AddScoped(sp => new HttpClient
 {
     Timeout = TimeSpan.FromSeconds(30)

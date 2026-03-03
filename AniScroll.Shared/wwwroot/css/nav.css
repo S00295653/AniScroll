@@ -229,3 +229,18 @@
     .nav-center-btn:active {
         transform: scale(0.86);
     }
+
+.nav-icon-btn {
+    position: relative;
+}
+
+.nav-profile-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--bg-primary, #16181e);
+}

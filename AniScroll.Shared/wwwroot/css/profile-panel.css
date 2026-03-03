@@ -1,0 +1,492 @@
+﻿/* ============================================================
+   profile-panel.css  —  AniList Profile & Import bottom sheet
+   ============================================================ */
+
+/* Overlay */
+.pp-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: pp-overlay-in 0.22s ease;
+}
+
+@keyframes pp-overlay-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Panel */
+.pp-panel {
+    width: 100%;
+    max-width: 480px;
+    background: #16181e;
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    animation: pp-slide-up 0.3s cubic-bezier(0.34, 1.35, 0.64, 1);
+    max-height: 92dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+@keyframes pp-slide-up {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Handle */
+.pp-handle-zone {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+}
+
+.pp-handle-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.15);
+}
+
+/* Header */
+.pp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px 0;
+}
+
+.pp-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: -0.2px;
+}
+
+.pp-close-btn {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: rgba(255,255,255,0.5);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+    .pp-close-btn:hover {
+        background: rgba(255,255,255,0.14);
+        color: rgba(255,255,255,0.85);
+    }
+
+.pp-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+    margin: 14px 0 0;
+}
+
+/* Body */
+.pp-body {
+    padding: 24px 20px 20px;
+}
+
+/* ── Not Connected ──────────────────────────────────────── */
+.pp-connect-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 8px 0 4px;
+}
+
+.pp-anilist-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-connect-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    margin: 0;
+}
+
+.pp-connect-sub {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 300px;
+}
+
+.pp-anilist-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: #02a9ff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 24px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: -0.1px;
+}
+
+    .pp-anilist-btn:hover {
+        background: #0095e8;
+    }
+
+    .pp-anilist-btn:active {
+        transform: scale(0.97);
+    }
+
+/* Setup hint */
+.pp-setup-hint {
+    margin-top: 16px;
+    background: rgba(2,169,255,0.08);
+    border: 1px solid rgba(2,169,255,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+    .pp-setup-hint p {
+        margin: 0 0 6px;
+        font-size: 12px;
+        color: rgba(2,169,255,0.9);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .pp-setup-hint ol {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12.5px;
+        color: rgba(255,255,255,0.5);
+        line-height: 1.65;
+    }
+
+    .pp-setup-hint a {
+        color: #02a9ff;
+        text-decoration: none;
+    }
+
+/* ── Loading / Importing ────────────────────────────────── */
+.pp-loading-section,
+.pp-import-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+}
+
+.pp-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: #02a9ff;
+    border-radius: 50%;
+    animation: pp-spin 0.8s linear infinite;
+}
+
+@keyframes pp-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pp-loading-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+}
+
+.pp-progress-bar-wrap {
+    width: 100%;
+    max-width: 260px;
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.pp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #02a9ff, #0070cc);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+}
+
+.pp-progress-count {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.35);
+    margin: 0;
+}
+
+/* ── Connected ──────────────────────────────────────────── */
+.pp-user-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.pp-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    border: 2px solid rgba(2,169,255,0.35);
+}
+
+.pp-avatar-placeholder {
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pp-username {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pp-anilist-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+    .pp-anilist-link:hover {
+        color: #02a9ff;
+    }
+
+.pp-al-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #02a9ff;
+    flex-shrink: 0;
+}
+
+.pp-import-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(2,169,255,0.12);
+    border: 1px solid rgba(2,169,255,0.25);
+    color: #02a9ff;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    margin-bottom: 10px;
+}
+
+    .pp-import-btn:hover {
+        background: rgba(2,169,255,0.2);
+    }
+
+    .pp-import-btn:active {
+        transform: scale(0.98);
+    }
+
+.pp-disconnect-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.3);
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+    .pp-disconnect-btn:hover {
+        background: rgba(255,80,80,0.08);
+        border-color: rgba(255,80,80,0.2);
+        color: rgba(255,100,100,0.7);
+    }
+
+/* ── Done ───────────────────────────────────────────────── */
+.pp-done-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.pp-done-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-done-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+}
+
+.pp-done-stats {
+    display: flex;
+    gap: 24px;
+    margin: 4px 0 8px;
+}
+
+.pp-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.pp-stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: #02a9ff;
+    letter-spacing: -0.5px;
+}
+
+.pp-stat-lbl {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.pp-user-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+}
+
+.pp-avatar-mini {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(2,169,255,0.3);
+}
+
+.pp-username-mini {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+}
+
+.pp-done-close-btn {
+    width: 100%;
+    background: #02a9ff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+    .pp-done-close-btn:hover {
+        background: #0095e8;
+    }
+
+    .pp-done-close-btn:active {
+        transform: scale(0.98);
+    }
+
+/* ── Error ──────────────────────────────────────────────── */
+.pp-error-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    text-align: center;
+}
+
+.pp-error-icon {
+    font-size: 40px;
+}
+
+.pp-error-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    margin: 0;
+}
+
+.pp-error-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin: 0 0 6px;
+    max-width: 280px;
+    line-height: 1.5;
+}

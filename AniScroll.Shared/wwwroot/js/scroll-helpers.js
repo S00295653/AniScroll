@@ -448,3 +448,58 @@ window.removeWheelScrollPrevention = function (el) {
     el.removeEventListener('wheel', el._noWheel);
     delete el._noWheel;
 };
+
+// ============================================================
+// oauth-helpers.js
+// ADD THIS ENTIRE BLOCK at the bottom of scroll-helpers.js
+// ============================================================
+
+// ── AniList OAuth helpers ────────────────────────────────────────────────────
+
+/**
+ * Called on app startup (Index.razor OnAfterRenderAsync).
+ * 1. Checks the URL hash for a fresh access_token from AniList OAuth redirect.
+ * 2. If found: persists it to localStorage, cleans the URL, returns the token.
+ * 3. If not found: returns a previously saved token from localStorage (or null).
+ */
+window.aniListGetToken = function () {
+    try {
+        const hash = window.location.hash;
+
+        // Parse #access_token=…&token_type=Bearer&expires_in=…
+        if (hash && hash.includes('access_token=')) {
+            const params = new URLSearchParams(hash.substring(1));
+            const token = params.get('access_token');
+            if (token) {
+                // Persist & clean URL so the token doesn't show in browser history
+                localStorage.setItem('anilist_token', token);
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                return token;
+            }
+        }
+
+        // Fall back to a previously saved token
+        return localStorage.getItem('anilist_token') || null;
+    } catch (e) {
+        console.warn('[oauth-helpers] aniListGetToken error:', e);
+        return null;
+    }
+};
+
+/** Persists the token to localStorage. */
+window.aniListSaveToken = function (token) {
+    try {
+        if (token) localStorage.setItem('anilist_token', token);
+    } catch (e) {
+        console.warn('[oauth-helpers] aniListSaveToken error:', e);
+    }
+};
+
+/** Removes the persisted token from localStorage. */
+window.aniListRemoveToken = function () {
+    try {
+        localStorage.removeItem('anilist_token');
+    } catch (e) {
+        console.warn('[oauth-helpers] aniListRemoveToken error:', e);
+    }
+};

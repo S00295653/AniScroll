@@ -2,8 +2,10 @@
 @using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
 @inject AniListService AniListService
+@inject AniListAuthService AniListAuth
 @inject HttpClient Http
 @inject IJSRuntime JS
+
 
 <PageTitle>AnimeScroll</PageTitle>
 
@@ -205,8 +207,10 @@
         <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
                                                           OnListsClicked="HandleListsClicked"
                                                           OnProfileClicked="HandleProfileClicked"
+                                                          IsAniListConnected="AniListAuth.IsAuthenticated"
                                                           OnSearchQueryChanged="HandleSearchQueryChanged" />
     }
+
 
     <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
                                                          IsVisible="showDetailPopup"
@@ -219,6 +223,10 @@
 
     <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
                                                    OnHide="@(() => showDebugPanel = false)" />
+
+    <ProfilePanel IsVisible="_showProfilePanel"
+                  OnClose="@(() => _showProfilePanel = false)"
+                  @ref="_profilePanel" />
 </div>
 
 @code {
@@ -277,6 +285,10 @@
     private HashSet<int> preloadedIndices = new();
 
 
+    // Fields
+    private bool _showProfilePanel = false;
+    private ProfilePanel _profilePanel = default!;
+    private bool _oauthHandled = false;
     // ═══════════════════════════════════════════════════════════════════════════
     //  LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════════
@@ -289,33 +301,26 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        // Call your existing base / first-render logic here first…
+
+        if (!_oauthHandled)
         {
-            try
+            _oauthHandled = true;
+
+            // Try to retrieve a token from the URL hash or localStorage
+            string? token = await JS.InvokeAsync<string?>("aniListGetToken");
+
+            if (!string.IsNullOrEmpty(token))
             {
-                CARD_HEIGHT = await JS.InvokeAsync<double>("getViewportHeight");
+                AniListAuth.SetToken(token);
+
+                // Open panel and let it finish fetching user profile
+                _showProfilePanel = true;
                 StateHasChanged();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Viewport height error: {ex.Message}");
+
+                await _profilePanel.OnTokenReceived();
             }
         }
-
-        _ = PreloadNearbyImages();
-
-        if (previousIndex != currentIndex && previousIndex >= 0)
-        {
-            if (animes.Count > 0 &&
-                currentIndex >= animes.Count - PRELOAD_THRESHOLD &&
-                !isPreloading &&
-                !AniListService.IsRateLimited())
-            {
-                _ = PreloadNextBatch();
-            }
-        }
-
-        previousIndex = currentIndex;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -699,7 +704,10 @@
         await ShowAnimeDetails(anime);
     }
 
-    private void HandleProfileClicked() { }
+    private void HandleProfileClicked()
+    {
+        _showProfilePanel = !_showProfilePanel;
+    }
 
     public void Dispose() => rateLimitTimer?.Dispose();
 }
