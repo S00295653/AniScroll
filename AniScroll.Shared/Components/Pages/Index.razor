@@ -118,7 +118,7 @@
     </div>
 
     <div class="overlay-controls">
-        <div class="counter">@currentIndex / @animes.Count</div>
+        <div class="counter">@(currentIndex + 1) / @animes.Count</div>
         @if (isPreloading)
         {
             <div class="preload-badge">🔄️</div>
