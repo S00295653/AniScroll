@@ -82,39 +82,52 @@
                                     @onclick="() => SelectStatus(null, null)">
                                 <span class="lf-dd-dot" style="background:rgba(255,255,255,0.3);"></span>
                                 <span class="lf-dd-option-label">All</span>
-                                @if (!statusActive) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                @if (!statusActive)
+                                {
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                }
                             </button>
 
-                            <!-- Built-in statuses -->
-                            @foreach (var setting in UserListService.GetStatusSettings())
-                            {
-                                if (!Enum.TryParse<ListStatus>(setting.Key, out var ls)) continue;
-                                bool isSel = _selectedStatus == ls && _selectedStatusCustomId == null;
-                                <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
-                                        style="@(isSel ? $"background:color-mix(in srgb,{setting.Color} 10%,transparent);color:{setting.Color};" : "")"
-                                        @onclick="() => SelectStatus(ls, null)">
-                                    @GlowDot(setting.Color)
-                                    <span class="lf-dd-option-label">@setting.DisplayName</span>
-                                    @if (isSel) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
-                                </button>
-                            }
-
-                            <!-- User-created status-type lists -->
                             @{
-                                var statusTypeLists = UserListService.GetStatusTypeLists();
+                                // Unified order: built-in statuses + status-type custom lists, sorted by Order
+                                var allStatusItems = UserListService.GetStatusSettings()
+                                .Select(s => (isBuiltIn: true, setting: s, custom: (UserCustomList?)null))
+                                .Concat(UserListService.GetStatusTypeLists()
+                                .Select(c => (isBuiltIn: false, setting: (StatusListSetting?)null, custom: (UserCustomList?)c)))
+                                .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order)
+                                .ToList();
                             }
-                            @if (statusTypeLists.Any())
+                            @foreach (var item in allStatusItems)
                             {
-                                <div class="lf-dd-separator"></div>
-                                @foreach (var stl in statusTypeLists)
+                                @if (item.isBuiltIn)
                                 {
-                                    bool isSel = _selectedStatusCustomId == stl.Id;
+                                    var s = item.setting!;
+                                    if (!Enum.TryParse<ListStatus>(s.Key, out var ls)) { continue; }
+                                    bool isSel = _selectedStatus == ls && _selectedStatusCustomId == null;
                                     <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
-                                            style="@(isSel ? $"background:color-mix(in srgb,{stl.Color} 10%,transparent);color:{stl.Color};" : "")"
-                                            @onclick="() => SelectStatus(null, stl.Id)">
-                                        @GlowDot(stl.Color)
-                                        <span class="lf-dd-option-label">@stl.Name</span>
-                                        @if (isSel) { <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                            style="@(isSel ? $"background:color-mix(in srgb,{s.Color} 10%,transparent);color:{s.Color};" : "")"
+                                            @onclick="() => SelectStatus(ls, null)">
+                                        @GlowDot(s.Color)
+                                        <span class="lf-dd-option-label">@s.DisplayName</span>
+                                        @if (isSel)
+                                        {
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        }
+                                    </button>
+                                }
+                                else
+                                {
+                                    var cl = item.custom!;
+                                    bool isSel = _selectedStatusCustomId == cl.Id;
+                                    <button class="lf-dd-option @(isSel ? "lf-dd-selected" : "")"
+                                            style="@(isSel ? $"background:color-mix(in srgb,{cl.Color} 10%,transparent);color:{cl.Color};" : "")"
+                                            @onclick="() => SelectStatus(null, cl.Id)">
+                                        @GlowDot(cl.Color)
+                                        <span class="lf-dd-option-label">@cl.Name</span>
+                                        @if (isSel)
+                                        {
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        }
                                     </button>
                                 }
                             }
