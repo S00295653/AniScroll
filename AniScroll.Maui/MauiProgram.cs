@@ -8,6 +8,7 @@ public static class MauiProgram
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
+
         builder
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
@@ -17,21 +18,21 @@ public static class MauiProgram
 
         builder.Services.AddMauiBlazorWebView();
 
-        builder.Services.AddScoped<AniListAuthService>();
-
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
 
+        // HttpClient simple, sans handler custom
         builder.Services.AddScoped(sp => new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(30)
+            Timeout = TimeSpan.FromSeconds(30),
+            // Forcer la résolution DNS correcte sur Android
+            DefaultRequestHeaders = { { "Accept", "application/json" } }
         });
 
         builder.Services.AddScoped<AniListService>();
-
-        // Singleton so the list persists for the whole session across all components
+        builder.Services.AddScoped<AniListAuthService>();
         builder.Services.AddSingleton<UserListService>();
 
         return builder.Build();

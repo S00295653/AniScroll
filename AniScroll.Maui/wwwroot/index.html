@@ -31,7 +31,13 @@
         </div>
     </div>
 
-    <script src="_content/AniScroll.Shared/js/scroll-helpers.js"></script>
+    <script>
+        window.onerror = function (msg, src, line, col, err) {
+            document.querySelector('.loading-title').textContent = msg;
+            document.querySelector('.loading-subtitle').textContent = (src || '') + ':' + line;
+        };
+    </script>
+
     <script src="_framework/blazor.webview.js"></script>
 </body>
 </html>

@@ -304,8 +304,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadAnimes(60, isBackgroundLoad: false);
-        isInitialLoadComplete = true;
+        try
+        {
+            await LoadAnimes(60, isBackgroundLoad: false);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Init Error] {ex}");
+            isLoading = false;
+        }
+        finally
+        {
+            isInitialLoadComplete = true;
+            StateHasChanged();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
