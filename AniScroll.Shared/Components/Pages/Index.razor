@@ -6,6 +6,7 @@
 @inject AniListAuthService AniListAuth
 @inject HttpClient Http
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 
 <PageTitle>AnimeScroll</PageTitle>
@@ -271,9 +272,13 @@
 
     // ─── Popup ───────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
-
     private bool showListsPanel = false;
     private AnimeCard? selectedAnime = null;
+
+    // ─── Back-to-lists tracking ───────────────────────────────────────────────
+    // True when the detail popup was opened from the lists panel.
+    // On close we reopen the panel instead of staying on the scroller.
+    private bool _detailOpenedFromLists = false;
 
     // ─── Search ──────────────────────────────────────────────────────────────
     private bool isSearchActive = false;
@@ -285,11 +290,14 @@
     // ─── Banner preload tracking ──────────────────────────────────────────────
     private HashSet<int> preloadedIndices = new();
 
-
-    // Fields
+    // ─── Profile ──────────────────────────────────────────────────────────────
     private bool _showProfilePanel = false;
     private ProfilePanel _profilePanel = default!;
     private bool _oauthHandled = false;
+
+    // ─── ESC key ──────────────────────────────────────────────────────────────
+    private DotNetObjectReference<Index>? _dotNetRef;
+
     // ═══════════════════════════════════════════════════════════════════════════
     //  LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════════
@@ -313,6 +321,11 @@
             {
                 System.Diagnostics.Debug.WriteLine($"Viewport height error: {ex.Message}");
             }
+
+            // Register global ESC key handler
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try { await JS.InvokeVoidAsync("registerEscapeKey", _dotNetRef); }
+            catch { }
         }
 
         _ = PreloadNearbyImages();
@@ -329,7 +342,6 @@
         }
         previousIndex = currentIndex;
 
-        // OAuth token handling (runs once after first render)
         if (!_oauthHandled)
         {
             _oauthHandled = true;
@@ -337,11 +349,6 @@
         }
     }
 
-    /// <summary>
-    /// Checks for an AniList token (fresh OAuth redirect or saved in localStorage).
-    /// - Fresh redirect (isNewAuth=true)  → show ProfilePanel so user can review/import.
-    /// - Saved token   (isNewAuth=false)  → silently auto-import in the background.
-    /// </summary>
     private async Task HandleOAuthTokenAsync()
     {
         try
@@ -356,20 +363,41 @@
 
             if (isNewAuth)
             {
-                // Fresh OAuth redirect — show the panel (user just connected)
                 _showProfilePanel = true;
                 StateHasChanged();
                 await _profilePanel.OnTokenReceived();
             }
             else
             {
-                // Saved token — silently import in background, no UI interruption
                 _ = _profilePanel.TryAutoImportAsync();
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"OAuth token handling error: {ex.Message}");
+        }
+    }
+
+    // ─── ESC key handler (called from JS) ────────────────────────────────────
+    [JSInvokable]
+    public void HandleEscapeKey()
+    {
+        // Close in priority order: detail popup → lists panel → profile panel
+        if (showDetailPopup)
+        {
+            CloseDetailPopup();
+            return;
+        }
+        if (showListsPanel)
+        {
+            CloseListsPanel();
+            return;
+        }
+        if (_showProfilePanel)
+        {
+            _showProfilePanel = false;
+            StateHasChanged();
+            return;
         }
     }
 
@@ -643,6 +671,14 @@
     {
         showDetailPopup = false;
         selectedAnime   = null;
+
+        // If the detail was opened from the lists panel, reopen it
+        if (_detailOpenedFromLists)
+        {
+            _detailOpenedFromLists = false;
+            showListsPanel = true;
+        }
+
         StateHasChanged();
     }
 
@@ -748,6 +784,7 @@
     private async Task HandleListsAnimeSelected(AnimeCard anime)
     {
         showListsPanel = false;
+        _detailOpenedFromLists = true;   // remember origin so we can go back
         await ShowAnimeDetails(anime);
     }
 
@@ -756,5 +793,14 @@
         _showProfilePanel = !_showProfilePanel;
     }
 
-    public void Dispose() => rateLimitTimer?.Dispose();
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  DISPOSE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public async ValueTask DisposeAsync()
+    {
+        rateLimitTimer?.Dispose();
+        try { await JS.InvokeVoidAsync("unregisterEscapeKey"); } catch { }
+        _dotNetRef?.Dispose();
+    }
 }

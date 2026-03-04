@@ -8,10 +8,10 @@
 @if (IsVisible)
 {
     <div class="clm-overlay"
-         @onpointerdown="() => _pointerDownOnPanel = false"
-         @onpointerup="() => { if (!_pointerDownOnPanel) Close(); }">
+         @onclick="HandleOverlayClick">
 
         <div class="clm-panel"
+             @onclick:stopPropagation="true"
              @onpointerdown:stopPropagation="true"
              @onpointerdown="() => _pointerDownOnPanel = true"
              @onpointerup:stopPropagation="true">
@@ -388,9 +388,7 @@
 
     public void Dispose() => _dotNetRef?.Dispose();
 
-    // ── RebuildRows — unified order for status tab ────────────────────────
-    // Built-in status settings and custom status-type lists share a single
-    // Order sequence so they can be freely interleaved by drag-and-drop.
+    // ── RebuildRows ───────────────────────────────────────────────────────
     private void RebuildRows()
     {
         _statusRows = UserListService.GetStatusSettings()
@@ -481,9 +479,7 @@
         StateHasChanged();
     }
 
-    // ── Persist — unified order ───────────────────────────────────────────
-    // All status rows (built-in + custom status-type) share a single Order
-    // sequence so their interleaved arrangement survives a page reload.
+    // ── Persist ───────────────────────────────────────────────────────────
     private void SaveAll()
     {
         var statusSettings = new List<StatusListSetting>();
@@ -527,7 +523,6 @@
             Name = _newName.Trim(),
             Color = color,
             IsStatusList = _activeTab == "status",
-            // Placed at the end of the current list — SaveAll() will lock in the order
             Order = _activeTab == "status" ? _statusRows.Count : _customRows.Count
         };
 
@@ -548,7 +543,6 @@
         catch { return "#6366f1"; }
     }
 
-    // ── Delete confirmation ───────────────────────────────────────────────
     private void ShowDeleteConfirm(int idx, bool isStatus)
     {
         _confirmDeleteIndex = idx;
@@ -595,6 +589,8 @@
     private void OnNewKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") _ = AddList(); }
 
     // ── Panel close ──────────────────────────────────────────────────────
+    // Called when clicking the overlay backdrop. Since @onclick:stopPropagation
+    // is set on .clm-panel, clicks inside never reach here — no pointer tracking needed.
     private void HandleOverlayClick()
     {
         if (_confirmDeleteVisible) { CancelDelete(); return; }

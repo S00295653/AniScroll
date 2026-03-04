@@ -134,8 +134,8 @@
     gap: 6px;
     padding: 7px 13px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.08);       /* ← était transparent */
-    background: rgba(255, 255, 255, 0.06);              /* ← était transparent */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.45);
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     font-size: 12px;
@@ -144,7 +144,6 @@
     white-space: nowrap;
     font-family: inherit;
 }
-
 
 .lists-tab-count {
     background: rgba(255, 255, 255, 0.1);
@@ -159,7 +158,6 @@
     border-color: color-mix(in srgb, var(--tab-color) 40%, transparent);
     color: var(--tab-color);
 }
-
 
 .lists-tab.active .lists-tab-count {
     background: color-mix(in srgb, var(--tab-color) 20%, transparent);
@@ -181,12 +179,29 @@
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
     padding: 8px 16px 32px;
+
+    /* Styled scrollbar — matches app modal aesthetic */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
-.lists-content::-webkit-scrollbar { display: none; }
+.lists-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.lists-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.lists-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+}
+
+.lists-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.30);
+}
 
 /* Entry card */
 .list-entry {

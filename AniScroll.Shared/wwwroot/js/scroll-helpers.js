@@ -479,3 +479,36 @@ window.aniListRemoveToken = function () {
         console.warn('[oauth-helpers] aniListRemoveToken error:', e);
     }
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ESCAPE KEY — global handler for PC keyboard support
+// ═══════════════════════════════════════════════════════════════════════
+
+let _escHandler = null;
+let _escDotNet  = null;
+
+window.registerEscapeKey = function (dotNet) {
+    _escDotNet = dotNet;
+
+    // Remove any previous listener before adding a new one
+    if (_escHandler) {
+        document.removeEventListener('keydown', _escHandler);
+    }
+
+    _escHandler = function (e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            _escDotNet.invokeMethodAsync('HandleEscapeKey');
+        }
+    };
+
+    document.addEventListener('keydown', _escHandler);
+};
+
+window.unregisterEscapeKey = function () {
+    if (_escHandler) {
+        document.removeEventListener('keydown', _escHandler);
+        _escHandler = null;
+    }
+    _escDotNet = null;
+};
