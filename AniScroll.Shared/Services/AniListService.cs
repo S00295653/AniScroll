@@ -111,7 +111,8 @@ namespace AniScroll.Shared.Services
                     if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
                         JikanRateLimit.IsLimited = true;
-                        return new List<JikanSearchResult>();
+                        System.Diagnostics.Debug.WriteLine("Jikan down after all retries, switching to AniList fallback");
+                        return await SearchAniListAsync(query);
                     }
 
                     // 5xx → retry
@@ -169,9 +170,62 @@ namespace AniScroll.Shared.Services
                 }
             }
 
-            return new List<JikanSearchResult>();
+            System.Diagnostics.Debug.WriteLine("Jikan down after all retries, switching to AniList fallback");
+            return await SearchAniListAsync(query);
         }
         
+        private async Task<List<JikanSearchResult>> SearchAniListAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new();
+            try
+            {
+                var safe = query.Replace("\"", "\\\"");
+                var gql = $@"query {{
+                    Page(perPage: 12) {{
+                        media(search: ""{safe}"", type: ANIME, isAdult: false) {{
+                            id idMal
+                            title {{ romaji english }}
+                            coverImage {{ large }}
+                            format averageScore episodes
+                        }}
+                    }}
+                }}";
+
+                var resp = await PostGraphQL(gql);
+                if (resp == null) return new();
+
+                var items = JObject.Parse(resp)?["data"]?["Page"]?["media"];
+                if (items == null || !items.HasValues) return new();
+
+                var results = new List<JikanSearchResult>();
+                foreach (var item in items)
+                {
+                    if (item == null || item.Type == JTokenType.Null) continue;
+                    var titleObj = item["title"];
+                    string title = !string.IsNullOrEmpty(titleObj?["english"]?.ToString())
+                        ? titleObj!["english"]!.ToString()
+                        : titleObj?["romaji"]?.ToString() ?? "";
+                    var scoreRaw = item["averageScore"];
+                    double score = scoreRaw != null && scoreRaw.Type != JTokenType.Null
+                        ? scoreRaw.Value<double>() / 10.0 : 0;
+                    results.Add(new JikanSearchResult
+                    {
+                        MalId    = item["idMal"]?.Value<int>() ?? 0,
+                        Title    = title,
+                        ImageUrl = item["coverImage"]?["large"]?.ToString() ?? "",
+                        Score    = score > 0 ? score.ToString("F1") : "N/A",
+                        Type     = FormatFormat(item["format"]?.ToString() ?? ""),
+                        Episodes = item["episodes"]?.Value<int?>()
+                    });
+                }
+                return results;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("AniList search fallback error: " + ex.Message);
+                return new();
+            }
+        }
 
         // ─── Single anime lookups ─────────────────────────────────────────────────
 
