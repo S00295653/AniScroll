@@ -7,10 +7,7 @@
     <div class="sfp-overlay" @onclick="Close">
         <div class="sfp-panel" @onclick:stopPropagation="true">
 
-            <!-- Handle -->
-            <div class="sfp-handle-zone">
-                <div class="sfp-handle-bar"></div>
-            </div>
+            <div class="sfp-handle-zone"><div class="sfp-handle-bar"></div></div>
 
             <!-- Header -->
             <div class="sfp-header">
@@ -27,10 +24,8 @@
                         <button class="sfp-reset-btn" @onclick="Reset">Reset all</button>
                     }
                     <button class="sfp-close-btn" @onclick="Close">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
                     </button>
                 </div>
@@ -39,7 +34,7 @@
             <!-- Body -->
             <div class="sfp-body">
 
-                <!-- ── SORT ── -->
+                <!-- SORT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
                     <div class="sfp-chips">
@@ -56,10 +51,9 @@
                         @SortChip(SortMode.YearAsc, "Year ↑")
                     </div>
                 </div>
-
                 <div class="sfp-divider"></div>
 
-                <!-- ── AIRING STATUS ── -->
+                <!-- AIRING STATUS -->
                 @if (_hasDotStats || _hasNoDotStats)
                 {
                     <div class="sfp-section">
@@ -69,8 +63,7 @@
                             {
                                 var k = key;
                                 bool on = FilterAiringStatus.Contains(k);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterAiringStatus, k)">
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterAiringStatus, k)">
                                     <span class="sfp-status-dot @(k == "RELEASING" ? "sfp-dot-releasing" : "sfp-dot-upcoming")"></span>
                                     @FormatAiringStatus(k)
                                 </button>
@@ -79,8 +72,7 @@
                             {
                                 var k = key;
                                 bool on = FilterAiringStatus.Contains(k);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterAiringStatus, k)">
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterAiringStatus, k)">
                                     @FormatAiringStatus(k)
                                 </button>
                             }
@@ -89,7 +81,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── FORMAT ── -->
+                <!-- FORMAT -->
                 @if (_formats.Any())
                 {
                     <div class="sfp-section">
@@ -97,19 +89,15 @@
                         <div class="sfp-chips">
                             @foreach (var fmt in _formats)
                             {
-                                var f = fmt;
-                                bool on = FilterFormats.Contains(f);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterFormats, f)">
-                                    @f
-                                </button>
+                                var f = fmt; bool on = FilterFormats.Contains(f);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterFormats, f)">@f</button>
                             }
                         </div>
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── SEASON ── -->
+                <!-- SEASON -->
                 @if (_seasons.Any())
                 {
                     <div class="sfp-section">
@@ -117,10 +105,8 @@
                         <div class="sfp-chips">
                             @foreach (var s in _seasons)
                             {
-                                var sv = s;
-                                bool on = FilterSeasons.Contains(sv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterSeasons, sv)">
+                                var sv = s; bool on = FilterSeasons.Contains(sv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSeasons, sv)">
                                     @SeasonEmoji(sv) @sv
                                 </button>
                             }
@@ -129,131 +115,150 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── YEAR RANGE (slider) ── -->
+                <!-- YEAR RANGE -->
                 @if (_years.Count > 1)
                 {
                     <div class="sfp-section">
-                        <div class="sfp-section-label-row">
-                            <span class="sfp-section-label">Year</span>
-                            <span class="sfp-range-value">
-                                @(_yearFrom == _minYear && _yearTo == _maxYear
-                                    ? "All"
-                                    : _yearFrom == _yearTo ? $"{_yearFrom}" : $"{_yearFrom} – {_yearTo}")
-                            </span>
-                        </div>
-                        <div class="sfp-range-track-wrap">
-                            <div class="sfp-range-track">
-                                <div class="sfp-range-fill"
-                                     style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;
-                                            right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;">
+                        <div class="sfp-section-label">Year</div>
+                        <div class="sfp-dual-slider">
+                            <input type="number" class="sfp-num-input"
+                                   min="@_minYear" max="@_maxYear" value="@_yearFrom"
+                                   @onchange="e => { _yearFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), _minYear), _yearTo); ScheduleResultCountUpdate(); }" />
+                            <div class="sfp-slider-wrap">
+                                <div class="sfp-slider-track">
+                                    <div class="sfp-slider-fill" style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;"></div>
                                 </div>
+                                <input type="range" class="sfp-range sfp-range-lo" min="@_minYear" max="@_maxYear" value="@_yearFrom"
+                                       @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
+                                <input type="range" class="sfp-range sfp-range-hi" min="@_minYear" max="@_maxYear" value="@_yearTo"
+                                       @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                             </div>
-                            <input type="range" class="sfp-range sfp-range-lo"
-                                   min="@_minYear" max="@_maxYear"
-                                   value="@_yearFrom"
-                                   @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
-                            <input type="range" class="sfp-range sfp-range-hi"
-                                   min="@_minYear" max="@_maxYear"
-                                   value="@_yearTo"
-                                   @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
+                            <input type="number" class="sfp-num-input"
+                                   min="@_minYear" max="@_maxYear" value="@_yearTo"
+                                   @onchange="e => { _yearTo = Math.Max(Math.Min(int.Parse(e.Value!.ToString()!), _maxYear), _yearFrom); ScheduleResultCountUpdate(); }" />
                         </div>
-                        @if (_yearFrom != _minYear || _yearTo != _maxYear)
-                        {
-                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Clear</button>
-                        }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── MY SCORE RANGE (slider) ── -->
+                <!-- SCORE RANGE -->
                 @if (_scoredCount > 1)
                 {
                     <div class="sfp-section">
-                        <div class="sfp-section-label-row">
-                            <span class="sfp-section-label">My Score</span>
-                            <span class="sfp-range-value">
-                                @(_scoreFrom == 0 && _scoreTo == 10
-                                    ? "All"
-                                    : _scoreFrom == _scoreTo ? $"{_scoreFrom}" : $"{_scoreFrom} – {_scoreTo}")
-                            </span>
-                        </div>
-                        <div class="sfp-range-track-wrap">
-                            <div class="sfp-range-track">
-                                <div class="sfp-range-fill"
-                                     style="left:@(_scoreFrom * 10)%;right:@((10 - _scoreTo) * 10)%;"></div>
+                        <div class="sfp-section-label">My Score</div>
+                        <div class="sfp-dual-slider">
+                            <input type="number" class="sfp-num-input"
+                                   min="0" max="10" step="0.5" value="@_scoreFrom"
+                                   @onchange="e => { _scoreFrom = Math.Min(Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0), _scoreTo); ScheduleResultCountUpdate(); }" />
+                            <div class="sfp-slider-wrap">
+                                <div class="sfp-slider-track">
+                                    <div class="sfp-slider-fill" style="left:@(_scoreFrom * 10)%;right:@((10 - _scoreTo) * 10)%;"></div>
+                                </div>
+                                <input type="range" class="sfp-range sfp-range-lo" min="0" max="10" step="0.5" value="@_scoreFrom"
+                                       @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                                <input type="range" class="sfp-range sfp-range-hi" min="0" max="10" step="0.5" value="@_scoreTo"
+                                       @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             </div>
-                            <input type="range" class="sfp-range sfp-range-lo"
-                                   min="0" max="10" step="0.5"
-                                   value="@_scoreFrom"
-                                   @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
-                            <input type="range" class="sfp-range sfp-range-hi"
-                                   min="0" max="10" step="0.5"
-                                   value="@_scoreTo"
-                                   @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                            <input type="number" class="sfp-num-input"
+                                   min="0" max="10" step="0.5" value="@_scoreTo"
+                                   @onchange="e => { _scoreTo = Math.Max(Math.Min(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 10), _scoreFrom); ScheduleResultCountUpdate(); }" />
                         </div>
-                        @if (_scoreFrom != 0 || _scoreTo != 10)
-                        {
-                            <button class="sfp-clear-range" @onclick="() => { _scoreFrom = 0; _scoreTo = 10; ScheduleResultCountUpdate(); }">Clear</button>
-                        }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── EPISODES RANGE (slider) ── -->
+                <!-- EPISODES RANGE -->
                 @if (_maxEp > 1)
                 {
                     <div class="sfp-section">
-                        <div class="sfp-section-label-row">
-                            <span class="sfp-section-label">Episodes Watched</span>
-                            <span class="sfp-range-value">
-                                @(_epFrom == 0 && _epTo == _maxEp
-                                    ? "All"
-                                    : _epFrom == _epTo ? $"{_epFrom}" : $"{_epFrom} – {_epTo}")
-                            </span>
-                        </div>
-                        <div class="sfp-range-track-wrap">
-                            <div class="sfp-range-track">
-                                <div class="sfp-range-fill"
-                                     style="left:@(_epFrom * 100.0 / _maxEp)%;right:@((_maxEp - _epTo) * 100.0 / _maxEp)%;"></div>
+                        <div class="sfp-section-label">Episodes Watched</div>
+                        <div class="sfp-dual-slider">
+                            <input type="number" class="sfp-num-input"
+                                   min="0" max="@_maxEp" value="@_epFrom"
+                                   @onchange="e => { _epFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), 0), _epTo); ScheduleResultCountUpdate(); }" />
+                            <div class="sfp-slider-wrap">
+                                <div class="sfp-slider-track">
+                                    <div class="sfp-slider-fill" style="left:@(_epFrom * 100.0 / _maxEp)%;right:@((_maxEp - _epTo) * 100.0 / _maxEp)%;"></div>
+                                </div>
+                                <input type="range" class="sfp-range sfp-range-lo" min="0" max="@_maxEp" value="@_epFrom"
+                                       @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
+                                <input type="range" class="sfp-range sfp-range-hi" min="0" max="@_maxEp" value="@_epTo"
+                                       @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                             </div>
-                            <input type="range" class="sfp-range sfp-range-lo"
-                                   min="0" max="@_maxEp"
-                                   value="@_epFrom"
-                                   @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
-                            <input type="range" class="sfp-range sfp-range-hi"
-                                   min="0" max="@_maxEp"
-                                   value="@_epTo"
-                                   @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
+                            <input type="number" class="sfp-num-input"
+                                   min="0" max="@_maxEp" value="@_epTo"
+                                   @onchange="e => { _epTo = Math.Max(Math.Min(int.Parse(e.Value!.ToString()!), _maxEp), _epFrom); ScheduleResultCountUpdate(); }" />
                         </div>
-                        @if (_epFrom != 0 || _epTo != _maxEp)
+                    </div>
+                    <div class="sfp-divider"></div>
+                }
+
+                <!-- GENRES DROPDOWN -->
+                @if (_genres.Any())
+                {
+                    <div class="sfp-section sfp-section-nodrop">
+                        <button class="sfp-dropdown-trigger @(_genreDropdownOpen ? "open" : "")"
+                                @onclick="() => { _genreDropdownOpen = !_genreDropdownOpen; _tagDropdownOpen = false; }">
+                            <span class="sfp-dt-left">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                                Genres
+                                @if (FilterGenres.Any())
+                                {
+                                    <span class="sfp-dt-badge">@FilterGenres.Count</span>
+                                }
+                            </span>
+                            <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+                        @if (_genreDropdownOpen)
                         {
-                            <button class="sfp-clear-range" @onclick="() => { _epFrom = 0; _epTo = _maxEp; ScheduleResultCountUpdate(); }">Clear</button>
+                            <div class="sfp-dropdown-panel">
+                                <div class="sfp-search-row">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    </svg>
+                                    <input class="sfp-search-input" type="text" placeholder="Search genres…"
+                                           @bind="_genreSearch" @bind:event="oninput" />
+                                    @if (!string.IsNullOrEmpty(_genreSearch))
+                                    {
+                                        <button class="sfp-search-clear" @onclick="() => _genreSearch = string.Empty">×</button>
+                                    }
+                                </div>
+                                @if (FilterGenres.Any())
+                                {
+                                    <div class="sfp-dp-label">Selected</div>
+                                    <div class="sfp-chips sfp-chips-compact">
+                                        @foreach (var g in FilterGenres.OrderBy(x => x))
+                                        {
+                                            var gv = g;
+                                            <button class="sfp-chip sfp-chip-on" @onclick="() => ToggleFilter(FilterGenres, gv)">
+                                                @gv <span class="sfp-chip-x">×</span>
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="sfp-dp-sep"></div>
+                                }
+                                <div class="sfp-dp-label">All</div>
+                                <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
+                                    @{
+                                        var fg = (string.IsNullOrWhiteSpace(_genreSearch)
+                                            ? _genres.Where(g => !FilterGenres.Contains(g))
+                                            : _genres.Where(g => !FilterGenres.Contains(g) && g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                    }
+                                    @if (!fg.Any()) { <span class="sfp-dp-empty">No results</span> }
+                                    @foreach (var g in fg) { var gv = g; <button class="sfp-chip" @onclick="() => ToggleFilter(FilterGenres, gv)">@gv</button> }
+                                </div>
+                            </div>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── GENRES ── -->
-                @if (_genres.Any())
-                {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">Genres</div>
-                        <div class="sfp-chips">
-                            @foreach (var g in _genres)
-                            {
-                                var gv = g;
-                                bool on = FilterGenres.Contains(gv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterGenres, gv)">
-                                    @gv
-                                </button>
-                            }
-                        </div>
-                    </div>
-                    <div class="sfp-divider"></div>
-                }
-
-                <!-- ── STUDIOS ── -->
+                <!-- STUDIOS -->
                 @if (_studios.Any())
                 {
                     <div class="sfp-section">
@@ -261,59 +266,80 @@
                         <div class="sfp-chips">
                             @foreach (var st in _studios)
                             {
-                                var sv = st;
-                                bool on = FilterStudios.Contains(sv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterStudios, sv)">
-                                    @sv
-                                </button>
+                                var sv = st; bool on = FilterStudios.Contains(sv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterStudios, sv)">@sv</button>
                             }
                         </div>
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── TAGS ── -->
+                <!-- TAGS DROPDOWN -->
                 @if (_tags.Any())
                 {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">Tags</div>
-                        @if (!_showAllTags && _tags.Count > 16)
-                        {
-                            <div class="sfp-chips">
-                                @foreach (var t in _tags.Take(16))
+                    <div class="sfp-section sfp-section-nodrop">
+                        <button class="sfp-dropdown-trigger @(_tagDropdownOpen ? "open" : "")"
+                                @onclick="() => { _tagDropdownOpen = !_tagDropdownOpen; _genreDropdownOpen = false; }">
+                            <span class="sfp-dt-left">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                                Tags
+                                @if (FilterTags.Any())
                                 {
-                                    var tv = t;
-                                    bool on = FilterTags.Contains(tv);
-                                    <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                            @onclick="() => ToggleFilter(FilterTags, tv)">
-                                        @tv
-                                    </button>
+                                    <span class="sfp-dt-badge">@FilterTags.Count</span>
                                 }
-                            </div>
-                            <button class="sfp-show-more" @onclick="() => _showAllTags = true">
-                                + @(_tags.Count - 16) more tags
-                            </button>
-                        }
-                        else
+                            </span>
+                            <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+                        @if (_tagDropdownOpen)
                         {
-                            <div class="sfp-chips">
-                                @foreach (var t in _tags)
+                            <div class="sfp-dropdown-panel">
+                                <div class="sfp-search-row">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    </svg>
+                                    <input class="sfp-search-input" type="text" placeholder="Search tags…"
+                                           @bind="_tagSearch" @bind:event="oninput" />
+                                    @if (!string.IsNullOrEmpty(_tagSearch))
+                                    {
+                                        <button class="sfp-search-clear" @onclick="() => _tagSearch = string.Empty">×</button>
+                                    }
+                                </div>
+                                @if (FilterTags.Any())
                                 {
-                                    var tv = t;
-                                    bool on = FilterTags.Contains(tv);
-                                    <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                            @onclick="() => ToggleFilter(FilterTags, tv)">
-                                        @tv
-                                    </button>
+                                    <div class="sfp-dp-label">Selected</div>
+                                    <div class="sfp-chips sfp-chips-compact">
+                                        @foreach (var t in FilterTags.OrderBy(x => x))
+                                        {
+                                            var tv = t;
+                                            <button class="sfp-chip sfp-chip-on" @onclick="() => ToggleFilter(FilterTags, tv)">
+                                                @tv <span class="sfp-chip-x">×</span>
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="sfp-dp-sep"></div>
                                 }
+                                <div class="sfp-dp-label">All</div>
+                                <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
+                                    @{
+                                        var ft = (string.IsNullOrWhiteSpace(_tagSearch)
+                                            ? _tags.Where(t => !FilterTags.Contains(t))
+                                            : _tags.Where(t => !FilterTags.Contains(t) && t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                    }
+                                    @if (!ft.Any()) { <span class="sfp-dp-empty">No results</span> }
+                                    @foreach (var t in ft) { var tv = t; <button class="sfp-chip" @onclick="() => ToggleFilter(FilterTags, tv)">@tv</button> }
+                                </div>
                             </div>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── SOURCE MATERIAL ── -->
+                <!-- SOURCE -->
                 @if (_sources.Any())
                 {
                     <div class="sfp-section">
@@ -321,19 +347,15 @@
                         <div class="sfp-chips">
                             @foreach (var src in _sources)
                             {
-                                var sv = src;
-                                bool on = FilterSources.Contains(sv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterSources, sv)">
-                                    @sv
-                                </button>
+                                var sv = src; bool on = FilterSources.Contains(sv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSources, sv)">@sv</button>
                             }
                         </div>
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── STREAMING ON ── -->
+                <!-- STREAMING -->
                 @if (_platforms.Any())
                 {
                     <div class="sfp-section">
@@ -341,19 +363,15 @@
                         <div class="sfp-chips">
                             @foreach (var p in _platforms)
                             {
-                                var pv = p;
-                                bool on = FilterPlatforms.Contains(pv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterPlatforms, pv)">
-                                    @pv
-                                </button>
+                                var pv = p; bool on = FilterPlatforms.Contains(pv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">@pv</button>
                             }
                         </div>
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── COUNTRY OF ORIGIN ── -->
+                <!-- COUNTRY -->
                 @if (_countries.Any())
                 {
                     <div class="sfp-section">
@@ -361,10 +379,8 @@
                         <div class="sfp-chips">
                             @foreach (var c in _countries)
                             {
-                                var cv = c;
-                                bool on = FilterCountries.Contains(cv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")"
-                                        @onclick="() => ToggleFilter(FilterCountries, cv)">
+                                var cv = c; bool on = FilterCountries.Contains(cv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterCountries, cv)">
                                     @CountryEmoji(cv) @CountryLabel(cv)
                                 </button>
                             }
@@ -373,18 +389,14 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- ── CONTENT ── -->
+                <!-- CONTENT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Content</div>
                     <div class="sfp-chips">
                         <button class="sfp-chip @(FilterAdult == false ? "sfp-chip-on" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == false ? null : false)">
-                            Non-adult only
-                        </button>
-                        <button class="sfp-chip @(FilterAdult == true ? "sfp-chip-on sfp-chip-adult" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == true ? null : true)">
-                            Adult only
-                        </button>
+                                @onclick="() => FilterAdult = (FilterAdult == false ? null : false)">Non-adult only</button>
+                        <button class="sfp-chip @(FilterAdult == true ? "sfp-chip-on" : "")"
+                                @onclick="() => FilterAdult = (FilterAdult == true ? null : true)">Adult only</button>
                     </div>
                 </div>
 
@@ -393,18 +405,13 @@
             <!-- Footer -->
             <div class="sfp-footer">
                 <button class="sfp-random-btn" @onclick="PickRandom" title="Random anime from current filters">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="16 3 21 3 21 8" />
-                        <line x1="4" y1="20" x2="21" y2="3" />
-                        <polyline points="21 16 21 21 16 21" />
-                        <line x1="15" y1="15" x2="21" y2="21" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
                     </svg>
                 </button>
                 <button class="sfp-apply-btn" @onclick="Apply">
-                    Show
-                    <span class="sfp-result-count">@_resultCount</span>
-                    result@(_resultCount != 1 ? "s" : "")
+                    Show <span class="sfp-result-count">@_resultCount</span> result@(_resultCount != 1 ? "s" : "")
                 </button>
             </div>
 
@@ -429,167 +436,104 @@
         YearDesc, YearAsc,
     }
 
-    // ── Sort ──────────────────────────────────────────────────────────────
     private SortMode _sort = SortMode.RecentlyAdded;
+    private int _yearFrom, _yearTo;
+    private double _scoreFrom, _scoreTo;
+    private int _epFrom, _epTo;
 
-    // ── Range sliders ─────────────────────────────────────────────────────
-    private int _yearFrom;
-    private int _yearTo;
-    private double _scoreFrom;
-    private double _scoreTo;
-    private int _epFrom;
-    private int _epTo;
-
-    // ── Chip filters ──────────────────────────────────────────────────────
     private HashSet<string> FilterAiringStatus = new();
-    private HashSet<string> FilterFormats = new();
-    private HashSet<string> FilterSeasons = new();
-    private HashSet<string> FilterGenres = new();
-    private HashSet<string> FilterStudios = new();
-    private HashSet<string> FilterTags = new();
-    private HashSet<string> FilterSources = new();
-    private HashSet<string> FilterPlatforms = new();
-    private HashSet<string> FilterCountries = new();
+    private HashSet<string> FilterFormats      = new();
+    private HashSet<string> FilterSeasons      = new();
+    private HashSet<string> FilterGenres       = new();
+    private HashSet<string> FilterStudios      = new();
+    private HashSet<string> FilterTags         = new();
+    private HashSet<string> FilterSources      = new();
+    private HashSet<string> FilterPlatforms    = new();
+    private HashSet<string> FilterCountries    = new();
     private bool? FilterAdult = null;
 
-    private bool _showAllTags = false;
+    private bool   _genreDropdownOpen = false;
+    private bool   _tagDropdownOpen   = false;
+    private string _genreSearch       = string.Empty;
+    private string _tagSearch         = string.Empty;
 
-    // ── Cached distinct values (computed once per open, not every render) ─
     private static readonly string[] _dotStatuses   = { "RELEASING", "NOT_YET_RELEASED" };
     private static readonly string[] _noDotStatuses = { "FINISHED", "CANCELLED", "HIATUS" };
     private HashSet<string> _availStatuses = new();
-    private bool _hasDotStats;
-    private bool _hasNoDotStats;
-    private List<string> _formats   = new();
-    private List<string> _seasons   = new();
-    private List<string> _genres    = new();
-    private List<string> _studios   = new();
-    private List<string> _tags      = new();
-    private List<string> _sources   = new();
-    private List<string> _platforms = new();
-    private List<string> _countries = new();
-    private List<int>    _years     = new();
-    private int    _minYear   = 1990;
-    private int    _maxYear   = 2100;
-    private int    _maxEp     = 0;
-    private int    _scoredCount = 0;
-
-    // ── Debounced result count ─────────────────────────────────────────────
-    private int _resultCount = 0;
+    private bool _hasDotStats, _hasNoDotStats;
+    private List<string> _formats = new(), _seasons = new(), _genres = new();
+    private List<string> _studios = new(), _tags = new(), _sources = new();
+    private List<string> _platforms = new(), _countries = new();
+    private List<int> _years = new();
+    private int    _minYear = 1990, _maxYear = 2100, _maxEp = 0, _scoredCount = 0;
+    private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
-    // ── Computed (cheap — no LINQ over AllEntries) ─────────────────────────
     private bool HasActiveOptions =>
         _sort != SortMode.RecentlyAdded || RangeActive ||
         FilterAiringStatus.Any() || FilterFormats.Any() || FilterSeasons.Any() ||
         FilterGenres.Any() || FilterStudios.Any() || FilterTags.Any() ||
-        FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() ||
-        FilterAdult.HasValue;
+        FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() || FilterAdult.HasValue;
 
     private bool RangeActive =>
-        _yearFrom != _minYear || _yearTo != _maxYear ||
-        _scoreFrom != 0 || _scoreTo != 10 ||
-        _epFrom != 0 || _epTo != _maxEp;
+        _yearFrom != _minYear || _yearTo != _maxYear || _scoreFrom != 0 || _scoreTo != 10 || _epFrom != 0 || _epTo != _maxEp;
 
     private int TotalActiveCount
     {
         get
         {
-            int n = 0;
-            if (_sort != SortMode.RecentlyAdded) n++;
-            if (RangeActive) n++;
-            n += FilterAiringStatus.Any() ? 1 : 0;
-            n += FilterFormats.Any() ? 1 : 0;
-            n += FilterSeasons.Any() ? 1 : 0;
-            n += FilterGenres.Any() ? 1 : 0;
-            n += FilterStudios.Any() ? 1 : 0;
-            n += FilterTags.Any() ? 1 : 0;
-            n += FilterSources.Any() ? 1 : 0;
-            n += FilterPlatforms.Any() ? 1 : 0;
-            n += FilterCountries.Any() ? 1 : 0;
+            int n = (_sort != SortMode.RecentlyAdded ? 1 : 0) + (RangeActive ? 1 : 0);
+            n += new[] { FilterAiringStatus, FilterFormats, FilterSeasons, FilterGenres,
+                          FilterStudios, FilterTags, FilterSources, FilterPlatforms, FilterCountries }
+                 .Count(s => s.Any());
             if (FilterAdult.HasValue) n++;
             return n;
         }
     }
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
-
-        // Rebuild cached values only when panel opens
         RebuildCache();
-
         _sort = Current.Sort;
-        FilterAiringStatus = new(Current.AiringStatuses);
-        FilterFormats      = new(Current.Formats);
-        FilterSeasons      = new(Current.Seasons);
-        FilterGenres       = new(Current.Genres);
-        FilterStudios      = new(Current.Studios);
-        FilterTags         = new(Current.Tags);
-        FilterSources      = new(Current.Sources);
-        FilterPlatforms    = new(Current.Platforms);
-        FilterCountries    = new(Current.Countries);
-        FilterAdult        = Current.Adult;
-
-        _yearFrom  = Current.YearFrom  ?? _minYear;
-        _yearTo    = Current.YearTo    ?? _maxYear;
-        _scoreFrom = Current.ScoreFrom ?? 0;
-        _scoreTo   = Current.ScoreTo   ?? 10;
-        _epFrom    = Current.EpFrom    ?? 0;
-        _epTo      = Current.EpTo      ?? _maxEp;
-
-        // Compute initial result count synchronously (panel just opened)
+        FilterAiringStatus = new(Current.AiringStatuses); FilterFormats   = new(Current.Formats);
+        FilterSeasons      = new(Current.Seasons);        FilterGenres    = new(Current.Genres);
+        FilterStudios      = new(Current.Studios);        FilterTags      = new(Current.Tags);
+        FilterSources      = new(Current.Sources);        FilterPlatforms = new(Current.Platforms);
+        FilterCountries    = new(Current.Countries);      FilterAdult     = Current.Adult;
+        _yearFrom  = Current.YearFrom  ?? _minYear; _yearTo  = Current.YearTo  ?? _maxYear;
+        _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
+        _epFrom    = Current.EpFrom    ?? 0;        _epTo    = Current.EpTo    ?? _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
-    // ── Cache builder (called once on open, not on every render) ──────────
     private void RebuildCache()
     {
-        var entries = AllEntries.ToList(); // single enumeration
-
-        _availStatuses = entries.Select(e => e.Anime.Status)
-                                .Where(s => !string.IsNullOrWhiteSpace(s))
-                                .ToHashSet()!;
+        var en = AllEntries.ToList();
+        _availStatuses = en.Select(e => e.Anime.Status).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet()!;
         _hasDotStats   = _dotStatuses.Any(s => _availStatuses.Contains(s));
         _hasNoDotStats = _noDotStatuses.Any(s => _availStatuses.Contains(s));
-
-        _formats   = entries.Select(e => e.Anime.Format).Where(v => !string.IsNullOrWhiteSpace(v))
-                            .Distinct().OrderBy(x => x).ToList()!;
-        _seasons   = entries.Select(e => e.Anime.Season).Where(v => !string.IsNullOrWhiteSpace(v))
-                            .Distinct().OrderBy(SeasonOrder).ToList()!;
-        _genres    = entries.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
-                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        _studios   = entries.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
-                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        _tags      = entries.SelectMany(e => e.Anime.Tags?.Where(t => !t.IsMediaSpoiler).Select(t => t.Name)
-                            ?? Enumerable.Empty<string>())
-                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        _sources   = entries.Select(e => e.Anime.Source).Where(v => !string.IsNullOrWhiteSpace(v))
-                            .Distinct().OrderBy(x => x).ToList()!;
-        _platforms = entries.SelectMany(e => e.Anime.ExternalLinks?
-                            .Where(l => l.Type == "STREAMING").Select(l => l.Site)
-                            ?? Enumerable.Empty<string>())
-                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        _countries = entries.Select(e => e.Anime.CountryOfOrigin).Where(v => !string.IsNullOrWhiteSpace(v))
-                            .Distinct().OrderBy(x => x).ToList()!;
-
-        _years      = entries.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
-        _minYear    = _years.Any() ? _years.Min() : 1990;
-        _maxYear    = _years.Any() ? _years.Max() : DateTime.Now.Year;
-        _maxEp      = entries.Any() ? entries.Max(e => e.EpisodesWatched) : 0;
-        _scoredCount = entries.Count(e => e.Score > 0);
+        _formats   = en.Select(e => e.Anime.Format).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
+        _seasons   = en.Select(e => e.Anime.Season).Where(v => v != null).Distinct().OrderBy(SeasonOrder).ToList()!;
+        _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        _studios   = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        _tags      = en.SelectMany(e => e.Anime.Tags?.Where(t => !t.IsMediaSpoiler).Select(t => t.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        _sources   = en.Select(e => e.Anime.Source).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
+        _platforms = en.SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        _countries = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
+        _years     = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
+        _minYear   = _years.Any() ? _years.Min() : 1990; _maxYear = _years.Any() ? _years.Max() : DateTime.Now.Year;
+        _maxEp     = en.Any() ? en.Max(e => e.EpisodesWatched) : 0;
+        _scoredCount = en.Count(e => e.Score > 0);
     }
 
-    // ── Slider input handlers (update value + schedule debounced recount) ──
-    private void OnYearFromInput(int v)  { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
-    private void OnYearToInput(int v)    { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
-    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);  ScheduleResultCountUpdate(); }
+    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
     private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
-    private void OnEpFromInput(int v)    { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
-    private void OnEpToInput(int v)      { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
-    // ── Debounce: wait 120 ms after last slider move before recounting ─────
     private void ScheduleResultCountUpdate()
     {
         _debounceCtS?.Cancel();
@@ -603,7 +547,6 @@
         }, TaskContinuationOptions.NotOnCanceled);
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
     private void ToggleFilter(HashSet<string> set, string value)
     {
         if (!set.Remove(value)) set.Add(value);
@@ -612,113 +555,68 @@
 
     private SortFilterOptions BuildOptions() => new()
     {
-        Sort           = _sort,
-        AiringStatuses = new(FilterAiringStatus),
-        Formats        = new(FilterFormats),
-        Seasons        = new(FilterSeasons),
-        Genres         = new(FilterGenres),
-        Studios        = new(FilterStudios),
-        Tags           = new(FilterTags),
-        Sources        = new(FilterSources),
-        Platforms      = new(FilterPlatforms),
-        Countries      = new(FilterCountries),
-        Adult          = FilterAdult,
-        YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null,
-        YearTo    = _yearTo    != _maxYear ? _yearTo    : null,
-        ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null,
-        ScoreTo   = _scoreTo   != 10       ? _scoreTo   : null,
-        EpFrom    = _epFrom    != 0        ? _epFrom    : null,
-        EpTo      = _epTo      != _maxEp   ? _epTo      : null,
+        Sort = _sort, AiringStatuses = new(FilterAiringStatus), Formats = new(FilterFormats),
+        Seasons = new(FilterSeasons), Genres = new(FilterGenres), Studios = new(FilterStudios),
+        Tags = new(FilterTags), Sources = new(FilterSources), Platforms = new(FilterPlatforms),
+        Countries = new(FilterCountries), Adult = FilterAdult,
+        YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null, YearTo  = _yearTo  != _maxYear ? _yearTo  : null,
+        ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null, ScoreTo = _scoreTo != 10        ? _scoreTo : null,
+        EpFrom    = _epFrom    != 0        ? _epFrom    : null, EpTo    = _epTo    != _maxEp    ? _epTo    : null,
     };
 
     public static bool PassesFilters(UserListEntry e, SortFilterOptions opts)
     {
         if (opts.AiringStatuses.Any() && !opts.AiringStatuses.Contains(e.Anime.Status ?? "")) return false;
-        if (opts.Formats.Any()        && !opts.Formats.Contains(e.Anime.Format ?? ""))        return false;
-        if (opts.Seasons.Any()        && !opts.Seasons.Contains(e.Anime.Season ?? ""))        return false;
-        if (opts.Genres.Any()  && !(e.Anime.Genres?.Any(g => opts.Genres.Contains(g)) ?? false))          return false;
-        if (opts.Studios.Any() && !(e.Anime.Studios?.Any(s => opts.Studios.Contains(s.Name)) ?? false))   return false;
-        if (opts.Tags.Any()    && !(e.Anime.Tags?.Any(t => opts.Tags.Contains(t.Name)) ?? false))         return false;
-        if (opts.Sources.Any()   && !opts.Sources.Contains(e.Anime.Source ?? ""))             return false;
-        if (opts.Platforms.Any())
-        {
-            var ep = e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site).ToHashSet() ?? new();
-            if (!opts.Platforms.Any(p => ep.Contains(p))) return false;
-        }
+        if (opts.Formats.Any()  && !opts.Formats.Contains(e.Anime.Format ?? ""))  return false;
+        if (opts.Seasons.Any()  && !opts.Seasons.Contains(e.Anime.Season ?? ""))  return false;
+        if (opts.Genres.Any()   && !(e.Anime.Genres?.Any(g => opts.Genres.Contains(g)) ?? false))         return false;
+        if (opts.Studios.Any()  && !(e.Anime.Studios?.Any(s => opts.Studios.Contains(s.Name)) ?? false))  return false;
+        if (opts.Tags.Any()     && !(e.Anime.Tags?.Any(t => opts.Tags.Contains(t.Name)) ?? false))        return false;
+        if (opts.Sources.Any()  && !opts.Sources.Contains(e.Anime.Source ?? ""))  return false;
+        if (opts.Platforms.Any()) { var ep = e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site).ToHashSet() ?? new(); if (!opts.Platforms.Any(p => ep.Contains(p))) return false; }
         if (opts.Countries.Any() && !opts.Countries.Contains(e.Anime.CountryOfOrigin ?? "")) return false;
-        if (opts.Adult.HasValue  && e.Anime.IsAdult != opts.Adult.Value)                     return false;
+        if (opts.Adult.HasValue  && e.Anime.IsAdult != opts.Adult.Value) return false;
         if (opts.YearFrom.HasValue  && (!e.Anime.Year.HasValue || e.Anime.Year  < opts.YearFrom))  return false;
         if (opts.YearTo.HasValue    && (!e.Anime.Year.HasValue || e.Anime.Year  > opts.YearTo))    return false;
-        if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom)                                    return false;
-        if (opts.ScoreTo.HasValue   && e.Score > opts.ScoreTo)                                      return false;
-        if (opts.EpFrom.HasValue    && e.EpisodesWatched < opts.EpFrom)                             return false;
-        if (opts.EpTo.HasValue      && e.EpisodesWatched > opts.EpTo)                               return false;
+        if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom) return false;
+        if (opts.ScoreTo.HasValue   && e.Score > opts.ScoreTo)   return false;
+        if (opts.EpFrom.HasValue    && e.EpisodesWatched < opts.EpFrom) return false;
+        if (opts.EpTo.HasValue      && e.EpisodesWatched > opts.EpTo)   return false;
         return true;
     }
 
     private void Reset()
     {
         _sort = SortMode.RecentlyAdded;
-        FilterAiringStatus.Clear(); FilterFormats.Clear(); FilterSeasons.Clear();
-        FilterGenres.Clear(); FilterStudios.Clear(); FilterTags.Clear();
-        FilterSources.Clear(); FilterPlatforms.Clear(); FilterCountries.Clear();
-        FilterAdult = null; _showAllTags = false;
-
-        _yearFrom  = _minYear;
-        _yearTo    = _maxYear;
-        _scoreFrom = 0;
-        _scoreTo   = 10;
-        _epFrom    = 0;
-        _epTo      = _maxEp;
-
+        FilterAiringStatus.Clear(); FilterFormats.Clear();  FilterSeasons.Clear();
+        FilterGenres.Clear();       FilterStudios.Clear();  FilterTags.Clear();
+        FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
+        FilterAdult = null;
+        _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10; _epFrom = 0; _epTo = _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
-    private async Task Apply()
-    {
-        await OnApply.InvokeAsync(BuildOptions());
-        await OnClose.InvokeAsync();
-    }
+    private async Task Apply() { await OnApply.InvokeAsync(BuildOptions()); await OnClose.InvokeAsync(); }
 
     private async Task PickRandom()
     {
-        var opts    = BuildOptions();
+        var opts = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
         if (!matches.Any()) return;
-        var picked  = matches[new Random().Next(matches.Count)];
-        await OnApply.InvokeAsync(opts);
-        await OnClose.InvokeAsync();
-        await OnRandomPicked.InvokeAsync(picked.Anime);
+        var picked = matches[new Random().Next(matches.Count)];
+        await OnApply.InvokeAsync(opts); await OnClose.InvokeAsync(); await OnRandomPicked.InvokeAsync(picked.Anime);
     }
 
     private void Close() => OnClose.InvokeAsync();
 
-    // ── Render helpers ─────────────────────────────────────────────────────
     private RenderFragment SortChip(SortMode mode, string label) =>
-        @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on sfp-chip-sort-on" : "")"
-    @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
-    @label
-    </button>;
+        @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
+    @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
 
     private static string FormatAiringStatus(string s) => s switch
-    {
-        "RELEASING"       => "Airing",
-        "FINISHED"        => "Finished",
-        "NOT_YET_RELEASED"=> "Upcoming",
-        "CANCELLED"       => "Cancelled",
-        "HIATUS"          => "On Hiatus",
-        _                 => s
-    };
-
-    private static int SeasonOrder(string s) => s?.ToUpper() switch
-    { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
-
-    private static string SeasonEmoji(string s) => s?.ToUpper() switch
-    { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
-
-    private static string CountryEmoji(string c) => c?.ToUpper() switch
-    { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
-
-    private static string CountryLabel(string c) => c?.ToUpper() switch
-    { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
+    { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
+    private static int SeasonOrder(string s) => s?.ToUpper() switch { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
+    private static string SeasonEmoji(string s) => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
+    private static string CountryEmoji(string c) => c?.ToUpper() switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
+    private static string CountryLabel(string c) => c?.ToUpper() switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
 }
