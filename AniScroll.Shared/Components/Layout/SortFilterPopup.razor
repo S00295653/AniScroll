@@ -34,6 +34,21 @@
             <!-- Body -->
             <div class="sfp-body">
 
+                <!-- DEBUG PANEL - retire quand résolu -->
+                <div style="margin:8px 18px;padding:10px 12px;background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.3);border-radius:8px;font-size:11px;color:rgba(255,220,80,0.9);font-family:monospace;line-height:1.8;">
+                    <div><b>AllEntries:</b> @AllEntries.Count()</div>
+                    <div><b>Avec genres:</b> @AllEntries.Count(e => e.Anime.Genres != null && e.Anime.Genres.Any())</div>
+                    <div><b>Sans genres:</b> @AllEntries.Count(e => e.Anime.Genres == null || !e.Anime.Genres.Any())</div>
+                    <div><b>Max genres/entrée:</b> @(AllEntries.Any() ? AllEntries.Max(e => e.Anime.Genres?.Count ?? 0) : 0)</div>
+                    <div><b>_genres cache:</b> @_genres.Count</div>
+                    <div><b>_tags cache:</b> @_tags.Count</div>
+                    <div><b>3 premiers titres + genres:</b></div>
+                    @foreach (var dbgE in AllEntries.Take(3))
+                    {
+                        <div style="padding-left:8px;word-break:break-all">@dbgE.Anime.Title → [@string.Join(", ", dbgE.Anime.Genres ?? new())]</div>
+                    }
+                </div>
+
                 <!-- SORT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
