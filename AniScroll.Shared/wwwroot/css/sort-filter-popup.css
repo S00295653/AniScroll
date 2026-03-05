@@ -292,8 +292,8 @@
 
 /* Scrollable chip area inside dropdown */
 .sfp-dp-scroll {
-    max-height:160px; overflow-y:auto;
-    overscroll-behavior:contain;
+    max-height: 220px; overflow-y: auto;
+    overscroll-behavior: contain;
 }
 .sfp-dp-scroll::-webkit-scrollbar       { width:3px; }
 .sfp-dp-scroll::-webkit-scrollbar-track { background:transparent; }

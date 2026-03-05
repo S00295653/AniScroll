@@ -228,29 +228,21 @@
                                         <button class="sfp-search-clear" @onclick="() => _genreSearch = string.Empty">×</button>
                                     }
                                 </div>
-                                @if (FilterGenres.Any())
-                                {
-                                    <div class="sfp-dp-label">Selected</div>
-                                    <div class="sfp-chips sfp-chips-compact">
-                                        @foreach (var g in FilterGenres.OrderBy(x => x))
-                                        {
-                                            var gv = g;
-                                            <button class="sfp-chip sfp-chip-on" @onclick="() => ToggleFilter(FilterGenres, gv)">
-                                                @gv <span class="sfp-chip-x">×</span>
-                                            </button>
-                                        }
-                                    </div>
-                                    <div class="sfp-dp-sep"></div>
-                                }
-                                <div class="sfp-dp-label">All</div>
                                 <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
                                     @{
                                         var fg = (string.IsNullOrWhiteSpace(_genreSearch)
-                                            ? _genres.Where(g => !FilterGenres.Contains(g))
-                                            : _genres.Where(g => !FilterGenres.Contains(g) && g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                            ? _genres
+                                            : _genres.Where(g => g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
                                     }
                                     @if (!fg.Any()) { <span class="sfp-dp-empty">No results</span> }
-                                    @foreach (var g in fg) { var gv = g; <button class="sfp-chip" @onclick="() => ToggleFilter(FilterGenres, gv)">@gv</button> }
+                                    @foreach (var g in fg)
+                                    {
+                                        var gv = g; bool on = FilterGenres.Contains(gv);
+                                        <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterGenres, gv)">
+                                            @if (on) { <span>✓</span> }
+                                            @gv
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         }
@@ -309,29 +301,21 @@
                                         <button class="sfp-search-clear" @onclick="() => _tagSearch = string.Empty">×</button>
                                     }
                                 </div>
-                                @if (FilterTags.Any())
-                                {
-                                    <div class="sfp-dp-label">Selected</div>
-                                    <div class="sfp-chips sfp-chips-compact">
-                                        @foreach (var t in FilterTags.OrderBy(x => x))
-                                        {
-                                            var tv = t;
-                                            <button class="sfp-chip sfp-chip-on" @onclick="() => ToggleFilter(FilterTags, tv)">
-                                                @tv <span class="sfp-chip-x">×</span>
-                                            </button>
-                                        }
-                                    </div>
-                                    <div class="sfp-dp-sep"></div>
-                                }
-                                <div class="sfp-dp-label">All</div>
                                 <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
                                     @{
                                         var ft = (string.IsNullOrWhiteSpace(_tagSearch)
-                                            ? _tags.Where(t => !FilterTags.Contains(t))
-                                            : _tags.Where(t => !FilterTags.Contains(t) && t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                            ? _tags
+                                            : _tags.Where(t => t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
                                     }
                                     @if (!ft.Any()) { <span class="sfp-dp-empty">No results</span> }
-                                    @foreach (var t in ft) { var tv = t; <button class="sfp-chip" @onclick="() => ToggleFilter(FilterTags, tv)">@tv</button> }
+                                    @foreach (var t in ft)
+                                    {
+                                        var tv = t; bool on = FilterTags.Contains(tv);
+                                        <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterTags, tv)">
+                                            @if (on) { <span>✓</span> }
+                                            @tv
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         }
@@ -517,7 +501,7 @@
         _seasons   = en.Select(e => e.Anime.Season).Where(v => v != null).Distinct().OrderBy(SeasonOrder).ToList()!;
         _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _studios   = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
-        _tags      = en.SelectMany(e => e.Anime.Tags?.Where(t => !t.IsMediaSpoiler).Select(t => t.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        _tags      = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
         _sources   = en.Select(e => e.Anime.Source).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _platforms = en.SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _countries = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
