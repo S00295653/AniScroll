@@ -126,7 +126,7 @@
                         Import My List
                     </button>
 
-                    <button class="pp-disconnect-btn" @onclick="Disconnect">
+                    <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">
                         Disconnect
                     </button>
                 }
@@ -183,7 +183,7 @@
                         }
 
                         <button class="pp-done-close-btn" @onclick="Close">Done</button>
-                        <button class="pp-disconnect-btn" @onclick="Disconnect">Disconnect</button>
+                        <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">Disconnect</button>
                     </div>
                 }
                 else if (_state == PanelState.Error)
@@ -509,8 +509,9 @@
 
     // ── Misc ──────────────────────────────────────────────────────────────
 
-    private void Disconnect()
+    private async Task Disconnect()
     {
+        try { await JS.InvokeVoidAsync("aniListRemoveToken"); } catch { }
         AniListAuth.ClearToken();
         _state = PanelState.NotConnected;
         _importDone = 0;
