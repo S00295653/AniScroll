@@ -35,7 +35,6 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: flex;
-    align-items: flex-end;
     justify-content: center;
     animation: overlayFadeIn 0.18s ease;
 }
