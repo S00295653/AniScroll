@@ -126,7 +126,7 @@
                                   : $"{_yearFrom} – {_yearTo}")
                             </span>
                         </div>
-                        <!-- Timeline ticks: clickable year labels -->
+                        <!-- Timeline ticks: dots only, no labels -->
                         <div class="sfp-timeline">
                             @foreach (var yr in _timelineYears)
                             {
@@ -135,16 +135,9 @@
                                 bool isFrom  = y == _yearFrom;
                                 bool isTo    = y == _yearTo;
                                 <button class="sfp-tl-tick @(inRange ? "sfp-tl-in" : "") @(isFrom || isTo ? "sfp-tl-end" : "")"
+                                        title="@y"
                                         @onclick="() => OnTimelineYearClick(y)">
                                     <span class="sfp-tl-dot"></span>
-                                    @if (isFrom || isTo || yr % 5 == 0 || _timelineYears.Count <= 10)
-                                    {
-                                        <span class="sfp-tl-label">@y</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="sfp-tl-label sfp-tl-label-hidden">@y</span>
-                                    }
                                 </button>
                             }
                         </div>
@@ -275,18 +268,58 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- STUDIOS -->
+                <!-- STUDIOS DROPDOWN -->
                 @if (_studios.Any())
                 {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">Studio</div>
-                        <div class="sfp-chips">
-                            @foreach (var st in _studios)
-                            {
-                                var sv = st; bool on = FilterStudios.Contains(sv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterStudios, sv)">@sv</button>
-                            }
-                        </div>
+                    <div class="sfp-section sfp-section-nodrop">
+                        <button class="sfp-dropdown-trigger @(_studioDropdownOpen ? "open" : "")"
+                                @onclick="() => { _studioDropdownOpen = !_studioDropdownOpen; _genreDropdownOpen = false; _tagDropdownOpen = false; }">
+                            <span class="sfp-dt-left">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                                </svg>
+                                Studio
+                                @if (FilterStudios.Any())
+                                {
+                                    <span class="sfp-dt-badge">@FilterStudios.Count</span>
+                                }
+                            </span>
+                            <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+                        @if (_studioDropdownOpen)
+                        {
+                            <div class="sfp-dropdown-panel">
+                                <div class="sfp-search-row">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    </svg>
+                                    <input class="sfp-search-input" type="text" placeholder="Search studios…"
+                                           @bind="_studioSearch" @bind:event="oninput" />
+                                    @if (!string.IsNullOrEmpty(_studioSearch))
+                                    {
+                                        <button class="sfp-search-clear" @onclick="() => _studioSearch = string.Empty">×</button>
+                                    }
+                                </div>
+                                <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
+                                    @{
+                                        var fs = (string.IsNullOrWhiteSpace(_studioSearch)
+                                            ? _studios
+                                            : _studios.Where(s => s.Contains(_studioSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                    }
+                                    @if (!fs.Any()) { <span class="sfp-dp-empty">No results</span> }
+                                    @foreach (var st in fs)
+                                    {
+                                        var sv = st; bool on = FilterStudios.Contains(sv);
+                                        <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterStudios, sv)">
+                                            @if (on) { <span>✓</span> }
+                                            @sv
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
                     </div>
                     <div class="sfp-divider"></div>
                 }
@@ -315,6 +348,13 @@
                         @if (_tagDropdownOpen)
                         {
                             <div class="sfp-dropdown-panel">
+                                <!-- My List / All toggle -->
+                                <div class="sfp-toggle-row">
+                                    <button class="sfp-toggle-btn @(!_tagShowAll ? "active" : "")"
+                                            @onclick="() => _tagShowAll = false">My List</button>
+                                    <button class="sfp-toggle-btn @(_tagShowAll ? "active" : "")"
+                                            @onclick="() => _tagShowAll = true">All tags</button>
+                                </div>
                                 <div class="sfp-search-row">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -328,9 +368,10 @@
                                 </div>
                                 <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
                                     @{
+                                        var tagPool = _tagShowAll ? _allTags : _tags;
                                         var ft = (string.IsNullOrWhiteSpace(_tagSearch)
-                                            ? _tags
-                                            : _tags.Where(t => t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                            ? tagPool
+                                            : tagPool.Where(t => t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
                                     }
                                     @if (!ft.Any()) { <span class="sfp-dp-empty">No results</span> }
                                     @foreach (var t in ft)
@@ -461,17 +502,20 @@
     private HashSet<string> FilterCountries    = new();
     private bool? FilterAdult = null;
 
-    private bool   _genreDropdownOpen = false;
-    private bool   _tagDropdownOpen   = false;
-    private string _genreSearch       = string.Empty;
-    private string _tagSearch         = string.Empty;
+    private bool   _genreDropdownOpen  = false;
+    private bool   _tagDropdownOpen    = false;
+    private bool   _studioDropdownOpen = false;
+    private string _genreSearch        = string.Empty;
+    private string _tagSearch          = string.Empty;
+    private string _studioSearch       = string.Empty;
+    private bool   _tagShowAll         = false;
 
     private static readonly string[] _dotStatuses   = { "RELEASING", "NOT_YET_RELEASED" };
     private static readonly string[] _noDotStatuses = { "FINISHED", "CANCELLED", "HIATUS" };
     private HashSet<string> _availStatuses = new();
     private bool _hasDotStats, _hasNoDotStats;
     private List<string> _formats = new(), _seasons = new(), _genres = new();
-    private List<string> _studios = new(), _tags = new(), _sources = new();
+    private List<string> _studios = new(), _tags = new(), _allTags = new(), _sources = new();
     private List<string> _platforms = new(), _countries = new();
     private List<int> _years = new();
     private List<int> _timelineYears = new(); // years to show as ticks (may be decimated)
@@ -528,6 +572,8 @@
         _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _studios   = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _tags      = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
+        // _allTags: union of list tags + any selected tags not in list (keeps selections valid)
+        _allTags   = _tags.Union(FilterTags).Distinct().OrderBy(x => x).ToList();
         _sources   = en.Select(e => e.Anime.Source).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _platforms = en.SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _countries = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
@@ -624,6 +670,7 @@
         _sort = SortMode.RecentlyAdded;
         FilterAiringStatus.Clear(); FilterFormats.Clear();  FilterSeasons.Clear();
         FilterGenres.Clear();       FilterStudios.Clear();  FilterTags.Clear();
+        _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
         FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
         FilterAdult = null;
         _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10; _epFrom = 0; _epTo = _maxEp;
