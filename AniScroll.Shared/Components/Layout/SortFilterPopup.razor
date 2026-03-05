@@ -33,6 +33,7 @@
 
             <!-- Body -->
             <div class="sfp-body">
+
                 <!-- SORT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
@@ -114,7 +115,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- YEAR TIMELINE -->
+                <!-- YEAR RANGE — dual slider only, no timeline -->
                 @if (_years.Count > 1)
                 {
                     <div class="sfp-section">
@@ -126,30 +127,23 @@
                                   : $"{_yearFrom} – {_yearTo}")
                             </span>
                         </div>
-                        <!-- Timeline ticks: dots only, no labels -->
-                        <div class="sfp-timeline">
-                            @foreach (var yr in _timelineYears)
-                            {
-                                var y = yr;
-                                bool inRange = y >= _yearFrom && y <= _yearTo;
-                                bool isFrom  = y == _yearFrom;
-                                bool isTo    = y == _yearTo;
-                                <button class="sfp-tl-tick @(inRange ? "sfp-tl-in" : "") @(isFrom || isTo ? "sfp-tl-end" : "")"
-                                        title="@y"
-                                        @onclick="() => OnTimelineYearClick(y)">
-                                    <span class="sfp-tl-dot"></span>
-                                </button>
-                            }
-                        </div>
-                        <!-- Dual slider underneath for drag precision -->
-                        <div class="sfp-slider-wrap" style="margin-top:6px">
-                            <div class="sfp-slider-track">
-                                <div class="sfp-slider-fill" style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;"></div>
+                        <div class="sfp-dual-slider sfp-dual-slider-year">
+                            <span class="sfp-range-label">@_minYear</span>
+                            <div class="sfp-slider-wrap">
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@YearFillStyle"></div>
+                                <input type="range"
+                                       class="sfp-range sfp-range-lo"
+                                       style="z-index:@(_yearFrom >= _yearTo ? 5 : 3)"
+                                       min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
+                                       @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
+                                <input type="range"
+                                       class="sfp-range sfp-range-hi"
+                                       style="z-index:@(_yearFrom >= _yearTo ? 3 : 4)"
+                                       min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
+                                       @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                             </div>
-                            <input type="range" class="sfp-range sfp-range-lo" min="@_minYear" max="@_maxYear" value="@_yearFrom"
-                                   @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
-                            <input type="range" class="sfp-range sfp-range-hi" min="@_minYear" max="@_maxYear" value="@_yearTo"
-                                   @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
+                            <span class="sfp-range-label">@_maxYear</span>
                         </div>
                         @if (_yearFrom != _minYear || _yearTo != _maxYear)
                         {
@@ -166,19 +160,26 @@
                         <div class="sfp-section-label">My Score</div>
                         <div class="sfp-dual-slider">
                             <input type="number" class="sfp-num-input"
-                                   min="0" max="10" step="0.5" value="@_scoreFrom"
+                                   min="0" max="10" step="0.5" value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @onchange="e => { _scoreFrom = Math.Min(Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0), _scoreTo); ScheduleResultCountUpdate(); }" />
                             <div class="sfp-slider-wrap">
-                                <div class="sfp-slider-track">
-                                    <div class="sfp-slider-fill" style="left:@(_scoreFrom * 10)%;right:@((10 - _scoreTo) * 10)%;"></div>
-                                </div>
-                                <input type="range" class="sfp-range sfp-range-lo" min="0" max="10" step="0.5" value="@_scoreFrom"
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
+                                <input type="range"
+                                       class="sfp-range sfp-range-lo"
+                                       style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
+                                       min="0" max="10" step="0.5"
+                                       value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                        @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
-                                <input type="range" class="sfp-range sfp-range-hi" min="0" max="10" step="0.5" value="@_scoreTo"
+                                <input type="range"
+                                       class="sfp-range sfp-range-hi"
+                                       style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
+                                       min="0" max="10" step="0.5"
+                                       value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                        @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             </div>
                             <input type="number" class="sfp-num-input"
-                                   min="0" max="10" step="0.5" value="@_scoreTo"
+                                   min="0" max="10" step="0.5" value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @onchange="e => { _scoreTo = Math.Max(Math.Min(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 10), _scoreFrom); ScheduleResultCountUpdate(); }" />
                         </div>
                     </div>
@@ -195,12 +196,17 @@
                                    min="0" max="@_maxEp" value="@_epFrom"
                                    @onchange="e => { _epFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), 0), _epTo); ScheduleResultCountUpdate(); }" />
                             <div class="sfp-slider-wrap">
-                                <div class="sfp-slider-track">
-                                    <div class="sfp-slider-fill" style="left:@(_epFrom * 100.0 / _maxEp)%;right:@((_maxEp - _epTo) * 100.0 / _maxEp)%;"></div>
-                                </div>
-                                <input type="range" class="sfp-range sfp-range-lo" min="0" max="@_maxEp" value="@_epFrom"
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@EpFillStyle"></div>
+                                <input type="range"
+                                       class="sfp-range sfp-range-lo"
+                                       style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
+                                       min="0" max="@_maxEp" step="1" value="@_epFrom"
                                        @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
-                                <input type="range" class="sfp-range sfp-range-hi" min="0" max="@_maxEp" value="@_epTo"
+                                <input type="range"
+                                       class="sfp-range sfp-range-hi"
+                                       style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
+                                       min="0" max="@_maxEp" step="1" value="@_epTo"
                                        @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                             </div>
                             <input type="number" class="sfp-num-input"
@@ -216,7 +222,7 @@
                 {
                     <div class="sfp-section sfp-section-nodrop">
                         <button class="sfp-dropdown-trigger @(_genreDropdownOpen ? "open" : "")"
-                                @onclick="() => { _genreDropdownOpen = !_genreDropdownOpen; _tagDropdownOpen = false; }">
+                                @onclick="() => { _genreDropdownOpen = !_genreDropdownOpen; _tagDropdownOpen = false; _studioDropdownOpen = false; }">
                             <span class="sfp-dt-left">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
@@ -329,7 +335,7 @@
                 {
                     <div class="sfp-section sfp-section-nodrop">
                         <button class="sfp-dropdown-trigger @(_tagDropdownOpen ? "open" : "")"
-                                @onclick="() => { _tagDropdownOpen = !_tagDropdownOpen; _genreDropdownOpen = false; }">
+                                @onclick="() => { _tagDropdownOpen = !_tagDropdownOpen; _genreDropdownOpen = false; _studioDropdownOpen = false; }">
                             <span class="sfp-dt-left">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
@@ -405,7 +411,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- STREAMING -->
+                <!-- STREAMING — with platform icons -->
                 @if (_platforms.Any())
                 {
                     <div class="sfp-section">
@@ -413,8 +419,13 @@
                         <div class="sfp-chips">
                             @foreach (var p in _platforms)
                             {
-                                var pv = p; bool on = FilterPlatforms.Contains(pv);
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">@pv</button>
+                                var pv = p;
+                                bool on = FilterPlatforms.Contains(pv);
+                                var (pbg, pfg, pabbr) = GetPlatformInfo(pv);
+                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">
+                                    <span class="sfp-platform-badge" style="background:@pbg;color:@pfg">@pabbr</span>
+                                    @pv
+                                </button>
                             }
                         </div>
                     </div>
@@ -487,9 +498,9 @@
     }
 
     private SortMode _sort = SortMode.RecentlyAdded;
-    private int _yearFrom, _yearTo;
+    private int    _yearFrom, _yearTo;
     private double _scoreFrom, _scoreTo;
-    private int _epFrom, _epTo;
+    private int    _epFrom, _epTo;
 
     private HashSet<string> FilterAiringStatus = new();
     private HashSet<string> FilterFormats      = new();
@@ -517,12 +528,48 @@
     private List<string> _formats = new(), _seasons = new(), _genres = new();
     private List<string> _studios = new(), _tags = new(), _allTags = new(), _sources = new();
     private List<string> _platforms = new(), _countries = new();
-    private List<int> _years = new();
-    private List<int> _timelineYears = new(); // years to show as ticks (may be decimated)
+    private List<int>    _years = new();
     private int    _minYear = 1990, _maxYear = 2100, _maxEp = 0, _scoredCount = 0;
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
+    // ── Fill-style helpers — always InvariantCulture so CSS never breaks ──────
+    private string YearFillStyle
+    {
+        get
+        {
+            double range = Math.Max(1.0, _maxYear - _minYear);
+            double l = Math.Max(0, Math.Min(100, (_yearFrom - _minYear) * 100.0 / range));
+            double r = Math.Max(0, Math.Min(100, (_maxYear - _yearTo) * 100.0 / range));
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
+    private string ScoreFillStyle
+    {
+        get
+        {
+            double l = Math.Max(0, Math.Min(100, _scoreFrom * 10.0));
+            double r = Math.Max(0, Math.Min(100, (10.0 - _scoreTo) * 10.0));
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
+    private string EpFillStyle
+    {
+        get
+        {
+            if (_maxEp <= 0) return "left:0%;right:0%";
+            double l = Math.Max(0, Math.Min(100, _epFrom * 100.0 / _maxEp));
+            double r = Math.Max(0, Math.Min(100, (_maxEp - _epTo) * 100.0 / _maxEp));
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
+    // ── Active-state helpers ──────────────────────────────────────────────────
     private bool HasActiveOptions =>
         _sort != SortMode.RecentlyAdded || RangeActive ||
         FilterAiringStatus.Any() || FilterFormats.Any() || FilterSeasons.Any() ||
@@ -530,7 +577,9 @@
         FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() || FilterAdult.HasValue;
 
     private bool RangeActive =>
-        _yearFrom != _minYear || _yearTo != _maxYear || _scoreFrom != 0 || _scoreTo != 10 || _epFrom != 0 || _epTo != _maxEp;
+        _yearFrom != _minYear || _yearTo != _maxYear ||
+        _scoreFrom != 0 || _scoreTo != 10 ||
+        _epFrom != 0 || _epTo != _maxEp;
 
     private int TotalActiveCount
     {
@@ -538,13 +587,14 @@
         {
             int n = (_sort != SortMode.RecentlyAdded ? 1 : 0) + (RangeActive ? 1 : 0);
             n += new[] { FilterAiringStatus, FilterFormats, FilterSeasons, FilterGenres,
-                          FilterStudios, FilterTags, FilterSources, FilterPlatforms, FilterCountries }
+                         FilterStudios, FilterTags, FilterSources, FilterPlatforms, FilterCountries }
                  .Count(s => s.Any());
             if (FilterAdult.HasValue) n++;
             return n;
         }
     }
 
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
@@ -572,54 +622,32 @@
         _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _studios   = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _tags      = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        // _allTags: union of list tags + any selected tags not in list (keeps selections valid)
         _allTags   = _tags.Union(FilterTags).Distinct().OrderBy(x => x).ToList();
         _sources   = en.Select(e => e.Anime.Source).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _platforms = en.SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _countries = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _years     = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
-        _minYear   = _years.Any() ? _years.Min() : 1990; _maxYear = _years.Any() ? _years.Max() : DateTime.Now.Year;
-        // Build timeline ticks: all years between min and max (not just years that exist)
-        _timelineYears = Enumerable.Range(_minYear, _maxYear - _minYear + 1).ToList();
+        _minYear   = _years.Any() ? _years.Min() : 1990;
+        _maxYear   = _years.Any() ? _years.Max() : DateTime.Now.Year;
         _maxEp     = en.Any() ? en.Max(e => e.EpisodesWatched) : 0;
         _scoredCount = en.Count(e => e.Score > 0);
     }
 
+    // ── Slider input handlers ─────────────────────────────────────────────────
     private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
     private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
     private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
     private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
     private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
-
-    // Timeline year click: if clicking outside range set new edge; if clicking inside toggle from/to
-    private void OnTimelineYearClick(int year)
-    {
-        if (year < _yearFrom)
-        {
-            _yearFrom = year;
-        }
-        else if (year > _yearTo)
-        {
-            _yearTo = year;
-        }
-        else
-        {
-            // Inside range: snap to nearest edge
-            int distFrom = year - _yearFrom;
-            int distTo   = _yearTo - year;
-            if (distFrom <= distTo) _yearFrom = year;
-            else                    _yearTo   = year;
-        }
-        ScheduleResultCountUpdate();
-    }
     private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
+    // ── Debounced result count ────────────────────────────────────────────────
     private void ScheduleResultCountUpdate()
     {
         _debounceCtS?.Cancel();
         _debounceCtS = new CancellationTokenSource();
         var token = _debounceCtS.Token;
-        _ = Task.Delay(120, token).ContinueWith(_ =>
+        _ = Task.Delay(100, token).ContinueWith(_ =>
         {
             if (token.IsCancellationRequested) return;
             _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
@@ -633,6 +661,7 @@
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
+    // ── Build / filter / sort ─────────────────────────────────────────────────
     private SortFilterOptions BuildOptions() => new()
     {
         Sort = _sort, AiringStatuses = new(FilterAiringStatus), Formats = new(FilterFormats),
@@ -670,9 +699,9 @@
         _sort = SortMode.RecentlyAdded;
         FilterAiringStatus.Clear(); FilterFormats.Clear();  FilterSeasons.Clear();
         FilterGenres.Clear();       FilterStudios.Clear();  FilterTags.Clear();
-        _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
         FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
         FilterAdult = null;
+        _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
         _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10; _epFrom = 0; _epTo = _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
@@ -685,11 +714,9 @@
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
         if (!matches.Any())
         {
-            // No filter match — fall back to entire list
             matches = AllEntries.ToList();
             if (!matches.Any()) return;
         }
-        // Apply current sort so the random pick is from the sorted visible set
         matches = ApplySort(matches, opts.Sort);
         var picked = matches[new Random().Next(matches.Count)];
         await OnApply.InvokeAsync(opts);
@@ -709,7 +736,7 @@
         SortMode.YearDesc      => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
         SortMode.YearAsc       => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
         SortMode.OldestFirst   => list.OrderBy(e => e.AddedAt).ToList(),
-        _                      => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyAdded
+        _                      => list.OrderByDescending(e => e.UpdatedAt).ToList(),
     };
 
     private void Close() => OnClose.InvokeAsync();
@@ -718,10 +745,39 @@
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
     @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
 
+    // ── Platform badge helper ─────────────────────────────────────────────────
+    private static (string bg, string fg, string abbr) GetPlatformInfo(string p)
+    {
+        var lower = p.ToLowerInvariant();
+        if (lower.Contains("crunchyroll"))                       return ("#F47521", "#fff", "CR");
+        if (lower.Contains("netflix"))                           return ("#E50914", "#fff", "N");
+        if (lower.Contains("amazon") || lower.Contains("prime")) return ("#00A8E0", "#0a2240", "P");
+        if (lower.Contains("hidive"))                            return ("#00BABC", "#fff", "Hi");
+        if (lower.Contains("disney"))                            return ("#0072DB", "#fff", "D+");
+        if (lower.Contains("funimation"))                        return ("#5B0BB5", "#fff", "Fu");
+        if (lower.Contains("hulu"))                              return ("#1CE783", "#000", "Hu");
+        if (lower.Contains("vrv"))                               return ("#FAB818", "#000", "V");
+        if (lower.Contains("youtube"))                           return ("#FF0000", "#fff", "YT");
+        if (lower.Contains("apple"))                             return ("#1C1C1E", "#fff", "A");
+        if (lower.Contains("wakanim"))                           return ("#1B90D7", "#fff", "Wk");
+        if (lower.Contains("adn") || lower.Contains("animation digital")) return ("#009EE0", "#fff", "ADN");
+        if (lower.Contains("bilibili"))                          return ("#00A1D6", "#fff", "Bi");
+        if (lower.Contains("retrocrush"))                        return ("#F5C518", "#000", "RC");
+        if (lower.Contains("tubi"))                              return ("#FA4816", "#fff", "Tu");
+        if (lower.Contains("peacock"))                           return ("#0452FF", "#fff", "Pc");
+        if (lower.Contains("max") || lower.Contains("hbo"))      return ("#002BE7", "#fff", "Max");
+        if (lower.Contains("paramount"))                         return ("#0064FF", "#fff", "P+");
+        if (lower.Contains("aniplus"))                           return ("#E4011C", "#fff", "AP");
+        // fallback: first 2 chars
+        string fb = p.Length > 0 ? (p.Length > 1 ? p[..2].ToUpper() : p[..1].ToUpper()) : "?";
+        return ("#444", "#fff", fb);
+    }
+
+    // ── Static label helpers ──────────────────────────────────────────────────
     private static string FormatAiringStatus(string s) => s switch
     { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
-    private static int SeasonOrder(string s) => s?.ToUpper() switch { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
-    private static string SeasonEmoji(string s) => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
+    private static int    SeasonOrder(string s)  => s?.ToUpper() switch { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
+    private static string SeasonEmoji(string s)  => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
     private static string CountryEmoji(string c) => c?.ToUpper() switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
     private static string CountryLabel(string c) => c?.ToUpper() switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
 }

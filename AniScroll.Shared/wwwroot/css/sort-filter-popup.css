@@ -1,10 +1,8 @@
 ﻿/* ============================================================
    SORT & FILTER POPUP
    Accent unique: #E94560 (rouge app)
-   Dark: #0e0e16 / panel #14141f
    ============================================================ */
 
-/* ── Variables ───────────────────────────────────────────────── */
 :root {
     --sfp-accent:        #E94560;
     --sfp-accent-dim:    rgba(233, 69, 96, 0.18);
@@ -16,6 +14,7 @@
     --sfp-text:          rgba(255,255,255,0.85);
     --sfp-muted:         rgba(255,255,255,0.35);
     --sfp-label:         rgba(255,255,255,0.38);
+    --sfp-thumb-size:    22px;
 }
 
 /* ── Overlay ─────────────────────────────────────────────────── */
@@ -28,7 +27,7 @@
     display: flex; align-items: flex-end; justify-content: center;
     animation: sfp-fade-in 0.18s ease;
 }
-@keyframes sfp-fade-in { from { opacity:0 } to { opacity:1 } }
+@keyframes sfp-fade-in { from { opacity: 0 } to { opacity: 1 } }
 
 /* ── Panel ───────────────────────────────────────────────────── */
 .sfp-panel {
@@ -45,83 +44,81 @@
 }
 
 /* ── Handle ──────────────────────────────────────────────────── */
-.sfp-handle-zone { padding: 10px 0 6px; display:flex; justify-content:center; flex-shrink:0; }
-.sfp-handle-bar  { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.18); }
+.sfp-handle-zone { padding: 10px 0 6px; display: flex; justify-content: center; flex-shrink: 0; }
+.sfp-handle-bar  { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.18); }
 
 /* ── Header ──────────────────────────────────────────────────── */
 .sfp-header {
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 0 18px 12px; flex-shrink:0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 12px; flex-shrink: 0;
     border-bottom: 1px solid var(--sfp-border);
 }
-.sfp-header-left  { display:flex; align-items:center; gap:8px; }
-.sfp-header-actions { display:flex; align-items:center; gap:10px; }
+.sfp-header-left    { display: flex; align-items: center; gap: 8px; }
+.sfp-header-actions { display: flex; align-items: center; gap: 10px; }
 
-.sfp-title { font-size:16px; font-weight:700; color:#fff; letter-spacing:0.01em; }
-
+.sfp-title        { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0.01em; }
 .sfp-active-badge {
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:20px; height:20px; padding:0 6px; border-radius:10px;
-    background: var(--sfp-accent); color:#fff; font-size:11px; font-weight:700;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
+    background: var(--sfp-accent); color: #fff; font-size: 11px; font-weight: 700;
 }
 
 .sfp-reset-btn {
-    background:transparent; border:1px solid var(--sfp-accent-border);
-    color: var(--sfp-accent); font-size:12px; font-weight:600;
-    padding:4px 11px; border-radius:20px; cursor:pointer;
+    background: transparent; border: 1px solid var(--sfp-accent-border);
+    color: var(--sfp-accent); font-size: 12px; font-weight: 600;
+    padding: 4px 11px; border-radius: 20px; cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
 }
 .sfp-reset-btn:hover { background: var(--sfp-accent-dim); border-color: var(--sfp-accent); }
 
 .sfp-close-btn {
-    display:flex; align-items:center; justify-content:center;
-    width:28px; height:28px; border-radius:50%;
-    background: var(--sfp-surface); border:none;
-    color:var(--sfp-muted); cursor:pointer;
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--sfp-surface); border: none;
+    color: var(--sfp-muted); cursor: pointer;
     transition: background 0.15s, color 0.15s;
 }
-.sfp-close-btn:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.sfp-close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
 /* ── Body ────────────────────────────────────────────────────── */
 .sfp-body {
-    flex:1; overflow-y:auto; overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch; padding:6px 0 4px;
+    flex: 1; overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch; padding: 6px 0 4px;
 }
-.sfp-body::-webkit-scrollbar       { width:3px; }
-.sfp-body::-webkit-scrollbar-track { background:transparent; }
-.sfp-body::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+.sfp-body::-webkit-scrollbar       { width: 3px; }
+.sfp-body::-webkit-scrollbar-track { background: transparent; }
+.sfp-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 /* ── Sections ────────────────────────────────────────────────── */
-.sfp-section { padding:14px 18px 12px; }
+.sfp-section        { padding: 14px 18px 12px; }
 .sfp-section-nodrop { padding-bottom: 0; }
-.sfp-divider { height:1px; background:rgba(255,255,255,0.055); margin:0 18px; }
+.sfp-divider        { height: 1px; background: rgba(255,255,255,0.055); margin: 0 18px; }
 
 .sfp-section-label {
-    font-size:11px; font-weight:700; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--sfp-label); margin-bottom:10px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--sfp-label); margin-bottom: 10px;
 }
 
 /* ── Chips ───────────────────────────────────────────────────── */
-.sfp-chips { display:flex; flex-wrap:wrap; gap:7px; }
-.sfp-chips-compact { gap:5px; }
+.sfp-chips         { display: flex; flex-wrap: wrap; gap: 7px; }
+.sfp-chips-compact { gap: 5px; }
 
 .sfp-chip {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:5px 12px; border-radius:20px;
-    font-size:12.5px; font-weight:600;
-    color:rgba(255,255,255,0.6);
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 12.5px; font-weight: 600;
+    color: rgba(255,255,255,0.6);
     background: var(--sfp-surface);
-    border:1px solid var(--sfp-border);
-    cursor:pointer; white-space:nowrap; line-height:1;
-    -webkit-tap-highlight-color:transparent;
+    border: 1px solid var(--sfp-border);
+    cursor: pointer; white-space: nowrap; line-height: 1;
+    -webkit-tap-highlight-color: transparent;
     transition: background 0.13s, border-color 0.13s, color 0.13s, box-shadow 0.13s;
 }
 .sfp-chip:hover {
-    background:rgba(255,255,255,0.09);
-    color:rgba(255,255,255,0.9);
-    border-color:rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(255,255,255,0.16);
 }
-/* Active — rouge unique pour tout */
 .sfp-chip.sfp-chip-on {
     background: var(--sfp-accent-dim);
     border-color: var(--sfp-accent-border);
@@ -129,29 +126,49 @@
     box-shadow: 0 0 8px var(--sfp-accent-glow);
 }
 .sfp-chip.sfp-chip-on:hover { background: rgba(233,69,96,0.24); }
-.sfp-chip-x { opacity:0.6; font-size:13px; line-height:1; }
 
 /* ── Status dots ─────────────────────────────────────────────── */
-.sfp-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; display:inline-block; }
+.sfp-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
 .sfp-dot-releasing {
-    background:rgb(0,230,0); box-shadow:0 0 8px rgba(0,255,0,1);
-    animation:pulse-green 2s ease-in-out infinite;
+    background: rgb(0,230,0); box-shadow: 0 0 8px rgba(0,255,0,1);
+    animation: pulse-green 2s ease-in-out infinite;
 }
 .sfp-dot-upcoming {
-    background:rgb(230,0,0); box-shadow:0 0 8px rgba(255,0,0,1);
-    animation:pulse-red 2s ease-in-out infinite;
+    background: rgb(230,0,0); box-shadow: 0 0 8px rgba(255,0,0,1);
+    animation: pulse-red 2s ease-in-out infinite;
 }
-@keyframes pulse-green { 0%,100% { box-shadow:0 0 4px rgba(0,255,0,0.5) } 50% { box-shadow:0 0 8px rgba(0,255,0,1) } }
-@keyframes pulse-red   { 0%,100% { box-shadow:0 0 4px rgba(255,0,0,0.5) } 50% { box-shadow:0 0 8px rgba(255,0,0,1) } }
+@keyframes pulse-green { 0%,100% { box-shadow: 0 0 4px rgba(0,255,0,0.5) } 50% { box-shadow: 0 0 8px rgba(0,255,0,1) } }
+@keyframes pulse-red   { 0%,100% { box-shadow: 0 0 4px rgba(255,0,0,0.5) } 50% { box-shadow: 0 0 8px rgba(255,0,0,1) } }
 
-/* ── Dual-slider avec inputs numériques ─────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   DUAL-RANGE SLIDER  —  fixed implementation
+   Key rules:
+   • Both <input> have pointer-events: none so the track is
+     transparent to clicks (only the thumb is interactive).
+   • Thumbs have pointer-events: all to receive events.
+   • The fill <div> sits on top of the track but below the thumbs.
+   • InvariantCulture is used in C# so "left:33.33%" is always
+     correct and never becomes "left:33,33%" in fr-FR locale.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Outer row for score/ep (with num inputs) */
 .sfp-dual-slider {
-    display:flex; align-items:center; gap:10px;
+    display: flex; align-items: center; gap: 10px;
 }
 
-/* Input numérique sur les côtés */
+/* Outer row for year (min/max labels) */
+.sfp-dual-slider-year {
+    gap: 8px;
+}
+.sfp-range-label {
+    font-size: 11px; font-weight: 700;
+    color: var(--sfp-muted); flex-shrink: 0; min-width: 32px;
+    text-align: center;
+}
+
+/* Numeric inputs flanking the score/ep sliders */
 .sfp-num-input {
-    width: 58px; flex-shrink:0;
+    width: 58px; flex-shrink: 0;
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--sfp-border);
     border-radius: 8px;
@@ -164,219 +181,115 @@
     transition: border-color 0.15s, background 0.15s;
 }
 .sfp-num-input::-webkit-inner-spin-button,
-.sfp-num-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.sfp-num-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .sfp-num-input:focus {
     border-color: var(--sfp-accent-border);
     background: var(--sfp-accent-dim);
     color: #fff;
 }
 
-/* Zone du slider */
+/* ── Slider wrapper ──────────────────────────────────────────── */
 .sfp-slider-wrap {
-    flex:1; position:relative; height:24px; display:flex; align-items:center;
-}
-.sfp-slider-track {
-    position:absolute; left:0; right:0; height:4px;
-    border-radius:2px; background:rgba(255,255,255,0.1);
-    pointer-events:none;
-}
-.sfp-slider-fill {
-    position: absolute; top: 0; height: 4px;
-    background: var(--sfp-accent); border-radius: 2px; pointer-events: none;
-    transition: left 0.06s ease, right 0.06s ease;
-    box-shadow: 0 0 6px rgba(233,69,96,0.4);
+    flex: 1;
+    position: relative;
+    height: calc(var(--sfp-thumb-size) + 8px); /* room for the thumb */
+    display: flex;
+    align-items: center;
+    /* no top/bottom padding — thumbs are centered via align-items */
 }
 
-.sfp-range {
-    position:absolute; width:100%; height:4px;
-    -webkit-appearance:none; appearance:none;
-    background:transparent; pointer-events:none; outline:none;
+/* ── Track ───────────────────────────────────────────────────── */
+.sfp-slider-track {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%; transform: translateY(-50%);
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.12);
+    pointer-events: none;
 }
+
+/* ── Colored fill between the two thumbs ────────────────────── */
+.sfp-slider-fill {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    height: 5px;
+    background: var(--sfp-accent);
+    border-radius: 3px;
+    pointer-events: none;
+    /* NO transition — avoids the "disappear" glitch during fast drag */
+    box-shadow: 0 0 6px rgba(233,69,96,0.35);
+}
+
+/* ── Range inputs ────────────────────────────────────────────── */
+.sfp-range {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    height: var(--sfp-thumb-size);
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    outline: none;
+    margin: 0;
+    padding: 0;
+    /* The input itself is invisible to pointer events;
+       only the thumb pseudo-element responds to interaction. */
+    pointer-events: none;
+}
+
+/* ── Webkit thumb (Chrome, Safari, Edge) ────────────────────── */
 .sfp-range::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none;
-    width: 20px; height: 20px; border-radius: 50%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--sfp-thumb-size);
+    height: var(--sfp-thumb-size);
+    border-radius: 50%;
     background: #fff;
     border: 2.5px solid var(--sfp-accent);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 0 var(--sfp-accent-glow);
-    cursor: pointer; pointer-events: all;
-    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1),
-                box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    cursor: pointer;
+    pointer-events: all; /* thumb is interactive even though the input is not */
+    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
 }
 .sfp-range::-webkit-slider-thumb:hover {
-    transform: scale(1.25);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 6px var(--sfp-accent-glow);
+    transform: scale(1.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 0 7px var(--sfp-accent-glow);
 }
 .sfp-range:active::-webkit-slider-thumb,
 .sfp-range::-webkit-slider-thumb:active {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 10px rgba(233,69,96,0.15);
+    transform: scale(1.15);
     background: #ffe0e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 10px rgba(233,69,96,0.15);
 }
+
+/* ── Firefox thumb ───────────────────────────────────────────── */
 .sfp-range::-moz-range-thumb {
-    width: 20px; height: 20px; border-radius: 50%;
-    background: #fff; border: 2.5px solid var(--sfp-accent);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer; pointer-events: all;
+    width: var(--sfp-thumb-size);
+    height: var(--sfp-thumb-size);
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--sfp-accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    cursor: pointer;
+    pointer-events: all;
     transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
 }
-.sfp-range::-moz-range-thumb:hover { transform: scale(1.25); }
-.sfp-range-lo { z-index:3; }
-.sfp-range-hi { z-index:4; }
+.sfp-range::-moz-range-thumb:hover  { transform: scale(1.3); }
+.sfp-range:active::-moz-range-thumb { transform: scale(1.15); background: #ffe0e6; }
+/* Remove Firefox default track fill */
+.sfp-range::-moz-range-track        { background: transparent; height: 5px; }
+.sfp-range::-moz-range-progress     { background: transparent; }
 
-/* ── Dropdown trigger ────────────────────────────────────────── */
-.sfp-dropdown-trigger {
-    width:100%; display:flex; align-items:center; justify-content:space-between;
-    padding:10px 14px; border-radius:12px;
-    background: var(--sfp-surface);
-    border:1px solid var(--sfp-border);
-    color:rgba(255,255,255,0.7); cursor:pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-    -webkit-tap-highlight-color:transparent;
-}
-.sfp-dropdown-trigger:hover {
-    background:rgba(255,255,255,0.08);
-    border-color:rgba(255,255,255,0.16);
-    color:#fff;
-}
-.sfp-dropdown-trigger.open {
-    background: var(--sfp-accent-dim);
-    border-color: var(--sfp-accent-border);
-    color:#fff;
-    border-radius:12px 12px 0 0;
-}
+/* Z-index: lo defaults to 3, hi to 4.
+   The Razor template swaps them inline when _from >= _to so the
+   "from" thumb sits on top and the user can pull it back left. */
+.sfp-range-lo { z-index: 3; }
+.sfp-range-hi { z-index: 4; }
 
-.sfp-dt-left {
-    display:flex; align-items:center; gap:8px;
-    font-size:13px; font-weight:600;
-}
-.sfp-dt-badge {
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:18px; height:18px; padding:0 5px; border-radius:9px;
-    background: var(--sfp-accent); color:#fff;
-    font-size:10px; font-weight:800;
-}
-.sfp-chevron {
-    transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
-    color: var(--sfp-muted); flex-shrink:0;
-}
-.sfp-dropdown-trigger.open .sfp-chevron { transform: rotate(180deg); color:#fff; }
-
-/* ── Dropdown panel ──────────────────────────────────────────── */
-.sfp-dropdown-panel {
-    background: rgba(10,10,18,0.98);
-    border: 1px solid var(--sfp-accent-border);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    padding: 12px 12px 14px;
-    margin-bottom:14px;
-    animation: sfp-dp-in 0.18s cubic-bezier(0.22,1,0.36,1);
-}
-@keyframes sfp-dp-in {
-    from { opacity:0; transform:translateY(-6px) }
-    to   { opacity:1; transform:translateY(0) }
-}
-
-/* Search row */
-.sfp-search-row {
-    display:flex; align-items:center; gap:8px;
-    background:rgba(255,255,255,0.06); border:1px solid var(--sfp-border);
-    border-radius:8px; padding:7px 10px; margin-bottom:12px;
-    color:var(--sfp-muted);
-}
-.sfp-search-input {
-    flex:1; background:transparent; border:none; outline:none;
-    color:var(--sfp-text); font-size:13px;
-}
-.sfp-search-input::placeholder { color:var(--sfp-muted); }
-.sfp-search-clear {
-    background:transparent; border:none; color:var(--sfp-muted);
-    font-size:16px; line-height:1; cursor:pointer; padding:0;
-    transition:color 0.15s;
-}
-.sfp-search-clear:hover { color:#fff; }
-
-/* Dropdown labels / separators */
-.sfp-dp-label {
-    font-size:10px; font-weight:700; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--sfp-label); margin-bottom:8px;
-}
-.sfp-dp-sep { height:1px; background:var(--sfp-border); margin:10px 0; }
-.sfp-dp-empty { font-size:12px; color:var(--sfp-muted); padding:4px 2px; }
-
-/* Scrollable chip area inside dropdown */
-.sfp-dp-scroll {
-    max-height: 220px; overflow-y: auto;
-    overscroll-behavior: contain;
-}
-.sfp-dp-scroll::-webkit-scrollbar       { width:3px; }
-.sfp-dp-scroll::-webkit-scrollbar-track { background:transparent; }
-.sfp-dp-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
-
-/* ── Footer ──────────────────────────────────────────────────── */
-.sfp-footer {
-    display:flex; align-items:center; gap:10px;
-    padding:12px 18px 20px;
-    border-top:1px solid var(--sfp-border);
-    flex-shrink:0; background:var(--sfp-bg);
-}
-
-.sfp-random-btn {
-    flex-shrink:0; width:44px; height:44px; border-radius:12px;
-    background: var(--sfp-surface); border:1px solid var(--sfp-border);
-    color:var(--sfp-muted); display:flex; align-items:center; justify-content:center;
-    cursor:pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.2s;
-}
-.sfp-random-btn:hover {
-    background: var(--sfp-accent-dim);
-    border-color: var(--sfp-accent-border);
-    color: var(--sfp-accent);
-    transform: rotate(90deg);
-}
-.sfp-random-btn:active { transform: rotate(180deg) scale(0.92); }
-
-.sfp-apply-btn {
-    flex:1; height:44px; border-radius:12px;
-    background: linear-gradient(135deg, #E94560 0%, #c73652 100%);
-    border:none; color:#fff; font-size:14px; font-weight:700; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    letter-spacing:0.02em;
-    transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
-    box-shadow:0 2px 14px rgba(233,69,96,0.35);
-}
-.sfp-apply-btn:hover   { opacity:.9; box-shadow:0 4px 18px rgba(233,69,96,0.5); }
-.sfp-apply-btn:active  { transform:scale(0.97); }
-
-.sfp-result-count {
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:26px; height:22px; padding:0 7px;
-    background:rgba(255,255,255,0.22); border-radius:11px;
-    font-size:12px; font-weight:800;
-}
-
-/* ── Trigger button (parent page) ────────────────────────────── */
-.lists-sort-btn {
-    display:flex; align-items:center; justify-content:center; position:relative;
-    width:32px; height:32px; border-radius:8px;
-    background: var(--sfp-surface); border:1px solid var(--sfp-border);
-    color:var(--sfp-muted); cursor:pointer; flex-shrink:0;
-    transition: background 0.14s, color 0.14s, border-color 0.14s;
-}
-.lists-sort-btn:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.9); border-color:rgba(255,255,255,0.18); }
-.lists-sort-btn.lists-sort-btn-active {
-    background: var(--sfp-accent-dim);
-    border-color: var(--sfp-accent-border);
-    color: var(--sfp-accent);
-}
-.lists-sort-badge {
-    position:absolute; top:-5px; right:-5px;
-    min-width:16px; height:16px; padding:0 4px; border-radius:8px;
-    background: var(--sfp-accent); color:#fff;
-    font-size:9px; font-weight:800;
-    display:flex; align-items:center; justify-content:center;
-    pointer-events:none;
-}
-
-/* ── Section label row (label + badge inline) ────────────────── */
+/* ── Section label row (with right-side badge) ───────────────── */
 .sfp-section-label-row {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 12px;
@@ -399,141 +312,87 @@
 }
 .sfp-clear-range:hover { color: var(--sfp-accent); }
 
-/* ── Year Timeline ───────────────────────────────────────────── */
-.sfp-timeline {
-    display: flex;
-    align-items: flex-end;
-    gap: 0;
-    width: 100%;
-    height: 52px;
-    position: relative;
-    padding: 0 2px;
-    overflow: visible;
-}
-
-.sfp-tl-tick {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px 0 0;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-    transition: none;
-}
-
-.sfp-tl-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    transition: background 0.12s, transform 0.12s, border-color 0.12s;
-    flex-shrink: 0;
-}
-
-.sfp-tl-tick:hover .sfp-tl-dot {
-    background: rgba(255,255,255,0.45);
-    border-color: rgba(255,255,255,0.6);
-    transform: scale(1.3);
-}
-
-/* In-range ticks */
-.sfp-tl-tick.sfp-tl-in .sfp-tl-dot {
-    background: var(--sfp-accent);
-    border-color: var(--sfp-accent);
-}
-
-/* Endpoint ticks (from / to) */
-.sfp-tl-tick.sfp-tl-end .sfp-tl-dot {
-    width: 10px;
-    height: 10px;
-    background: var(--sfp-accent);
-    border-color: #fff;
-    border-width: 2px;
-    box-shadow: 0 0 6px var(--sfp-accent-glow);
-    transform: none;
-}
-.sfp-tl-tick.sfp-tl-end:hover .sfp-tl-dot {
-    transform: scale(1.2);
-}
-
-
-
-
-/* ── Year Timeline (dots only, no labels) ────────────────────── */
-.sfp-timeline {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    height: 28px;
-    padding: 0 2px;
-    gap: 0;
-}
-
-.sfp-tl-tick {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px 0;
+/* ── Dropdown trigger ────────────────────────────────────────── */
+.sfp-dropdown-trigger {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 12px;
+    background: var(--sfp-surface);
+    border: 1px solid var(--sfp-border);
+    color: rgba(255,255,255,0.7); cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
     -webkit-tap-highlight-color: transparent;
 }
-
-.sfp-tl-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    transition: background 0.1s, transform 0.1s, width 0.1s, height 0.1s;
-    flex-shrink: 0;
+.sfp-dropdown-trigger:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.16);
+    color: #fff;
 }
-.sfp-tl-tick:hover .sfp-tl-dot {
-    background: rgba(255,255,255,0.5);
-    transform: scale(1.4);
+.sfp-dropdown-trigger.open {
+    background: var(--sfp-accent-dim);
+    border-color: var(--sfp-accent-border);
+    color: #fff;
+    border-radius: 12px 12px 0 0;
 }
 
-/* In-range */
-.sfp-tl-tick.sfp-tl-in .sfp-tl-dot {
-    background: var(--sfp-accent);
-    border-color: var(--sfp-accent);
-    box-shadow: 0 0 4px rgba(233,69,96,0.5);
+.sfp-dt-left    { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.sfp-dt-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+    background: var(--sfp-accent); color: #fff; font-size: 10px; font-weight: 800;
+}
+.sfp-chevron {
+    transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
+    color: var(--sfp-muted); flex-shrink: 0;
+}
+.sfp-dropdown-trigger.open .sfp-chevron { transform: rotate(180deg); color: #fff; }
+
+/* ── Dropdown panel ──────────────────────────────────────────── */
+.sfp-dropdown-panel {
+    background: rgba(10,10,18,0.98);
+    border: 1px solid var(--sfp-accent-border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 12px 12px 14px;
+    margin-bottom: 14px;
+    animation: sfp-dp-in 0.18s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes sfp-dp-in {
+    from { opacity: 0; transform: translateY(-6px) }
+    to   { opacity: 1; transform: translateY(0) }
 }
 
-/* Endpoints */
-.sfp-tl-tick.sfp-tl-end .sfp-tl-dot {
-    width: 11px;
-    height: 11px;
-    background: var(--sfp-accent);
-    border-color: #fff;
-    border-width: 2px;
-    box-shadow: 0 0 8px rgba(233,69,96,0.7);
-    transform: none;
+/* Search row */
+.sfp-search-row {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--sfp-border);
+    border-radius: 8px; padding: 7px 10px; margin-bottom: 12px;
+    color: var(--sfp-muted);
 }
-.sfp-tl-tick.sfp-tl-end:hover .sfp-tl-dot {
-    transform: scale(1.2);
+.sfp-search-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--sfp-text); font-size: 13px;
 }
+.sfp-search-input::placeholder { color: var(--sfp-muted); }
+.sfp-search-clear {
+    background: transparent; border: none; color: var(--sfp-muted);
+    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+    transition: color 0.15s;
+}
+.sfp-search-clear:hover { color: #fff; }
+
+.sfp-dp-empty { font-size: 12px; color: var(--sfp-muted); padding: 4px 2px; }
+
+.sfp-dp-scroll {
+    max-height: 220px; overflow-y: auto; overscroll-behavior: contain;
+}
+.sfp-dp-scroll::-webkit-scrollbar       { width: 3px; }
+.sfp-dp-scroll::-webkit-scrollbar-track { background: transparent; }
+.sfp-dp-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 /* ── Tags toggle (My List / All) ─────────────────────────────── */
-.sfp-toggle-row {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-}
+.sfp-toggle-row { display: flex; gap: 6px; margin-bottom: 10px; }
 .sfp-toggle-btn {
-    flex: 1;
-    padding: 5px 0;
-    border-radius: 8px;
+    flex: 1; padding: 5px 0; border-radius: 8px;
     font-size: 12px; font-weight: 700;
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--sfp-border);
@@ -549,4 +408,89 @@
 .sfp-toggle-btn:not(.active):hover {
     background: rgba(255,255,255,0.08);
     color: rgba(255,255,255,0.8);
+}
+
+/* ── Platform badge ──────────────────────────────────────────── */
+.sfp-platform-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.sfp-footer {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px 20px;
+    border-top: 1px solid var(--sfp-border);
+    flex-shrink: 0; background: var(--sfp-bg);
+}
+
+.sfp-random-btn {
+    flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
+    background: var(--sfp-surface); border: 1px solid var(--sfp-border);
+    color: var(--sfp-muted); display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.2s;
+}
+.sfp-random-btn:hover {
+    background: var(--sfp-accent-dim);
+    border-color: var(--sfp-accent-border);
+    color: var(--sfp-accent);
+    transform: rotate(90deg);
+}
+.sfp-random-btn:active { transform: rotate(180deg) scale(0.92); }
+
+.sfp-apply-btn {
+    flex: 1; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #E94560 0%, #c73652 100%);
+    border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+    box-shadow: 0 2px 14px rgba(233,69,96,0.35);
+}
+.sfp-apply-btn:hover  { opacity: .9; box-shadow: 0 4px 18px rgba(233,69,96,0.5); }
+.sfp-apply-btn:active { transform: scale(0.97); }
+
+.sfp-result-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 26px; height: 22px; padding: 0 7px;
+    background: rgba(255,255,255,0.22); border-radius: 11px;
+    font-size: 12px; font-weight: 800;
+}
+
+/* ── Trigger button (parent page) ────────────────────────────── */
+.lists-sort-btn {
+    display: flex; align-items: center; justify-content: center; position: relative;
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--sfp-surface); border: 1px solid var(--sfp-border);
+    color: var(--sfp-muted); cursor: pointer; flex-shrink: 0;
+    transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+.lists-sort-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    border-color: rgba(255,255,255,0.18);
+}
+.lists-sort-btn.lists-sort-btn-active {
+    background: var(--sfp-accent-dim);
+    border-color: var(--sfp-accent-border);
+    color: var(--sfp-accent);
+}
+.lists-sort-badge {
+    position: absolute; top: -5px; right: -5px;
+    min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+    background: var(--sfp-accent); color: #fff;
+    font-size: 9px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
 }
