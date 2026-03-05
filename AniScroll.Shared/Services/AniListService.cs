@@ -84,71 +84,94 @@ namespace AniScroll.Shared.Services
 
         public async Task<List<JikanSearchResult>> SearchJikanAsync(string query)
         {
-            try
+            const int maxRetries = 3;
+            const int retryDelayMs = 800;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                var url = "https://api.jikan.moe/v4/anime?q="
-                        + Uri.EscapeDataString(query)
-                        + "&limit=20&sfw=true";
-
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Accept.Add(
-                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-                JikanRateLimit.RequestsSent++;
-                var response = await _httpClient.SendAsync(request);
-
-                ParseRateLimitHeaders(response, JikanRateLimit,
-                    limitAliases:     new[] { "X-RateLimit-Limit",     "X-RateLimit-Limit-EachMinute",     "X-Ratelimit-Limit-60" },
-                    remainingAliases: new[] { "X-RateLimit-Remaining", "X-RateLimit-Remaining-EachMinute", "X-Ratelimit-Remaining-60" },
-                    resetAliases:     new[] { "X-RateLimit-Reset",     "Retry-After" });
-
-                if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                try
                 {
-                    JikanRateLimit.IsLimited = true;
-                    return new List<JikanSearchResult>();
-                }
+                    var url = "https://api.jikan.moe/v4/anime?q="
+                            + Uri.EscapeDataString(query)
+                            + "&limit=20&sfw=true";
 
-                JikanRateLimit.IsLimited = false;
-                if (!response.IsSuccessStatusCode) return new List<JikanSearchResult>();
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Accept.Add(
+                        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-                var json  = await response.Content.ReadAsStringAsync();
-                var data  = JObject.Parse(json);
-                var items = data["data"];
-                if (items == null || !items.HasValues) return new List<JikanSearchResult>();
+                    JikanRateLimit.RequestsSent++;
+                    var response = await _httpClient.SendAsync(request, cts.Token);
 
-                var queryNorm = query.Trim().ToLowerInvariant();
-                var raw       = new List<JikanSearchResult>();
+                    ParseRateLimitHeaders(response, JikanRateLimit,
+                        limitAliases:     new[] { "X-RateLimit-Limit",     "X-RateLimit-Limit-EachMinute",     "X-Ratelimit-Limit-60" },
+                        remainingAliases: new[] { "X-RateLimit-Remaining", "X-RateLimit-Remaining-EachMinute", "X-Ratelimit-Remaining-60" },
+                        resetAliases:     new[] { "X-RateLimit-Reset",     "Retry-After" });
 
-                foreach (var item in items)
-                {
-                    if (item == null || item.Type == JTokenType.Null) continue;
-                    var scoreToken  = item["score"];
-                    double numScore = scoreToken != null && scoreToken.Type != JTokenType.Null
-                        ? scoreToken.Value<double>() : 0;
-                    var titleRaw     = item["title"]?.ToString() ?? "";
-                    var titleEnglish = item["title_english"]?.ToString() ?? "";
-                    raw.Add(new JikanSearchResult
+                    if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
-                        MalId          = item["mal_id"]?.Value<int>() ?? 0,
-                        Title          = titleRaw,
-                        ImageUrl       = item["images"]?["jpg"]?["large_image_url"]?.ToString()
-                                      ?? item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
-                        Score          = numScore > 0 ? numScore.ToString() : "N/A",
-                        Type           = item["type"]?.ToString() ?? "",
-                        Episodes       = item["episodes"]?.Value<int?>(),
-                        RelevanceScore = ComputeRelevance(queryNorm, titleRaw, titleEnglish, numScore)
-                    });
-                }
+                        JikanRateLimit.IsLimited = true;
+                        return new List<JikanSearchResult>();
+                    }
 
-                raw.Sort((a, b) => b.RelevanceScore.CompareTo(a.RelevanceScore));
-                return raw.Take(DetermineDisplayCount(raw, queryNorm)).ToList();
+                    // 5xx → retry
+                    if ((int)response.StatusCode >= 500)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Jikan {(int)response.StatusCode}, attempt {attempt}/{maxRetries}");
+                        if (attempt < maxRetries) await Task.Delay(retryDelayMs * attempt);
+                        continue;
+                    }
+
+                    JikanRateLimit.IsLimited = false;
+                    if (!response.IsSuccessStatusCode) return new List<JikanSearchResult>();
+
+                    var json  = await response.Content.ReadAsStringAsync();
+                    var data  = JObject.Parse(json);
+                    var items = data["data"];
+                    if (items == null || !items.HasValues) return new List<JikanSearchResult>();
+
+                    var queryNorm = query.Trim().ToLowerInvariant();
+                    var raw       = new List<JikanSearchResult>();
+
+                    foreach (var item in items)
+                    {
+                        if (item == null || item.Type == JTokenType.Null) continue;
+                        var scoreToken  = item["score"];
+                        double numScore = scoreToken != null && scoreToken.Type != JTokenType.Null
+                            ? scoreToken.Value<double>() : 0;
+                        var titleRaw     = item["title"]?.ToString() ?? "";
+                        var titleEnglish = item["title_english"]?.ToString() ?? "";
+                        raw.Add(new JikanSearchResult
+                        {
+                            MalId          = item["mal_id"]?.Value<int>() ?? 0,
+                            Title          = titleRaw,
+                            ImageUrl       = item["images"]?["jpg"]?["large_image_url"]?.ToString()
+                                        ?? item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
+                            Score          = numScore > 0 ? numScore.ToString() : "N/A",
+                            Type           = item["type"]?.ToString() ?? "",
+                            Episodes       = item["episodes"]?.Value<int?>(),
+                            RelevanceScore = ComputeRelevance(queryNorm, titleRaw, titleEnglish, numScore)
+                        });
+                    }
+
+                    raw.Sort((a, b) => b.RelevanceScore.CompareTo(a.RelevanceScore));
+                    return raw.Take(DetermineDisplayCount(raw, queryNorm)).ToList();
+                }
+                catch (OperationCanceledException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Jikan timeout, attempt {attempt}/{maxRetries}");
+                    if (attempt < maxRetries) await Task.Delay(retryDelayMs * attempt);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Jikan search error: " + ex.Message);
+                    if (attempt < maxRetries) await Task.Delay(retryDelayMs * attempt);
+                }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Jikan search error: " + ex.Message);
-                return new List<JikanSearchResult>();
-            }
+
+            return new List<JikanSearchResult>();
         }
+        
 
         // ─── Single anime lookups ─────────────────────────────────────────────────
 
