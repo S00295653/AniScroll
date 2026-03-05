@@ -34,6 +34,8 @@
         public List<AnimeRanking> Rankings { get; set; } = new List<AnimeRanking>();
         public int? NextAiringEpisodeNum { get; set; }
         public int? NextAiringTimeUntil { get; set; } // seconds
+        public string? CountryOfOrigin { get; set; }
+        public bool IsAdult { get; set; }
     }
 
     public class AnimeStudio
