@@ -60,20 +60,12 @@
                 <div class="sfp-divider"></div>
 
                 <!-- ── AIRING STATUS ── -->
-                @{
-                    // Split: dots first (releasing, upcoming), then no-dot (finished, etc.)
-                    var dotStatuses = new[] { "RELEASING", "NOT_YET_RELEASED" };
-                    var noDotStatuses = new[] { "FINISHED", "CANCELLED", "HIATUS" };
-                    var availStatuses = GetDistinctValues(e => e.Anime.Status).ToHashSet();
-                    var hasDotStats = dotStatuses.Any(s => availStatuses.Contains(s));
-                    var hasNoDotStats = noDotStatuses.Any(s => availStatuses.Contains(s));
-                }
-                @if (hasDotStats || hasNoDotStats)
+                @if (_hasDotStats || _hasNoDotStats)
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Airing Status</div>
                         <div class="sfp-chips">
-                            @foreach (var key in dotStatuses.Where(s => availStatuses.Contains(s)))
+                            @foreach (var key in _dotStatuses.Where(s => _availStatuses.Contains(s)))
                             {
                                 var k = key;
                                 bool on = FilterAiringStatus.Contains(k);
@@ -83,7 +75,7 @@
                                     @FormatAiringStatus(k)
                                 </button>
                             }
-                            @foreach (var key in noDotStatuses.Where(s => availStatuses.Contains(s)))
+                            @foreach (var key in _noDotStatuses.Where(s => _availStatuses.Contains(s)))
                             {
                                 var k = key;
                                 bool on = FilterAiringStatus.Contains(k);
@@ -98,15 +90,12 @@
                 }
 
                 <!-- ── FORMAT ── -->
-                @{
-                    var formats = GetDistinctValues(e => e.Anime.Format).OrderBy(x => x).ToList();
-                }
-                @if (formats.Any())
+                @if (_formats.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Format</div>
                         <div class="sfp-chips">
-                            @foreach (var fmt in formats)
+                            @foreach (var fmt in _formats)
                             {
                                 var f = fmt;
                                 bool on = FilterFormats.Contains(f);
@@ -121,15 +110,12 @@
                 }
 
                 <!-- ── SEASON ── -->
-                @{
-                    var seasons = GetDistinctValues(e => e.Anime.Season).OrderBy(SeasonOrder).ToList();
-                }
-                @if (seasons.Any())
+                @if (_seasons.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Season</div>
                         <div class="sfp-chips">
-                            @foreach (var s in seasons)
+                            @foreach (var s in _seasons)
                             {
                                 var sv = s;
                                 bool on = FilterSeasons.Contains(sv);
@@ -144,59 +130,51 @@
                 }
 
                 <!-- ── YEAR RANGE (slider) ── -->
-                @{
-                    var years = GetDistinctYears().ToList();
-                    int minYearAll = years.Any() ? years.Min() : 1990;
-                    int maxYearAll = years.Any() ? years.Max() : DateTime.Now.Year;
-                }
-                @if (years.Count > 1)
+                @if (_years.Count > 1)
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label-row">
                             <span class="sfp-section-label">Year</span>
                             <span class="sfp-range-value">
-                                @(_yearFrom == minYearAll && _yearTo == maxYearAll
-                                                        ? "All"
-                                                        : _yearFrom == _yearTo ? $"{_yearFrom}" : $"{_yearFrom} – {_yearTo}")
+                                @(_yearFrom == _minYear && _yearTo == _maxYear
+                                    ? "All"
+                                    : _yearFrom == _yearTo ? $"{_yearFrom}" : $"{_yearFrom} – {_yearTo}")
                             </span>
                         </div>
                         <div class="sfp-range-track-wrap">
                             <div class="sfp-range-track">
                                 <div class="sfp-range-fill"
-                                     style="left:@((_yearFrom - minYearAll) * 100.0 / (maxYearAll - minYearAll))%;
-                                                    right:@((maxYearAll - _yearTo) * 100.0 / (maxYearAll - minYearAll))%;">
+                                     style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;
+                                            right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;">
                                 </div>
                             </div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   min="@minYearAll" max="@maxYearAll"
+                                   min="@_minYear" max="@_maxYear"
                                    value="@_yearFrom"
-                                   @oninput="e => { _yearFrom = Math.Min(int.Parse(e.Value!.ToString()!), _yearTo); StateHasChanged(); }" />
+                                   @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   min="@minYearAll" max="@maxYearAll"
+                                   min="@_minYear" max="@_maxYear"
                                    value="@_yearTo"
-                                   @oninput="e => { _yearTo = Math.Max(int.Parse(e.Value!.ToString()!), _yearFrom); StateHasChanged(); }" />
+                                   @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
-                        @if (_yearFrom != minYearAll || _yearTo != maxYearAll)
+                        @if (_yearFrom != _minYear || _yearTo != _maxYear)
                         {
-                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = minYearAll; _yearTo = maxYearAll; StateHasChanged(); }">Clear</button>
+                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Clear</button>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
                 <!-- ── MY SCORE RANGE (slider) ── -->
-                @{
-                    var scoredEntries = AllEntries.Where(e => e.Score > 0).ToList();
-                }
-                @if (scoredEntries.Count > 1)
+                @if (_scoredCount > 1)
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label-row">
                             <span class="sfp-section-label">My Score</span>
                             <span class="sfp-range-value">
                                 @(_scoreFrom == 0 && _scoreTo == 10
-                                                        ? "All"
-                                                        : _scoreFrom == _scoreTo ? $"{_scoreFrom}" : $"{_scoreFrom} – {_scoreTo}")
+                                    ? "All"
+                                    : _scoreFrom == _scoreTo ? $"{_scoreFrom}" : $"{_scoreFrom} – {_scoreTo}")
                             </span>
                         </div>
                         <div class="sfp-range-track-wrap">
@@ -207,67 +185,61 @@
                             <input type="range" class="sfp-range sfp-range-lo"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom"
-                                   @oninput="e => { _scoreFrom = Math.Min(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), _scoreTo); StateHasChanged(); }" />
+                                   @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreTo"
-                                   @oninput="e => { _scoreTo = Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), _scoreFrom); StateHasChanged(); }" />
+                                   @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
                         @if (_scoreFrom != 0 || _scoreTo != 10)
                         {
-                            <button class="sfp-clear-range" @onclick="() => { _scoreFrom = 0; _scoreTo = 10; StateHasChanged(); }">Clear</button>
+                            <button class="sfp-clear-range" @onclick="() => { _scoreFrom = 0; _scoreTo = 10; ScheduleResultCountUpdate(); }">Clear</button>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
                 <!-- ── EPISODES RANGE (slider) ── -->
-                @{
-                    int maxEp = GetMaxEpisodes();
-                }
-                @if (maxEp > 1)
+                @if (_maxEp > 1)
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label-row">
                             <span class="sfp-section-label">Episodes Watched</span>
                             <span class="sfp-range-value">
-                                @(_epFrom == 0 && _epTo == maxEp
-                                                        ? "All"
-                                                        : _epFrom == _epTo ? $"{_epFrom}" : $"{_epFrom} – {_epTo}")
+                                @(_epFrom == 0 && _epTo == _maxEp
+                                    ? "All"
+                                    : _epFrom == _epTo ? $"{_epFrom}" : $"{_epFrom} – {_epTo}")
                             </span>
                         </div>
                         <div class="sfp-range-track-wrap">
                             <div class="sfp-range-track">
                                 <div class="sfp-range-fill"
-                                     style="left:@(_epFrom * 100.0 / maxEp)%;right:@((maxEp - _epTo) * 100.0 / maxEp)%;"></div>
+                                     style="left:@(_epFrom * 100.0 / _maxEp)%;right:@((_maxEp - _epTo) * 100.0 / _maxEp)%;"></div>
                             </div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   min="0" max="@maxEp"
+                                   min="0" max="@_maxEp"
                                    value="@_epFrom"
-                                   @oninput="e => { _epFrom = Math.Min(int.Parse(e.Value!.ToString()!), _epTo); StateHasChanged(); }" />
+                                   @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   min="0" max="@maxEp"
+                                   min="0" max="@_maxEp"
                                    value="@_epTo"
-                                   @oninput="e => { _epTo = Math.Max(int.Parse(e.Value!.ToString()!), _epFrom); StateHasChanged(); }" />
+                                   @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
-                        @if (_epFrom != 0 || _epTo != maxEp)
+                        @if (_epFrom != 0 || _epTo != _maxEp)
                         {
-                            <button class="sfp-clear-range" @onclick="() => { _epFrom = 0; _epTo = maxEp; StateHasChanged(); }">Clear</button>
+                            <button class="sfp-clear-range" @onclick="() => { _epFrom = 0; _epTo = _maxEp; ScheduleResultCountUpdate(); }">Clear</button>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
                 <!-- ── GENRES ── -->
-                @{
-                    var genres = GetDistinctListValues(e => e.Anime.Genres).OrderBy(x => x).ToList();
-                }
-                @if (genres.Any())
+                @if (_genres.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Genres</div>
                         <div class="sfp-chips">
-                            @foreach (var g in genres)
+                            @foreach (var g in _genres)
                             {
                                 var gv = g;
                                 bool on = FilterGenres.Contains(gv);
@@ -282,16 +254,12 @@
                 }
 
                 <!-- ── STUDIOS ── -->
-                @{
-                    var studios = GetDistinctListValues(e => e.Anime.Studios?.Select(s => s.Name).ToList())
-                    .OrderBy(x => x).ToList();
-                }
-                @if (studios.Any())
+                @if (_studios.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Studio</div>
                         <div class="sfp-chips">
-                            @foreach (var st in studios)
+                            @foreach (var st in _studios)
                             {
                                 var sv = st;
                                 bool on = FilterStudios.Contains(sv);
@@ -306,18 +274,14 @@
                 }
 
                 <!-- ── TAGS ── -->
-                @{
-                    var tags = GetDistinctListValues(e => e.Anime.Tags?.Where(t => !t.IsMediaSpoiler).Select(t => t.Name).ToList())
-                    .OrderBy(x => x).ToList();
-                }
-                @if (tags.Any())
+                @if (_tags.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Tags</div>
-                        @if (!_showAllTags && tags.Count > 16)
+                        @if (!_showAllTags && _tags.Count > 16)
                         {
                             <div class="sfp-chips">
-                                @foreach (var t in tags.Take(16))
+                                @foreach (var t in _tags.Take(16))
                                 {
                                     var tv = t;
                                     bool on = FilterTags.Contains(tv);
@@ -328,13 +292,13 @@
                                 }
                             </div>
                             <button class="sfp-show-more" @onclick="() => _showAllTags = true">
-                                + @(tags.Count - 16) more tags
+                                + @(_tags.Count - 16) more tags
                             </button>
                         }
                         else
                         {
                             <div class="sfp-chips">
-                                @foreach (var t in tags)
+                                @foreach (var t in _tags)
                                 {
                                     var tv = t;
                                     bool on = FilterTags.Contains(tv);
@@ -350,15 +314,12 @@
                 }
 
                 <!-- ── SOURCE MATERIAL ── -->
-                @{
-                    var sources = GetDistinctValues(e => e.Anime.Source).OrderBy(x => x).ToList();
-                }
-                @if (sources.Any())
+                @if (_sources.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Source Material</div>
                         <div class="sfp-chips">
-                            @foreach (var src in sources)
+                            @foreach (var src in _sources)
                             {
                                 var sv = src;
                                 bool on = FilterSources.Contains(sv);
@@ -373,17 +334,12 @@
                 }
 
                 <!-- ── STREAMING ON ── -->
-                @{
-                    var platforms = GetDistinctListValues(e =>
-                    e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site).ToList())
-                    .OrderBy(x => x).ToList();
-                }
-                @if (platforms.Any())
+                @if (_platforms.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Streaming On</div>
                         <div class="sfp-chips">
-                            @foreach (var p in platforms)
+                            @foreach (var p in _platforms)
                             {
                                 var pv = p;
                                 bool on = FilterPlatforms.Contains(pv);
@@ -398,15 +354,12 @@
                 }
 
                 <!-- ── COUNTRY OF ORIGIN ── -->
-                @{
-                    var countries = GetDistinctValues(e => e.Anime.CountryOfOrigin).OrderBy(x => x).ToList();
-                }
-                @if (countries.Any())
+                @if (_countries.Any())
                 {
                     <div class="sfp-section">
                         <div class="sfp-section-label">Country of Origin</div>
                         <div class="sfp-chips">
-                            @foreach (var c in countries)
+                            @foreach (var c in _countries)
                             {
                                 var cv = c;
                                 bool on = FilterCountries.Contains(cv);
@@ -450,8 +403,8 @@
                 </button>
                 <button class="sfp-apply-btn" @onclick="Apply">
                     Show
-                    <span class="sfp-result-count">@ResultCount</span>
-                    result@(ResultCount != 1 ? "s" : "")
+                    <span class="sfp-result-count">@_resultCount</span>
+                    result@(_resultCount != 1 ? "s" : "")
                 </button>
             </div>
 
@@ -480,14 +433,14 @@
     private SortMode _sort = SortMode.RecentlyAdded;
 
     // ── Range sliders ─────────────────────────────────────────────────────
-    private int _yearFrom = 1990;
-    private int _yearTo = 2100;
-    private double _scoreFrom = 0;
-    private double _scoreTo = 10;
-    private int _epFrom = 0;
-    private int _epTo = 9999;
+    private int _yearFrom;
+    private int _yearTo;
+    private double _scoreFrom;
+    private double _scoreTo;
+    private int _epFrom;
+    private int _epTo;
 
-    // ── Chip filters ─────────────────────────────────────────────────────
+    // ── Chip filters ──────────────────────────────────────────────────────
     private HashSet<string> FilterAiringStatus = new();
     private HashSet<string> FilterFormats = new();
     private HashSet<string> FilterSeasons = new();
@@ -501,9 +454,31 @@
 
     private bool _showAllTags = false;
 
-    // ── Computed ──────────────────────────────────────────────────────────
-    private int ResultCount => AllEntries.Where(e => PassesFilters(e, BuildOptions())).Count();
+    // ── Cached distinct values (computed once per open, not every render) ─
+    private static readonly string[] _dotStatuses   = { "RELEASING", "NOT_YET_RELEASED" };
+    private static readonly string[] _noDotStatuses = { "FINISHED", "CANCELLED", "HIATUS" };
+    private HashSet<string> _availStatuses = new();
+    private bool _hasDotStats;
+    private bool _hasNoDotStats;
+    private List<string> _formats   = new();
+    private List<string> _seasons   = new();
+    private List<string> _genres    = new();
+    private List<string> _studios   = new();
+    private List<string> _tags      = new();
+    private List<string> _sources   = new();
+    private List<string> _platforms = new();
+    private List<string> _countries = new();
+    private List<int>    _years     = new();
+    private int    _minYear   = 1990;
+    private int    _maxYear   = 2100;
+    private int    _maxEp     = 0;
+    private int    _scoredCount = 0;
 
+    // ── Debounced result count ─────────────────────────────────────────────
+    private int _resultCount = 0;
+    private CancellationTokenSource? _debounceCtS;
+
+    // ── Computed (cheap — no LINQ over AllEntries) ─────────────────────────
     private bool HasActiveOptions =>
         _sort != SortMode.RecentlyAdded || RangeActive ||
         FilterAiringStatus.Any() || FilterFormats.Any() || FilterSeasons.Any() ||
@@ -511,19 +486,10 @@
         FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() ||
         FilterAdult.HasValue;
 
-    private bool RangeActive
-    {
-        get
-        {
-            var years = GetDistinctYears().ToList();
-            int minY = years.Any() ? years.Min() : 1990;
-            int maxY = years.Any() ? years.Max() : DateTime.Now.Year;
-            int maxEp = GetMaxEpisodes();
-            return _yearFrom != minY || _yearTo != maxY ||
-                   _scoreFrom != 0 || _scoreTo != 10 ||
-                   _epFrom != 0 || _epTo != maxEp;
-        }
-    }
+    private bool RangeActive =>
+        _yearFrom != _minYear || _yearTo != _maxYear ||
+        _scoreFrom != 0 || _scoreTo != 10 ||
+        _epFrom != 0 || _epTo != _maxEp;
 
     private int TotalActiveCount
     {
@@ -546,108 +512,147 @@
         }
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
+    // ── Lifecycle ──────────────────────────────────────────────────────────
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
 
+        // Rebuild cached values only when panel opens
+        RebuildCache();
+
         _sort = Current.Sort;
         FilterAiringStatus = new(Current.AiringStatuses);
-        FilterFormats = new(Current.Formats);
-        FilterSeasons = new(Current.Seasons);
-        FilterGenres = new(Current.Genres);
-        FilterStudios = new(Current.Studios);
-        FilterTags = new(Current.Tags);
-        FilterSources = new(Current.Sources);
-        FilterPlatforms = new(Current.Platforms);
-        FilterCountries = new(Current.Countries);
-        FilterAdult = Current.Adult;
+        FilterFormats      = new(Current.Formats);
+        FilterSeasons      = new(Current.Seasons);
+        FilterGenres       = new(Current.Genres);
+        FilterStudios      = new(Current.Studios);
+        FilterTags         = new(Current.Tags);
+        FilterSources      = new(Current.Sources);
+        FilterPlatforms    = new(Current.Platforms);
+        FilterCountries    = new(Current.Countries);
+        FilterAdult        = Current.Adult;
 
-        // Init range sliders from saved options or defaults
-        var years = GetDistinctYears().ToList();
-        int minY = years.Any() ? years.Min() : 1990;
-        int maxY = years.Any() ? years.Max() : DateTime.Now.Year;
-        int maxEp = GetMaxEpisodes();
-
-        _yearFrom = Current.YearFrom ?? minY;
-        _yearTo = Current.YearTo ?? maxY;
+        _yearFrom  = Current.YearFrom  ?? _minYear;
+        _yearTo    = Current.YearTo    ?? _maxYear;
         _scoreFrom = Current.ScoreFrom ?? 0;
-        _scoreTo = Current.ScoreTo ?? 10;
-        _epFrom = Current.EpFrom ?? 0;
-        _epTo = Current.EpTo ?? maxEp;
+        _scoreTo   = Current.ScoreTo   ?? 10;
+        _epFrom    = Current.EpFrom    ?? 0;
+        _epTo      = Current.EpTo      ?? _maxEp;
+
+        // Compute initial result count synchronously (panel just opened)
+        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-    private IEnumerable<string> GetDistinctValues(Func<UserListEntry, string?> sel) =>
-        AllEntries.Select(sel).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct()!;
+    // ── Cache builder (called once on open, not on every render) ──────────
+    private void RebuildCache()
+    {
+        var entries = AllEntries.ToList(); // single enumeration
 
-    private IEnumerable<string> GetDistinctListValues(Func<UserListEntry, IEnumerable<string>?> sel) =>
-        AllEntries.SelectMany(e => sel(e) ?? Enumerable.Empty<string>())
-                  .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct();
+        _availStatuses = entries.Select(e => e.Anime.Status)
+                                .Where(s => !string.IsNullOrWhiteSpace(s))
+                                .ToHashSet()!;
+        _hasDotStats   = _dotStatuses.Any(s => _availStatuses.Contains(s));
+        _hasNoDotStats = _noDotStatuses.Any(s => _availStatuses.Contains(s));
 
-    private IEnumerable<int> GetDistinctYears() =>
-        AllEntries.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct();
+        _formats   = entries.Select(e => e.Anime.Format).Where(v => !string.IsNullOrWhiteSpace(v))
+                            .Distinct().OrderBy(x => x).ToList()!;
+        _seasons   = entries.Select(e => e.Anime.Season).Where(v => !string.IsNullOrWhiteSpace(v))
+                            .Distinct().OrderBy(SeasonOrder).ToList()!;
+        _genres    = entries.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
+                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
+        _studios   = entries.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
+                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
+        _tags      = entries.SelectMany(e => e.Anime.Tags?.Where(t => !t.IsMediaSpoiler).Select(t => t.Name)
+                            ?? Enumerable.Empty<string>())
+                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
+        _sources   = entries.Select(e => e.Anime.Source).Where(v => !string.IsNullOrWhiteSpace(v))
+                            .Distinct().OrderBy(x => x).ToList()!;
+        _platforms = entries.SelectMany(e => e.Anime.ExternalLinks?
+                            .Where(l => l.Type == "STREAMING").Select(l => l.Site)
+                            ?? Enumerable.Empty<string>())
+                            .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
+        _countries = entries.Select(e => e.Anime.CountryOfOrigin).Where(v => !string.IsNullOrWhiteSpace(v))
+                            .Distinct().OrderBy(x => x).ToList()!;
 
-    private int GetMaxEpisodes() =>
-        AllEntries.Any() ? AllEntries.Max(e => e.EpisodesWatched) : 0;
+        _years      = entries.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
+        _minYear    = _years.Any() ? _years.Min() : 1990;
+        _maxYear    = _years.Any() ? _years.Max() : DateTime.Now.Year;
+        _maxEp      = entries.Any() ? entries.Max(e => e.EpisodesWatched) : 0;
+        _scoredCount = entries.Count(e => e.Score > 0);
+    }
 
+    // ── Slider input handlers (update value + schedule debounced recount) ──
+    private void OnYearFromInput(int v)  { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)    { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);  ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)    { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)      { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
+
+    // ── Debounce: wait 120 ms after last slider move before recounting ─────
+    private void ScheduleResultCountUpdate()
+    {
+        _debounceCtS?.Cancel();
+        _debounceCtS = new CancellationTokenSource();
+        var token = _debounceCtS.Token;
+        _ = Task.Delay(120, token).ContinueWith(_ =>
+        {
+            if (token.IsCancellationRequested) return;
+            _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+            InvokeAsync(StateHasChanged);
+        }, TaskContinuationOptions.NotOnCanceled);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
     private void ToggleFilter(HashSet<string> set, string value)
     {
         if (!set.Remove(value)) set.Add(value);
-        StateHasChanged();
+        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
-    private SortFilterOptions BuildOptions()
+    private SortFilterOptions BuildOptions() => new()
     {
-        var years = GetDistinctYears().ToList();
-        int minY = years.Any() ? years.Min() : 1990;
-        int maxY = years.Any() ? years.Max() : DateTime.Now.Year;
-        int maxEp = GetMaxEpisodes();
-
-        return new SortFilterOptions
-        {
-            Sort = _sort,
-            AiringStatuses = new(FilterAiringStatus),
-            Formats = new(FilterFormats),
-            Seasons = new(FilterSeasons),
-            Genres = new(FilterGenres),
-            Studios = new(FilterStudios),
-            Tags = new(FilterTags),
-            Sources = new(FilterSources),
-            Platforms = new(FilterPlatforms),
-            Countries = new(FilterCountries),
-            Adult = FilterAdult,
-            YearFrom = _yearFrom != minY ? _yearFrom : null,
-            YearTo = _yearTo != maxY ? _yearTo : null,
-            ScoreFrom = _scoreFrom != 0 ? _scoreFrom : null,
-            ScoreTo = _scoreTo != 10 ? _scoreTo : null,
-            EpFrom = _epFrom != 0 ? _epFrom : null,
-            EpTo = _epTo != maxEp ? _epTo : null,
-        };
-    }
+        Sort           = _sort,
+        AiringStatuses = new(FilterAiringStatus),
+        Formats        = new(FilterFormats),
+        Seasons        = new(FilterSeasons),
+        Genres         = new(FilterGenres),
+        Studios        = new(FilterStudios),
+        Tags           = new(FilterTags),
+        Sources        = new(FilterSources),
+        Platforms      = new(FilterPlatforms),
+        Countries      = new(FilterCountries),
+        Adult          = FilterAdult,
+        YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null,
+        YearTo    = _yearTo    != _maxYear ? _yearTo    : null,
+        ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null,
+        ScoreTo   = _scoreTo   != 10       ? _scoreTo   : null,
+        EpFrom    = _epFrom    != 0        ? _epFrom    : null,
+        EpTo      = _epTo      != _maxEp   ? _epTo      : null,
+    };
 
     public static bool PassesFilters(UserListEntry e, SortFilterOptions opts)
     {
         if (opts.AiringStatuses.Any() && !opts.AiringStatuses.Contains(e.Anime.Status ?? "")) return false;
-        if (opts.Formats.Any() && !opts.Formats.Contains(e.Anime.Format ?? "")) return false;
-        if (opts.Seasons.Any() && !opts.Seasons.Contains(e.Anime.Season ?? "")) return false;
-        if (opts.Genres.Any() && !(e.Anime.Genres?.Any(g => opts.Genres.Contains(g)) ?? false)) return false;
-        if (opts.Studios.Any() && !(e.Anime.Studios?.Any(s => opts.Studios.Contains(s.Name)) ?? false)) return false;
-        if (opts.Tags.Any() && !(e.Anime.Tags?.Any(t => opts.Tags.Contains(t.Name)) ?? false)) return false;
-        if (opts.Sources.Any() && !opts.Sources.Contains(e.Anime.Source ?? "")) return false;
+        if (opts.Formats.Any()        && !opts.Formats.Contains(e.Anime.Format ?? ""))        return false;
+        if (opts.Seasons.Any()        && !opts.Seasons.Contains(e.Anime.Season ?? ""))        return false;
+        if (opts.Genres.Any()  && !(e.Anime.Genres?.Any(g => opts.Genres.Contains(g)) ?? false))          return false;
+        if (opts.Studios.Any() && !(e.Anime.Studios?.Any(s => opts.Studios.Contains(s.Name)) ?? false))   return false;
+        if (opts.Tags.Any()    && !(e.Anime.Tags?.Any(t => opts.Tags.Contains(t.Name)) ?? false))         return false;
+        if (opts.Sources.Any()   && !opts.Sources.Contains(e.Anime.Source ?? ""))             return false;
         if (opts.Platforms.Any())
         {
             var ep = e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site).ToHashSet() ?? new();
             if (!opts.Platforms.Any(p => ep.Contains(p))) return false;
         }
         if (opts.Countries.Any() && !opts.Countries.Contains(e.Anime.CountryOfOrigin ?? "")) return false;
-        if (opts.Adult.HasValue && e.Anime.IsAdult != opts.Adult.Value) return false;
-        if (opts.YearFrom.HasValue && (!e.Anime.Year.HasValue || e.Anime.Year < opts.YearFrom)) return false;
-        if (opts.YearTo.HasValue && (!e.Anime.Year.HasValue || e.Anime.Year > opts.YearTo)) return false;
-        if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom) return false;
-        if (opts.ScoreTo.HasValue && e.Score > opts.ScoreTo) return false;
-        if (opts.EpFrom.HasValue && e.EpisodesWatched < opts.EpFrom) return false;
-        if (opts.EpTo.HasValue && e.EpisodesWatched > opts.EpTo) return false;
+        if (opts.Adult.HasValue  && e.Anime.IsAdult != opts.Adult.Value)                     return false;
+        if (opts.YearFrom.HasValue  && (!e.Anime.Year.HasValue || e.Anime.Year  < opts.YearFrom))  return false;
+        if (opts.YearTo.HasValue    && (!e.Anime.Year.HasValue || e.Anime.Year  > opts.YearTo))    return false;
+        if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom)                                    return false;
+        if (opts.ScoreTo.HasValue   && e.Score > opts.ScoreTo)                                      return false;
+        if (opts.EpFrom.HasValue    && e.EpisodesWatched < opts.EpFrom)                             return false;
+        if (opts.EpTo.HasValue      && e.EpisodesWatched > opts.EpTo)                               return false;
         return true;
     }
 
@@ -659,12 +664,14 @@
         FilterSources.Clear(); FilterPlatforms.Clear(); FilterCountries.Clear();
         FilterAdult = null; _showAllTags = false;
 
-        var years = GetDistinctYears().ToList();
-        _yearFrom = years.Any() ? years.Min() : 1990;
-        _yearTo = years.Any() ? years.Max() : DateTime.Now.Year;
-        _scoreFrom = 0; _scoreTo = 10;
-        _epFrom = 0; _epTo = GetMaxEpisodes();
-        StateHasChanged();
+        _yearFrom  = _minYear;
+        _yearTo    = _maxYear;
+        _scoreFrom = 0;
+        _scoreTo   = 10;
+        _epFrom    = 0;
+        _epTo      = _maxEp;
+
+        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
     private async Task Apply()
@@ -675,10 +682,10 @@
 
     private async Task PickRandom()
     {
-        var opts = BuildOptions();
+        var opts    = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
         if (!matches.Any()) return;
-        var picked = matches[new Random().Next(matches.Count)];
+        var picked  = matches[new Random().Next(matches.Count)];
         await OnApply.InvokeAsync(opts);
         await OnClose.InvokeAsync();
         await OnRandomPicked.InvokeAsync(picked.Anime);
@@ -686,21 +693,21 @@
 
     private void Close() => OnClose.InvokeAsync();
 
-    // ── Render helpers ────────────────────────────────────────────────────
+    // ── Render helpers ─────────────────────────────────────────────────────
     private RenderFragment SortChip(SortMode mode, string label) =>
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on sfp-chip-sort-on" : "")"
-    @onclick="() => { _sort = mode; StateHasChanged(); }">
+    @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
     @label
     </button>;
 
     private static string FormatAiringStatus(string s) => s switch
     {
-        "RELEASING" => "Airing",
-        "FINISHED" => "Finished",
-        "NOT_YET_RELEASED" => "Upcoming",
-        "CANCELLED" => "Cancelled",
-        "HIATUS" => "On Hiatus",
-        _ => s
+        "RELEASING"       => "Airing",
+        "FINISHED"        => "Finished",
+        "NOT_YET_RELEASED"=> "Upcoming",
+        "CANCELLED"       => "Cancelled",
+        "HIATUS"          => "On Hiatus",
+        _                 => s
     };
 
     private static int SeasonOrder(string s) => s?.ToUpper() switch
