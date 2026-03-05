@@ -209,7 +209,7 @@ public class AniListAuthService
                 Description = desc,
                 Season = media?["season"]?.ToString() ?? "",
                 Year = media?["seasonYear"]?.Value<int?>(),
-                Genres = media?["genres"]?.Select(g => g.ToString()).Take(3).ToList() ?? new(),
+                Genres = media?["genres"]?.Select(g => g.ToString()).ToList() ?? new(),
                 Duration = media?["duration"]?.Value<int?>(),
                 Popularity = media?["popularity"]?.Value<int?>(),
                 Favourites = media?["favourites"]?.Value<int?>(),

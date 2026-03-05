@@ -605,10 +605,10 @@ namespace AniScroll.Shared.Services
                 var genres = new List<string>();
                 var ga     = m["genres"];
                 if (ga != null && ga.HasValues)
-                    for (int i = 0; i < Math.Min(3, ga.Count()); i++)
+                    foreach (var g in ga)
                     {
-                        if (ga[i] == null || ga[i]!.Type == JTokenType.Null) continue;
-                        genres.Add(ga[i]!.ToString());
+                        if (g == null || g.Type == JTokenType.Null) continue;
+                        genres.Add(g.ToString());
                     }
 
                 var studios = new List<AnimeStudio>();
