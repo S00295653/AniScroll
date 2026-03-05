@@ -128,9 +128,9 @@
                         </div>
                         <div class="sfp-dual-slider sfp-dual-slider-year">
                             <span class="sfp-range-label">@_minYear</span>
-                            <div class="sfp-slider-wrap" @ref="_yearWrapRef">
-                                <div class="sfp-slider-track" @onclick="e => OnTrackClickAsync(e, SliderType.Year)"></div>
-                                <div class="sfp-slider-fill" style="@YearFillStyle" @onclick="e => OnTrackClickAsync(e, SliderType.Year)"></div>
+                            <div class="sfp-slider-wrap" @ref="_yearWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Year)">
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                                 <input type="range" class="sfp-range sfp-range-lo"
                                        style="z-index:@(_yearFrom >= _yearTo ? 5 : 3)"
                                        min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
@@ -160,9 +160,9 @@
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @onchange="e => { _scoreFrom = Math.Min(Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0), _scoreTo); ScheduleResultCountUpdate(); }" />
-                            <div class="sfp-slider-wrap" @ref="_scoreWrapRef">
-                                <div class="sfp-slider-track" @onclick="e => OnTrackClickAsync(e, SliderType.Score)"></div>
-                                <div class="sfp-slider-fill" style="@ScoreFillStyle" @onclick="e => OnTrackClickAsync(e, SliderType.Score)"></div>
+                            <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                                 <input type="range" class="sfp-range sfp-range-lo"
                                        style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
                                        min="0" max="10" step="0.5"
@@ -192,9 +192,9 @@
                             <input type="number" class="sfp-num-input"
                                    min="0" max="@_maxEp" value="@_epFrom"
                                    @onchange="e => { _epFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), 0), _epTo); ScheduleResultCountUpdate(); }" />
-                            <div class="sfp-slider-wrap" @ref="_epWrapRef">
-                                <div class="sfp-slider-track" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)"></div>
-                                <div class="sfp-slider-fill" style="@EpFillStyle" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)"></div>
+                            <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
+                                <div class="sfp-slider-track"></div>
+                                <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                                 <input type="range" class="sfp-range sfp-range-lo"
                                        style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
                                        min="0" max="@_maxEp" step="1" value="@_epFrom"
@@ -401,7 +401,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- STREAMING — logos fetched via Google favicon API -->
+                <!-- STREAMING — icons via AniList ExternalLinks, same rendering as AnimeDetailPopup -->
                 @if (_platforms.Any())
                 {
                     <div class="sfp-section">
@@ -411,14 +411,23 @@
                             {
                                 var pv = p;
                                 bool on = FilterPlatforms.Contains(pv);
-                                var domain   = GetPlatformDomain(pv);
+                                _platformLinkMap.TryGetValue(pv, out var lnk);
                                 var fallback = GetPlatformFallback(pv);
+                                string? iconUrl    = lnk?.Icon;
+                                string? brandColor = lnk?.Color;
+                                bool shouldRecolor = !_sfpColorfulIconSites.Contains(pv)
+                                    && !_sfpNeverRecolorSites.Contains(pv)
+                                    && !string.IsNullOrEmpty(brandColor)
+                                    && brandColor != "#000000"
+                                    && brandColor!.StartsWith("#");
                                 <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">
-                                    @if (!string.IsNullOrEmpty(domain))
+                                    @if (!string.IsNullOrEmpty(iconUrl))
                                     {
+                                        string imgStyle = shouldRecolor ? GetWhiteToColorFilter(brandColor!) : "object-fit:contain;";
                                         <img class="sfp-platform-icon"
-                                             src="https://www.google.com/s2/favicons?domain=@(domain)&sz=32"
+                                             src="@iconUrl"
                                              alt="@pv"
+                                             style="@imgStyle"
                                              onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='inline-flex')" />
                                         <span class="sfp-platform-badge sfp-platform-badge-hidden"
                                               style="background:@(fallback.bg);color:@(fallback.fg)">@fallback.abbr</span>
@@ -550,6 +559,7 @@
     private List<string> _allTags    = new();
     private List<string> _sources    = new();
     private List<string> _platforms  = new();
+    private Dictionary<string, AnimeExternalLink> _platformLinkMap = new();
     private List<string> _countries  = new();
     private List<int>    _years      = new();
     private int    _minYear = 1990, _maxYear = 2100, _maxEp = 0, _scoredCount = 0;
@@ -644,6 +654,13 @@
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
+    private static readonly List<string> _anilistGenres = new()
+    {
+        "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy", "Horror", "Hentai",
+        "Mahou Shoujo", "Mecha", "Music", "Mystery", "Psychological", "Romance", "Sci-Fi",
+        "Slice of Life", "Sports", "Supernatural", "Thriller"
+    };
+
     private void RebuildCache()
     {
         var en = AllEntries.ToList();
@@ -652,14 +669,28 @@
         _hasNoDotStats = _noDotStatuses.Any(s => _availStatuses.Contains(s));
         _formats    = en.Select(e => e.Anime.Format).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _seasons    = en.Select(e => e.Anime.Season).Where(v => v != null).Distinct().OrderBy(SeasonOrder).ToList()!;
-        _genres     = en.SelectMany(e => e.Anime.Genres  ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
-        _allGenres  = _genres.Union(FilterGenres).Distinct().OrderBy(x => x).ToList();
-        _studios    = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+
+        // My List genres = only genres present in the user's entries
+        _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        // All genres = full AniList catalogue (lets user filter by any genre, even if they have no entries yet)
+        _allGenres = _anilistGenres.Union(FilterGenres).Distinct().OrderBy(x => x).ToList();
+
+        // My List studios = studios sorted by number of appearances in user's list (most relevant first)
+        var studioFreq = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
+                           .GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
+        _studios    = studioFreq.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
+        // All studios = same list alphabetically
         _allStudios = _studios.Union(FilterStudios).Distinct().OrderBy(x => x).ToList();
+
         _tags       = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
         _allTags    = _tags.Union(FilterTags).Distinct().OrderBy(x => x).ToList();
         _sources    = en.Select(e => e.Anime.Source).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _platforms  = en.SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
+        // Build icon map: site name → link with icon (prefer one that has an icon URL)
+        _platformLinkMap = en
+            .SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING") ?? Enumerable.Empty<AnimeExternalLink>())
+            .GroupBy(l => l.Site)
+            .ToDictionary(g => g.Key, g => g.FirstOrDefault(l => !string.IsNullOrEmpty(l.Icon)) ?? g.First());
         _countries  = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _years      = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
         _minYear    = _years.Any() ? _years.Min() : 1990;
@@ -711,6 +742,7 @@
                 break;
             }
         }
+        StateHasChanged(); // update fill bar and thumb positions immediately
         ScheduleResultCountUpdate();
     }
 
@@ -811,38 +843,27 @@
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
     @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
 
-    // ── Platform domain → Google favicon URL ─────────────────────────────────
-    private static string GetPlatformDomain(string p)
-    {
-        var l = p.ToLowerInvariant();
-        if (l.Contains("crunchyroll"))                        return "crunchyroll.com";
-        if (l.Contains("netflix"))                            return "netflix.com";
-        if (l.Contains("amazon") || l.Contains("prime"))     return "primevideo.com";
-        if (l.Contains("hidive"))                             return "hidive.com";
-        if (l.Contains("disney"))                             return "disneyplus.com";
-        if (l.Contains("funimation"))                         return "funimation.com";
-        if (l.Contains("hulu"))                               return "hulu.com";
-        if (l.Contains("vrv"))                                return "vrv.co";
-        if (l.Contains("youtube"))                            return "youtube.com";
-        if (l.Contains("apple"))                              return "tv.apple.com";
-        if (l.Contains("wakanim"))                            return "wakanim.tv";
-        if (l.Contains("adn") || l.Contains("animation digital")) return "animationdigitalnetwork.fr";
-        if (l.Contains("bilibili"))                           return "bilibili.tv";
-        if (l.Contains("tubi"))                               return "tubitv.com";
-        if (l.Contains("peacock"))                            return "peacocktv.com";
-        if (l.Contains("max") || l.Contains("hbo"))          return "max.com";
-        if (l.Contains("paramount"))                          return "paramountplus.com";
-        if (l.Contains("aniplus"))                            return "aniplus-asia.com";
-        if (l.Contains("retrocrush"))                         return "retrocrush.tv";
-        if (l.Contains("muse"))                               return "muse.asia";
-        if (l.Contains("viki"))                               return "viki.com";
-        if (l.Contains("iqiyi") || l.Contains("iq.com"))     return "iq.com";
-        if (l.Contains("wetv"))                               return "wetv.vip";
-        if (l.Contains("mewatch"))                            return "mewatch.sg";
-        return string.Empty;
-    }
+    // ── Platform icon helpers ─────────────────────────────────────────────────
 
-    // Colored text badge shown when icon fails to load or domain is unknown
+    // Icons that are already colorful — do NOT apply CSS recolor filter (ported from AnimeDetailPopup)
+    private static readonly HashSet<string> _sfpColorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Alpha Manga", "AlphaPolis", "Asacomi", "Bandai Channel", "Carlsen Manga!",
+        "Ciao Plus", "Disney Plus", "Dongman Manhua", "FEEL web", "Flower Comics",
+        "Gau Gau", "Ichijin Plus", "Kana", "Kanmanhua", "Manga UP!", "MangaPlaza",
+        "Manman Manhua", "Nico Nico Seiga", "ONO", "Piccoma", "Pixiv Comic", "Pixiv",
+        "Pocket Magazine", "Renta!", "Rimacomi Plus", "SORAJIMA TOON", "Star+",
+        "SuBLime", "Takecomic", "Tencent Comics", "Viki", "WeComics",
+        "Weekly CoroCoro Comic", "Yanmaga", "Yawaraka Spirits", "Young Animal"
+    };
+
+    // Icons that should never be recolored regardless of brand color
+    private static readonly HashSet<string> _sfpNeverRecolorSites = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Disney+", "Disney Plus"
+    };
+
+    // Colored text badge fallback when AniList icon is unavailable or fails to load
     private static (string bg, string fg, string abbr) GetPlatformFallback(string p)
     {
         var l = p.ToLowerInvariant();
@@ -872,6 +893,85 @@
         string fb = p.Length > 1 ? p[..2].ToUpper() : p.ToUpper();
         return ("#444", "#fff", fb);
     }
+
+    // CSS filter to recolor a white icon to a target hex color (same algorithm as AnimeDetailPopup)
+    private static readonly Dictionary<string, string> _sfpFilterCache = new();
+    private static string GetWhiteToColorFilter(string hex)
+    {
+        if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#')) return string.Empty;
+        if (_sfpFilterCache.TryGetValue(hex, out var cached)) return cached;
+        var rgb = ParseHex(hex);
+        if (rgb == null) { _sfpFilterCache[hex] = string.Empty; return string.Empty; }
+        var f = ComputeFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
+        var result = $"filter:brightness(0) saturate(100%) {f};";
+        _sfpFilterCache[hex] = result;
+        return result;
+    }
+    private static (int r, int g, int b)? ParseHex(string hex)
+    {
+        hex = hex.TrimStart('#');
+        if (hex.Length == 3) hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
+        if (hex.Length != 6) return null;
+        try { return (Convert.ToInt32(hex[0..2], 16), Convert.ToInt32(hex[2..4], 16), Convert.ToInt32(hex[4..6], 16)); }
+        catch { return null; }
+    }
+    private static string ComputeFilter(int tr, int tg, int tb)
+    {
+        var (th, ts, tl) = ToHsl(tr, tg, tb);
+        var rng = new Random(42);
+        double[] best = Array.Empty<double>();
+        double bestLoss = double.MaxValue;
+        for (int a = 0; a < 3 && bestLoss > 25; a++)
+        {
+            var r = Spsa(tr, tg, tb, th, ts, tl, new double[] { 50,20,3750,50,100,100 },
+                5, new double[]{60,180,18000,600,1.2,1.2}, 15, 1000, rng);
+            if (r.loss < bestLoss) { best = r.vals; bestLoss = r.loss; }
+        }
+        double A1 = bestLoss + 1;
+        var r2 = Spsa(tr, tg, tb, th, ts, tl, best, bestLoss,
+            new double[]{0.25*A1,0.25*A1,A1,0.25*A1,0.2*A1,0.2*A1}, 2, 500, rng);
+        if (r2.loss < bestLoss) best = r2.vals;
+        static int R(double v) => (int)Math.Round(v);
+        return $"invert({R(best[0])}%) sepia({R(best[1])}%) saturate({R(best[2])}%) hue-rotate({R(best[3]*3.6)}deg) brightness({R(best[4])}%) contrast({R(best[5])}%)";
+    }
+    private static (double[] vals, double loss) Spsa(int tr, int tg, int tb, double th, double ts, double tl,
+        double[] init, double A, double[] a, double c, int iters, Random rng)
+    {
+        var v = (double[])init.Clone(); double[] best = null!; double bl = double.MaxValue;
+        var d = new double[6]; var hi = new double[6]; var lo = new double[6];
+        for (int k = 0; k < iters; k++)
+        {
+            double ck = c / Math.Pow(k+1, 1.0/6.0);
+            for (int i = 0; i < 6; i++) { d[i] = rng.NextDouble()>0.5?1:-1; hi[i]=v[i]+ck*d[i]; lo[i]=v[i]-ck*d[i]; }
+            double ld = FLoss(hi,tr,tg,tb,th,ts,tl) - FLoss(lo,tr,tg,tb,th,ts,tl);
+            for (int i = 0; i < 6; i++) { double g=ld/(2*ck)*d[i]; v[i]=FClamp(v[i]-a[i]/Math.Pow(A+k+1,1.0)*g, i); }
+            double l = FLoss(v,tr,tg,tb,th,ts,tl);
+            if (l < bl) { best=(double[])v.Clone(); bl=l; }
+        }
+        return (best ?? v, bl);
+    }
+    private static double FLoss(double[] f, int tr, int tg, int tb, double th, double ts, double tl)
+    {
+        var (r,g,b) = ApplyF(f); var (h,s,l) = ToHsl((int)r,(int)g,(int)b);
+        return Math.Abs(r-tr)+Math.Abs(g-tg)+Math.Abs(b-tb)+Math.Abs(h-th)+Math.Abs(s-ts)+Math.Abs(l-tl);
+    }
+    private static (double r,double g,double b) ApplyF(double[] f)
+    {
+        double r=0,g=0,b=0;
+        double inv=f[0]/100.0; r=FC((inv+r/255.0*(1-2*inv))*255); g=FC((inv+g/255.0*(1-2*inv))*255); b=FC((inv+b/255.0*(1-2*inv))*255);
+        (r,g,b)=MM(r,g,b,SM(f[1]/100.0)); (r,g,b)=MM(r,g,b,SAT(f[2]/100.0)); (r,g,b)=MM(r,g,b,HR(f[3]*3.6));
+        r=FC(r*(f[4]/100.0)); g=FC(g*(f[4]/100.0)); b=FC(b*(f[4]/100.0));
+        double con=f[5]/100.0,ic=(-0.5*con+0.5)*255; r=FC(r*con+ic); g=FC(g*con+ic); b=FC(b*con+ic);
+        return (r,g,b);
+    }
+    private static double FC(double v) => Math.Max(0,Math.Min(255,v));
+    private static (double,double,double) MM(double r,double g,double b,double[] m) =>
+        (FC(r*m[0]+g*m[1]+b*m[2]),FC(r*m[3]+g*m[4]+b*m[5]),FC(r*m[6]+g*m[7]+b*m[8]));
+    private static double[] SM(double v) => new[]{0.393+0.607*(1-v),0.769-0.769*(1-v),0.189-0.189*(1-v),0.349-0.349*(1-v),0.686+0.314*(1-v),0.168-0.168*(1-v),0.272-0.272*(1-v),0.534-0.534*(1-v),0.131+0.869*(1-v)};
+    private static double[] SAT(double v) => new[]{0.213+0.787*v,0.715-0.715*v,0.072-0.072*v,0.213-0.213*v,0.715+0.285*v,0.072-0.072*v,0.213-0.213*v,0.715-0.715*v,0.072+0.928*v};
+    private static double[] HR(double deg) { double rad=deg/180.0*Math.PI,sin=Math.Sin(rad),cos=Math.Cos(rad); return new[]{0.213+cos*0.787-sin*0.213,0.715-cos*0.715-sin*0.715,0.072-cos*0.072+sin*0.928,0.213-cos*0.213+sin*0.143,0.715+cos*0.285+sin*0.140,0.072-cos*0.072-sin*0.283,0.213-cos*0.213-sin*0.787,0.715-cos*0.715+sin*0.715,0.072+cos*0.928+sin*0.072}; }
+    private static double FClamp(double v, int i) { double max=i==2?7500:(i==4||i==5)?200:100; if(i==3){if(v>max)v%=max;else if(v<0)v=max+v%max;}else v=Math.Max(0,Math.Min(max,v)); return v; }
+    private static (double h,double s,double l) ToHsl(int r,int g,int b) { double rf=r/255.0,gf=g/255.0,bf=b/255.0,max=Math.Max(rf,Math.Max(gf,bf)),min=Math.Min(rf,Math.Min(gf,bf)),l=(max+min)/2.0,h=0,s=0; if(max!=min){double d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max==rf)h=(gf-bf)/d+(gf<bf?6:0);else if(max==gf)h=(bf-rf)/d+2;else h=(rf-gf)/d+4;h/=6;}return(h*100,s*100,l*100); }
 
     private static string FormatAiringStatus(string s) => s switch
     { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };

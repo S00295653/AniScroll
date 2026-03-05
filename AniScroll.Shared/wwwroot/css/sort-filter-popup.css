@@ -144,31 +144,31 @@
 .sfp-num-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .sfp-num-input:focus{border-color:var(--sfp-accent-border);background:var(--sfp-accent-dim);color:#fff}
 
-/* Wrapper */
+/* Wrapper — catches ALL clicks in its area */
 .sfp-slider-wrap{
     flex:1;position:relative;
     height:calc(var(--sfp-thumb) + 10px);
     display:flex;align-items:center;
+    cursor:pointer;
 }
 
-/* Grey track — clickable via @onclick */
+/* Grey track — purely visual, pointer-events off so wrapper gets the click */
 .sfp-slider-track{
     position:absolute;left:0;right:0;
     top:50%;transform:translateY(-50%);
     height:5px;border-radius:3px;
     background:rgba(255,255,255,.12);
-    cursor:pointer;
-    /* pointer-events:all is default; clicks reach the @onclick handler */
+    pointer-events:none;
 }
 
-/* Colored fill — also clickable via @onclick */
+/* Colored fill — purely visual, pointer-events off so wrapper gets the click */
 .sfp-slider-fill{
     position:absolute;
     top:50%;transform:translateY(-50%);
     height:5px;border-radius:3px;
     background:var(--sfp-accent);
     box-shadow:0 0 6px rgba(233,69,96,.35);
-    cursor:pointer;
+    pointer-events:none;
     /* No transition — prevents the "disappear" glitch during fast drag */
 }
 
