@@ -682,15 +682,8 @@
     private void CloseDetailPopup()
     {
         showDetailPopup = false;
-        selectedAnime   = null;
-
-        // If the detail was opened from the lists panel, reopen it
-        if (_detailOpenedFromLists)
-        {
-            _detailOpenedFromLists = false;
-            showListsPanel = true;
-        }
-
+        selectedAnime = null;
+        _detailOpenedFromLists = false;
         StateHasChanged();
     }
 
@@ -795,8 +788,9 @@
 
     private async Task HandleListsAnimeSelected(AnimeCard anime)
     {
-        showListsPanel = false;
-        _detailOpenedFromLists = true;   // remember origin so we can go back
+        // Panel reste ouvert — la detail popup s'ouvre par-dessus
+        // Scroll position préservée naturellement
+        _detailOpenedFromLists = true;
         await ShowAnimeDetails(anime);
     }
 

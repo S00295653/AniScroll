@@ -121,11 +121,24 @@
     padding: 8px 0 4px;
 }
 
-.pp-anilist-logo {
+/* Icon wrap with glow */
+.pp-connect-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    background: rgba(2, 169, 255, 0.08);
+    border: 1px solid rgba(2, 169, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 6px;
+    box-shadow: 0 0 32px rgba(2, 169, 255, 0.1);
 }
+
+    .pp-connect-icon-wrap svg {
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
 .pp-connect-title {
     font-size: 18px;
@@ -142,10 +155,36 @@
     max-width: 300px;
 }
 
-.pp-anilist-btn {
+/* Feature checklist */
+.pp-connect-features {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 4px 0 6px;
+    text-align: left;
+}
+
+.pp-connect-feature {
     display: flex;
     align-items: center;
     gap: 9px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+}
+
+/* Connect button — full width */
+.pp-anilist-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
     background: #02a9ff;
     color: #fff;
     border: none;
@@ -154,49 +193,22 @@
     font-size: 14.5px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 8px;
-    transition: background 0.15s, transform 0.1s;
+    transition: filter 0.15s, transform 0.1s;
     letter-spacing: -0.1px;
 }
 
+    .pp-anilist-btn svg {
+        border-radius: 4px;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
     .pp-anilist-btn:hover {
-        background: #0095e8;
+        filter: brightness(1.12);
     }
 
     .pp-anilist-btn:active {
         transform: scale(0.97);
-    }
-
-/* Setup hint */
-.pp-setup-hint {
-    margin-top: 16px;
-    background: rgba(2,169,255,0.08);
-    border: 1px solid rgba(2,169,255,0.2);
-    border-radius: 10px;
-    padding: 12px 14px;
-    text-align: left;
-}
-
-    .pp-setup-hint p {
-        margin: 0 0 6px;
-        font-size: 12px;
-        color: rgba(2,169,255,0.9);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-
-    .pp-setup-hint ol {
-        margin: 0;
-        padding-left: 18px;
-        font-size: 12.5px;
-        color: rgba(255,255,255,0.5);
-        line-height: 1.65;
-    }
-
-    .pp-setup-hint a {
-        color: #02a9ff;
-        text-decoration: none;
     }
 
 /* ── Loading / Importing ────────────────────────────────── */
@@ -354,7 +366,7 @@
     padding: 11px;
     font-size: 13.5px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
     .pp-disconnect-btn:hover {
@@ -451,11 +463,11 @@
     font-size: 14.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
+    transition: filter 0.15s, transform 0.1s;
 }
 
     .pp-done-close-btn:hover {
-        background: #0095e8;
+        filter: brightness(1.12);
     }
 
     .pp-done-close-btn:active {
@@ -490,3 +502,26 @@
     max-width: 280px;
     line-height: 1.5;
 }
+
+/* ── Token input ────────────────────────────────────────── */
+.pp-token-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+    .pp-token-input::placeholder {
+        color: rgba(255,255,255,0.22);
+    }
+
+    .pp-token-input:focus {
+        border-color: rgba(2,169,255,0.45);
+    }

@@ -147,11 +147,15 @@
                              style="touch-action:none; cursor:grab;"
                              @onpointerdown="e => OnHandlePointerDown(e, ri)"
                              @onpointerdown:stopPropagation="true">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <line x1="9" y1="5" x2="15" y2="5"></line>
-                                <line x1="9" y1="12" x2="15" y2="12"></line>
-                                <line x1="9" y1="19" x2="15" y2="19"></line>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Left column -->
+                                <circle cx="9" cy="6" r="1.6" fill="currentColor" />
+                                <circle cx="9" cy="12" r="1.6" fill="currentColor" />
+                                <circle cx="9" cy="18" r="1.6" fill="currentColor" />
+                                <!-- Right column -->
+                                <circle cx="15" cy="6" r="1.6" fill="currentColor" />
+                                <circle cx="15" cy="12" r="1.6" fill="currentColor" />
+                                <circle cx="15" cy="18" r="1.6" fill="currentColor" />
                             </svg>
                         </div>
 
