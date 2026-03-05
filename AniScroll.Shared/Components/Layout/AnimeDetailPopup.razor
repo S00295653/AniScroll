@@ -6,7 +6,9 @@
 
 @if (IsVisible && CurrentAnime != null)
 {
-    <div class="anime-detail-overlay" @onclick="OnOverlayClick">
+    <div class="anime-detail-overlay"
+     @onclick="OnOverlayClick"
+     style="--popup-bg-url: url('@(CurrentAnime.BannerUrl ?? CurrentAnime.ImageUrl)');">
         <div class="anime-detail-modal"
              @onclick:stopPropagation="true"
              style="transform: translateX(@(edgeSwipeOffset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px) translateY(@((isEdgeSwiping || isEdgeSwipeTrackingActive ? 0 : pullOffset).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))px); transition: @(GetModalTransition());">

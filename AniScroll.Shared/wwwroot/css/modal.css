@@ -14,6 +14,7 @@
     align-items: flex-end;
     justify-content: center;
     animation: overlayFadeIn 0.2s ease;
+    background: #080810;
 }
 
 @media (min-width: 768px) {
@@ -31,6 +32,26 @@
     to {
         opacity: 1;
     }
+}
+
+/* Blurred cover image as background */
+.anime-detail-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--popup-bg-url);
+    background-size: cover;
+    background-position: center top;
+    filter: blur(28px) brightness(0.25) saturate(0.8);
+    transform: scale(1.08); /* évite les bords blancs du blur */
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* S'assurer que le modal passe par-dessus le ::before */
+.anime-detail-modal {
+    position: relative;
+    z-index: 1;
 }
 
 /* ── Modal ── */
