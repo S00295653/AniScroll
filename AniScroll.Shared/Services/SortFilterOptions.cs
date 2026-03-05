@@ -1,33 +1,64 @@
-﻿using AniScroll.Shared.Components.Layout;
+﻿using static AniScroll.Shared.Components.Layout.SortFilterPopup;
 
-namespace AniScroll.Shared.Models;
-
-public class SortFilterOptions
+namespace AniScroll.Shared.Models
 {
-    public SortFilterPopup.SortMode Sort { get; set; } = SortFilterPopup.SortMode.RecentlyAdded;
+    public class SortFilterOptions
+    {
+        // ── Sort ─────────────────────────────────────────────────────────────
+        public SortMode Sort { get; set; } = SortMode.RecentlyAdded;
 
-    public HashSet<string> AiringStatuses { get; set; } = new();
-    public HashSet<string> Formats { get; set; } = new();
-    public HashSet<string> Seasons { get; set; } = new();
-    public HashSet<int> Years { get; set; } = new();
-    public HashSet<string> Genres { get; set; } = new();
-    public HashSet<string> Tags { get; set; } = new();
-    public HashSet<string> Sources { get; set; } = new();
-    public HashSet<string> Platforms { get; set; } = new();
-    public HashSet<string> Countries { get; set; } = new();
-    public bool? Adult { get; set; } = null;
+        // ── Chip filters ─────────────────────────────────────────────────────
+        public HashSet<string> AiringStatuses { get; set; } = new();
+        public HashSet<string> Formats { get; set; } = new();
+        public HashSet<string> Seasons { get; set; } = new();
+        public HashSet<string> Genres { get; set; } = new();
+        public HashSet<string> Studios { get; set; } = new();
+        public HashSet<string> Tags { get; set; } = new();
+        public HashSet<string> Sources { get; set; } = new();
+        public HashSet<string> Platforms { get; set; } = new();
+        public HashSet<string> Countries { get; set; } = new();
+        public bool? Adult { get; set; }
 
-    public bool IsDefault =>
-        Sort == SortFilterPopup.SortMode.RecentlyAdded &&
-        !AiringStatuses.Any() && !Formats.Any() && !Seasons.Any() &&
-        !Years.Any() && !Genres.Any() && !Tags.Any() &&
-        !Sources.Any() && !Platforms.Any() && !Countries.Any() &&
-        !Adult.HasValue;
+        // ── Range filters (null = no filter applied) ─────────────────────────
+        public int? YearFrom { get; set; }
+        public int? YearTo { get; set; }
+        public double? ScoreFrom { get; set; }
+        public double? ScoreTo { get; set; }
+        public int? EpFrom { get; set; }
+        public int? EpTo { get; set; }
 
-    public int ActiveFilterCount =>
-        (AiringStatuses.Any() ? 1 : 0) + (Formats.Any() ? 1 : 0) +
-        (Seasons.Any() ? 1 : 0) + (Years.Any() ? 1 : 0) +
-        (Genres.Any() ? 1 : 0) + (Tags.Any() ? 1 : 0) +
-        (Sources.Any() ? 1 : 0) + (Platforms.Any() ? 1 : 0) +
-        (Countries.Any() ? 1 : 0) + (Adult.HasValue ? 1 : 0);
+        // ── Helpers ───────────────────────────────────────────────────────────
+        public bool IsDefault =>
+            Sort == SortMode.RecentlyAdded &&
+            !AiringStatuses.Any() && !Formats.Any() && !Seasons.Any() &&
+            !Genres.Any() && !Studios.Any() && !Tags.Any() &&
+            !Sources.Any() && !Platforms.Any() && !Countries.Any() &&
+            !Adult.HasValue &&
+            !YearFrom.HasValue && !YearTo.HasValue &&
+            !ScoreFrom.HasValue && !ScoreTo.HasValue &&
+            !EpFrom.HasValue && !EpTo.HasValue;
+
+        public int ActiveFilterCount
+        {
+            get
+            {
+                int n = 0;
+                if (Sort != SortMode.RecentlyAdded) n++;
+                if (AiringStatuses.Any()) n++;
+                if (Formats.Any()) n++;
+                if (Seasons.Any()) n++;
+                if (Genres.Any()) n++;
+                if (Studios.Any()) n++;
+                if (Tags.Any()) n++;
+                if (Sources.Any()) n++;
+                if (Platforms.Any()) n++;
+                if (Countries.Any()) n++;
+                if (Adult.HasValue) n++;
+                if (YearFrom.HasValue || YearTo.HasValue) n++;
+                if (ScoreFrom.HasValue || ScoreTo.HasValue) n++;
+                if (EpFrom.HasValue || EpTo.HasValue) n++;
+                return n;
+            }
+        }
+    }
 }

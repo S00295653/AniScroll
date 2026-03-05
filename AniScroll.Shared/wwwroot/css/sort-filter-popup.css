@@ -1,51 +1,24 @@
 ﻿/* ============================================================
-   sort-filter-popup.css
+   SORT & FILTER POPUP
+   Theme: dark (#0e0e16 / #14141f), accent #E94560 (app red),
+   sort amber #fbbf24, filter indigo #6366f1, adult #ef4444
    ============================================================ */
 
-/* ── Sort button in filter bar ─────────────────────────────── */
-.lists-sort-btn {
-    position: relative;
-}
-
-.lists-sort-btn-active {
-    background: rgba(251, 191, 36, 0.12) !important;
-    border-color: rgba(251, 191, 36, 0.35) !important;
-    color: #fbbf24 !important;
-}
-
-.lists-sort-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 99px;
-    background: #fbbf24;
-    color: #0e0e16;
-    font-size: 9px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-
-/* ── Overlay ───────────────────────────────────────────────── */
+/* ── Overlay ────────────────────────────────────────────────── */
 .sfp-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     z-index: 3000;
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    animation: sfpFadeIn 0.18s ease;
+    animation: sfp-fade-in 0.18s ease;
 }
 
-@keyframes sfpFadeIn {
+@keyframes sfp-fade-in {
     from {
         opacity: 0;
     }
@@ -55,24 +28,24 @@
     }
 }
 
-/* ── Panel ─────────────────────────────────────────────────── */
+/* ── Panel (bottom sheet) ───────────────────────────────────── */
 .sfp-panel {
     width: 100%;
-    max-width: 540px;
+    max-width: 520px;
+    max-height: 88dvh;
     background: #14141f;
-    border-radius: 22px 22px 0 0;
+    border-radius: 20px 20px 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     flex-direction: column;
-    max-height: 88dvh;
     overflow: hidden;
-    animation: sfpSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: sfp-slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes sfpSlideUp {
+@keyframes sfp-slide-up {
     from {
         transform: translateY(100%);
-        opacity: 0;
+        opacity: 0.6;
     }
 
     to {
@@ -81,92 +54,112 @@
     }
 }
 
-/* ── Handle ────────────────────────────────────────────────── */
+/* ── Handle ─────────────────────────────────────────────────── */
 .sfp-handle-zone {
-    flex-shrink: 0;
+    padding: 10px 0 6px;
     display: flex;
     justify-content: center;
-    padding: 10px 0 4px;
+    flex-shrink: 0;
 }
 
 .sfp-handle-bar {
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.18);
 }
 
-/* ── Header ────────────────────────────────────────────────── */
+/* ── Header ─────────────────────────────────────────────────── */
 .sfp-header {
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 16px 12px;
+    padding: 0 18px 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.sfp-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
-    letter-spacing: -0.01em;
-}
-
-.sfp-header-actions {
+.sfp-header-left {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+.sfp-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.01em;
+}
+
+.sfp-active-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #E94560;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.sfp-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .sfp-reset-btn {
-    padding: 4px 12px;
-    border-radius: 8px;
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    color: #fbbf24;
+    background: transparent;
+    border: 1px solid rgba(233, 69, 96, 0.45);
+    color: #E94560;
     font-size: 12px;
     font-weight: 600;
+    padding: 4px 11px;
+    border-radius: 20px;
     cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
 }
 
     .sfp-reset-btn:hover {
-        background: rgba(251, 191, 36, 0.18);
+        background: rgba(233, 69, 96, 0.12);
+        border-color: #E94560;
     }
 
 .sfp-close-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
 }
 
     .sfp-close-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
     }
 
-/* ── Scrollable body ───────────────────────────────────────── */
+/* ── Scrollable body ─────────────────────────────────────────── */
 .sfp-body {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
-    padding: 4px 14px 12px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 0 4px;
 }
 
     .sfp-body::-webkit-scrollbar {
-        width: 4px;
+        width: 3px;
     }
 
     .sfp-body::-webkit-scrollbar-track {
@@ -174,149 +167,389 @@
     }
 
     .sfp-body::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.1);
-        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 2px;
     }
 
-/* ── Section ───────────────────────────────────────────────── */
+/* ── Section ─────────────────────────────────────────────────── */
 .sfp-section {
-    padding: 10px 0 8px;
-}
-
-.sfp-section-label {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.3);
-    margin-bottom: 8px;
-    padding: 0 2px;
+    padding: 14px 18px 12px;
 }
 
 .sfp-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.05);
-    margin: 0 2px;
+    background: rgba(255, 255, 255, 0.055);
+    margin: 0 18px;
 }
 
-/* ── Chips ─────────────────────────────────────────────────── */
+.sfp-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.38);
+    margin-bottom: 10px;
+}
+
+.sfp-section-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+    .sfp-section-label-row .sfp-section-label {
+        margin-bottom: 0;
+    }
+
+.sfp-range-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.12);
+    padding: 2px 9px;
+    border-radius: 10px;
+}
+
+/* ── Chips ────────────────────────────────────────────────────── */
 .sfp-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 7px;
 }
 
 .sfp-chip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 12px;
+    padding: 5px 12px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     cursor: pointer;
-    transition: background 0.14s, border-color 0.14s, color 0.14s, transform 0.1s;
-    font-family: inherit;
+    transition: background 0.13s, border-color 0.13s, color 0.13s, box-shadow 0.13s;
     white-space: nowrap;
-    -webkit-appearance: none;
-    appearance: none;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
 }
 
     .sfp-chip:hover {
-        background: rgba(255,255,255,0.09);
-        color: rgba(255,255,255,0.8);
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.88);
+        border-color: rgba(255, 255, 255, 0.18);
     }
 
-    .sfp-chip:active {
-        transform: scale(0.95);
+    /* Active filter chip (indigo) */
+    .sfp-chip.sfp-chip-on {
+        background: rgba(99, 102, 241, 0.22);
+        border-color: rgba(99, 102, 241, 0.7);
+        color: #a5b4fc;
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
     }
 
-/* Active chip — general */
-.sfp-chip-on {
-    background: rgba(99, 102, 241, 0.15) !important;
-    border-color: rgba(99, 102, 241, 0.45) !important;
-    color: #a5b4fc !important;
-}
+        /* Active sort chip (amber) */
+        .sfp-chip.sfp-chip-on.sfp-chip-sort-on {
+            background: rgba(251, 191, 36, 0.18);
+            border-color: rgba(251, 191, 36, 0.65);
+            color: #fbbf24;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.18);
+        }
 
-/* Active sort chip — amber */
-.sfp-chip-sort-on {
-    background: rgba(251, 191, 36, 0.12) !important;
-    border-color: rgba(251, 191, 36, 0.4) !important;
-    color: #fbbf24 !important;
-}
+        /* Active adult chip (red) */
+        .sfp-chip.sfp-chip-on.sfp-chip-adult {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(239, 68, 68, 0.65);
+            color: #fca5a5;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+        }
 
-/* Adult chip */
-.sfp-chip-adult {
-    background: rgba(239, 68, 68, 0.12) !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
-    color: #f87171 !important;
-}
-
-/* ── Airing status dots ────────────────────────────────────── */
+/* ── Status dots (matching info.css exactly) ─────────────────── */
 .sfp-status-dot {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
+    display: inline-block;
 }
 
+/* Releasing — green pulse (same as .status-dot.releasing) */
 .sfp-dot-releasing {
-    background: #22c55e;
-    box-shadow: 0 0 5px rgba(34,197,94,0.6);
+    background: rgb(0, 230, 0);
+    box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+    animation: pulse-green 2s ease-in-out infinite;
 }
 
+/* Not yet released — red pulse (same as .status-dot.upcoming) */
 .sfp-dot-upcoming {
-    background: #a855f7;
-    box-shadow: 0 0 5px rgba(168,85,247,0.6);
+    background: rgb(230, 0, 0);
+    box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+    animation: pulse-red 2s ease-in-out infinite;
 }
 
-/* ── Footer ────────────────────────────────────────────────── */
+/* (keyframes are already defined globally in info.css; 
+   define locally too so this file is self-contained) */
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(0, 255, 0, 1);
+    }
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 8px rgba(255, 0, 0, 1);
+    }
+}
+
+/* ── Range slider (dual thumb) ───────────────────────────────── */
+.sfp-range-track-wrap {
+    position: relative;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    margin: 0 6px;
+}
+
+.sfp-range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+}
+
+.sfp-range-fill {
+    position: absolute;
+    top: 0;
+    height: 4px;
+    background: #6366f1;
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.sfp-range {
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    pointer-events: none;
+    outline: none;
+}
+
+    .sfp-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #6366f1;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        pointer-events: all;
+        transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+        .sfp-range::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.28);
+        }
+
+    .sfp-range::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #6366f1;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        pointer-events: all;
+    }
+
+.sfp-range-lo {
+    z-index: 3;
+}
+
+.sfp-range-hi {
+    z-index: 4;
+}
+
+.sfp-clear-range {
+    display: block;
+    margin: 8px auto 0;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 0;
+    transition: color 0.15s;
+}
+
+    .sfp-clear-range:hover {
+        color: #E94560;
+    }
+
+/* ── Show more tags ───────────────────────────────────────────── */
+.sfp-show-more {
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #818cf8;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+    .sfp-show-more:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: rgba(99, 102, 241, 0.6);
+    }
+
+/* ── Footer ─────────────────────────────────────────────────── */
 .sfp-footer {
-    flex-shrink: 0;
-    padding: 10px 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
     background: #14141f;
 }
 
+/* Random button */
+.sfp-random-btn {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+    .sfp-random-btn:hover {
+        background: rgba(251, 191, 36, 0.12);
+        border-color: rgba(251, 191, 36, 0.4);
+        color: #fbbf24;
+        transform: rotate(90deg);
+    }
+
+    .sfp-random-btn:active {
+        transform: rotate(180deg) scale(0.92);
+    }
+
+/* Apply button */
 .sfp-apply-btn {
-    width: 100%;
+    flex: 1;
+    height: 44px;
+    border-radius: 12px;
+    background: #E94560;
+    background: linear-gradient(135deg, #E94560 0%, #c73652 100%);
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 13px;
-    border-radius: 12px;
-    background: #6366f1;
-    border: none;
-    color: white;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: filter 0.15s, transform 0.12s;
-    font-family: inherit;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+    box-shadow: 0 2px 14px rgba(233, 69, 96, 0.35);
 }
 
     .sfp-apply-btn:hover {
-        filter: brightness(1.12);
+        opacity: 0.9;
+        box-shadow: 0 4px 18px rgba(233, 69, 96, 0.5);
     }
 
     .sfp-apply-btn:active {
-        transform: scale(0.98);
+        transform: scale(0.97);
     }
 
 .sfp-result-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
+    min-width: 26px;
     height: 22px;
-    padding: 0 6px;
-    border-radius: 99px;
-    background: rgba(255, 255, 255, 0.2);
-    font-size: 11px;
-    font-weight: 700;
+    padding: 0 7px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 11px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* ── Lists panel trigger button ──────────────────────────────── */
+.lists-sort-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.14s, color 0.14s, border-color 0.14s;
+}
+
+    .lists-sort-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .lists-sort-btn.lists-sort-btn-active {
+        background: rgba(251, 191, 36, 0.14);
+        border-color: rgba(251, 191, 36, 0.55);
+        color: #fbbf24;
+    }
+
+.lists-sort-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #E94560;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: none;
 }
