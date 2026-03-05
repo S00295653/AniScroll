@@ -363,3 +363,114 @@
     display:flex; align-items:center; justify-content:center;
     pointer-events:none;
 }
+
+/* ── Section label row (label + badge inline) ────────────────── */
+.sfp-section-label-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+}
+.sfp-section-label-row .sfp-section-label { margin-bottom: 0; }
+.sfp-range-badge {
+    font-size: 12px; font-weight: 700;
+    color: var(--sfp-accent);
+    background: var(--sfp-accent-dim);
+    border: 1px solid var(--sfp-accent-border);
+    padding: 2px 9px; border-radius: 10px;
+}
+
+/* ── Clear range button ──────────────────────────────────────── */
+.sfp-clear-range {
+    display: block; margin: 8px auto 0;
+    background: transparent; border: none;
+    color: var(--sfp-muted); font-size: 11px; font-weight: 600;
+    cursor: pointer; padding: 2px 0; transition: color 0.15s;
+}
+.sfp-clear-range:hover { color: var(--sfp-accent); }
+
+/* ── Year Timeline ───────────────────────────────────────────── */
+.sfp-timeline {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    width: 100%;
+    height: 52px;
+    position: relative;
+    padding: 0 2px;
+    overflow: visible;
+}
+
+.sfp-tl-tick {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0 0;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    transition: none;
+}
+
+.sfp-tl-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: background 0.12s, transform 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+}
+
+.sfp-tl-tick:hover .sfp-tl-dot {
+    background: rgba(255,255,255,0.45);
+    border-color: rgba(255,255,255,0.6);
+    transform: scale(1.3);
+}
+
+/* In-range ticks */
+.sfp-tl-tick.sfp-tl-in .sfp-tl-dot {
+    background: var(--sfp-accent);
+    border-color: var(--sfp-accent);
+}
+
+/* Endpoint ticks (from / to) */
+.sfp-tl-tick.sfp-tl-end .sfp-tl-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--sfp-accent);
+    border-color: #fff;
+    border-width: 2px;
+    box-shadow: 0 0 6px var(--sfp-accent-glow);
+    transform: none;
+}
+.sfp-tl-tick.sfp-tl-end:hover .sfp-tl-dot {
+    transform: scale(1.2);
+}
+
+/* Year labels */
+.sfp-tl-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--sfp-muted);
+    white-space: nowrap;
+    line-height: 1;
+    transition: color 0.12s;
+    user-select: none;
+    position: absolute;
+    bottom: 0;
+}
+.sfp-tl-label-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.sfp-tl-tick.sfp-tl-in .sfp-tl-label  { color: rgba(255,255,255,0.55); }
+.sfp-tl-tick.sfp-tl-end .sfp-tl-label {
+    color: var(--sfp-accent);
+    font-weight: 800;
+    font-size: 10px;
+}
+.sfp-tl-tick:hover .sfp-tl-label { color: rgba(255,255,255,0.9); }

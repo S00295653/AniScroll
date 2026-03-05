@@ -33,22 +33,6 @@
 
             <!-- Body -->
             <div class="sfp-body">
-
-                <!-- DEBUG PANEL - retire quand résolu -->
-                <div style="margin:8px 18px;padding:10px 12px;background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.3);border-radius:8px;font-size:11px;color:rgba(255,220,80,0.9);font-family:monospace;line-height:1.8;">
-                    <div><b>AllEntries:</b> @AllEntries.Count()</div>
-                    <div><b>Avec genres:</b> @AllEntries.Count(e => e.Anime.Genres != null && e.Anime.Genres.Any())</div>
-                    <div><b>Sans genres:</b> @AllEntries.Count(e => e.Anime.Genres == null || !e.Anime.Genres.Any())</div>
-                    <div><b>Max genres/entrée:</b> @(AllEntries.Any() ? AllEntries.Max(e => e.Anime.Genres?.Count ?? 0) : 0)</div>
-                    <div><b>_genres cache:</b> @_genres.Count</div>
-                    <div><b>_tags cache:</b> @_tags.Count</div>
-                    <div><b>3 premiers titres + genres:</b></div>
-                    @foreach (var dbgE in AllEntries.Take(3))
-                    {
-                        <div style="padding-left:8px;word-break:break-all">@dbgE.Anime.Title → [@string.Join(", ", dbgE.Anime.Genres ?? new())]</div>
-                    }
-                </div>
-
                 <!-- SORT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
@@ -130,28 +114,54 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- YEAR RANGE -->
+                <!-- YEAR TIMELINE -->
                 @if (_years.Count > 1)
                 {
                     <div class="sfp-section">
-                        <div class="sfp-section-label">Year</div>
-                        <div class="sfp-dual-slider">
-                            <input type="number" class="sfp-num-input"
-                                   min="@_minYear" max="@_maxYear" value="@_yearFrom"
-                                   @onchange="e => { _yearFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), _minYear), _yearTo); ScheduleResultCountUpdate(); }" />
-                            <div class="sfp-slider-wrap">
-                                <div class="sfp-slider-track">
-                                    <div class="sfp-slider-fill" style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;"></div>
-                                </div>
-                                <input type="range" class="sfp-range sfp-range-lo" min="@_minYear" max="@_maxYear" value="@_yearFrom"
-                                       @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
-                                <input type="range" class="sfp-range sfp-range-hi" min="@_minYear" max="@_maxYear" value="@_yearTo"
-                                       @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
-                            </div>
-                            <input type="number" class="sfp-num-input"
-                                   min="@_minYear" max="@_maxYear" value="@_yearTo"
-                                   @onchange="e => { _yearTo = Math.Max(Math.Min(int.Parse(e.Value!.ToString()!), _maxYear), _yearFrom); ScheduleResultCountUpdate(); }" />
+                        <div class="sfp-section-label-row">
+                            <span class="sfp-section-label">Year</span>
+                            <span class="sfp-range-badge">
+                                @(_yearFrom == _minYear && _yearTo == _maxYear ? "All"
+                                  : _yearFrom == _yearTo ? $"{_yearFrom}"
+                                  : $"{_yearFrom} – {_yearTo}")
+                            </span>
                         </div>
+                        <!-- Timeline ticks: clickable year labels -->
+                        <div class="sfp-timeline">
+                            @foreach (var yr in _timelineYears)
+                            {
+                                var y = yr;
+                                bool inRange = y >= _yearFrom && y <= _yearTo;
+                                bool isFrom  = y == _yearFrom;
+                                bool isTo    = y == _yearTo;
+                                <button class="sfp-tl-tick @(inRange ? "sfp-tl-in" : "") @(isFrom || isTo ? "sfp-tl-end" : "")"
+                                        @onclick="() => OnTimelineYearClick(y)">
+                                    <span class="sfp-tl-dot"></span>
+                                    @if (isFrom || isTo || yr % 5 == 0 || _timelineYears.Count <= 10)
+                                    {
+                                        <span class="sfp-tl-label">@y</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sfp-tl-label sfp-tl-label-hidden">@y</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                        <!-- Dual slider underneath for drag precision -->
+                        <div class="sfp-slider-wrap" style="margin-top:6px">
+                            <div class="sfp-slider-track">
+                                <div class="sfp-slider-fill" style="left:@((_yearFrom - _minYear) * 100.0 / (_maxYear - _minYear))%;right:@((_maxYear - _yearTo) * 100.0 / (_maxYear - _minYear))%;"></div>
+                            </div>
+                            <input type="range" class="sfp-range sfp-range-lo" min="@_minYear" max="@_maxYear" value="@_yearFrom"
+                                   @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
+                            <input type="range" class="sfp-range sfp-range-hi" min="@_minYear" max="@_maxYear" value="@_yearTo"
+                                   @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
+                        </div>
+                        @if (_yearFrom != _minYear || _yearTo != _maxYear)
+                        {
+                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Reset years</button>
+                        }
                     </div>
                     <div class="sfp-divider"></div>
                 }
@@ -464,6 +474,7 @@
     private List<string> _studios = new(), _tags = new(), _sources = new();
     private List<string> _platforms = new(), _countries = new();
     private List<int> _years = new();
+    private List<int> _timelineYears = new(); // years to show as ticks (may be decimated)
     private int    _minYear = 1990, _maxYear = 2100, _maxEp = 0, _scoredCount = 0;
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
@@ -522,6 +533,8 @@
         _countries = en.Select(e => e.Anime.CountryOfOrigin).Where(v => v != null).Distinct().OrderBy(x => x).ToList()!;
         _years     = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
         _minYear   = _years.Any() ? _years.Min() : 1990; _maxYear = _years.Any() ? _years.Max() : DateTime.Now.Year;
+        // Build timeline ticks: all years between min and max (not just years that exist)
+        _timelineYears = Enumerable.Range(_minYear, _maxYear - _minYear + 1).ToList();
         _maxEp     = en.Any() ? en.Max(e => e.EpisodesWatched) : 0;
         _scoredCount = en.Count(e => e.Score > 0);
     }
@@ -531,6 +544,28 @@
     private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
     private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
     private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+
+    // Timeline year click: if clicking outside range set new edge; if clicking inside toggle from/to
+    private void OnTimelineYearClick(int year)
+    {
+        if (year < _yearFrom)
+        {
+            _yearFrom = year;
+        }
+        else if (year > _yearTo)
+        {
+            _yearTo = year;
+        }
+        else
+        {
+            // Inside range: snap to nearest edge
+            int distFrom = year - _yearFrom;
+            int distTo   = _yearTo - year;
+            if (distFrom <= distTo) _yearFrom = year;
+            else                    _yearTo   = year;
+        }
+        ScheduleResultCountUpdate();
+    }
     private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
     private void ScheduleResultCountUpdate()
@@ -601,10 +636,34 @@
     {
         var opts = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
-        if (!matches.Any()) return;
+        if (!matches.Any())
+        {
+            // No filter match — fall back to entire list
+            matches = AllEntries.ToList();
+            if (!matches.Any()) return;
+        }
+        // Apply current sort so the random pick is from the sorted visible set
+        matches = ApplySort(matches, opts.Sort);
         var picked = matches[new Random().Next(matches.Count)];
-        await OnApply.InvokeAsync(opts); await OnClose.InvokeAsync(); await OnRandomPicked.InvokeAsync(picked.Anime);
+        await OnApply.InvokeAsync(opts);
+        await OnClose.InvokeAsync();
+        await OnRandomPicked.InvokeAsync(picked.Anime);
     }
+
+    private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
+    {
+        SortMode.TitleAZ       => list.OrderBy(e => e.Anime.Title).ToList(),
+        SortMode.TitleZA       => list.OrderByDescending(e => e.Anime.Title).ToList(),
+        SortMode.MyScoreDesc   => list.OrderByDescending(e => e.Score).ToList(),
+        SortMode.MyScoreAsc    => list.OrderBy(e => e.Score).ToList(),
+        SortMode.AniListScore  => list.OrderByDescending(e => double.TryParse(e.Anime.Score, out var s) ? s : 0).ToList(),
+        SortMode.EpisodesDesc  => list.OrderByDescending(e => e.EpisodesWatched).ToList(),
+        SortMode.EpisodesAsc   => list.OrderBy(e => e.EpisodesWatched).ToList(),
+        SortMode.YearDesc      => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
+        SortMode.YearAsc       => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
+        SortMode.OldestFirst   => list.OrderBy(e => e.AddedAt).ToList(),
+        _                      => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyAdded
+    };
 
     private void Close() => OnClose.InvokeAsync();
 
