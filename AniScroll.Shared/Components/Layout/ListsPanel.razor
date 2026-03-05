@@ -42,10 +42,8 @@
             <!-- ── Filter bar ──────────────────────────────────── -->
             <div class="lf-bar" @onclick:stopPropagation="true">
 
-                <!-- [+] Manage lists button -->
-                <button class="lists-add-btn"
-                        @onclick="OpenCustomListManager"
-                        title="Manage lists">
+                <!-- [+] Manage lists -->
+                <button class="lists-add-btn" @onclick="OpenCustomListManager" title="Manage lists">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -53,7 +51,22 @@
                     </svg>
                 </button>
 
-                <!-- Status dropdown (single-select) -->
+                <!-- [⇅] Sort & Filter -->
+                <button class="lists-add-btn lists-sort-btn @(!_sortOptions.IsDefault ? "lists-sort-btn-active" : "")"
+                        @onclick="OpenSortFilter" title="Sort & Filter">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="6" y1="12" x2="18" y2="12" />
+                        <line x1="9" y1="18" x2="15" y2="18" />
+                    </svg>
+                    @if (!_sortOptions.IsDefault && _sortOptions.ActiveFilterCount > 0)
+                    {
+                        <span class="lists-sort-badge">@_sortOptions.ActiveFilterCount</span>
+                    }
+                </button>
+
+                <!-- Status dropdown -->
                 <div class="lf-dd lf-dd-status">
                     @{
                         string statusTriggerColor = _activeStatusColor;
@@ -67,9 +80,8 @@
                             @GlowDot(statusTriggerColor)
                         }
                         <span class="lf-trigger-label">@GetStatusTriggerLabel()</span>
-                        <svg class="lf-chevron @(_statusDropdownOpen ? "open" : "")"
-                             width="12" height="12" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5">
+                        <svg class="lf-chevron @(_statusDropdownOpen ? "open" : "")" width="12" height="12"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
@@ -77,7 +89,6 @@
                     @if (_statusDropdownOpen)
                     {
                         <div class="lf-dd-menu" @onclick:stopPropagation="true">
-                            <!-- All -->
                             <button class="lf-dd-option @(!statusActive ? "lf-dd-selected" : "")"
                                     @onclick="() => SelectStatus(null, null)">
                                 <span class="lf-dd-dot" style="background:rgba(255,255,255,0.3);"></span>
@@ -87,14 +98,12 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 }
                             </button>
-
                             @{
                                 var allStatusItems = UserListService.GetStatusSettings()
                                 .Select(s => (isBuiltIn: true, setting: s, custom: (UserCustomList?)null))
                                 .Concat(UserListService.GetStatusTypeLists()
                                 .Select(c => (isBuiltIn: false, setting: (StatusListSetting?)null, custom: (UserCustomList?)c)))
-                                .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order)
-                                .ToList();
+                                .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order).ToList();
                             }
                             @foreach (var item in allStatusItems)
                             {
@@ -134,7 +143,7 @@
                     }
                 </div>
 
-                <!-- Custom Lists dropdown (multi-select) -->
+                <!-- Custom Lists dropdown -->
                 <div class="lf-dd lf-dd-custom">
                     @{
                         var regularLists = UserListService.GetRegularCustomLists();
@@ -150,9 +159,8 @@
                                 <span class="lf-count-badge">@_selectedCustomListIds.Count</span>
                             }
                         </span>
-                        <svg class="lf-chevron @(_customDropdownOpen ? "open" : "")"
-                             width="12" height="12" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5">
+                        <svg class="lf-chevron @(_customDropdownOpen ? "open" : "")" width="12" height="12"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
@@ -181,69 +189,11 @@
                                     </button>
                                 }
                             }
-
                             @if (customActive)
                             {
                                 <div class="lf-dd-separator"></div>
-                                <button class="lf-dd-clear" @onclick="ClearCustomFilters">
-                                    Clear filters
-                                </button>
+                                <button class="lf-dd-clear" @onclick="ClearCustomFilters">Clear filters</button>
                             }
-                        </div>
-                    }
-                </div>
-
-                <!-- Sort dropdown -->
-                <div class="lf-dd lf-dd-sort">
-                    @{
-                        bool sortActive = _currentSort != SortMode.RecentlyAdded;
-                    }
-                    <button class="lf-trigger lf-trigger-sort @(sortActive ? "lf-trigger-active" : "")"
-                            style="@(sortActive ? "border-color:rgba(251,191,36,0.4);color:#fbbf24;" : "")"
-                            @onclick="ToggleSortDropdown"
-                            title="Sort">
-                        <!-- Sort icon: two lines with up/down arrows -->
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 6h16M4 12h10M4 18h6" />
-                            <polyline points="17 15 20 18 23 15" />
-                            <line x1="20" y1="9" x2="20" y2="18" />
-                        </svg>
-                        @if (sortActive)
-                        {
-                            <span class="lf-trigger-label">@GetSortLabel(_currentSort)</span>
-                        }
-                        <svg class="lf-chevron @(_sortDropdownOpen ? "open" : "")"
-                             width="12" height="12" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
-
-                    @if (_sortDropdownOpen)
-                    {
-                        <div class="lf-dd-menu lf-dd-menu-right lf-dd-menu-sort" @onclick:stopPropagation="true">
-
-                            <div class="lf-dd-section-label">Date</div>
-                            @SortOption(SortMode.RecentlyAdded, "Recently Added", "🕒")
-                            @SortOption(SortMode.OldestFirst, "Oldest First", "📅")
-
-                            <div class="lf-dd-separator"></div>
-                            <div class="lf-dd-section-label">Title</div>
-                            @SortOption(SortMode.TitleAZ, "Title A → Z", "🔤")
-                            @SortOption(SortMode.TitleZA, "Title Z → A", "🔤")
-
-                            <div class="lf-dd-separator"></div>
-                            <div class="lf-dd-section-label">Score</div>
-                            @SortOption(SortMode.MyScoreDesc, "My Score ↓", "⭐")
-                            @SortOption(SortMode.MyScoreAsc, "My Score ↑", "⭐")
-                            @SortOption(SortMode.AniListScore, "AniList Score", "📊")
-
-                            <div class="lf-dd-separator"></div>
-                            <div class="lf-dd-section-label">Progress</div>
-                            @SortOption(SortMode.EpisodesDesc, "Episodes ↓", "▶️")
-                            @SortOption(SortMode.EpisodesAsc, "Episodes ↑", "▶️")
-
                         </div>
                     }
                 </div>
@@ -262,18 +212,13 @@
                 {
                     <div class="lists-empty">
                         <div class="lists-empty-icon">
-                            @((_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any())
-                                                ? "🔍" : "📺")
+                            @((_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any() || !_sortOptions.IsDefault) ? "🔍" : "📺")
                         </div>
                         <p class="lists-empty-title">
-                            @(UserListService.CountTracked() == 0
-                                                ? "Your list is empty"
-                                                : "No results for these filters")
+                            @(UserListService.CountTracked() == 0 ? "Your list is empty" : "No results for these filters")
                         </p>
                         <p class="lists-empty-sub">
-                            @(UserListService.CountTracked() == 0
-                                                ? "Browse anime and tap \"Add to List\""
-                                                : "Try adjusting the status or custom list filters")
+                            @(UserListService.CountTracked() == 0 ? "Browse anime and tap \"Add to List\"" : "Try adjusting the filters")
                         </p>
                     </div>
                 }
@@ -283,30 +228,23 @@
                     {
                         var e = entry;
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
-
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
                                                     @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
-
                             <div class="entry-info">
                                 <div class="entry-title">@e.Anime.Title</div>
                                 @{
                                     var metaParts = new List<string>();
-                                    if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score))
-                                        metaParts.Add("★ " + e.Anime.Score);
-                                    if (!string.IsNullOrEmpty(e.Anime.Format))
-                                        metaParts.Add(e.Anime.Format);
-                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes))
-                                        metaParts.Add(e.Anime.Episodes + " EP");
-                                    if (e.Score > 0)
-                                        metaParts.Add("My score: " + e.Score);
+                                    if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
+                                    if (!string.IsNullOrEmpty(e.Anime.Format)) metaParts.Add(e.Anime.Format);
+                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(e.Anime.Episodes + " EP");
+                                    if (e.Score > 0) metaParts.Add("My score: " + e.Score);
                                 }
                                 @if (metaParts.Any())
                                 {
                                     <div class="entry-meta">@string.Join(" · ", metaParts)</div>
                                 }
-
                                 @if (e.Status.HasValue)
                                 {
                                     var sc = GetStatusColor(e.Status.Value);
@@ -315,11 +253,9 @@
                                         @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
                                     </div>
                                 }
-
                                 @{
                                     var entryCustomLists = UserListService.GetRegularCustomLists()
-                                    .Where(cl => e.CustomListIds.Contains(cl.Id))
-                                    .ToList();
+                                    .Where(cl => e.CustomListIds.Contains(cl.Id)).ToList();
                                 }
                                 @if (entryCustomLists.Any())
                                 {
@@ -334,7 +270,6 @@
                                     </div>
                                 }
                             </div>
-
                         </div>
                     }
                 }
@@ -342,9 +277,13 @@
         </div>
     </div>
 
-    <!-- CustomListManager outside overlay -->
-    <CustomListManager IsVisible="showCustomListManager"
-                       OnClose="CloseCustomListManager" />
+    <CustomListManager IsVisible="showCustomListManager" OnClose="CloseCustomListManager" />
+
+    <SortFilterPopup IsVisible="_showSortFilter"
+                     Current="_sortOptions"
+                     AllEntries="GetBaseEntries()"
+                     OnClose="() => { _showSortFilter = false; StateHasChanged(); }"
+                     OnApply="OnSortFilterApplied" />
 }
 
 @code {
@@ -352,71 +291,17 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<AnimeCard> OnAnimeSelected { get; set; }
 
-    // ── Sort ──────────────────────────────────────────────────────────────
+    // ── Sort & Filter ─────────────────────────────────────────────────────
+    private SortFilterOptions _sortOptions = new();
+    private bool _showSortFilter = false;
 
-    private enum SortMode
-    {
-        RecentlyAdded,
-        OldestFirst,
-        TitleAZ,
-        TitleZA,
-        MyScoreDesc,
-        MyScoreAsc,
-        AniListScore,
-        EpisodesDesc,
-        EpisodesAsc,
-    }
-
-    private SortMode _currentSort = SortMode.RecentlyAdded;
-    private bool _sortDropdownOpen = false;
-
-    private string GetSortLabel(SortMode m) => m switch
-    {
-        SortMode.RecentlyAdded => "Recent",
-        SortMode.OldestFirst => "Oldest",
-        SortMode.TitleAZ => "A → Z",
-        SortMode.TitleZA => "Z → A",
-        SortMode.MyScoreDesc => "Score ↓",
-        SortMode.MyScoreAsc => "Score ↑",
-        SortMode.AniListScore => "AL Score",
-        SortMode.EpisodesDesc => "EP ↓",
-        SortMode.EpisodesAsc => "EP ↑",
-        _ => "Sort"
-    };
-
-    private RenderFragment SortOption(SortMode mode, string label, string emoji) =>
-        @<button class="lf-dd-option @(_currentSort == mode ? "lf-dd-selected lf-dd-selected-sort" : "")"
-@onclick="() => SelectSort(mode)">
-    <span class="lf-sort-emoji">@emoji</span>
-    <span class="lf-dd-option-label">@label</span>
-@if (_currentSort == mode)
-    {
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="3" stroke-linecap="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-    </svg>
-    }
-</button>;
-
-    private void SelectSort(SortMode mode)
-    {
-        _currentSort = mode;
-        _sortDropdownOpen = false;
-        StateHasChanged();
-    }
-
-    private void ToggleSortDropdown()
-    {
-        _sortDropdownOpen = !_sortDropdownOpen;
-        if (_sortDropdownOpen) { _statusDropdownOpen = false; _customDropdownOpen = false; }
-        StateHasChanged();
-    }
+    private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
+    private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
 
     // ── Filter state ──────────────────────────────────────────────────────
     private ListStatus? _selectedStatus = null;
     private string? _selectedStatusCustomId = null;
     private HashSet<string> _selectedCustomListIds = new();
-
     private bool _statusDropdownOpen = false;
     private bool _customDropdownOpen = false;
 
@@ -431,22 +316,10 @@
     private bool isPullActive = false;
     private const double PULL_CLOSE_THRESHOLD = 80;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────
-    protected override void OnInitialized()
-    {
-        UserListService.OnChanged += HandleListChanged;
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (IsVisible) { pullOffset = 0; isPulling = false; }
-    }
-
+    protected override void OnInitialized() => UserListService.OnChanged += HandleListChanged;
+    protected override void OnParametersSet() { if (IsVisible) { pullOffset = 0; isPulling = false; } }
     public void Dispose() => UserListService.OnChanged -= HandleListChanged;
-
     private void HandleListChanged() => InvokeAsync(StateHasChanged);
-
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     private MarkupString GlowDot(string color) => UiHelpers.GlowDot(color);
     private string GetStatusColor(ListStatus s) => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
@@ -481,14 +354,13 @@
         return "Status";
     }
 
-    // ── Filtering + Sorting ───────────────────────────────────────────────
+    private IEnumerable<UserListEntry> GetBaseEntries() =>
+        UserListService.GetAll().Where(e => e.Status.HasValue || e.CustomListIds.Any());
 
     private IEnumerable<UserListEntry> GetFilteredEntries()
     {
-        IEnumerable<UserListEntry> entries = UserListService.GetAll()
-            .Where(e => e.Status.HasValue || e.CustomListIds.Any());
+        IEnumerable<UserListEntry> entries = GetBaseEntries();
 
-        // Filter
         if (_selectedStatusCustomId != null)
             entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
         else if (_selectedStatus.HasValue)
@@ -497,122 +369,79 @@
         foreach (var id in _selectedCustomListIds)
             entries = entries.Where(e => e.CustomListIds.Contains(id));
 
-        // Sort
-        entries = _currentSort switch
+        entries = entries.Where(e => SortFilterPopup.PassesFilters(e, _sortOptions));
+
+        entries = _sortOptions.Sort switch
         {
-            SortMode.RecentlyAdded => entries.OrderByDescending(e => e.AddedAt),
-            SortMode.OldestFirst => entries.OrderBy(e => e.AddedAt),
-            SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
-            SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
-            SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
-            SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? int.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
-            SortMode.AniListScore => entries.OrderByDescending(e => double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : 0),
-            SortMode.EpisodesDesc => entries.OrderByDescending(e => e.EpisodesWatched),
-            SortMode.EpisodesAsc => entries.OrderBy(e => e.EpisodesWatched),
+            SortFilterPopup.SortMode.RecentlyAdded => entries.OrderByDescending(e => e.AddedAt),
+            SortFilterPopup.SortMode.OldestFirst => entries.OrderBy(e => e.AddedAt),
+            SortFilterPopup.SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
+            SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
+            SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
+            SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? int.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
+            SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e => double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : 0),
+            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e => e.EpisodesWatched),
+            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e => e.EpisodesWatched),
+            SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
+            SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
             _ => entries.OrderByDescending(e => e.AddedAt),
         };
 
         return entries;
     }
 
-    // ── Dropdown interactions ─────────────────────────────────────────────
-
     private void ToggleStatusDropdown()
     {
         _statusDropdownOpen = !_statusDropdownOpen;
-        if (_statusDropdownOpen) { _customDropdownOpen = false; _sortDropdownOpen = false; }
+        if (_statusDropdownOpen) _customDropdownOpen = false;
         StateHasChanged();
     }
-
     private void ToggleCustomDropdown()
     {
         _customDropdownOpen = !_customDropdownOpen;
-        if (_customDropdownOpen) { _statusDropdownOpen = false; _sortDropdownOpen = false; }
+        if (_customDropdownOpen) _statusDropdownOpen = false;
         StateHasChanged();
     }
-
-    private void CloseAllDropdowns()
-    {
-        _statusDropdownOpen = false;
-        _customDropdownOpen = false;
-        _sortDropdownOpen = false;
-        StateHasChanged();
-    }
-
+    private void CloseAllDropdowns() { _statusDropdownOpen = false; _customDropdownOpen = false; StateHasChanged(); }
     private void SelectStatus(ListStatus? status, string? customId)
     {
-        _selectedStatus = status;
-        _selectedStatusCustomId = customId;
-        _statusDropdownOpen = false;
-        StateHasChanged();
+        _selectedStatus = status; _selectedStatusCustomId = customId;
+        _statusDropdownOpen = false; StateHasChanged();
     }
-
-    private void ToggleCustomList(string id)
-    {
-        if (!_selectedCustomListIds.Remove(id))
-            _selectedCustomListIds.Add(id);
-        StateHasChanged();
-    }
-
-    private void ClearCustomFilters()
-    {
-        _selectedCustomListIds.Clear();
-        _customDropdownOpen = false;
-        StateHasChanged();
-    }
-
-    // ── Panel interactions ────────────────────────────────────────────────
+    private void ToggleCustomList(string id) { if (!_selectedCustomListIds.Remove(id)) _selectedCustomListIds.Add(id); StateHasChanged(); }
+    private void ClearCustomFilters() { _selectedCustomListIds.Clear(); _customDropdownOpen = false; StateHasChanged(); }
 
     private void Close() => OnClose.InvokeAsync();
-
-    private async Task HandleEntryClick(UserListEntry entry)
-    {
-        CloseAllDropdowns();
-        await OnAnimeSelected.InvokeAsync(entry.Anime);
-    }
-
-    // ── Touch gestures ────────────────────────────────────────────────────
+    private async Task HandleEntryClick(UserListEntry entry) { CloseAllDropdowns(); await OnAnimeSelected.InvokeAsync(entry.Anime); }
 
     private void HandleTouchStart(TouchEventArgs e)
     {
         if (e.Touches.Length == 0) return;
-        isPullActive = true;
-        isPulling = false;
-        pullStartY = e.Touches[0].ClientY;
-        pullOffset = 0;
+        isPullActive = true; isPulling = false; pullStartY = e.Touches[0].ClientY; pullOffset = 0;
     }
-
     private void HandleTouchMove(TouchEventArgs e)
     {
         if (!isPullActive || e.Touches.Length == 0) return;
         double delta = e.Touches[0].ClientY - pullStartY;
         if (delta <= 0) { isPulling = false; pullOffset = 0; return; }
         isPulling = true;
-        pullOffset = delta <= PULL_CLOSE_THRESHOLD
-            ? delta
-            : PULL_CLOSE_THRESHOLD + (delta - PULL_CLOSE_THRESHOLD) * 0.28;
+        pullOffset = delta <= PULL_CLOSE_THRESHOLD ? delta : PULL_CLOSE_THRESHOLD + (delta - PULL_CLOSE_THRESHOLD) * 0.28;
         StateHasChanged();
     }
-
     private async Task HandleTouchEnd(TouchEventArgs e)
     {
         if (!isPullActive) return;
-        isPullActive = false;
-        isPulling = false;
-
+        isPullActive = false; isPulling = false;
         if (pullOffset >= PULL_CLOSE_THRESHOLD)
         {
-            pullOffset = 900;
-            StateHasChanged();
-            await Task.Delay(260);
-            pullOffset = 0;
+            pullOffset = 900; StateHasChanged();
+            await Task.Delay(260); pullOffset = 0;
             await OnClose.InvokeAsync();
         }
         else { pullOffset = 0; StateHasChanged(); }
     }
 
-    // ── Static helpers ────────────────────────────────────────────────────
-
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
     private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
 }
+    

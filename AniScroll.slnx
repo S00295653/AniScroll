@@ -1,5 +1,7 @@
 <Solution>
-  <Project Path="AniScroll.Maui/AniScroll.Maui.csproj" Id="aca475df-a358-4456-9299-18c11f878d31" />
+  <Project Path="AniScroll.Maui/AniScroll.Maui.csproj" Id="aca475df-a358-4456-9299-18c11f878d31">
+    <Deploy Solution="Debug|*" />
+  </Project>
   <Project Path="AniScroll.Shared/AniScroll.Shared.csproj" Id="9b367aff-471f-4291-8938-d1d12ce4bab7" />
   <Project Path="AniScroll.Web/AniScroll.Web.csproj" Id="b340f342-ecb9-4fb5-974e-83629ac4b35e" />
 </Solution>

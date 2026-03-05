@@ -1,0 +1,322 @@
+﻿/* ============================================================
+   sort-filter-popup.css
+   ============================================================ */
+
+/* ── Sort button in filter bar ─────────────────────────────── */
+.lists-sort-btn {
+    position: relative;
+}
+
+.lists-sort-btn-active {
+    background: rgba(251, 191, 36, 0.12) !important;
+    border-color: rgba(251, 191, 36, 0.35) !important;
+    color: #fbbf24 !important;
+}
+
+.lists-sort-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 99px;
+    background: #fbbf24;
+    color: #0e0e16;
+    font-size: 9px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ── Overlay ───────────────────────────────────────────────── */
+.sfp-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 3000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: sfpFadeIn 0.18s ease;
+}
+
+@keyframes sfpFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ── Panel ─────────────────────────────────────────────────── */
+.sfp-panel {
+    width: 100%;
+    max-width: 540px;
+    background: #14141f;
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    flex-direction: column;
+    max-height: 88dvh;
+    overflow: hidden;
+    animation: sfpSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sfpSlideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ── Handle ────────────────────────────────────────────────── */
+.sfp-handle-zone {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 4px;
+}
+
+.sfp-handle-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.sfp-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px 12px;
+}
+
+.sfp-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: -0.01em;
+}
+
+.sfp-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sfp-reset-btn {
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fbbf24;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+    .sfp-reset-btn:hover {
+        background: rgba(251, 191, 36, 0.18);
+    }
+
+.sfp-close-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+    .sfp-close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+/* ── Scrollable body ───────────────────────────────────────── */
+.sfp-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 14px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+    .sfp-body::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .sfp-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sfp-body::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+    }
+
+/* ── Section ───────────────────────────────────────────────── */
+.sfp-section {
+    padding: 10px 0 8px;
+}
+
+.sfp-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.sfp-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0 2px;
+}
+
+/* ── Chips ─────────────────────────────────────────────────── */
+.sfp-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sfp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.14s, border-color 0.14s, color 0.14s, transform 0.1s;
+    font-family: inherit;
+    white-space: nowrap;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+    .sfp-chip:hover {
+        background: rgba(255,255,255,0.09);
+        color: rgba(255,255,255,0.8);
+    }
+
+    .sfp-chip:active {
+        transform: scale(0.95);
+    }
+
+/* Active chip — general */
+.sfp-chip-on {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.45) !important;
+    color: #a5b4fc !important;
+}
+
+/* Active sort chip — amber */
+.sfp-chip-sort-on {
+    background: rgba(251, 191, 36, 0.12) !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+    color: #fbbf24 !important;
+}
+
+/* Adult chip */
+.sfp-chip-adult {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #f87171 !important;
+}
+
+/* ── Airing status dots ────────────────────────────────────── */
+.sfp-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.sfp-dot-releasing {
+    background: #22c55e;
+    box-shadow: 0 0 5px rgba(34,197,94,0.6);
+}
+
+.sfp-dot-upcoming {
+    background: #a855f7;
+    box-shadow: 0 0 5px rgba(168,85,247,0.6);
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+.sfp-footer {
+    flex-shrink: 0;
+    padding: 10px 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: #14141f;
+}
+
+.sfp-apply-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px;
+    border-radius: 12px;
+    background: #6366f1;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.12s;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+}
+
+    .sfp-apply-btn:hover {
+        filter: brightness(1.12);
+    }
+
+    .sfp-apply-btn:active {
+        transform: scale(0.98);
+    }
+
+.sfp-result-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 11px;
+    font-weight: 700;
+}
