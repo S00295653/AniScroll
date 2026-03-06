@@ -283,7 +283,8 @@
                      Current="_sortOptions"
                      AllEntries="GetBaseEntries()"
                      OnClose="() => { _showSortFilter = false; StateHasChanged(); }"
-                     OnApply="OnSortFilterApplied" />
+                     OnApply="OnSortFilterApplied"
+                     OnRandomPicked="HandleRandomPicked" />
 }
 
 @code {
@@ -297,6 +298,17 @@
 
     private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
     private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
+
+    /// <summary>
+    /// Called by SortFilterPopup when the random button is pressed.
+    /// Closes the filter popup, clears dropdowns, and opens the picked anime.
+    /// </summary>
+    private async Task HandleRandomPicked(AnimeCard anime)
+    {
+        _showSortFilter = false;
+        CloseAllDropdowns();
+        await OnAnimeSelected.InvokeAsync(anime);
+    }
 
     // ── Filter state ──────────────────────────────────────────────────────
     private ListStatus? _selectedStatus = null;
@@ -444,4 +456,3 @@
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
     private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
 }
-    
