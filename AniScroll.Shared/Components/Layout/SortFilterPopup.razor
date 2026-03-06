@@ -10,7 +10,7 @@
 
             <div class="sfp-handle-zone"><div class="sfp-handle-bar"></div></div>
 
-            <!-- Header -->
+            <!-- ── Header ─────────────────────────────────────── -->
             <div class="sfp-header">
                 <div class="sfp-header-left">
                     <span class="sfp-title">Sort &amp; Filter</span>
@@ -22,7 +22,7 @@
                 <div class="sfp-header-actions">
                     @if (HasActiveOptions)
                     {
-                        <button class="sfp-reset-btn" @onclick="Reset">Reset all</button>
+                        <button class="sfp-reset-btn" @onclick="Reset">Reset</button>
                     }
                     <button class="sfp-close-btn" @onclick="Close">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -32,13 +32,13 @@
                 </div>
             </div>
 
-            <!-- Body -->
+            <!-- ── Body ───────────────────────────────────────── -->
             <div class="sfp-body">
 
-                <!-- SORT -->
+                <!-- SORT ───────────────────────────── -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
-                    <div class="sfp-chips">
+                    <div class="sfp-h-scroll">
                         @SortChip(SortMode.RecentlyAdded, "Recently Added")
                         @SortChip(SortMode.OldestFirst,   "Oldest First")
                         @SortChip(SortMode.TitleAZ,       "A → Z")
@@ -54,15 +54,15 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- AIRING STATUS — always visible -->
+                <!-- STATUS ─────────────────────────── -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Airing Status</div>
-                    <div class="sfp-chips">
+                    <div class="sfp-h-scroll">
                         @foreach (var key in _dotStatuses)
                         {
                             var k = key; bool on = FilterAiringStatus.Contains(k);
                             <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterAiringStatus, k)">
-                                <span class="sfp-status-dot @(k == "RELEASING" ? "sfp-dot-releasing" : "sfp-dot-upcoming")"></span>
+                                <span class="sfp-dot-inline @(k == "RELEASING" ? "sfp-dot-green" : "sfp-dot-red")"></span>
                                 @FormatAiringStatus(k)
                             </button>
                         }
@@ -75,12 +75,11 @@
                         }
                     </div>
                 </div>
-                <div class="sfp-divider"></div>
 
-                <!-- FORMAT — always visible -->
-                <div class="sfp-section">
+                <!-- FORMAT ─────────────────────────── -->
+                <div class="sfp-section sfp-section-tight">
                     <div class="sfp-section-label">Format</div>
-                    <div class="sfp-chips">
+                    <div class="sfp-h-scroll">
                         @foreach (var fmt in _allFormats)
                         {
                             var f = fmt; bool on = FilterFormats.Contains(f);
@@ -90,22 +89,24 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- SEASON — always visible -->
+                <!-- SEASON ─────────────────────────── -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Season</div>
-                    <div class="sfp-chips">
+                    <div class="sfp-season-grid">
                         @foreach (var s in _allSeasons)
                         {
                             var sv = s; bool on = FilterSeasons.Contains(sv);
-                            <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSeasons, sv)">
-                                @SeasonEmoji(sv) @(sv[0] + sv[1..].ToLower())
+                            <button class="sfp-season-btn @(on ? "sfp-season-btn-on" : "")"
+                                    @onclick="() => ToggleFilter(FilterSeasons, sv)">
+                                <span class="sfp-season-emoji">@SeasonEmoji(sv)</span>
+                                <span class="sfp-season-name">@(sv[0] + sv[1..].ToLower())</span>
                             </button>
                         }
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- YEAR RANGE -->
+                <!-- YEAR RANGE ──────────────────────── -->
                 @if (_years.Count > 1)
                 {
                     <div class="sfp-section">
@@ -135,150 +136,212 @@
                         </div>
                         @if (_yearFrom != _minYear || _yearTo != _maxYear)
                         {
-                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Reset years</button>
+                            <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Reset</button>
                         }
                     </div>
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- SCORE RANGE -->
-                @if (_scoredCount > 1)
-                {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">My Score</div>
-                        <div class="sfp-dual-slider">
-                            <input type="number" class="sfp-num-input"
-                                   min="0" max="10" step="0.5"
-                                   value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                   @onchange="e => { _scoreFrom = Math.Min(Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0), _scoreTo); ScheduleResultCountUpdate(); }" />
-                            <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
-                                <div class="sfp-slider-track"></div>
-                                <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
-                                <input type="range" class="sfp-range sfp-range-lo"
-                                       style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
-                                       min="0" max="10" step="0.5"
-                                       value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                       @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
-                                <input type="range" class="sfp-range sfp-range-hi"
-                                       style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
-                                       min="0" max="10" step="0.5"
-                                       value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                       @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
-                            </div>
-                            <input type="number" class="sfp-num-input"
-                                   min="0" max="10" step="0.5"
-                                   value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                   @onchange="e => { _scoreTo = Math.Max(Math.Min(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 10), _scoreFrom); ScheduleResultCountUpdate(); }" />
+                <!-- GENRE ──────────────────────────── -->
+                <div class="sfp-section">
+                    <div class="sfp-genre-header">
+                        <span class="sfp-section-label">Genres @if (FilterGenres.Any()) { <span class="sfp-inline-count">@FilterGenres.Count</span> }</span>
+                        <div class="sfp-toggle-sm-row">
+                            <button class="sfp-toggle-sm @(!_genreShowAll ? "on" : "")" @onclick="() => _genreShowAll = false">My List</button>
+                            <button class="sfp-toggle-sm @(_genreShowAll ? "on" : "")" @onclick="() => _genreShowAll = true">All</button>
                         </div>
                     </div>
-                    <div class="sfp-divider"></div>
-                }
-
-                <!-- EPISODES RANGE -->
-                @if (_maxEp > 1)
-                {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">Episodes Watched</div>
-                        <div class="sfp-dual-slider">
-                            <input type="number" class="sfp-num-input"
-                                   min="0" max="@_maxEp" value="@_epFrom"
-                                   @onchange="e => { _epFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), 0), _epTo); ScheduleResultCountUpdate(); }" />
-                            <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
-                                <div class="sfp-slider-track"></div>
-                                <div class="sfp-slider-fill" style="@EpFillStyle"></div>
-                                <input type="range" class="sfp-range sfp-range-lo"
-                                       style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
-                                       min="0" max="@_maxEp" step="1" value="@_epFrom"
-                                       @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
-                                <input type="range" class="sfp-range sfp-range-hi"
-                                       style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
-                                       min="0" max="@_maxEp" step="1" value="@_epTo"
-                                       @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
-                            </div>
-                            <input type="number" class="sfp-num-input"
-                                   min="0" max="@_maxEp" value="@_epTo"
-                                   @onchange="e => { _epTo = Math.Max(Math.Min(int.Parse(e.Value!.ToString()!), _maxEp), _epFrom); ScheduleResultCountUpdate(); }" />
-                        </div>
-                    </div>
-                    <div class="sfp-divider"></div>
-                }
-
-                <!-- GENRES DROPDOWN — always visible -->
-                <div class="sfp-section sfp-section-nodrop">
-                    <button class="sfp-dropdown-trigger @(_genreDropdownOpen ? "open" : "")"
-                            @onclick="() => _genreDropdownOpen = !_genreDropdownOpen">
-                        <span class="sfp-dt-left">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                                <line x1="7" y1="7" x2="7.01" y2="7"/>
-                            </svg>
-                            Genres
-                            @if (FilterGenres.Any()) { <span class="sfp-dt-badge">@FilterGenres.Count</span> }
-                        </span>
-                        <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <polyline points="6 9 12 15 18 9"/>
+                    <div class="sfp-search-row">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                    </button>
-                    @if (_genreDropdownOpen)
+                        <input class="sfp-search-input" type="text" placeholder="Search genres…"
+                               @bind="_genreSearch" @bind:event="oninput" />
+                        @if (!string.IsNullOrEmpty(_genreSearch))
+                        {
+                            <button class="sfp-search-clear" @onclick="() => _genreSearch = string.Empty">×</button>
+                        }
+                    </div>
+                    <div class="sfp-chips sfp-chips-compact @(!_genreExpanded && GenrePool.Count > 12 ? "sfp-chips-clamped" : "")">
+                        @{
+                            var fg = (string.IsNullOrWhiteSpace(_genreSearch)
+                                ? GenrePool
+                                : GenrePool.Where(g => g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                        }
+                        @if (!fg.Any()) { <span class="sfp-dp-empty">No results</span> }
+                        @foreach (var g in fg)
+                        {
+                            var gv = g; bool on = FilterGenres.Contains(gv);
+                            <button class="sfp-chip sfp-chip-sm @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterGenres, gv)">
+                                @if (on) { <span class="sfp-check">✓</span> } @gv
+                            </button>
+                        }
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_genreSearch) ? false : GenrePool.Count > 12)
                     {
-                        <div class="sfp-dropdown-panel">
-                            <div class="sfp-toggle-row">
-                                <button class="sfp-toggle-btn @(!_genreShowAll ? "active" : "")" @onclick="() => _genreShowAll = false">My List</button>
-                                <button class="sfp-toggle-btn @(_genreShowAll  ? "active" : "")" @onclick="() => _genreShowAll = true">All genres</button>
-                            </div>
-                            <div class="sfp-search-row">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                </svg>
-                                <input class="sfp-search-input" type="text" placeholder="Search genres…"
-                                       @bind="_genreSearch" @bind:event="oninput" />
-                                @if (!string.IsNullOrEmpty(_genreSearch))
-                                {
-                                    <button class="sfp-search-clear" @onclick="() => _genreSearch = string.Empty">×</button>
-                                }
-                            </div>
-                            <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
-                                @{
-                                    var genrePool = _genreShowAll ? _allGenres : (_genres.Any() ? _genres : _allGenres);
-                                    var fg = (string.IsNullOrWhiteSpace(_genreSearch)
-                                        ? genrePool
-                                        : genrePool.Where(g => g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
-                                }
-                                @if (!fg.Any()) { <span class="sfp-dp-empty">No results</span> }
-                                @foreach (var g in fg)
-                                {
-                                    var gv = g; bool on = FilterGenres.Contains(gv);
-                                    <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterGenres, gv)">
-                                        @if (on) { <span>✓</span> } @gv
-                                    </button>
-                                }
-                            </div>
-                        </div>
+                        <button class="sfp-expand-btn" @onclick="() => _genreExpanded = !_genreExpanded">
+                            @(_genreExpanded ? "Show less ↑" : $"Show all {GenrePool.Count} ↓")
+                        </button>
                     }
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- STUDIOS DROPDOWN — always visible -->
-                <div class="sfp-section sfp-section-nodrop">
-                    <button class="sfp-dropdown-trigger @(_studioDropdownOpen ? "open" : "")"
-                            @onclick="() => _studioDropdownOpen = !_studioDropdownOpen">
-                        <span class="sfp-dt-left">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
-                            Studio
-                            @if (FilterStudios.Any()) { <span class="sfp-dt-badge">@FilterStudios.Count</span> }
-                        </span>
-                        <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </button>
-                    @if (_studioDropdownOpen)
-                    {
-                        <div class="sfp-dropdown-panel">
-                            <div class="sfp-toggle-row">
-                                <button class="sfp-toggle-btn @(!_studioShowAll ? "active" : "")" @onclick="() => _studioShowAll = false">My List</button>
-                                <button class="sfp-toggle-btn @(_studioShowAll  ? "active" : "")" @onclick="() => _studioShowAll = true">All studios</button>
+                <!-- MORE FILTERS (accordion) ────────── -->
+                <button class="sfp-more-toggle" @onclick="() => _moreOpen = !_moreOpen">
+                    <span class="sfp-more-label">
+                        More filters
+                        @if (MoreActiveCount > 0)
+                        {
+                            <span class="sfp-more-badge">@MoreActiveCount</span>
+                        }
+                    </span>
+                    <svg class="sfp-more-chevron @(_moreOpen ? "open" : "")" width="14" height="14"
+                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+
+                @if (_moreOpen)
+                {
+                    <div class="sfp-more-body">
+
+                        <!-- MY SCORE -->
+                        @if (_scoredCount > 1)
+                        {
+                            <div class="sfp-more-section">
+                                <div class="sfp-section-label">My Score</div>
+                                <div class="sfp-dual-slider">
+                                    <input type="number" class="sfp-num-input"
+                                           min="0" max="10" step="0.5"
+                                           value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                           @onchange="e => { _scoreFrom = Math.Min(Math.Max(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0), _scoreTo); ScheduleResultCountUpdate(); }" />
+                                    <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
+                                        <div class="sfp-slider-track"></div>
+                                        <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
+                                        <input type="range" class="sfp-range sfp-range-lo"
+                                               style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
+                                               min="0" max="10" step="0.5"
+                                               value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                               @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                                        <input type="range" class="sfp-range sfp-range-hi"
+                                               style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
+                                               min="0" max="10" step="0.5"
+                                               value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                               @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                                    </div>
+                                    <input type="number" class="sfp-num-input"
+                                           min="0" max="10" step="0.5"
+                                           value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                           @onchange="e => { _scoreTo = Math.Max(Math.Min(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 10), _scoreFrom); ScheduleResultCountUpdate(); }" />
+                                </div>
+                            </div>
+                        }
+
+                        <!-- EPISODES WATCHED -->
+                        @if (_maxEp > 1)
+                        {
+                            <div class="sfp-more-section">
+                                <div class="sfp-section-label">Episodes Watched</div>
+                                <div class="sfp-dual-slider">
+                                    <input type="number" class="sfp-num-input"
+                                           min="0" max="@_maxEp" value="@_epFrom"
+                                           @onchange="e => { _epFrom = Math.Min(Math.Max(int.Parse(e.Value!.ToString()!), 0), _epTo); ScheduleResultCountUpdate(); }" />
+                                    <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
+                                        <div class="sfp-slider-track"></div>
+                                        <div class="sfp-slider-fill" style="@EpFillStyle"></div>
+                                        <input type="range" class="sfp-range sfp-range-lo"
+                                               style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
+                                               min="0" max="@_maxEp" step="1" value="@_epFrom"
+                                               @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
+                                        <input type="range" class="sfp-range sfp-range-hi"
+                                               style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
+                                               min="0" max="@_maxEp" step="1" value="@_epTo"
+                                               @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
+                                    </div>
+                                    <input type="number" class="sfp-num-input"
+                                           min="0" max="@_maxEp" value="@_epTo"
+                                           @onchange="e => { _epTo = Math.Max(Math.Min(int.Parse(e.Value!.ToString()!), _maxEp), _epFrom); ScheduleResultCountUpdate(); }" />
+                                </div>
+                            </div>
+                        }
+
+                        <!-- SOURCE -->
+                        <div class="sfp-more-section">
+                            <div class="sfp-section-label">Source</div>
+                            <div class="sfp-h-scroll">
+                                @foreach (var src in _allSources)
+                                {
+                                    var sv = src; bool on = FilterSources.Contains(sv);
+                                    <button class="sfp-chip sfp-chip-sm @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSources, sv)">@sv</button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- COUNTRY -->
+                        <div class="sfp-more-section">
+                            <div class="sfp-section-label">Country</div>
+                            <div class="sfp-country-row">
+                                @foreach (var c in _allCountries)
+                                {
+                                    var cv = c; bool on = FilterCountries.Contains(cv);
+                                    <button class="sfp-country-btn @(on ? "sfp-country-btn-on" : "")"
+                                            @onclick="() => ToggleFilter(FilterCountries, cv)">
+                                        <span class="sfp-country-flag">@CountryEmoji(cv)</span>
+                                        <span class="sfp-country-name">@CountryLabel(cv)</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- STREAMING -->
+                        @if (_platforms.Any())
+                        {
+                            <div class="sfp-more-section">
+                                <div class="sfp-section-label">Streaming</div>
+                                <div class="sfp-h-scroll">
+                                    @foreach (var p in _platforms)
+                                    {
+                                        var pv = p;
+                                        bool on = FilterPlatforms.Contains(pv);
+                                        _platformLinkMap.TryGetValue(pv, out var lnk);
+                                        var fallback = GetPlatformFallback(pv);
+                                        string? iconUrl    = lnk?.Icon;
+                                        string? brandColor = lnk?.Color;
+                                        bool shouldRecolor = !_sfpColorfulIconSites.Contains(pv)
+                                            && !_sfpNeverRecolorSites.Contains(pv)
+                                            && !string.IsNullOrEmpty(brandColor)
+                                            && brandColor != "#000000"
+                                            && brandColor!.StartsWith("#");
+                                        <button class="sfp-chip sfp-chip-sm @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">
+                                            @if (!string.IsNullOrEmpty(iconUrl))
+                                            {
+                                                string imgStyle = shouldRecolor ? GetWhiteToColorFilter(brandColor!) : "object-fit:contain;";
+                                                <img class="sfp-platform-icon" src="@iconUrl" alt="@pv" style="@imgStyle"
+                                                     onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='inline-flex')" />
+                                                <span class="sfp-platform-badge sfp-platform-badge-hidden" style="background:@(fallback.bg);color:@(fallback.fg)">@fallback.abbr</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="sfp-platform-badge" style="background:@(fallback.bg);color:@(fallback.fg)">@fallback.abbr</span>
+                                            }
+                                            @pv
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- STUDIOS -->
+                        <div class="sfp-more-section">
+                            <div class="sfp-genre-header">
+                                <span class="sfp-section-label">
+                                    Studio
+                                    @if (FilterStudios.Any()) { <span class="sfp-inline-count">@FilterStudios.Count</span> }
+                                </span>
+                                <div class="sfp-toggle-sm-row">
+                                    <button class="sfp-toggle-sm @(!_studioShowAll ? "on" : "")" @onclick="() => _studioShowAll = false">My List</button>
+                                    <button class="sfp-toggle-sm @(_studioShowAll ? "on" : "")" @onclick="() => _studioShowAll = true">All</button>
+                                </div>
                             </div>
                             <div class="sfp-search-row">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -291,178 +354,44 @@
                                     <button class="sfp-search-clear" @onclick="() => _studioSearch = string.Empty">×</button>
                                 }
                             </div>
-                            <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
+                            <div class="sfp-chips sfp-chips-compact">
                                 @{
                                     var studioPool = _studioShowAll ? _allStudios : (_studios.Any() ? _studios : _allStudios);
-                                    var fs = (string.IsNullOrWhiteSpace(_studioSearch)
-                                        ? studioPool
-                                        : studioPool.Where(s => s.Contains(_studioSearch, StringComparison.OrdinalIgnoreCase))).ToList();
+                                    var fs = (string.IsNullOrWhiteSpace(_studioSearch) ? studioPool
+                                        : studioPool.Where(s => s.Contains(_studioSearch, StringComparison.OrdinalIgnoreCase))).Take(30).ToList();
                                 }
-                                @if (!fs.Any())
-                                {
-                                    <span class="sfp-dp-empty">
-                                        @(_studioShowAll ? "No results" : "No studios in your list yet")
-                                    </span>
-                                }
+                                @if (!fs.Any()) { <span class="sfp-dp-empty">@(_studioShowAll ? "No results" : "No studios in your list yet")</span> }
                                 @foreach (var st in fs)
                                 {
                                     var sv = st; bool on = FilterStudios.Contains(sv);
-                                    <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterStudios, sv)">
-                                        @if (on) { <span>✓</span> } @sv
+                                    <button class="sfp-chip sfp-chip-sm @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterStudios, sv)">
+                                        @if (on) { <span class="sfp-check">✓</span> } @sv
                                     </button>
                                 }
                             </div>
                         </div>
-                    }
-                </div>
-                <div class="sfp-divider"></div>
 
-                <!-- TAGS DROPDOWN — always visible -->
-                <div class="sfp-section sfp-section-nodrop">
-                    <button class="sfp-dropdown-trigger @(_tagDropdownOpen ? "open" : "")"
-                            @onclick="() => _tagDropdownOpen = !_tagDropdownOpen">
-                        <span class="sfp-dt-left">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                                <line x1="7" y1="7" x2="7.01" y2="7"/>
-                            </svg>
-                            Tags
-                            @if (FilterTags.Any()) { <span class="sfp-dt-badge">@FilterTags.Count</span> }
-                        </span>
-                        <svg class="sfp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </button>
-                    @if (_tagDropdownOpen)
-                    {
-                        <div class="sfp-dropdown-panel">
-                            <div class="sfp-toggle-row">
-                                <button class="sfp-toggle-btn @(!_tagShowAll ? "active" : "")" @onclick="() => _tagShowAll = false">My List</button>
-                                <button class="sfp-toggle-btn @(_tagShowAll  ? "active" : "")" @onclick="() => _tagShowAll = true">All tags</button>
-                            </div>
-                            <div class="sfp-search-row">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                </svg>
-                                <input class="sfp-search-input" type="text" placeholder="Search tags…"
-                                       @bind="_tagSearch" @bind:event="oninput" />
-                                @if (!string.IsNullOrEmpty(_tagSearch))
-                                {
-                                    <button class="sfp-search-clear" @onclick="() => _tagSearch = string.Empty">×</button>
-                                }
-                            </div>
-                            <div class="sfp-chips sfp-chips-compact sfp-dp-scroll">
-                                @{
-                                    var tagPool = _tagShowAll ? _allTags : (_tags.Any() ? _tags : _allTags);
-                                    var ft = (string.IsNullOrWhiteSpace(_tagSearch)
-                                        ? tagPool
-                                        : tagPool.Where(t => t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase))).ToList();
-                                }
-                                @if (!ft.Any())
-                                {
-                                    <span class="sfp-dp-empty">
-                                        @(_tagShowAll ? "No results" : "No tags in your list yet")
-                                    </span>
-                                }
-                                @foreach (var t in ft)
-                                {
-                                    var tv = t; bool on = FilterTags.Contains(tv);
-                                    <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterTags, tv)">
-                                        @if (on) { <span>✓</span> } @tv
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-                <div class="sfp-divider"></div>
-
-                <!-- SOURCE — always visible -->
-                <div class="sfp-section">
-                    <div class="sfp-section-label">Source Material</div>
-                    <div class="sfp-chips">
-                        @foreach (var src in _allSources)
-                        {
-                            var sv = src; bool on = FilterSources.Contains(sv);
-                            <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSources, sv)">@sv</button>
-                        }
-                    </div>
-                </div>
-                <div class="sfp-divider"></div>
-
-                <!-- STREAMING — only if platforms exist in user's list -->
-                @if (_platforms.Any())
-                {
-                    <div class="sfp-section">
-                        <div class="sfp-section-label">Streaming On</div>
-                        <div class="sfp-chips">
-                            @foreach (var p in _platforms)
-                            {
-                                var pv = p;
-                                bool on = FilterPlatforms.Contains(pv);
-                                _platformLinkMap.TryGetValue(pv, out var lnk);
-                                var fallback = GetPlatformFallback(pv);
-                                string? iconUrl    = lnk?.Icon;
-                                string? brandColor = lnk?.Color;
-                                bool shouldRecolor = !_sfpColorfulIconSites.Contains(pv)
-                                    && !_sfpNeverRecolorSites.Contains(pv)
-                                    && !string.IsNullOrEmpty(brandColor)
-                                    && brandColor != "#000000"
-                                    && brandColor!.StartsWith("#");
-                                <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterPlatforms, pv)">
-                                    @if (!string.IsNullOrEmpty(iconUrl))
-                                    {
-                                        string imgStyle = shouldRecolor ? GetWhiteToColorFilter(brandColor!) : "object-fit:contain;";
-                                        <img class="sfp-platform-icon"
-                                             src="@iconUrl"
-                                             alt="@pv"
-                                             style="@imgStyle"
-                                             onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='inline-flex')" />
-                                        <span class="sfp-platform-badge sfp-platform-badge-hidden"
-                                              style="background:@(fallback.bg);color:@(fallback.fg)">@fallback.abbr</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="sfp-platform-badge"
-                                              style="background:@(fallback.bg);color:@(fallback.fg)">@fallback.abbr</span>
-                                    }
-                                    @pv
+                        <!-- CONTENT -->
+                        <div class="sfp-more-section">
+                            <div class="sfp-section-label">Content</div>
+                            <div class="sfp-content-toggle-row">
+                                <button class="sfp-content-btn @(FilterAdult == false ? "sfp-content-btn-on" : "")"
+                                        @onclick="() => FilterAdult = (FilterAdult == false ? null : false)">
+                                    <span class="sfp-content-icon">🔞</span> Non-adult only
                                 </button>
-                            }
+                                <button class="sfp-content-btn @(FilterAdult == true ? "sfp-content-btn-on" : "")"
+                                        @onclick="() => FilterAdult = (FilterAdult == true ? null : true)">
+                                    <span class="sfp-content-icon">🔞</span> Adult only
+                                </button>
+                            </div>
                         </div>
+
                     </div>
-                    <div class="sfp-divider"></div>
                 }
-
-                <!-- COUNTRY — always visible -->
-                <div class="sfp-section">
-                    <div class="sfp-section-label">Country of Origin</div>
-                    <div class="sfp-chips">
-                        @foreach (var c in _allCountries)
-                        {
-                            var cv = c; bool on = FilterCountries.Contains(cv);
-                            <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterCountries, cv)">
-                                @CountryEmoji(cv) @CountryLabel(cv)
-                            </button>
-                        }
-                    </div>
-                </div>
-                <div class="sfp-divider"></div>
-
-                <!-- CONTENT -->
-                <div class="sfp-section">
-                    <div class="sfp-section-label">Content</div>
-                    <div class="sfp-chips">
-                        <button class="sfp-chip @(FilterAdult == false ? "sfp-chip-on" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == false ? null : false)">Non-adult only</button>
-                        <button class="sfp-chip @(FilterAdult == true ? "sfp-chip-on" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == true ? null : true)">Adult only</button>
-                    </div>
-                </div>
 
             </div>
 
-            <!-- Footer -->
+            <!-- ── Footer ─────────────────────────────────────── -->
             <div class="sfp-footer">
                 <button class="sfp-random-btn" @onclick="PickRandom" title="Random anime from current filters">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -507,6 +436,14 @@
     private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
     private bool _jsReady = false;
 
+    // ── UI state ──────────────────────────────────────────────────────────────
+    private bool   _moreOpen       = false;
+    private bool   _genreExpanded  = false;
+    private bool   _genreShowAll   = false;
+    private bool   _studioShowAll  = false;
+    private string _genreSearch    = string.Empty;
+    private string _studioSearch   = string.Empty;
+
     // ── Filters ───────────────────────────────────────────────────────────────
     private HashSet<string> FilterAiringStatus = new();
     private HashSet<string> FilterFormats      = new();
@@ -519,18 +456,7 @@
     private HashSet<string> FilterCountries    = new();
     private bool? FilterAdult = null;
 
-    // ── Dropdown state ────────────────────────────────────────────────────────
-    private bool   _genreDropdownOpen  = false;
-    private bool   _tagDropdownOpen    = false;
-    private bool   _studioDropdownOpen = false;
-    private bool   _genreShowAll       = false;
-    private bool   _studioShowAll      = false;
-    private bool   _tagShowAll         = false;
-    private string _genreSearch        = string.Empty;
-    private string _tagSearch          = string.Empty;
-    private string _studioSearch       = string.Empty;
-
-    // ── Static full lists (always shown regardless of list contents) ──────────
+    // ── Static full lists ─────────────────────────────────────────────────────
     private static readonly string[] _dotStatuses   = { "RELEASING", "NOT_YET_RELEASED" };
     private static readonly string[] _noDotStatuses = { "FINISHED", "CANCELLED", "HIATUS" };
 
@@ -543,8 +469,7 @@
     private static readonly List<string> _allSources = new()
     {
         "Original", "Manga", "Light Novel", "Visual Novel", "Web Novel",
-        "Novel", "Video Game", "Game", "Comic", "Picture Book",
-        "Multimedia Project", "Other"
+        "Novel", "Video Game", "Game", "Comic", "Picture Book", "Other"
     };
 
     private static readonly List<string> _allCountries = new()
@@ -552,13 +477,12 @@
 
     private static readonly List<string> _anilistGenres = new()
     {
-        "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy", "Horror", "Hentai",
+        "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy", "Horror",
         "Mahou Shoujo", "Mecha", "Music", "Mystery", "Psychological", "Romance", "Sci-Fi",
         "Slice of Life", "Sports", "Supernatural", "Thriller"
     };
 
-    // ── Cached lists derived from user's entries ──────────────────────────────
-    private HashSet<string> _availStatuses = new();
+    // ── Cached lists ──────────────────────────────────────────────────────────
     private List<string> _genres     = new();
     private List<string> _allGenres  = new();
     private List<string> _studios    = new();
@@ -571,6 +495,25 @@
     private int    _minYear = 1990, _maxYear = 2100, _maxEp = 0, _scoredCount = 0;
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
+
+    // ── Computed helpers ──────────────────────────────────────────────────────
+    private List<string> GenrePool => _genreShowAll ? _allGenres : (_genres.Any() ? _genres : _allGenres);
+
+    private int MoreActiveCount
+    {
+        get
+        {
+            int n = 0;
+            if (_scoreFrom != 0 || _scoreTo != 10) n++;
+            if (_epFrom != 0 || _epTo != _maxEp) n++;
+            if (FilterSources.Any())   n++;
+            if (FilterCountries.Any()) n++;
+            if (FilterPlatforms.Any()) n++;
+            if (FilterStudios.Any())   n++;
+            if (FilterAdult.HasValue)  n++;
+            return n;
+        }
+    }
 
     // ── Fill styles ───────────────────────────────────────────────────────────
     private string YearFillStyle
@@ -658,23 +601,18 @@
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 0;        _epTo    = Current.EpTo    ?? _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+        // Auto-open More if it has active filters
+        if (MoreActiveCount > 0) _moreOpen = true;
     }
 
     private void RebuildCache()
     {
         var en = AllEntries.ToList();
-
-        _availStatuses = en.Select(e => e.Anime.Status)
-                           .Where(s => !string.IsNullOrWhiteSpace(s))
-                           .ToHashSet()!;
-
-        _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
-                       .Distinct().OrderBy(x => x).ToList();
+        _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>()).Distinct().OrderBy(x => x).ToList();
         _allGenres = _anilistGenres.Union(FilterGenres).Distinct().OrderBy(x => x).ToList();
 
-        var studioFreq = en
-            .SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
-            .GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
+        var studioFreq = en.SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
+                           .GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
         _studios    = studioFreq.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
         _allStudios = _studios.Union(FilterStudios).Distinct().OrderBy(x => x).ToList();
 
@@ -682,8 +620,7 @@
                      .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
         _allTags = _tags.Union(FilterTags).Distinct().OrderBy(x => x).ToList();
 
-        _platforms = en
-            .SelectMany(e => e.Anime.ExternalLinks?
+        _platforms = en.SelectMany(e => e.Anime.ExternalLinks?
                 .Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>())
             .Distinct().OrderBy(x => x).ToList();
 
@@ -716,7 +653,6 @@
         double pct;
         try   { pct = Math.Clamp(await JS.InvokeAsync<double>("sfpTrackClick", wrapRef, e.ClientX), 0, 1); }
         catch { return; }
-
         switch (type)
         {
             case SliderType.Year:
@@ -803,7 +739,7 @@
         FilterGenres.Clear();       FilterStudios.Clear();   FilterTags.Clear();
         FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
         FilterAdult = null;
-        _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
+        _genreExpanded = false;
         _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10; _epFrom = 0; _epTo = _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
@@ -814,7 +750,6 @@
     {
         var opts    = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
-        // Fall back to entire list if no filter matches
         if (!matches.Any()) { matches = AllEntries.ToList(); if (!matches.Any()) return; }
         matches = ApplySort(matches, opts.Sort);
         var picked = matches[new Random().Next(matches.Count)];
@@ -841,7 +776,7 @@
     private void Close() => OnClose.InvokeAsync();
 
     private RenderFragment SortChip(SortMode mode, string label) =>
-        @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
+        @<button class="sfp-chip sfp-chip-sm @(_sort == mode ? "sfp-chip-on" : "")"
     @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
 
     // ── Platform icon helpers ─────────────────────────────────────────────────
@@ -862,29 +797,18 @@
     private static (string bg, string fg, string abbr) GetPlatformFallback(string p)
     {
         var l = p.ToLowerInvariant();
-        if (l.Contains("crunchyroll"))                        return ("#F47521", "#fff", "CR");
-        if (l.Contains("netflix"))                            return ("#E50914", "#fff", "N");
-        if (l.Contains("amazon") || l.Contains("prime"))     return ("#00A8E0", "#0a2240", "P");
-        if (l.Contains("hidive"))                             return ("#00BABC", "#fff", "Hi");
-        if (l.Contains("disney"))                             return ("#0072DB", "#fff", "D+");
-        if (l.Contains("funimation"))                         return ("#5B0BB5", "#fff", "Fu");
-        if (l.Contains("hulu"))                               return ("#1CE783", "#000", "Hu");
-        if (l.Contains("vrv"))                                return ("#FAB818", "#000", "V");
-        if (l.Contains("youtube"))                            return ("#FF0000", "#fff", "YT");
-        if (l.Contains("apple"))                              return ("#1C1C1E", "#fff", "A");
-        if (l.Contains("wakanim"))                            return ("#1B90D7", "#fff", "Wk");
-        if (l.Contains("adn"))                                return ("#009EE0", "#fff", "ADN");
-        if (l.Contains("bilibili"))                           return ("#00A1D6", "#fff", "Bi");
-        if (l.Contains("tubi"))                               return ("#FA4816", "#fff", "Tu");
-        if (l.Contains("peacock"))                            return ("#0452FF", "#fff", "Pc");
-        if (l.Contains("max") || l.Contains("hbo"))          return ("#002BE7", "#fff", "Max");
-        if (l.Contains("paramount"))                          return ("#0064FF", "#fff", "P+");
-        if (l.Contains("aniplus"))                            return ("#E4011C", "#fff", "AP");
-        if (l.Contains("retrocrush"))                         return ("#F5C518", "#000", "RC");
-        if (l.Contains("muse"))                               return ("#C8A951", "#000", "Mu");
-        if (l.Contains("viki"))                               return ("#0ED6CA", "#000", "Vi");
-        if (l.Contains("iqiyi") || l.Contains("iq.com"))     return ("#00BE06", "#fff", "iQ");
-        if (l.Contains("wetv"))                               return ("#FF6826", "#fff", "We");
+        if (l.Contains("crunchyroll"))                    return ("#F47521", "#fff", "CR");
+        if (l.Contains("netflix"))                        return ("#E50914", "#fff", "N");
+        if (l.Contains("amazon") || l.Contains("prime")) return ("#00A8E0", "#0a2240", "P");
+        if (l.Contains("hidive"))                         return ("#00BABC", "#fff", "Hi");
+        if (l.Contains("disney"))                         return ("#0072DB", "#fff", "D+");
+        if (l.Contains("funimation"))                     return ("#5B0BB5", "#fff", "Fu");
+        if (l.Contains("hulu"))                           return ("#1CE783", "#000", "Hu");
+        if (l.Contains("youtube"))                        return ("#FF0000", "#fff", "YT");
+        if (l.Contains("apple"))                          return ("#1C1C1E", "#fff", "A");
+        if (l.Contains("bilibili"))                       return ("#00A1D6", "#fff", "Bi");
+        if (l.Contains("max") || l.Contains("hbo"))       return ("#002BE7", "#fff", "Max");
+        if (l.Contains("paramount"))                      return ("#0064FF", "#fff", "P+");
         string fb = p.Length > 1 ? p[..2].ToUpper() : p.ToUpper();
         return ("#444", "#fff", fb);
     }
@@ -967,9 +891,12 @@
     private static (double h,double s,double l) ToHsl(int r,int g,int b) { double rf=r/255.0,gf=g/255.0,bf=b/255.0,max=Math.Max(rf,Math.Max(gf,bf)),min=Math.Min(rf,Math.Min(gf,bf)),l=(max+min)/2.0,h=0,s=0; if(max!=min){double d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max==rf)h=(gf-bf)/d+(gf<bf?6:0);else if(max==gf)h=(bf-rf)/d+2;else h=(rf-gf)/d+4;h/=6;}return(h*100,s*100,l*100); }
 
     private static string FormatAiringStatus(string s) => s switch
-    { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
-    private static int    SeasonOrder(string s)  => s?.ToUpper() switch { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
-    private static string SeasonEmoji(string s)  => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
-    private static string CountryEmoji(string c) => c?.ToUpper() switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
-    private static string CountryLabel(string c) => c?.ToUpper() switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
+    { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming",
+      "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
+    private static string SeasonEmoji(string s) => s?.ToUpper() switch
+    { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
+    private static string CountryEmoji(string c) => c?.ToUpper() switch
+    { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
+    private static string CountryLabel(string c) => c?.ToUpper() switch
+    { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
 }
