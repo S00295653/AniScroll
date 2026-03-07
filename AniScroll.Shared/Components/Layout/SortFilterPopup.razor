@@ -244,7 +244,7 @@
                                         ? genrePool
                                         : genrePool.Where(g => g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
                                 }
-                                @if (!fg.Any()) { <span class="sfp-dp-empty">No results</span> }
+                                @if (!fg.Any()) { <span class="sfp-dp-empty">No genres in your list yet</span> }
                                 @foreach (var g in fg)
                                 {
                                     var gv = g; bool on = FilterGenres.Contains(gv);
@@ -654,8 +654,28 @@
                         return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
                     };
                 }
+                if (!window.sfpInitDualSlider) {
+                    window.sfpInitDualSlider = function(wrap) {
+                        if (!wrap || wrap._sfpInited) return;
+                        wrap._sfpInited = true;
+                        var lo = wrap.querySelector('.sfp-range-lo');
+                        var hi = wrap.querySelector('.sfp-range-hi');
+                        if (!lo || !hi) return;
+                        lo.addEventListener('input', function() {
+                            var v = parseFloat(lo.value), hv = parseFloat(hi.value);
+                            if (v > hv) lo.value = hv;
+                        }, true);
+                        hi.addEventListener('input', function() {
+                            var v = parseFloat(hi.value), lv = parseFloat(lo.value);
+                            if (v < lv) hi.value = lv;
+                        }, true);
+                    };
+                }
             ");
             _jsReady = true;
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearWrapRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreWrapRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _epWrapRef);
         }
     }
 
@@ -767,12 +787,12 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    StateHasChanged(); ScheduleResultCountUpdate(); }
-    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  StateHasChanged(); ScheduleResultCountUpdate(); }
-    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   StateHasChanged(); ScheduleResultCountUpdate(); }
-    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); StateHasChanged(); ScheduleResultCountUpdate(); }
-    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      StateHasChanged(); ScheduleResultCountUpdate(); }
-    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
     private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
     {
