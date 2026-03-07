@@ -104,37 +104,32 @@
                     <div class="sfp-section-label-row">
                         <span class="sfp-section-label">Year</span>
                         <span class="sfp-range-badge">
-                            @{
-                                int yLo = Math.Min(_yearFrom, _yearTo), yHi = Math.Max(_yearFrom, _yearTo);
-                            }
-                            @(yLo == _minYear && yHi == _maxYear ? "All"
-                              : yLo == yHi ? $"{yLo}"
-                              : $"{yLo} – {yHi}")
+                            @(_yearFrom == _minYear && _yearTo == _maxYear ? "All"
+                              : _yearFrom == _yearTo ? $"{_yearFrom}"
+                              : $"{_yearFrom} – {_yearTo}")
                         </span>
                     </div>
                     <div class="sfp-dual-slider">
                         <input type="number" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearFrom"
-                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearFrom = Math.Clamp(v, _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearFrom = Math.Clamp(Math.Min(v, _yearTo), _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_yearWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Year)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_yearFrom > _yearTo ? 5 : 3)"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_yearFrom > _yearTo ? 3 : 4)"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearTo"
-                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearTo = Math.Clamp(v, _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearTo = Math.Clamp(Math.Max(v, _yearFrom), _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
                     </div>
-                    @if (Math.Min(_yearFrom, _yearTo) != _minYear || Math.Max(_yearFrom, _yearTo) != _maxYear)
+                    @if (_yearFrom != _minYear || _yearTo != _maxYear)
                     {
                         <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Reset years</button>
                     }
@@ -148,17 +143,15 @@
                         <input type="number" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { _scoreFrom = Math.Clamp(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0, 10); ScheduleResultCountUpdate(); }" />
+                               @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_scoreFrom > _scoreTo ? 5 : 3)"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_scoreFrom > _scoreTo ? 3 : 4)"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
@@ -166,7 +159,7 @@
                         <input type="number" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { _scoreTo = Math.Clamp(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0, 10); ScheduleResultCountUpdate(); }" />
+                               @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -177,22 +170,20 @@
                     <div class="sfp-dual-slider">
                         <input type="number" class="sfp-num-input"
                                min="1" max="@_maxEp" value="@_epFrom"
-                               @onchange="e => { _epFrom = Math.Clamp(int.Parse(e.Value!.ToString()!), 1, _maxEp); ScheduleResultCountUpdate(); }" />
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epFrom = Math.Min(Math.Clamp(v, 1, _maxEp), _epTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_epFrom > _epTo ? 5 : 3)"
                                    min="1" max="@_maxEp" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_epFrom > _epTo ? 3 : 4)"
                                    min="1" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input"
                                min="1" max="@_maxEp" value="@_epTo"
-                               @onchange="e => { _epTo = Math.Clamp(int.Parse(e.Value!.ToString()!), 1, _maxEp); ScheduleResultCountUpdate(); }" />
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epTo = Math.Max(Math.Clamp(v, 1, _maxEp), _epFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -593,16 +584,15 @@
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
-    // ── Fill styles — always use min/max so fill is correct when thumbs cross ──
+    // ── Fill styles — lo is always <= hi now (no crossing) ──
 
     private string YearFillStyle
     {
         get
         {
-            int lo = Math.Min(_yearFrom, _yearTo), hi = Math.Max(_yearFrom, _yearTo);
             double range = Math.Max(1.0, _maxYear - _minYear);
-            double l = Math.Clamp((lo - _minYear) * 100.0 / range, 0, 100);
-            double r = Math.Clamp((_maxYear  - hi) * 100.0 / range, 0, 100);
+            double l = Math.Clamp((_yearFrom - _minYear) * 100.0 / range, 0, 100);
+            double r = Math.Clamp((_maxYear  - _yearTo)  * 100.0 / range, 0, 100);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
@@ -611,9 +601,8 @@
     {
         get
         {
-            double lo = Math.Min(_scoreFrom, _scoreTo), hi = Math.Max(_scoreFrom, _scoreTo);
-            double l = Math.Clamp(lo * 10.0,          0, 100);
-            double r = Math.Clamp((10.0 - hi) * 10.0, 0, 100);
+            double l = Math.Clamp(_scoreFrom * 10.0,          0, 100);
+            double r = Math.Clamp((10.0 - _scoreTo) * 10.0,   0, 100);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
@@ -622,10 +611,9 @@
     {
         get
         {
-            int lo = Math.Min(_epFrom, _epTo), hi = Math.Max(_epFrom, _epTo);
             double range = Math.Max(1.0, _maxEp - 1);
-            double l = Math.Clamp((lo - 1) * 100.0 / range, 0, 100);
-            double r = Math.Clamp((_maxEp - hi) * 100.0 / range, 0, 100);
+            double l = Math.Clamp((_epFrom - 1) * 100.0 / range, 0, 100);
+            double r = Math.Clamp((_maxEp - _epTo) * 100.0 / range, 0, 100);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
@@ -637,9 +625,9 @@
         FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() || FilterAdult.HasValue;
 
     private bool RangeActive =>
-        Math.Min(_yearFrom,  _yearTo)  != _minYear || Math.Max(_yearFrom,  _yearTo)  != _maxYear ||
-        Math.Min(_scoreFrom, _scoreTo) != 0        || Math.Max(_scoreFrom, _scoreTo) != 10       ||
-        Math.Min(_epFrom,    _epTo)    != 1        || Math.Max(_epFrom,    _epTo)    != _maxEp;
+        _yearFrom  != _minYear || _yearTo  != _maxYear ||
+        _scoreFrom != 0        || _scoreTo != 10       ||
+        _epFrom    != 1        || _epTo    != _maxEp;
 
     private int TotalActiveCount
     {
@@ -669,7 +657,6 @@
                     window.sfpInitDualSlider = function(wrap) {
                         if (!wrap || wrap._sfpInited) return;
                         wrap._sfpInited = true;
-                        // Thumbs cross freely — fill and options use min/max on the C# side.
                     };
                 }
             ");
@@ -697,6 +684,10 @@
         _yearFrom  = Current.YearFrom  ?? _minYear; _yearTo  = Current.YearTo  ?? _maxYear;
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 1;        _epTo    = Current.EpTo    ?? _maxEp;
+        // Ensure lo <= hi on load (defensive)
+        if (_yearFrom  > _yearTo)  (_yearFrom,  _yearTo)  = (_yearTo,  _yearFrom);
+        if (_scoreFrom > _scoreTo) (_scoreFrom, _scoreTo) = (_scoreTo, _scoreFrom);
+        if (_epFrom    > _epTo)    (_epFrom,    _epTo)    = (_epTo,    _epFrom);
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
         _ = EnsureMetadataAsync();
     }
@@ -789,14 +780,14 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    // ── Slider input handlers — NO clamping, thumbs cross freely ──
+    // ── Slider input handlers — thumbs never cross ──
 
-    private void OnYearFromInput(int v)     { _yearFrom  = v; ScheduleResultCountUpdate(); }
-    private void OnYearToInput(int v)       { _yearTo    = v; ScheduleResultCountUpdate(); }
-    private void OnScoreFromInput(double v) { _scoreFrom = v; ScheduleResultCountUpdate(); }
-    private void OnScoreToInput(double v)   { _scoreTo   = v; ScheduleResultCountUpdate(); }
-    private void OnEpFromInput(int v)       { _epFrom    = v; ScheduleResultCountUpdate(); }
-    private void OnEpToInput(int v)         { _epTo      = v; ScheduleResultCountUpdate(); }
+    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
     private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
     {
@@ -813,22 +804,28 @@
             case SliderType.Year:
             {
                 int v = (int)Math.Round(_minYear + pct * (_maxYear - _minYear));
-                if (Math.Abs(v - _yearFrom) <= Math.Abs(v - _yearTo)) _yearFrom = v;
-                else _yearTo = v;
+                if (Math.Abs(v - _yearFrom) <= Math.Abs(v - _yearTo))
+                    _yearFrom = Math.Min(v, _yearTo);
+                else
+                    _yearTo = Math.Max(v, _yearFrom);
                 break;
             }
             case SliderType.Score:
             {
                 double v = Math.Clamp(Math.Round(pct * 10.0 / 0.5) * 0.5, 0, 10);
-                if (Math.Abs(v - _scoreFrom) <= Math.Abs(v - _scoreTo)) _scoreFrom = v;
-                else _scoreTo = v;
+                if (Math.Abs(v - _scoreFrom) <= Math.Abs(v - _scoreTo))
+                    _scoreFrom = Math.Min(v, _scoreTo);
+                else
+                    _scoreTo = Math.Max(v, _scoreFrom);
                 break;
             }
             case SliderType.Episode:
             {
                 int v = (int)Math.Round(1 + pct * (_maxEp - 1));
-                if (Math.Abs(v - _epFrom) <= Math.Abs(v - _epTo)) _epFrom = v;
-                else _epTo = v;
+                if (Math.Abs(v - _epFrom) <= Math.Abs(v - _epTo))
+                    _epFrom = Math.Min(v, _epTo);
+                else
+                    _epTo = Math.Max(v, _epFrom);
                 break;
             }
         }
@@ -857,20 +854,16 @@
 
     private SortFilterOptions BuildOptions()
     {
-        // Normalise so that lo <= hi regardless of thumb order
-        int    yLo = Math.Min(_yearFrom,  _yearTo),   yHi = Math.Max(_yearFrom,  _yearTo);
-        double sLo = Math.Min(_scoreFrom, _scoreTo),  sHi = Math.Max(_scoreFrom, _scoreTo);
-        int    eLo = Math.Min(_epFrom,    _epTo),      eHi = Math.Max(_epFrom,    _epTo);
-
+        // lo <= hi is now guaranteed by the handlers, no need for Math.Min/Max here
         return new()
         {
             Sort = _sort, AiringStatuses = new(FilterAiringStatus), Formats = new(FilterFormats),
             Seasons = new(FilterSeasons), Genres = new(FilterGenres), Studios = new(FilterStudios),
             Tags = new(FilterTags), Sources = new(FilterSources), Platforms = new(FilterPlatforms),
             Countries = new(FilterCountries), Adult = FilterAdult,
-            YearFrom  = yLo != _minYear ? yLo  : null, YearTo  = yHi != _maxYear ? yHi  : null,
-            ScoreFrom = sLo != 0        ? sLo  : null, ScoreTo = sHi != 10        ? sHi  : null,
-            EpFrom    = eLo != 1        ? eLo  : null, EpTo    = eHi != _maxEp    ? eHi  : null,
+            YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null, YearTo  = _yearTo  != _maxYear ? _yearTo  : null,
+            ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null, ScoreTo = _scoreTo != 10        ? _scoreTo : null,
+            EpFrom    = _epFrom    != 1        ? _epFrom    : null, EpTo    = _epTo    != _maxEp    ? _epTo    : null,
         };
     }
 
