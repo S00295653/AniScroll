@@ -196,7 +196,7 @@
                 <!-- GENRES DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     @{
-                        var genreMyPool  = _genres.Any() ? _genres : _allGenres;
+                        var genreMyPool  = _genres;
                         var genreAllPool = _allGenres;
                         var genrePoolCount = _genreShowAll ? genreAllPool.Count : genreMyPool.Count;
                     }
@@ -261,7 +261,7 @@
                 <!-- STUDIOS DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     @{
-                        var studioMyPool  = _studios.Any() ? _studios : _allStudios;
+                        var studioMyPool  = _studios;
                         var studioAllPool = _allStudios;
                         var studioPoolCount = _studioShowAll ? studioAllPool.Count : studioMyPool.Count;
                     }
@@ -339,7 +339,7 @@
                 <!-- TAGS DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     @{
-                        var tagMyPool  = _tags.Any() ? _tags : _allTags;
+                        var tagMyPool  = _tags;
                         var tagAllPool = _allTags;
                         var tagPoolCount = _tagShowAll ? tagAllPool.Count : tagMyPool.Count;
                     }
@@ -767,12 +767,12 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
-    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
-    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
-    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
-    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
-    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
+    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      StateHasChanged(); ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    StateHasChanged(); ScheduleResultCountUpdate(); }
 
     private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
     {
