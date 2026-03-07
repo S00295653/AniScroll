@@ -6,8 +6,8 @@
 
 @if (IsVisible)
 {
-    <div class="sfp-overlay" @onclick="Close">
-        <div class="sfp-panel" @onclick:stopPropagation="true">
+    <div class="sfp-overlay" @onclick="OnOverlayClick" @onpointerdown="() => _pointerDownOnOverlay = true">
+        <div class="sfp-panel" @onclick:stopPropagation="true" @onpointerdown:stopPropagation="true">
 
             <div class="sfp-handle-zone"><div class="sfp-handle-bar"></div></div>
 
@@ -118,11 +118,11 @@
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_yearFrom >= _yearTo ? 5 : 3)"
-                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
+                                   min="@_minYear" max="@_yearTo" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_yearFrom >= _yearTo ? 3 : 4)"
-                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
+                                   min="@_yearFrom" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input sfp-num-year"
@@ -150,12 +150,12 @@
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
-                                   min="0" max="10" step="0.5"
+                                   min="0" max="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
-                                   min="0" max="10" step="0.5"
+                                   min="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)" max="10" step="0.5"
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
@@ -179,11 +179,11 @@
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
-                                   min="1" max="@_maxEp" step="1" value="@_epFrom"
+                                   min="1" max="@_epTo" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
-                                   min="1" max="@_maxEp" step="1" value="@_epTo"
+                                   min="@_epFrom" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input"
@@ -518,6 +518,8 @@
 
     private enum SliderType { Year, Score, Episode }
 
+    private bool _pointerDownOnOverlay = false;
+
     private SortMode _sort = SortMode.RecentlyAdded;
     private int    _yearFrom, _yearTo;
     private double _scoreFrom, _scoreTo;
@@ -660,6 +662,7 @@
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
+        _pointerDownOnOverlay = false;
         RebuildCache();
         _sort = Current.Sort;
         FilterAiringStatus = new(Current.AiringStatuses); FilterFormats   = new(Current.Formats);
@@ -740,8 +743,8 @@
             .ToDictionary(g => g.Key, g => g.FirstOrDefault(l => !string.IsNullOrEmpty(l.Icon)) ?? g.First());
 
         _years   = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
-        _minYear = _years.Any() ? _years.Min() : 1990;
-        _maxYear = _years.Any() ? _years.Max() : DateTime.Now.Year;
+        _minYear = 1940;
+        _maxYear = DateTime.Now.Year;
 
         // Max episodes: highest total episode count across all anime in list
         int maxParsed = en
@@ -874,6 +877,17 @@
     }
 
     private async Task Apply() { await OnApply.InvokeAsync(BuildOptions()); await OnClose.InvokeAsync(); }
+
+    private async Task OnOverlayClick()
+    {
+        // Only apply+close if the pointer was pressed ON the overlay itself
+        // (not dragged from inside the panel to outside)
+        if (!_pointerDownOnOverlay) { _pointerDownOnOverlay = false; return; }
+        _pointerDownOnOverlay = false;
+        await Apply();
+    }
+
+    private void Close() => OnClose.InvokeAsync();
 
     private async Task PickRandom()
     {

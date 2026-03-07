@@ -512,3 +512,66 @@ window.unregisterEscapeKey = function () {
     }
     _escDotNet = null;
 };
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SFP (Sort & Filter Panel) — drag-release protection
+//
+//  Prevents the overlay "apply on click" from firing when the user
+//  pressed a pointer inside the panel and released outside
+//  (e.g. while dragging a range-slider thumb past the panel edge).
+//
+//  Usage from Blazor OnAfterRenderAsync:
+//    var cleanup = await JS.InvokeAsync<IJSObjectReference>(
+//        "sfpRegisterPanelDragProtect", overlayRef, panelRef);
+//  And call cleanup.InvokeVoidAsync("call") on dispose if needed.
+// ═══════════════════════════════════════════════════════════════════════
+
+(function () {
+    let _sfpDownInside = false;
+
+    /**
+     * overlayEl — the .sfp-overlay element that triggers apply-on-click
+     * panelEl   — the .sfp-panel  element that should NOT trigger it on drag-out
+     *
+     * Returns a cleanup function. Call it when the panel is hidden to avoid leaks.
+     */
+    window.sfpRegisterPanelDragProtect = function (overlayEl, panelEl) {
+        if (!overlayEl || !panelEl) return function () {};
+
+        // Pointer pressed INSIDE the panel → mark flag
+        const onPanelDown = () => { _sfpDownInside = true; };
+
+        // Pointer pressed directly on the overlay → clear flag (normal click)
+        const onOverlayDown = () => { _sfpDownInside = false; };
+
+        // On any pointer-up on the document, reset the flag after this tick
+        // (so the overlay's click handler, which fires synchronously before
+        // the next tick, can still read the correct value)
+        const onDocUp = () => { setTimeout(() => { _sfpDownInside = false; }, 0); };
+
+        // Intercept the overlay click *before* Blazor's handler sees it
+        // when the drag started inside the panel
+        const onOverlayClick = (e) => {
+            if (_sfpDownInside) {
+                e.stopImmediatePropagation();
+                _sfpDownInside = false;
+            }
+        };
+
+        panelEl.addEventListener  ('pointerdown', onPanelDown,    { capture: true });
+        overlayEl.addEventListener('pointerdown', onOverlayDown,  { capture: true });
+        overlayEl.addEventListener('click',       onOverlayClick, { capture: true });
+        document.addEventListener ('pointerup',   onDocUp,        { capture: true });
+
+        return function cleanup() {
+            panelEl.removeEventListener  ('pointerdown', onPanelDown,    { capture: true });
+            overlayEl.removeEventListener('pointerdown', onOverlayDown,  { capture: true });
+            overlayEl.removeEventListener('click',       onOverlayClick, { capture: true });
+            document.removeEventListener ('pointerup',   onDocUp,        { capture: true });
+        };
+    };
+
+    /** Readable from Blazor via JS interop if a second check is ever needed. */
+    window.sfpIsPointerDownInPanel = function () { return _sfpDownInside; };
+})();
