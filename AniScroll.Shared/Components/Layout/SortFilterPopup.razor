@@ -7,7 +7,8 @@
 @if (IsVisible)
 {
     <div class="sfp-overlay" @onclick="OnOverlayClick" @onpointerdown="() => _pointerDownOnOverlay = true">
-        <div class="sfp-panel" @onclick:stopPropagation="true" @onpointerdown:stopPropagation="true">
+        <div class="sfp-panel" @onclick:stopPropagation="true" @onpointerdown:stopPropagation="true"
+             @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true">
 
             <div class="sfp-handle-zone"><div class="sfp-handle-bar"></div></div>
 
@@ -117,11 +118,11 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_yearFrom >= _yearTo ? 5 : 3)"
+                                   style="z-index:@(_yearFrom > _yearTo ? 5 : 3)"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_yearFrom >= _yearTo ? 3 : 4)"
+                                   style="z-index:@(_yearFrom > _yearTo ? 3 : 4)"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
@@ -149,12 +150,12 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
+                                   style="z-index:@(_scoreFrom > _scoreTo ? 5 : 3)"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
+                                   style="z-index:@(_scoreFrom > _scoreTo ? 3 : 4)"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
@@ -178,11 +179,11 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
-                                   style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
+                                   style="z-index:@(_epFrom > _epTo ? 5 : 3)"
                                    min="1" max="@_maxEp" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
-                                   style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
+                                   style="z-index:@(_epFrom > _epTo ? 3 : 4)"
                                    min="1" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
@@ -663,12 +664,10 @@
                         if (!lo || !hi) return;
                         // capture phase: runs BEFORE Blazor reads e.Value
                         lo.addEventListener('input', function() {
-                            var v = parseFloat(lo.value), hv = parseFloat(hi.value);
-                            if (v > hv) lo.value = hv;
+                            if (parseFloat(lo.value) > parseFloat(hi.value)) lo.value = hi.value;
                         }, true);
                         hi.addEventListener('input', function() {
-                            var v = parseFloat(hi.value), lv = parseFloat(lo.value);
-                            if (v < lv) hi.value = lv;
+                            if (parseFloat(hi.value) < parseFloat(lo.value)) hi.value = lo.value;
                         }, true);
                     };
                 }
@@ -781,7 +780,6 @@
         ApplyMetadataCache();
     }
 
-    /// <summary>Parses the episode count from display strings like "24", "13/26", "12+", "?".</summary>
     private static int ParseEpisodeCount(string? s)
     {
         if (string.IsNullOrWhiteSpace(s) || s == "N/A" || s == "?") return 0;
@@ -908,7 +906,15 @@
         await Apply();
     }
 
-    private void Close() => OnClose.InvokeAsync();
+    // Intercept Escape on the panel — @onkeydown:stopPropagation="true" above prevents
+    // the event from bubbling to the parent page (which would navigate away from My List).
+    private async Task OnPanelKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            await Close();
+    }
+
+    private Task Close() => OnClose.InvokeAsync();
 
     private async Task PickRandom()
     {
