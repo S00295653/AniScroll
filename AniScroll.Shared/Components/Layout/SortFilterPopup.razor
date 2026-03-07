@@ -3,7 +3,6 @@
 @inject UserListService UserListService
 @inject AniListService AniListService
 @inject IJSRuntime JS
-@implements IAsyncDisposable
 
 @if (IsVisible)
 {
@@ -25,7 +24,7 @@
                 <div class="sfp-header-actions">
                     @if (HasActiveOptions)
                     {
-                        <button class="sfp-reset-btn" @onclick="ResetAsync">Reset all</button>
+                        <button class="sfp-reset-btn" @onclick="Reset">Reset all</button>
                     }
                     <button class="sfp-close-btn" @onclick="Close">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -117,16 +116,27 @@
                         <input type="number" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearFrom"
-                               @onchange="e => OnYearFromNumChange(e)" />
-                        <div @ref="_yearSliderRef" class="sfp-nouislider"></div>
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearFrom = Math.Clamp(v, _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
+                        <div class="sfp-slider-wrap" @ref="_yearWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Year)">
+                            <div class="sfp-slider-track"></div>
+                            <div class="sfp-slider-fill" style="@YearFillStyle"></div>
+                            <input type="range" class="sfp-range sfp-range-lo"
+                                   style="z-index:@(_yearFrom > _yearTo ? 5 : 3)"
+                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
+                                   @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
+                            <input type="range" class="sfp-range sfp-range-hi"
+                                   style="z-index:@(_yearFrom > _yearTo ? 3 : 4)"
+                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
+                                   @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
+                        </div>
                         <input type="number" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearTo"
-                               @onchange="e => OnYearToNumChange(e)" />
+                               @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearTo = Math.Clamp(v, _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
                     </div>
                     @if (Math.Min(_yearFrom, _yearTo) != _minYear || Math.Max(_yearFrom, _yearTo) != _maxYear)
                     {
-                        <button class="sfp-clear-range" @onclick="ResetYearAsync">Reset years</button>
+                        <button class="sfp-clear-range" @onclick="() => { _yearFrom = _minYear; _yearTo = _maxYear; ScheduleResultCountUpdate(); }">Reset years</button>
                     }
                 </div>
                 <div class="sfp-divider"></div>
@@ -138,12 +148,25 @@
                         <input type="number" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => OnScoreFromNumChange(e)" />
-                        <div @ref="_scoreSliderRef" class="sfp-nouislider"></div>
+                               @onchange="e => { _scoreFrom = Math.Clamp(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0, 10); ScheduleResultCountUpdate(); }" />
+                        <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
+                            <div class="sfp-slider-track"></div>
+                            <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
+                            <input type="range" class="sfp-range sfp-range-lo"
+                                   style="z-index:@(_scoreFrom > _scoreTo ? 5 : 3)"
+                                   min="0" max="10" step="0.5"
+                                   value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                   @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                            <input type="range" class="sfp-range sfp-range-hi"
+                                   style="z-index:@(_scoreFrom > _scoreTo ? 3 : 4)"
+                                   min="0" max="10" step="0.5"
+                                   value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                   @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
+                        </div>
                         <input type="number" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => OnScoreToNumChange(e)" />
+                               @onchange="e => { _scoreTo = Math.Clamp(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture), 0, 10); ScheduleResultCountUpdate(); }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -154,11 +177,22 @@
                     <div class="sfp-dual-slider">
                         <input type="number" class="sfp-num-input"
                                min="1" max="@_maxEp" value="@_epFrom"
-                               @onchange="e => OnEpFromNumChange(e)" />
-                        <div @ref="_epSliderRef" class="sfp-nouislider"></div>
+                               @onchange="e => { _epFrom = Math.Clamp(int.Parse(e.Value!.ToString()!), 1, _maxEp); ScheduleResultCountUpdate(); }" />
+                        <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
+                            <div class="sfp-slider-track"></div>
+                            <div class="sfp-slider-fill" style="@EpFillStyle"></div>
+                            <input type="range" class="sfp-range sfp-range-lo"
+                                   style="z-index:@(_epFrom > _epTo ? 5 : 3)"
+                                   min="1" max="@_maxEp" step="1" value="@_epFrom"
+                                   @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
+                            <input type="range" class="sfp-range sfp-range-hi"
+                                   style="z-index:@(_epFrom > _epTo ? 3 : 4)"
+                                   min="1" max="@_maxEp" step="1" value="@_epTo"
+                                   @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
+                        </div>
                         <input type="number" class="sfp-num-input"
                                min="1" max="@_maxEp" value="@_epTo"
-                               @onchange="e => OnEpToNumChange(e)" />
+                               @onchange="e => { _epTo = Math.Clamp(int.Parse(e.Value!.ToString()!), 1, _maxEp); ScheduleResultCountUpdate(); }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -486,6 +520,8 @@
         YearDesc, YearAsc,
     }
 
+    private enum SliderType { Year, Score, Episode }
+
     private bool _pointerDownOnOverlay = false;
 
     private SortMode _sort = SortMode.RecentlyAdded;
@@ -493,11 +529,8 @@
     private double _scoreFrom, _scoreTo;
     private int    _epFrom, _epTo;
 
-    // ── noUiSlider element references ──────────────────────────
-    private ElementReference _yearSliderRef, _scoreSliderRef, _epSliderRef;
-    private DotNetObjectReference<SortFilterPopup>? _dotNetRef;
-    private bool _slidersInited   = false;
-    private bool _pendingSliderInit = false;
+    private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
+    private bool _jsReady = false;
 
     private HashSet<string> FilterAiringStatus = new();
     private HashSet<string> FilterFormats      = new();
@@ -560,6 +593,43 @@
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
+    // ── Fill styles — always use min/max so fill is correct when thumbs cross ──
+
+    private string YearFillStyle
+    {
+        get
+        {
+            int lo = Math.Min(_yearFrom, _yearTo), hi = Math.Max(_yearFrom, _yearTo);
+            double range = Math.Max(1.0, _maxYear - _minYear);
+            double l = Math.Clamp((lo - _minYear) * 100.0 / range, 0, 100);
+            double r = Math.Clamp((_maxYear  - hi) * 100.0 / range, 0, 100);
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
+    private string ScoreFillStyle
+    {
+        get
+        {
+            double lo = Math.Min(_scoreFrom, _scoreTo), hi = Math.Max(_scoreFrom, _scoreTo);
+            double l = Math.Clamp(lo * 10.0,          0, 100);
+            double r = Math.Clamp((10.0 - hi) * 10.0, 0, 100);
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
+    private string EpFillStyle
+    {
+        get
+        {
+            int lo = Math.Min(_epFrom, _epTo), hi = Math.Max(_epFrom, _epTo);
+            double range = Math.Max(1.0, _maxEp - 1);
+            double l = Math.Clamp((lo - 1) * 100.0 / range, 0, 100);
+            double r = Math.Clamp((_maxEp - hi) * 100.0 / range, 0, 100);
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
+        }
+    }
+
     private bool HasActiveOptions =>
         _sort != SortMode.RecentlyAdded || RangeActive ||
         FilterAiringStatus.Any() || FilterFormats.Any() || FilterSeasons.Any() ||
@@ -584,17 +654,38 @@
         }
     }
 
-    // ── Lifecycle ───────────────────────────────────────────────
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_jsReady)
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                if (!window.sfpTrackClick) {
+                    window.sfpTrackClick = function(el, clientX) {
+                        var r = el.getBoundingClientRect();
+                        return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
+                    };
+                }
+                if (!window.sfpInitDualSlider) {
+                    window.sfpInitDualSlider = function(wrap) {
+                        if (!wrap || wrap._sfpInited) return;
+                        wrap._sfpInited = true;
+                        // Thumbs cross freely — fill and options use min/max on the C# side.
+                    };
+                }
+            ");
+            _jsReady = true;
+        }
+        if (IsVisible && _jsReady)
+        {
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearWrapRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreWrapRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _epWrapRef);
+        }
+    }
 
     protected override void OnParametersSet()
     {
-        if (!IsVisible)
-        {
-            // Panel closing — mark sliders as needing re-init on next open
-            _slidersInited = false;
-            return;
-        }
-
+        if (!IsVisible) return;
         _pointerDownOnOverlay = false;
         RebuildCache();
         _sort = Current.Sort;
@@ -607,161 +698,8 @@
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 1;        _epTo    = Current.EpTo    ?? _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
-
-        // Signal that sliders need (re)initialisation once the DOM is ready
-        _pendingSliderInit = true;
         _ = EnsureMetadataAsync();
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _dotNetRef = DotNetObjectReference.Create(this);
-        }
-
-        // Initialise (or re-initialise) sliders whenever the panel opens
-        if (IsVisible && _pendingSliderInit && _dotNetRef is not null)
-        {
-            _pendingSliderInit = false;
-            _slidersInited     = true;
-
-            await JS.InvokeVoidAsync("sfpSlider.init",
-                "year", _yearSliderRef,
-                (double)_minYear, (double)_maxYear, 1.0,
-                (double)_yearFrom, (double)_yearTo,
-                _dotNetRef, nameof(OnYearSliderUpdate));
-
-            await JS.InvokeVoidAsync("sfpSlider.init",
-                "score", _scoreSliderRef,
-                0.0, 10.0, 0.5,
-                _scoreFrom, _scoreTo,
-                _dotNetRef, nameof(OnScoreSliderUpdate));
-
-            await JS.InvokeVoidAsync("sfpSlider.init",
-                "ep", _epSliderRef,
-                1.0, (double)_maxEp, 1.0,
-                (double)_epFrom, (double)_epTo,
-                _dotNetRef, nameof(OnEpSliderUpdate));
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        // Tear down JS instances and release the DotNetObjectReference
-        try
-        {
-            if (_slidersInited)
-            {
-                await JS.InvokeVoidAsync("sfpSlider.destroy", "year");
-                await JS.InvokeVoidAsync("sfpSlider.destroy", "score");
-                await JS.InvokeVoidAsync("sfpSlider.destroy", "ep");
-            }
-        }
-        catch { /* component already gone */ }
-        _dotNetRef?.Dispose();
-    }
-
-    // ── JS → C# callbacks (called by noUiSlider's 'update' event) ──
-
-    [JSInvokable]
-    public void OnYearSliderUpdate(double lo, double hi)
-    {
-        _yearFrom = (int)Math.Round(lo);
-        _yearTo   = (int)Math.Round(hi);
-        ScheduleResultCountUpdate();
-        InvokeAsync(StateHasChanged);
-    }
-
-    [JSInvokable]
-    public void OnScoreSliderUpdate(double lo, double hi)
-    {
-        _scoreFrom = lo;
-        _scoreTo   = hi;
-        ScheduleResultCountUpdate();
-        InvokeAsync(StateHasChanged);
-    }
-
-    [JSInvokable]
-    public void OnEpSliderUpdate(double lo, double hi)
-    {
-        _epFrom = (int)Math.Round(lo);
-        _epTo   = (int)Math.Round(hi);
-        ScheduleResultCountUpdate();
-        InvokeAsync(StateHasChanged);
-    }
-
-    // ── Number-input handlers (sync slider when typing) ─────────
-
-    private async Task OnYearFromNumChange(ChangeEventArgs e)
-    {
-        if (!int.TryParse(e.Value?.ToString(), out var v)) return;
-        _yearFrom = Math.Clamp(v, _minYear, _maxYear);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "year", (double)_yearFrom, (double)_yearTo);
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnYearToNumChange(ChangeEventArgs e)
-    {
-        if (!int.TryParse(e.Value?.ToString(), out var v)) return;
-        _yearTo = Math.Clamp(v, _minYear, _maxYear);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "year", (double)_yearFrom, (double)_yearTo);
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnScoreFromNumChange(ChangeEventArgs e)
-    {
-        if (!double.TryParse(e.Value?.ToString(),
-            System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var v)) return;
-        _scoreFrom = Math.Clamp(v, 0, 10);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "score", _scoreFrom, _scoreTo);
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnScoreToNumChange(ChangeEventArgs e)
-    {
-        if (!double.TryParse(e.Value?.ToString(),
-            System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var v)) return;
-        _scoreTo = Math.Clamp(v, 0, 10);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "score", _scoreFrom, _scoreTo);
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnEpFromNumChange(ChangeEventArgs e)
-    {
-        if (!int.TryParse(e.Value?.ToString(), out var v)) return;
-        _epFrom = Math.Clamp(v, 1, _maxEp);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "ep", (double)_epFrom, (double)_epTo);
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnEpToNumChange(ChangeEventArgs e)
-    {
-        if (!int.TryParse(e.Value?.ToString(), out var v)) return;
-        _epTo = Math.Clamp(v, 1, _maxEp);
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "ep", (double)_epFrom, (double)_epTo);
-        ScheduleResultCountUpdate();
-    }
-
-    // ── Reset year shortcut ──────────────────────────────────────
-
-    private async Task ResetYearAsync()
-    {
-        _yearFrom = _minYear; _yearTo = _maxYear;
-        if (_slidersInited)
-            await JS.InvokeVoidAsync("sfpSlider.set", "year", (double)_minYear, (double)_maxYear);
-        ScheduleResultCountUpdate();
-    }
-
-    // ── Metadata ─────────────────────────────────────────────────
 
     private async Task EnsureMetadataAsync()
     {
@@ -851,7 +789,52 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    // ── Debounced result count ───────────────────────────────────
+    // ── Slider input handlers — NO clamping, thumbs cross freely ──
+
+    private void OnYearFromInput(int v)     { _yearFrom  = v; ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = v; ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = v; ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = v; ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = v; ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = v; ScheduleResultCountUpdate(); }
+
+    private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
+    {
+        if (!_jsReady) return;
+        var wrapRef = type == SliderType.Year  ? _yearWrapRef
+                    : type == SliderType.Score ? _scoreWrapRef
+                    : _epWrapRef;
+        double pct;
+        try   { pct = Math.Clamp(await JS.InvokeAsync<double>("sfpTrackClick", wrapRef, e.ClientX), 0, 1); }
+        catch { return; }
+
+        switch (type)
+        {
+            case SliderType.Year:
+            {
+                int v = (int)Math.Round(_minYear + pct * (_maxYear - _minYear));
+                if (Math.Abs(v - _yearFrom) <= Math.Abs(v - _yearTo)) _yearFrom = v;
+                else _yearTo = v;
+                break;
+            }
+            case SliderType.Score:
+            {
+                double v = Math.Clamp(Math.Round(pct * 10.0 / 0.5) * 0.5, 0, 10);
+                if (Math.Abs(v - _scoreFrom) <= Math.Abs(v - _scoreTo)) _scoreFrom = v;
+                else _scoreTo = v;
+                break;
+            }
+            case SliderType.Episode:
+            {
+                int v = (int)Math.Round(1 + pct * (_maxEp - 1));
+                if (Math.Abs(v - _epFrom) <= Math.Abs(v - _epTo)) _epFrom = v;
+                else _epTo = v;
+                break;
+            }
+        }
+        StateHasChanged();
+        ScheduleResultCountUpdate();
+    }
 
     private void ScheduleResultCountUpdate()
     {
@@ -874,6 +857,7 @@
 
     private SortFilterOptions BuildOptions()
     {
+        // Normalise so that lo <= hi regardless of thumb order
         int    yLo = Math.Min(_yearFrom,  _yearTo),   yHi = Math.Max(_yearFrom,  _yearTo);
         double sLo = Math.Min(_scoreFrom, _scoreTo),  sHi = Math.Max(_scoreFrom, _scoreTo);
         int    eLo = Math.Min(_epFrom,    _epTo),      eHi = Math.Max(_epFrom,    _epTo);
@@ -911,7 +895,7 @@
         return true;
     }
 
-    private async Task ResetAsync()
+    private void Reset()
     {
         _sort = SortMode.RecentlyAdded;
         FilterAiringStatus.Clear(); FilterFormats.Clear();   FilterSeasons.Clear();
@@ -919,17 +903,8 @@
         FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
         FilterAdult = null;
         _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
-        _yearFrom = _minYear; _yearTo = _maxYear;
-        _scoreFrom = 0;       _scoreTo = 10;
-        _epFrom = 1;          _epTo = _maxEp;
-
-        if (_slidersInited)
-        {
-            await JS.InvokeVoidAsync("sfpSlider.set", "year",  (double)_minYear, (double)_maxYear);
-            await JS.InvokeVoidAsync("sfpSlider.set", "score", 0.0,              10.0);
-            await JS.InvokeVoidAsync("sfpSlider.set", "ep",    1.0,              (double)_maxEp);
-        }
-
+        _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10;
+        _epFrom = 1; _epTo = _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
@@ -944,7 +919,8 @@
 
     private async Task OnPanelKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Escape") await Close();
+        if (e.Key == "Escape")
+            await Close();
     }
 
     private Task Close() => OnClose.InvokeAsync();
@@ -979,8 +955,6 @@
     private RenderFragment SortChip(SortMode mode, string label) =>
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
     @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
-
-    // ── Platform icon helpers (unchanged) ────────────────────────
 
     private static readonly HashSet<string> _sfpColorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
