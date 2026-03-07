@@ -916,8 +916,6 @@
         _                     => list.OrderByDescending(e => e.UpdatedAt).ToList(),
     };
 
-    private void Close() => OnClose.InvokeAsync();
-
     private RenderFragment SortChip(SortMode mode, string label) =>
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
     @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
