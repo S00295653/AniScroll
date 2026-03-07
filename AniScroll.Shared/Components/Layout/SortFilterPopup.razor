@@ -98,7 +98,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- YEAR RANGE — always visible -->
+                <!-- YEAR RANGE -->
                 <div class="sfp-section">
                     <div class="sfp-section-label-row">
                         <span class="sfp-section-label">Year</span>
@@ -118,11 +118,11 @@
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_yearFrom >= _yearTo ? 5 : 3)"
-                                   min="@_minYear" max="@_yearTo" step="1" value="@_yearFrom"
+                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_yearFrom >= _yearTo ? 3 : 4)"
-                                   min="@_yearFrom" max="@_maxYear" step="1" value="@_yearTo"
+                                   min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input sfp-num-year"
@@ -137,7 +137,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- SCORE RANGE — always visible -->
+                <!-- SCORE RANGE -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">My Score</div>
                     <div class="sfp-dual-slider">
@@ -150,12 +150,12 @@
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_scoreFrom >= _scoreTo ? 5 : 3)"
-                                   min="0" max="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)" step="0.5"
+                                   min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_scoreFrom >= _scoreTo ? 3 : 4)"
-                                   min="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)" max="10" step="0.5"
+                                   min="0" max="10" step="0.5"
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
@@ -167,7 +167,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- EPISODES RANGE — always visible, 1 → max total eps in list -->
+                <!-- EPISODES RANGE -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Episodes Watched</div>
                     <div class="sfp-dual-slider">
@@ -179,11 +179,11 @@
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    style="z-index:@(_epFrom >= _epTo ? 5 : 3)"
-                                   min="1" max="@_epTo" step="1" value="@_epFrom"
+                                   min="1" max="@_maxEp" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
                                    style="z-index:@(_epFrom >= _epTo ? 3 : 4)"
-                                   min="@_epFrom" max="@_maxEp" step="1" value="@_epTo"
+                                   min="1" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" class="sfp-num-input"
@@ -244,7 +244,7 @@
                                         ? genrePool
                                         : genrePool.Where(g => g.Contains(_genreSearch, StringComparison.OrdinalIgnoreCase))).ToList();
                                 }
-                                @if (!fg.Any()) { <span class="sfp-dp-empty">No genres in your list yet</span> }
+                                @if (!fg.Any()) { <span class="sfp-dp-empty">@(_genreShowAll ? "No results" : "No genres in your list yet")</span> }
                                 @foreach (var g in fg)
                                 {
                                     var gv = g; bool on = FilterGenres.Contains(gv);
@@ -661,6 +661,7 @@
                         var lo = wrap.querySelector('.sfp-range-lo');
                         var hi = wrap.querySelector('.sfp-range-hi');
                         if (!lo || !hi) return;
+                        // capture phase: runs BEFORE Blazor reads e.Value
                         lo.addEventListener('input', function() {
                             var v = parseFloat(lo.value), hv = parseFloat(hi.value);
                             if (v > hv) lo.value = hv;
@@ -673,6 +674,9 @@
                 }
             ");
             _jsReady = true;
+        }
+        if (IsVisible && _jsReady)
+        {
             await JS.InvokeVoidAsync("sfpInitDualSlider", _yearWrapRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreWrapRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _epWrapRef);
@@ -766,7 +770,6 @@
         _minYear = 1940;
         _maxYear = DateTime.Now.Year;
 
-        // Max episodes: highest total episode count across all anime in list
         int maxParsed = en
             .Select(e => ParseEpisodeCount(e.Anime.Episodes))
             .Where(v => v > 0)
@@ -900,8 +903,6 @@
 
     private async Task OnOverlayClick()
     {
-        // Only apply+close if the pointer was pressed ON the overlay itself
-        // (not dragged from inside the panel to outside)
         if (!_pointerDownOnOverlay) { _pointerDownOnOverlay = false; return; }
         _pointerDownOnOverlay = false;
         await Apply();
