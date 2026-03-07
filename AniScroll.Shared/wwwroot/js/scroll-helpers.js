@@ -575,3 +575,69 @@ window.unregisterEscapeKey = function () {
     /** Readable from Blazor via JS interop if a second check is ever needed. */
     window.sfpIsPointerDownInPanel = function () { return _sfpDownInside; };
 })();
+
+// sort-filter-slider.js
+// Requires noUiSlider ≥ 15  (load before this file)
+// CDN: https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js
+
+window.sfpSlider = (function () {
+    const _instances = {};   // key → { el, dotNetRef }
+
+    function _destroy(key) {
+        const inst = _instances[key];
+        if (!inst) return;
+        if (inst.el && inst.el.noUiSlider) inst.el.noUiSlider.destroy();
+        delete _instances[key];
+    }
+
+    return {
+        /**
+         * init(key, el, min, max, step, from, to, dotNetRef, updateMethod)
+         *
+         * key          – unique string per slider ("year"|"score"|"ep")
+         * el           – ElementReference (the <div> container)
+         * min/max/step – number
+         * from/to      – initial handle positions
+         * dotNetRef    – DotNetObjectReference of the Blazor component
+         * updateMethod – name of the [JSInvokable] C# method to call on change
+         */
+        init: function (key, el, min, max, step, from, to, dotNetRef, updateMethod) {
+            _destroy(key);   // clean up any previous instance on the same element
+
+            noUiSlider.create(el, {
+                start:   [from, to],
+                connect: true,          // coloured fill between handles
+                range:   { min: min, max: max },
+                step:    step,
+            });
+
+            // 'update' fires on both drag and programmatic set
+            el.noUiSlider.on('update', function (values /*, handle*/) {
+                const lo = parseFloat(values[0]);
+                const hi = parseFloat(values[1]);
+                dotNetRef.invokeMethodAsync(updateMethod, lo, hi);
+            });
+
+            _instances[key] = { el: el, dotNetRef: dotNetRef };
+        },
+
+        /** Programmatically move the handles (called from C# when number inputs change) */
+        set: function (key, from, to) {
+            const inst = _instances[key];
+            if (inst && inst.el && inst.el.noUiSlider) {
+                inst.el.noUiSlider.set([from, to]);
+            }
+        },
+
+        /** Update the slider's min/max range (e.g. when the list changes) */
+        updateRange: function (key, min, max) {
+            const inst = _instances[key];
+            if (inst && inst.el && inst.el.noUiSlider) {
+                inst.el.noUiSlider.updateOptions({ range: { min: min, max: max } }, true);
+            }
+        },
+
+        /** Tear down a slider when the component unmounts or resets */
+        destroy: function (key) { _destroy(key); },
+    };
+})();
