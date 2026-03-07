@@ -53,10 +53,28 @@ namespace AniScroll.Shared.Services
 
         // Legacy compat
         public int RequestCount => AniListRateLimit.RequestsSent;
-        public const int RequestLimit = 30; // AniList: 30 req/min (NOT 90 — that figure online is wrong)
+        public const int RequestLimit = 30; // AniList: 30 req/min
 
         private const string ANILIST_ENDPOINT            = "https://graphql.anilist.co";
         private const int    RATE_LIMIT_FALLBACK_SECONDS = 60;
+
+        // ─── Static metadata caches (survive across popup open/close) ─────────────
+        private static List<string>? _cachedGenres;
+        private static List<string>? _cachedTags;
+        private static List<string>? _cachedStudios;
+        private static bool _studiosLoading;
+
+        public List<string>? GetCachedGenres()  => _cachedGenres;
+        public List<string>? GetCachedTags()    => _cachedTags;
+        public List<string>? GetCachedStudios() => _cachedStudios;
+        public bool           IsStudiosLoading  => _studiosLoading;
+
+        private static readonly List<string> _genresFallback = new()
+        {
+            "Action","Adventure","Comedy","Drama","Ecchi","Fantasy","Horror","Hentai",
+            "Mahou Shoujo","Mecha","Music","Mystery","Psychological","Romance","Sci-Fi",
+            "Slice of Life","Sports","Supernatural","Thriller"
+        };
 
         public AniListService(HttpClient httpClient)
         {
@@ -79,6 +97,112 @@ namespace AniScroll.Shared.Services
         }
 
         public int GetRateLimitSecondsRemaining() => AniListRateLimit.SecondsUntilReset;
+
+        // ─── Metadata fetchers ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Fetches the full AniList genre collection and tag collection (one request each).
+        /// Results are cached statically — subsequent calls are instant.
+        /// </summary>
+        public async Task FetchGenresAndTagsAsync()
+        {
+            // Genres — uses the built-in GenreCollection query
+            if (_cachedGenres == null)
+            {
+                var resp = await PostGraphQL("query { GenreCollection }");
+                if (resp != null)
+                {
+                    var arr = JObject.Parse(resp)?["data"]?["GenreCollection"];
+                    if (arr != null)
+                        _cachedGenres = arr
+                            .Select(g => g.ToString())
+                            .Where(g => !string.IsNullOrEmpty(g))
+                            .OrderBy(g => g)
+                            .ToList();
+                }
+                _cachedGenres ??= _genresFallback;
+            }
+
+            // Tags — uses MediaTagCollection
+            if (_cachedTags == null)
+            {
+                var resp = await PostGraphQL("query { MediaTagCollection { name } }");
+                if (resp != null)
+                {
+                    var tags = JObject.Parse(resp)?["data"]?["MediaTagCollection"];
+                    if (tags != null)
+                        _cachedTags = tags
+                            .Select(t => t["name"]?.ToString() ?? "")
+                            .Where(n => !string.IsNullOrEmpty(n))
+                            .OrderBy(n => n)
+                            .ToList();
+                }
+                _cachedTags ??= new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Paginates through AniList studios (50 per page) and caches the result.
+        /// Calls <paramref name="onBatch"/> after every 5 pages so the UI can refresh
+        /// progressively. Uses ≈ 20 req/min to stay safely under the 30/min rate limit.
+        /// Safe to call multiple times — subsequent calls are no-ops while loading or
+        /// once fully cached.
+        /// </summary>
+        public async Task FetchAllStudiosAsync(Func<Task>? onBatch = null)
+        {
+            if (_cachedStudios != null || _studiosLoading) return;
+            _studiosLoading = true;
+
+            var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int page = 1;
+
+            try
+            {
+                while (page <= 50) // cap at 2 500 studios
+                {
+                    // Yield if rate-limited
+                    while (IsRateLimited()) await Task.Delay(2000);
+
+                    var q = $@"query {{
+                        Page(page: {page}, perPage: 50) {{
+                            pageInfo {{ hasNextPage }}
+                            studios {{ name }}
+                        }}
+                    }}";
+
+                    var resp = await PostGraphQL(q);
+                    if (resp == null) break;
+
+                    var pd   = JObject.Parse(resp)?["data"]?["Page"];
+                    var stds = pd?["studios"];
+                    if (stds != null)
+                        foreach (var s in stds)
+                        {
+                            var n = s["name"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(n)) all.Add(n);
+                        }
+
+                    // Progressive cache update every 5 pages
+                    if (page % 5 == 0)
+                    {
+                        _cachedStudios = all.OrderBy(x => x).ToList();
+                        if (onBatch != null) await onBatch();
+                    }
+
+                    bool hasNext = pd?["pageInfo"]?["hasNextPage"]?.Value<bool>() ?? false;
+                    if (!hasNext) break;
+
+                    page++;
+                    await Task.Delay(3000); // ≈ 20 req/min — leaves headroom for user actions
+                }
+            }
+            finally
+            {
+                _cachedStudios = all.OrderBy(x => x).ToList();
+                _studiosLoading = false;
+                if (onBatch != null) await onBatch();
+            }
+        }
 
         // ─── Jikan search ─────────────────────────────────────────────────────────
 
@@ -173,7 +297,7 @@ namespace AniScroll.Shared.Services
             System.Diagnostics.Debug.WriteLine("Jikan down after all retries, switching to AniList fallback");
             return await SearchAniListAsync(query);
         }
-        
+
         private async Task<List<JikanSearchResult>> SearchAniListAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return new();
@@ -418,9 +542,6 @@ namespace AniScroll.Shared.Services
 
         // ─── Field sets ───────────────────────────────────────────────────────────
 
-        // coverImage now includes `color` — AniList returns the dominant hex color of the artwork.
-        // This is used as a CSS placeholder background-color while the real image loads,
-        // giving a noticeably better perceived quality vs a generic grey box.
         private string GetAnimeFieldsWithRelations() => @"
             id
             title { romaji english native }
@@ -562,7 +683,6 @@ namespace AniScroll.Shared.Services
                 var cover       = m["coverImage"];
                 string imageUrl = cover?["extraLarge"]?.ToString()
                                ?? cover?["large"]?.ToString() ?? "";
-                // Dominant color from AniList CDN — used as CSS background-color placeholder
                 string coverColor = cover?["color"]?.ToString() ?? "";
 
                 string score = m["averageScore"] != null && m["averageScore"]!.Type != JTokenType.Null

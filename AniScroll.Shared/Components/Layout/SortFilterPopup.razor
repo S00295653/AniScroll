@@ -1,6 +1,7 @@
 ﻿@using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
 @inject UserListService UserListService
+@inject AniListService AniListService
 @inject IJSRuntime JS
 
 @if (IsVisible)
@@ -54,19 +55,11 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- AIRING STATUS — always visible -->
+                <!-- AIRING STATUS -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Airing Status</div>
                     <div class="sfp-chips">
-                        @foreach (var key in _dotStatuses)
-                        {
-                            var k = key; bool on = FilterAiringStatus.Contains(k);
-                            <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterAiringStatus, k)">
-                                <span class="sfp-status-dot @(k == "RELEASING" ? "sfp-dot-releasing" : "sfp-dot-upcoming")"></span>
-                                @FormatAiringStatus(k)
-                            </button>
-                        }
-                        @foreach (var key in _noDotStatuses)
+                        @foreach (var key in _allStatuses)
                         {
                             var k = key; bool on = FilterAiringStatus.Contains(k);
                             <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterAiringStatus, k)">
@@ -77,7 +70,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- FORMAT — always visible -->
+                <!-- FORMAT -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Format</div>
                     <div class="sfp-chips">
@@ -90,7 +83,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- SEASON — always visible -->
+                <!-- SEASON -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Season</div>
                     <div class="sfp-chips">
@@ -117,8 +110,11 @@
                                   : $"{_yearFrom} – {_yearTo}")
                             </span>
                         </div>
-                        <div class="sfp-dual-slider sfp-dual-slider-year">
-                            <span class="sfp-range-label">@_minYear</span>
+                        <div class="sfp-dual-slider">
+                            <input type="number" class="sfp-num-input"
+                                   min="@_minYear" max="@_maxYear" step="1"
+                                   value="@_yearFrom"
+                                   @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearFrom = Math.Min(Math.Max(v, _minYear), _yearTo); ScheduleResultCountUpdate(); } }" />
                             <div class="sfp-slider-wrap" @ref="_yearWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Year)">
                                 <div class="sfp-slider-track"></div>
                                 <div class="sfp-slider-fill" style="@YearFillStyle"></div>
@@ -131,7 +127,10 @@
                                        min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                        @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                             </div>
-                            <span class="sfp-range-label">@_maxYear</span>
+                            <input type="number" class="sfp-num-input"
+                                   min="@_minYear" max="@_maxYear" step="1"
+                                   value="@_yearTo"
+                                   @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearTo = Math.Max(Math.Min(v, _maxYear), _yearFrom); ScheduleResultCountUpdate(); } }" />
                         </div>
                         @if (_yearFrom != _minYear || _yearTo != _maxYear)
                         {
@@ -203,7 +202,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- GENRES DROPDOWN — always visible -->
+                <!-- GENRES DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     <button class="sfp-dropdown-trigger @(_genreDropdownOpen ? "open" : "")"
                             @onclick="() => _genreDropdownOpen = !_genreDropdownOpen">
@@ -258,7 +257,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- STUDIOS DROPDOWN — always visible -->
+                <!-- STUDIOS DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     <button class="sfp-dropdown-trigger @(_studioDropdownOpen ? "open" : "")"
                             @onclick="() => _studioDropdownOpen = !_studioDropdownOpen">
@@ -278,7 +277,13 @@
                         <div class="sfp-dropdown-panel">
                             <div class="sfp-toggle-row">
                                 <button class="sfp-toggle-btn @(!_studioShowAll ? "active" : "")" @onclick="() => _studioShowAll = false">My List</button>
-                                <button class="sfp-toggle-btn @(_studioShowAll  ? "active" : "")" @onclick="() => _studioShowAll = true">All studios</button>
+                                <button class="sfp-toggle-btn @(_studioShowAll  ? "active" : "")" @onclick="() => _studioShowAll = true">
+                                    All studios
+                                    @if (AniListService.IsStudiosLoading && AniListService.GetCachedStudios() == null)
+                                    {
+                                        <span class="sfp-loading-dot">…</span>
+                                    }
+                                </button>
                             </div>
                             <div class="sfp-search-row">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -301,7 +306,14 @@
                                 @if (!fs.Any())
                                 {
                                     <span class="sfp-dp-empty">
-                                        @(_studioShowAll ? "No results" : "No studios in your list yet")
+                                        @if (_studioShowAll && AniListService.IsStudiosLoading)
+                                        {
+                                            @("Loading studios…")
+                                        }
+                                        else
+                                        {
+                                            @(_studioShowAll ? "No results" : "No studios in your list yet")
+                                        }
                                     </span>
                                 }
                                 @foreach (var st in fs)
@@ -317,7 +329,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- TAGS DROPDOWN — always visible -->
+                <!-- TAGS DROPDOWN -->
                 <div class="sfp-section sfp-section-nodrop">
                     <button class="sfp-dropdown-trigger @(_tagDropdownOpen ? "open" : "")"
                             @onclick="() => _tagDropdownOpen = !_tagDropdownOpen">
@@ -377,7 +389,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- SOURCE — always visible -->
+                <!-- SOURCE -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Source Material</div>
                     <div class="sfp-chips">
@@ -390,7 +402,7 @@
                 </div>
                 <div class="sfp-divider"></div>
 
-                <!-- STREAMING — only if platforms exist in user's list -->
+                <!-- STREAMING -->
                 @if (_platforms.Any())
                 {
                     <div class="sfp-section">
@@ -434,7 +446,7 @@
                     <div class="sfp-divider"></div>
                 }
 
-                <!-- COUNTRY — always visible -->
+                <!-- COUNTRY -->
                 <div class="sfp-section">
                     <div class="sfp-section-label">Country of Origin</div>
                     <div class="sfp-chips">
@@ -530,9 +542,9 @@
     private string _tagSearch          = string.Empty;
     private string _studioSearch       = string.Empty;
 
-    // ── Static full lists (always shown regardless of list contents) ──────────
-    private static readonly string[] _dotStatuses   = { "RELEASING", "NOT_YET_RELEASED" };
-    private static readonly string[] _noDotStatuses = { "FINISHED", "CANCELLED", "HIATUS" };
+    // ── Static fixed lists ────────────────────────────────────────────────────
+    private static readonly string[] _allStatuses =
+        { "RELEASING", "NOT_YET_RELEASED", "FINISHED", "CANCELLED", "HIATUS" };
 
     private static readonly List<string> _allFormats = new()
         { "TV Series", "Movie", "OVA", "ONA", "TV Short", "Special", "Music" };
@@ -550,21 +562,22 @@
     private static readonly List<string> _allCountries = new()
         { "JP", "CN", "KR", "TW" };
 
-    private static readonly List<string> _anilistGenres = new()
+    // Fallback genres used until AniList metadata is fetched
+    private static readonly List<string> _genresFallback = new()
     {
-        "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy", "Horror", "Hentai",
-        "Mahou Shoujo", "Mecha", "Music", "Mystery", "Psychological", "Romance", "Sci-Fi",
-        "Slice of Life", "Sports", "Supernatural", "Thriller"
+        "Action","Adventure","Comedy","Drama","Ecchi","Fantasy","Horror","Hentai",
+        "Mahou Shoujo","Mecha","Music","Mystery","Psychological","Romance","Sci-Fi",
+        "Slice of Life","Sports","Supernatural","Thriller"
     };
 
     // ── Cached lists derived from user's entries ──────────────────────────────
     private HashSet<string> _availStatuses = new();
-    private List<string> _genres     = new();
-    private List<string> _allGenres  = new();
-    private List<string> _studios    = new();
-    private List<string> _allStudios = new();
-    private List<string> _tags       = new();
-    private List<string> _allTags    = new();
+    private List<string> _genres     = new(); // from user's list
+    private List<string> _allGenres  = new(); // full AniList list (fetched)
+    private List<string> _studios    = new(); // from user's list (frequency sorted)
+    private List<string> _allStudios = new(); // full AniList list (fetched)
+    private List<string> _tags       = new(); // from user's list
+    private List<string> _allTags    = new(); // full AniList list (fetched)
     private List<string> _platforms  = new();
     private Dictionary<string, AnimeExternalLink> _platformLinkMap = new();
     private List<int>    _years      = new();
@@ -647,7 +660,9 @@
     protected override void OnParametersSet()
     {
         if (!IsVisible) return;
+
         RebuildCache();
+
         _sort = Current.Sort;
         FilterAiringStatus = new(Current.AiringStatuses); FilterFormats   = new(Current.Formats);
         FilterSeasons      = new(Current.Seasons);        FilterGenres    = new(Current.Genres);
@@ -658,6 +673,72 @@
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 0;        _epTo    = Current.EpTo    ?? _maxEp;
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+
+        // Kick off AniList metadata fetch (fire-and-forget; caches persist across opens)
+        _ = EnsureMetadataAsync();
+    }
+
+    /// <summary>
+    /// Fetches genres + tags (fast, 2 requests) and starts the background studios fetch.
+    /// Safe to call on every popup open — skips if already cached.
+    /// </summary>
+    private async Task EnsureMetadataAsync()
+    {
+        bool needsUiUpdate = false;
+
+        // Genres + tags in one go (2 requests total, runs only once ever)
+        if (AniListService.GetCachedGenres() == null || AniListService.GetCachedTags() == null)
+        {
+            await AniListService.FetchGenresAndTagsAsync();
+            ApplyMetadataCache();
+            needsUiUpdate = true;
+        }
+
+        // Studios: start background fetch if not already running/done
+        if (AniListService.GetCachedStudios() == null && !AniListService.IsStudiosLoading)
+        {
+            _ = AniListService.FetchAllStudiosAsync(async () =>
+            {
+                ApplyMetadataCache();
+                await InvokeAsync(StateHasChanged);
+            });
+        }
+
+        if (needsUiUpdate)
+            await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Applies any available AniList metadata cache into the local _allX lists.
+    /// Safe to call at any time; falls back to user-list data if cache isn't ready yet.
+    /// </summary>
+    private void ApplyMetadataCache()
+    {
+        var cachedGenres = AniListService.GetCachedGenres();
+        _allGenres = (cachedGenres ?? _genresFallback)
+            .Union(_genres)         // always include genres from user's list
+            .Union(FilterGenres)    // always include currently selected genres
+            .Distinct()
+            .OrderBy(x => x)
+            .ToList();
+
+        var cachedTags = AniListService.GetCachedTags();
+        if (cachedTags?.Any() == true)
+            _allTags = cachedTags
+                .Union(_tags)
+                .Union(FilterTags)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+        var cachedStudios = AniListService.GetCachedStudios();
+        if (cachedStudios?.Any() == true)
+            _allStudios = cachedStudios
+                .Union(_studios)
+                .Union(FilterStudios)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
     }
 
     private void RebuildCache()
@@ -668,19 +749,17 @@
                            .Where(s => !string.IsNullOrWhiteSpace(s))
                            .ToHashSet()!;
 
-        _genres    = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
-                       .Distinct().OrderBy(x => x).ToList();
-        _allGenres = _anilistGenres.Union(FilterGenres).Distinct().OrderBy(x => x).ToList();
+        // User-list genre/studio/tag lists (used by "My List" toggle)
+        _genres = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
+                    .Distinct().OrderBy(x => x).ToList();
 
         var studioFreq = en
             .SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
             .GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
-        _studios    = studioFreq.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
-        _allStudios = _studios.Union(FilterStudios).Distinct().OrderBy(x => x).ToList();
+        _studios = studioFreq.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
 
-        _tags    = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>())
-                     .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-        _allTags = _tags.Union(FilterTags).Distinct().OrderBy(x => x).ToList();
+        _tags = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>())
+                  .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
 
         _platforms = en
             .SelectMany(e => e.Anime.ExternalLinks?
@@ -697,6 +776,9 @@
         _maxYear    = _years.Any() ? _years.Max() : DateTime.Now.Year;
         _maxEp      = en.Any() ? en.Max(e => e.EpisodesWatched) : 0;
         _scoredCount = en.Count(e => e.Score > 0);
+
+        // "All X" lists: use AniList cache if available, fall back to user-list data
+        ApplyMetadataCache();
     }
 
     // ── Slider handlers ───────────────────────────────────────────────────────
@@ -814,7 +896,6 @@
     {
         var opts    = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
-        // Fall back to entire list if no filter matches
         if (!matches.Any()) { matches = AllEntries.ToList(); if (!matches.Any()) return; }
         matches = ApplySort(matches, opts.Sort);
         var picked = matches[new Random().Next(matches.Count)];
@@ -968,7 +1049,6 @@
 
     private static string FormatAiringStatus(string s) => s switch
     { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
-    private static int    SeasonOrder(string s)  => s?.ToUpper() switch { "WINTER" => 1, "SPRING" => 2, "SUMMER" => 3, "FALL" => 4, _ => 5 };
     private static string SeasonEmoji(string s)  => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
     private static string CountryEmoji(string c) => c?.ToUpper() switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
     private static string CountryLabel(string c) => c?.ToUpper() switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
