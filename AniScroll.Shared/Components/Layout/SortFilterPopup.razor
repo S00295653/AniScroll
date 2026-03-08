@@ -118,9 +118,11 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
+                                   @ref="_yearLoRef"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
+                                   @ref="_yearHiRef"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
@@ -148,10 +150,12 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
+                                   @ref="_scoreLoRef"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                             <input type="range" class="sfp-range sfp-range-hi"
+                                   @ref="_scoreHiRef"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
@@ -175,9 +179,11 @@
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
+                                   @ref="_epLoRef"
                                    min="1" max="@_maxEp" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
+                                   @ref="_epHiRef"
                                    min="1" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
@@ -520,7 +526,15 @@
     private double _scoreFrom, _scoreTo;
     private int    _epFrom, _epTo;
 
+    // Slider wrap refs (for track-click hit-testing)
     private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
+
+    // Individual thumb refs — used to push clamped values back to the DOM
+    // so the native range input thumb stops visually at the boundary.
+    private ElementReference _yearLoRef,  _yearHiRef;
+    private ElementReference _scoreLoRef, _scoreHiRef;
+    private ElementReference _epLoRef,    _epHiRef;
+
     private bool _jsReady = false;
 
     private HashSet<string> FilterAiringStatus = new();
@@ -579,12 +593,12 @@
     private List<string> _platforms  = new();
     private Dictionary<string, AnimeExternalLink> _platformLinkMap = new();
     private List<int>    _years      = new();
-    private int    _minYear = 1990, _maxYear = DateTime.Now.Year;
+    private int    _minYear = 1940, _maxYear = DateTime.Now.Year;
     private int    _maxEp   = 1;
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
-    // ── Fill styles — lo is always <= hi now (no crossing) ──
+    // ── Fill styles — lo <= hi invariant ────────────────────────────────────
 
     private string YearFillStyle
     {
@@ -601,8 +615,8 @@
     {
         get
         {
-            double l = Math.Clamp(_scoreFrom * 10.0,          0, 100);
-            double r = Math.Clamp((10.0 - _scoreTo) * 10.0,   0, 100);
+            double l = Math.Clamp(_scoreFrom * 10.0,         0, 100);
+            double r = Math.Clamp((10.0 - _scoreTo) * 10.0,  0, 100);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
@@ -612,8 +626,8 @@
         get
         {
             double range = Math.Max(1.0, _maxEp - 1);
-            double l = Math.Clamp((_epFrom - 1) * 100.0 / range, 0, 100);
-            double r = Math.Clamp((_maxEp - _epTo) * 100.0 / range, 0, 100);
+            double l = Math.Clamp((_epFrom - 1)     * 100.0 / range, 0, 100);
+            double r = Math.Clamp((_maxEp  - _epTo) * 100.0 / range, 0, 100);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
@@ -653,6 +667,13 @@
                         return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
                     };
                 }
+                // Push a clamped value back into a native range/number input so
+                // the browser thumb position matches the C# state.
+                if (!window.sfpSetValue) {
+                    window.sfpSetValue = function(el, val) {
+                        if (el) el.value = val;
+                    };
+                }
                 if (!window.sfpInitDualSlider) {
                     window.sfpInitDualSlider = function(wrap) {
                         if (!wrap || wrap._sfpInited) return;
@@ -684,7 +705,7 @@
         _yearFrom  = Current.YearFrom  ?? _minYear; _yearTo  = Current.YearTo  ?? _maxYear;
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 1;        _epTo    = Current.EpTo    ?? _maxEp;
-        // Ensure lo <= hi on load (defensive)
+        // Defensive swap in case persisted data is inverted
         if (_yearFrom  > _yearTo)  (_yearFrom,  _yearTo)  = (_yearTo,  _yearFrom);
         if (_scoreFrom > _scoreTo) (_scoreFrom, _scoreTo) = (_scoreTo, _scoreFrom);
         if (_epFrom    > _epTo)    (_epFrom,    _epTo)    = (_epTo,    _epFrom);
@@ -780,14 +801,61 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    // ── Slider input handlers — thumbs never cross ──
+    // ── Slider input handlers ────────────────────────────────────────────────
+    // Each handler clamps the new value against the opposite thumb.
+    // When clamping actually fires (clamped != v), sfpSetValue pushes the
+    // corrected value back into the native <input type="range"> DOM element
+    // so the thumb snaps to the boundary instead of visually crossing over.
 
-    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
-    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
-    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
-    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
-    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
-    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
+    private async Task OnYearFromInput(int v)
+    {
+        var clamped = Math.Min(v, _yearTo);
+        _yearFrom = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);
+        ScheduleResultCountUpdate();
+    }
+
+    private async Task OnYearToInput(int v)
+    {
+        var clamped = Math.Max(v, _yearFrom);
+        _yearTo = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);
+        ScheduleResultCountUpdate();
+    }
+
+    private async Task OnScoreFromInput(double v)
+    {
+        var clamped = Math.Min(v, _scoreTo);
+        _scoreFrom = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef,
+            clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        ScheduleResultCountUpdate();
+    }
+
+    private async Task OnScoreToInput(double v)
+    {
+        var clamped = Math.Max(v, _scoreFrom);
+        _scoreTo = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef,
+            clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        ScheduleResultCountUpdate();
+    }
+
+    private async Task OnEpFromInput(int v)
+    {
+        var clamped = Math.Min(v, _epTo);
+        _epFrom = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, clamped);
+        ScheduleResultCountUpdate();
+    }
+
+    private async Task OnEpToInput(int v)
+    {
+        var clamped = Math.Max(v, _epFrom);
+        _epTo = clamped;
+        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, clamped);
+        ScheduleResultCountUpdate();
+    }
 
     private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
     {
@@ -852,20 +920,16 @@
         _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
     }
 
-    private SortFilterOptions BuildOptions()
+    private SortFilterOptions BuildOptions() => new()
     {
-        // lo <= hi is now guaranteed by the handlers, no need for Math.Min/Max here
-        return new()
-        {
-            Sort = _sort, AiringStatuses = new(FilterAiringStatus), Formats = new(FilterFormats),
-            Seasons = new(FilterSeasons), Genres = new(FilterGenres), Studios = new(FilterStudios),
-            Tags = new(FilterTags), Sources = new(FilterSources), Platforms = new(FilterPlatforms),
-            Countries = new(FilterCountries), Adult = FilterAdult,
-            YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null, YearTo  = _yearTo  != _maxYear ? _yearTo  : null,
-            ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null, ScoreTo = _scoreTo != 10        ? _scoreTo : null,
-            EpFrom    = _epFrom    != 1        ? _epFrom    : null, EpTo    = _epTo    != _maxEp    ? _epTo    : null,
-        };
-    }
+        Sort = _sort, AiringStatuses = new(FilterAiringStatus), Formats = new(FilterFormats),
+        Seasons = new(FilterSeasons), Genres = new(FilterGenres), Studios = new(FilterStudios),
+        Tags = new(FilterTags), Sources = new(FilterSources), Platforms = new(FilterPlatforms),
+        Countries = new(FilterCountries), Adult = FilterAdult,
+        YearFrom  = _yearFrom  != _minYear ? _yearFrom  : null, YearTo  = _yearTo  != _maxYear ? _yearTo  : null,
+        ScoreFrom = _scoreFrom != 0        ? _scoreFrom : null, ScoreTo = _scoreTo != 10        ? _scoreTo : null,
+        EpFrom    = _epFrom    != 1        ? _epFrom    : null, EpTo    = _epTo    != _maxEp    ? _epTo    : null,
+    };
 
     public static bool PassesFilters(UserListEntry e, SortFilterOptions opts)
     {
@@ -912,8 +976,7 @@
 
     private async Task OnPanelKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Escape")
-            await Close();
+        if (e.Key == "Escape") await Close();
     }
 
     private Task Close() => OnClose.InvokeAsync();
