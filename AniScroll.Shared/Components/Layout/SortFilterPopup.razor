@@ -529,8 +529,7 @@
     // Slider wrap refs (for track-click hit-testing)
     private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
 
-    // Individual thumb refs — used to push clamped values back to the DOM
-    // so the native range input thumb stops visually at the boundary.
+    // Individual thumb refs — needed to push values back to the DOM
     private ElementReference _yearLoRef,  _yearHiRef;
     private ElementReference _scoreLoRef, _scoreHiRef;
     private ElementReference _epLoRef,    _epHiRef;
@@ -598,7 +597,7 @@
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
 
-    // ── Fill styles — lo <= hi invariant ────────────────────────────────────
+    // ── Fill styles ──────────────────────────────────────────────────────────
 
     private string YearFillStyle
     {
@@ -667,8 +666,9 @@
                         return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
                     };
                 }
-                // Push a clamped value back into a native range/number input so
-                // the browser thumb position matches the C# state.
+                // Sync a native range/number input value back to the DOM.
+                // Called for both the clamped thumb AND the opposite thumb so the
+                // browser can't silently transfer the drag to the other input.
                 if (!window.sfpSetValue) {
                     window.sfpSetValue = function(el, val) {
                         if (el) el.value = val;
@@ -802,16 +802,24 @@
     }
 
     // ── Slider input handlers ────────────────────────────────────────────────
-    // Each handler clamps the new value against the opposite thumb.
-    // When clamping actually fires (clamped != v), sfpSetValue pushes the
-    // corrected value back into the native <input type="range"> DOM element
-    // so the thumb snaps to the boundary instead of visually crossing over.
+    //
+    // Root cause of the "opposite thumb jumps on release" bug:
+    // When thumb B is dragged past thumb A, the browser internally transfers
+    // the pointer capture to thumb A and starts firing oninput on A with the
+    // mouse position. Setting B's DOM value back stops B visually, but the
+    // browser still has A captured. The fix is to ALSO reset A's DOM value
+    // to its current C# value whenever clamping fires, which cancels any
+    // pending browser-side movement on that thumb.
 
     private async Task OnYearFromInput(int v)
     {
         var clamped = Math.Min(v, _yearTo);
         _yearFrom = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);  // snap this thumb
+            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, _yearTo);  // lock opposite thumb
+        }
         ScheduleResultCountUpdate();
     }
 
@@ -819,7 +827,11 @@
     {
         var clamped = Math.Max(v, _yearFrom);
         _yearTo = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);   // snap this thumb
+            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, _yearFrom); // lock opposite thumb
+        }
         ScheduleResultCountUpdate();
     }
 
@@ -827,8 +839,11 @@
     {
         var clamped = Math.Min(v, _scoreTo);
         _scoreFrom = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef,
-            clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef, clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef, _scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        }
         ScheduleResultCountUpdate();
     }
 
@@ -836,8 +851,11 @@
     {
         var clamped = Math.Max(v, _scoreFrom);
         _scoreTo = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef,
-            clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef, clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef, _scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        }
         ScheduleResultCountUpdate();
     }
 
@@ -845,7 +863,11 @@
     {
         var clamped = Math.Min(v, _epTo);
         _epFrom = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, clamped);
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, clamped);
+            await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, _epTo);
+        }
         ScheduleResultCountUpdate();
     }
 
@@ -853,7 +875,11 @@
     {
         var clamped = Math.Max(v, _epFrom);
         _epTo = clamped;
-        if (clamped != v) await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, clamped);
+        if (clamped != v)
+        {
+            await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, clamped);
+            await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, _epFrom);
+        }
         ScheduleResultCountUpdate();
     }
 
