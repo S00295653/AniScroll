@@ -526,13 +526,10 @@
     private double _scoreFrom, _scoreTo;
     private int    _epFrom, _epTo;
 
-    // Slider wrap refs (for track-click hit-testing)
-    private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
-
-    // Individual thumb refs — needed to push values back to the DOM
-    private ElementReference _yearLoRef,  _yearHiRef;
-    private ElementReference _scoreLoRef, _scoreHiRef;
-    private ElementReference _epLoRef,    _epHiRef;
+    private ElementReference _yearWrapRef,  _scoreWrapRef,  _epWrapRef;
+    private ElementReference _yearLoRef,    _yearHiRef;
+    private ElementReference _scoreLoRef,   _scoreHiRef;
+    private ElementReference _epLoRef,      _epHiRef;
 
     private bool _jsReady = false;
 
@@ -559,23 +556,18 @@
 
     private static readonly string[] _allStatuses =
         { "RELEASING", "NOT_YET_RELEASED", "FINISHED", "CANCELLED", "HIATUS" };
-
     private static readonly List<string> _allFormats = new()
         { "TV Series", "Movie", "OVA", "ONA", "TV Short", "Special", "Music" };
-
     private static readonly List<string> _allSeasons = new()
         { "WINTER", "SPRING", "SUMMER", "FALL" };
-
     private static readonly List<string> _allSources = new()
     {
         "Original", "Manga", "Light Novel", "Visual Novel", "Web Novel",
         "Novel", "Video Game", "Game", "Comic", "Picture Book",
         "Multimedia Project", "Other"
     };
-
     private static readonly List<string> _allCountries = new()
         { "JP", "CN", "KR", "TW" };
-
     private static readonly List<string> _genresFallback = new()
     {
         "Action","Adventure","Comedy","Drama","Ecchi","Fantasy","Horror","Hentai",
@@ -609,7 +601,6 @@
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
-
     private string ScoreFillStyle
     {
         get
@@ -619,7 +610,6 @@
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, "left:{0:F2}%;right:{1:F2}%", l, r);
         }
     }
-
     private string EpFillStyle
     {
         get
@@ -655,36 +645,105 @@
         }
     }
 
+    // ── JS bootstrap ─────────────────────────────────────────────────────────
+
+    private const string JsBootstrap = @"
+        window.sfpTrackClick = window.sfpTrackClick || function(el, clientX) {
+            var r = el.getBoundingClientRect();
+            return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
+        };
+
+        // KEY FIX: set pointer-events:none on both range inputs so the browser
+        // NEVER starts a native range drag and can NEVER transfer pointer capture
+        // to the other thumb. All events are handled on the wrapper div instead.
+        window.sfpInitDualSlider = function(wrap) {
+            if (!wrap) return;
+            if (wrap._sfpCleanup) wrap._sfpCleanup();
+
+            var lo = wrap.querySelector('.sfp-range-lo');
+            var hi = wrap.querySelector('.sfp-range-hi');
+            if (!lo || !hi) return;
+
+            lo.style.pointerEvents = 'none';
+            hi.style.pointerEvents = 'none';
+
+            var active = null;
+
+            function pctToValue(pct, el) {
+                var min  = parseFloat(el.min);
+                var max  = parseFloat(el.max);
+                var step = parseFloat(el.step) || 1;
+                return Math.round((min + pct * (max - min)) / step) * step;
+            }
+
+            function pctFromClientX(clientX) {
+                var rect = wrap.getBoundingClientRect();
+                return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            }
+
+            function onDown(e) {
+                if (e.button !== 0 && e.pointerType === 'mouse') return;
+                e.preventDefault();
+                wrap.setPointerCapture(e.pointerId);
+
+                var pct      = pctFromClientX(e.clientX);
+                var loMin    = parseFloat(lo.min);
+                var hiMax    = parseFloat(hi.max);
+                var clickVal = loMin + pct * (hiMax - loMin);
+                var distLo   = Math.abs(clickVal - parseFloat(lo.value));
+                var distHi   = Math.abs(clickVal - parseFloat(hi.value));
+                active = (distLo <= distHi) ? 'lo' : 'hi';
+            }
+
+            function onMove(e) {
+                if (!active) return;
+                var el  = active === 'lo' ? lo : hi;
+                var pct = pctFromClientX(e.clientX);
+                var v   = pctToValue(pct, el);
+
+                if (active === 'lo')
+                    v = Math.max(parseFloat(lo.min),    Math.min(parseFloat(hi.value), v));
+                else
+                    v = Math.max(parseFloat(lo.value),  Math.min(parseFloat(hi.max),   v));
+
+                if (parseFloat(el.value) !== v) {
+                    el.value = v;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
+            function onUp(e) {
+                active = null;
+                try { wrap.releasePointerCapture(e.pointerId); } catch(_) {}
+            }
+
+            wrap.addEventListener('pointerdown',   onDown);
+            wrap.addEventListener('pointermove',   onMove);
+            wrap.addEventListener('pointerup',     onUp);
+            wrap.addEventListener('pointercancel', onUp);
+
+            wrap._sfpCleanup = function() {
+                lo.style.pointerEvents = '';
+                hi.style.pointerEvents = '';
+                wrap.removeEventListener('pointerdown',   onDown);
+                wrap.removeEventListener('pointermove',   onMove);
+                wrap.removeEventListener('pointerup',     onUp);
+                wrap.removeEventListener('pointercancel', onUp);
+                delete wrap._sfpCleanup;
+            };
+        };
+    ";
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_jsReady)
         {
-            await JS.InvokeVoidAsync("eval", @"
-                if (!window.sfpTrackClick) {
-                    window.sfpTrackClick = function(el, clientX) {
-                        var r = el.getBoundingClientRect();
-                        return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
-                    };
-                }
-                // Sync a native range/number input value back to the DOM.
-                // Called for both the clamped thumb AND the opposite thumb so the
-                // browser can't silently transfer the drag to the other input.
-                if (!window.sfpSetValue) {
-                    window.sfpSetValue = function(el, val) {
-                        if (el) el.value = val;
-                    };
-                }
-                if (!window.sfpInitDualSlider) {
-                    window.sfpInitDualSlider = function(wrap) {
-                        if (!wrap || wrap._sfpInited) return;
-                        wrap._sfpInited = true;
-                    };
-                }
-            ");
+            await JS.InvokeVoidAsync("eval", JsBootstrap);
             _jsReady = true;
         }
         if (IsVisible && _jsReady)
         {
+            // Re-init every render so listeners survive Blazor DOM diffing
             await JS.InvokeVoidAsync("sfpInitDualSlider", _yearWrapRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreWrapRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _epWrapRef);
@@ -705,7 +764,6 @@
         _yearFrom  = Current.YearFrom  ?? _minYear; _yearTo  = Current.YearTo  ?? _maxYear;
         _scoreFrom = Current.ScoreFrom ?? 0;        _scoreTo = Current.ScoreTo ?? 10;
         _epFrom    = Current.EpFrom    ?? 1;        _epTo    = Current.EpTo    ?? _maxEp;
-        // Defensive swap in case persisted data is inverted
         if (_yearFrom  > _yearTo)  (_yearFrom,  _yearTo)  = (_yearTo,  _yearFrom);
         if (_scoreFrom > _scoreTo) (_scoreFrom, _scoreTo) = (_scoreTo, _scoreFrom);
         if (_epFrom    > _epTo)    (_epFrom,    _epTo)    = (_epTo,    _epFrom);
@@ -737,59 +795,40 @@
     {
         var cachedGenres = AniListService.GetCachedGenres();
         _allGenres = (cachedGenres ?? _genresFallback)
-            .Union(_genres).Union(FilterGenres)
-            .Distinct().OrderBy(x => x).ToList();
-
+            .Union(_genres).Union(FilterGenres).Distinct().OrderBy(x => x).ToList();
         var cachedTags = AniListService.GetCachedTags();
         if (cachedTags?.Any() == true)
-            _allTags = cachedTags
-                .Union(_tags).Union(FilterTags)
-                .Distinct().OrderBy(x => x).ToList();
-
+            _allTags = cachedTags.Union(_tags).Union(FilterTags).Distinct().OrderBy(x => x).ToList();
         var cachedStudios = AniListService.GetCachedStudios();
         if (cachedStudios?.Any() == true)
-            _allStudios = cachedStudios
-                .Union(_studios).Union(FilterStudios)
-                .Distinct().OrderBy(x => x).ToList();
+            _allStudios = cachedStudios.Union(_studios).Union(FilterStudios).Distinct().OrderBy(x => x).ToList();
     }
 
     private void RebuildCache()
     {
         var en = AllEntries.ToList();
-
         _genres = en.SelectMany(e => e.Anime.Genres ?? Enumerable.Empty<string>())
                     .Distinct().OrderBy(x => x).ToList();
-
         var studioFreq = en
             .SelectMany(e => e.Anime.Studios?.Select(s => s.Name) ?? Enumerable.Empty<string>())
             .GroupBy(s => s).ToDictionary(g => g.Key, g => g.Count());
         _studios = studioFreq.OrderByDescending(kv => kv.Value).Select(kv => kv.Key).ToList();
-
         _tags = en.SelectMany(e => e.Anime.Tags?.Select(t => t.Name) ?? Enumerable.Empty<string>())
                   .Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(x => x).ToList();
-
         _platforms = en
             .SelectMany(e => e.Anime.ExternalLinks?
                 .Where(l => l.Type == "STREAMING").Select(l => l.Site) ?? Enumerable.Empty<string>())
             .Distinct().OrderBy(x => x).ToList();
-
         _platformLinkMap = en
             .SelectMany(e => e.Anime.ExternalLinks?.Where(l => l.Type == "STREAMING") ?? Enumerable.Empty<AnimeExternalLink>())
             .GroupBy(l => l.Site)
             .ToDictionary(g => g.Key, g => g.FirstOrDefault(l => !string.IsNullOrEmpty(l.Icon)) ?? g.First());
-
         _years   = en.Where(e => e.Anime.Year.HasValue).Select(e => e.Anime.Year!.Value).Distinct().ToList();
         _minYear = 1940;
         _maxYear = DateTime.Now.Year;
-
-        int maxParsed = en
-            .Select(e => ParseEpisodeCount(e.Anime.Episodes))
-            .Where(v => v > 0)
-            .DefaultIfEmpty(1)
-            .Max();
+        int maxParsed = en.Select(e => ParseEpisodeCount(e.Anime.Episodes)).Where(v => v > 0).DefaultIfEmpty(1).Max();
         _maxEp = Math.Max(maxParsed, en.Any() ? en.Max(e => e.EpisodesWatched) : 1);
         _maxEp = Math.Max(_maxEp, 1);
-
         ApplyMetadataCache();
     }
 
@@ -801,87 +840,17 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    // ── Slider input handlers ────────────────────────────────────────────────
-    //
-    // Root cause of the "opposite thumb jumps on release" bug:
-    // When thumb B is dragged past thumb A, the browser internally transfers
-    // the pointer capture to thumb A and starts firing oninput on A with the
-    // mouse position. Setting B's DOM value back stops B visually, but the
-    // browser still has A captured. The fix is to ALSO reset A's DOM value
-    // to its current C# value whenever clamping fires, which cancels any
-    // pending browser-side movement on that thumb.
+    // ── Slider oninput handlers ──────────────────────────────────────────────
+    // The JS drag handler already clamps before dispatching the synthetic input
+    // event, so these will almost never need to clamp. They are kept as a
+    // safety net for keyboard input on the range element (arrow keys bypass JS).
 
-    private async Task OnYearFromInput(int v)
-    {
-        var clamped = Math.Min(v, _yearTo);
-        _yearFrom = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);  // snap this thumb
-            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, _yearTo);  // lock opposite thumb
-        }
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnYearToInput(int v)
-    {
-        var clamped = Math.Max(v, _yearFrom);
-        _yearTo = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);   // snap this thumb
-            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, _yearFrom); // lock opposite thumb
-        }
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnScoreFromInput(double v)
-    {
-        var clamped = Math.Min(v, _scoreTo);
-        _scoreFrom = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef, clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
-            await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef, _scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
-        }
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnScoreToInput(double v)
-    {
-        var clamped = Math.Max(v, _scoreFrom);
-        _scoreTo = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _scoreHiRef, clamped.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
-            await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef, _scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
-        }
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnEpFromInput(int v)
-    {
-        var clamped = Math.Min(v, _epTo);
-        _epFrom = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, clamped);
-            await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, _epTo);
-        }
-        ScheduleResultCountUpdate();
-    }
-
-    private async Task OnEpToInput(int v)
-    {
-        var clamped = Math.Max(v, _epFrom);
-        _epTo = clamped;
-        if (clamped != v)
-        {
-            await JS.InvokeVoidAsync("sfpSetValue", _epHiRef, clamped);
-            await JS.InvokeVoidAsync("sfpSetValue", _epLoRef, _epFrom);
-        }
-        ScheduleResultCountUpdate();
-    }
+    private void OnYearFromInput(int v)     { _yearFrom  = Math.Min(v, _yearTo);    ScheduleResultCountUpdate(); }
+    private void OnYearToInput(int v)       { _yearTo    = Math.Max(v, _yearFrom);  ScheduleResultCountUpdate(); }
+    private void OnScoreFromInput(double v) { _scoreFrom = Math.Min(v, _scoreTo);   ScheduleResultCountUpdate(); }
+    private void OnScoreToInput(double v)   { _scoreTo   = Math.Max(v, _scoreFrom); ScheduleResultCountUpdate(); }
+    private void OnEpFromInput(int v)       { _epFrom    = Math.Min(v, _epTo);      ScheduleResultCountUpdate(); }
+    private void OnEpToInput(int v)         { _epTo      = Math.Max(v, _epFrom);    ScheduleResultCountUpdate(); }
 
     private async Task OnTrackClickAsync(MouseEventArgs e, SliderType type)
     {
@@ -898,28 +867,22 @@
             case SliderType.Year:
             {
                 int v = (int)Math.Round(_minYear + pct * (_maxYear - _minYear));
-                if (Math.Abs(v - _yearFrom) <= Math.Abs(v - _yearTo))
-                    _yearFrom = Math.Min(v, _yearTo);
-                else
-                    _yearTo = Math.Max(v, _yearFrom);
+                if (Math.Abs(v - _yearFrom) <= Math.Abs(v - _yearTo)) _yearFrom = Math.Min(v, _yearTo);
+                else _yearTo = Math.Max(v, _yearFrom);
                 break;
             }
             case SliderType.Score:
             {
                 double v = Math.Clamp(Math.Round(pct * 10.0 / 0.5) * 0.5, 0, 10);
-                if (Math.Abs(v - _scoreFrom) <= Math.Abs(v - _scoreTo))
-                    _scoreFrom = Math.Min(v, _scoreTo);
-                else
-                    _scoreTo = Math.Max(v, _scoreFrom);
+                if (Math.Abs(v - _scoreFrom) <= Math.Abs(v - _scoreTo)) _scoreFrom = Math.Min(v, _scoreTo);
+                else _scoreTo = Math.Max(v, _scoreFrom);
                 break;
             }
             case SliderType.Episode:
             {
                 int v = (int)Math.Round(1 + pct * (_maxEp - 1));
-                if (Math.Abs(v - _epFrom) <= Math.Abs(v - _epTo))
-                    _epFrom = Math.Min(v, _epTo);
-                else
-                    _epTo = Math.Max(v, _epFrom);
+                if (Math.Abs(v - _epFrom) <= Math.Abs(v - _epTo)) _epFrom = Math.Min(v, _epTo);
+                else _epTo = Math.Max(v, _epFrom);
                 break;
             }
         }
