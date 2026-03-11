@@ -120,7 +120,6 @@
                             <div class="sfp-slider-fill" style="@YearFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    @ref="_yearLoRef"
-                                   style="@(_yearFrom >= _yearTo ? "z-index:5;" : "")"
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearFrom"
                                    @oninput="e => OnYearFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
@@ -153,7 +152,6 @@
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    @ref="_scoreLoRef"
-                                   style="@(_scoreFrom >= _scoreTo ? "z-index:5;" : "")"
                                    min="0" max="10" step="0.5"
                                    value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreFromInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
@@ -183,7 +181,6 @@
                             <div class="sfp-slider-fill" style="@EpFillStyle"></div>
                             <input type="range" class="sfp-range sfp-range-lo"
                                    @ref="_epLoRef"
-                                   style="@(_epFrom >= _epTo ? "z-index:5;" : "")"
                                    min="1" max="@_maxEp" step="1" value="@_epFrom"
                                    @oninput="e => OnEpFromInput(int.Parse(e.Value!.ToString()!))" />
                             <input type="range" class="sfp-range sfp-range-hi"
@@ -722,18 +719,35 @@
                         return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
                     };
                 }
-                // Sync a native range/number input value back to the DOM.
-                // Called for both the clamped thumb AND the opposite thumb so the
-                // browser can't silently transfer the drag to the other input.
                 if (!window.sfpSetValue) {
                     window.sfpSetValue = function(el, val) {
                         if (el) el.value = val;
                     };
                 }
+                // ── Dual-slider sync clamp fix ───────────────────────────────
+                // Root cause: when hi is dragged past lo, the browser silently
+                // transfers pointer-capture to lo, which then fires oninput.
+                // Blazor reads event.target.value BEFORE our async sfpSetValue
+                // correction arrives → lo teleports.
+                //
+                // Fix (BogdanovB / predragdavidovic pattern):
+                // Register SYNCHRONOUS input listeners with capture:true on BOTH
+                // thumbs. capture:true means they fire before any bubble-phase
+                // listener, including Blazor's own @oninput handler.
+                // By the time Blazor reads event.target.value, el.value is
+                // already corrected → no teleport possible.
                 if (!window.sfpInitDualSlider) {
-                    window.sfpInitDualSlider = function(wrap) {
-                        if (!wrap || wrap._sfpInited) return;
-                        wrap._sfpInited = true;
+                    window.sfpInitDualSlider = function(loEl, hiEl) {
+                        if (!loEl || !hiEl || loEl._sfpInited) return;
+                        loEl._sfpInited = true;
+                        loEl.addEventListener('input', function() {
+                            var hi = parseFloat(hiEl.value);
+                            if (parseFloat(loEl.value) > hi) loEl.value = hi;
+                        }, { capture: true });
+                        hiEl.addEventListener('input', function() {
+                            var lo = parseFloat(loEl.value);
+                            if (parseFloat(hiEl.value) < lo) hiEl.value = lo;
+                        }, { capture: true });
                     };
                 }
             ");
@@ -741,9 +755,10 @@
         }
         if (IsVisible && _jsReady)
         {
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearWrapRef);
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreWrapRef);
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _epWrapRef);
+            // Pass BOTH thumb refs so JS can cross-lock pointer-events.
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef, _yearHiRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef, _epHiRef);
         }
     }
 
@@ -761,7 +776,6 @@
         _yearFrom = Current.YearFrom ?? _minYear; _yearTo = Current.YearTo ?? _maxYear;
         _scoreFrom = Current.ScoreFrom ?? 0; _scoreTo = Current.ScoreTo ?? 10;
         _epFrom = Current.EpFrom ?? 1; _epTo = Current.EpTo ?? _maxEp;
-        // Defensive swap in case persisted data is inverted
         if (_yearFrom > _yearTo) (_yearFrom, _yearTo) = (_yearTo, _yearFrom);
         if (_scoreFrom > _scoreTo) (_scoreFrom, _scoreTo) = (_scoreTo, _scoreFrom);
         if (_epFrom > _epTo) (_epFrom, _epTo) = (_epTo, _epFrom);
@@ -857,29 +871,14 @@
         return int.TryParse(part, out var v) ? v : 0;
     }
 
-    // ── Slider input handlers ────────────────────────────────────────────────
-    //
-    // Root cause of the "opposite thumb jumps on release" bug:
-    // When thumb B is dragged past thumb A, the browser internally transfers
-    // the pointer capture to thumb A and starts firing oninput on A with the
-    // mouse position. Setting B's DOM value back stops B visually, but the
-    // browser still has A captured. The fix is to ALSO reset A's DOM value
-    // to its current C# value whenever clamping fires, which cancels any
-    // pending browser-side movement on that thumb.
-    //
-    // Additionally, the lo thumb gets z-index:5 via an inline style whenever
-    // from >= to (rendered in markup above). This ensures the lo thumb sits
-    // on top when both thumbs meet, so the browser never silently transfers
-    // pointer capture from hi to lo in the first place.
-
     private async Task OnYearFromInput(int v)
     {
         var clamped = Math.Min(v, _yearTo);
         _yearFrom = clamped;
         if (clamped != v)
         {
-            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);  // snap this thumb
-            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, _yearTo);  // lock opposite thumb
+            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, clamped);
+            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, _yearTo);
         }
         ScheduleResultCountUpdate();
     }
@@ -890,8 +889,8 @@
         _yearTo = clamped;
         if (clamped != v)
         {
-            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);   // snap this thumb
-            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, _yearFrom); // lock opposite thumb
+            await JS.InvokeVoidAsync("sfpSetValue", _yearHiRef, clamped);
+            await JS.InvokeVoidAsync("sfpSetValue", _yearLoRef, _yearFrom);
         }
         ScheduleResultCountUpdate();
     }
