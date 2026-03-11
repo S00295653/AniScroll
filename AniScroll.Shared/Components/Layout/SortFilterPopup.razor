@@ -44,7 +44,7 @@
                         @SortChip(SortMode.RecentlyUpdated, "Recently Updated")
                         @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,         "Title")
                         @ThreeStateChip(SortMode.MyScoreAsc,   SortMode.MyScoreDesc,     "My Score")
-                        @ThreeStateChip(SortMode.AniListScore, SortMode.AniListScoreAsc, "Rating")
+                        @ThreeStateChip(SortMode.AniListScoreAsc, SortMode.AniListScore, "Rating")
                         @ThreeStateChip(SortMode.EpisodesAsc,  SortMode.EpisodesDesc,    "Episodes")
                         @ThreeStateChip(SortMode.YearAsc,      SortMode.YearDesc,        "Year")
                     </div>
@@ -1023,8 +1023,8 @@
 
     // AniList score parsing
     private static double AniScoreKey(UserListEntry e) =>
-        double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : -1;
+    double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+        System.Globalization.CultureInfo.InvariantCulture, out var s) && s > 0 ? s : -1;
 
     private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
