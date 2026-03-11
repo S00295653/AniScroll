@@ -391,11 +391,26 @@
             SortFilterPopup.SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
             SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
             SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
-            SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? int.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
-            SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e => double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sc) && sc > 0 ? sc : -1),
-            SortFilterPopup.SortMode.AniListScoreAsc => entries.OrderBy(e => double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sc) && sc > 0 ? sc : double.MaxValue),
-            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e => ParseEp(e.Anime.Episodes)),
-            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e => ParseEp(e.Anime.Episodes)),
+            SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? double.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
+
+            // Rating desc: no score (-1 sentinel) → end
+            SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e =>
+                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : -1d),
+
+            // Rating asc: no score → end (MaxValue)
+            SortFilterPopup.SortMode.AniListScoreAsc => entries.OrderBy(e =>
+                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : double.MaxValue),
+
+            // Episodes desc: unknown count (-1) → end
+            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e =>
+                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : -1; }),
+
+            // Episodes asc: unknown count → end (MaxValue)
+            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e =>
+                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : int.MaxValue; }),
+
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
             _ => entries.OrderByDescending(e => e.UpdatedAt), // RecentlyUpdated
