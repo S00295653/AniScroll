@@ -53,7 +53,7 @@
 
                 <!-- AIRING STATUS -->
                 <div class="sfp-section">
-                    <div class="sfp-section-label">Airing Status</div>
+                    <div class="sfp-section-label">Status</div>
                     <div class="sfp-chips">
                         @foreach (var key in _allStatuses)
                         {
@@ -470,9 +470,13 @@
                     <div class="sfp-section-label">Content</div>
                     <div class="sfp-chips">
                         <button class="sfp-chip @(FilterAdult == false ? "sfp-chip-on" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == false ? null : false)">Non-adult only</button>
+                                @onclick="() => { FilterAdult = (FilterAdult == false ? null : false); ScheduleResultCountUpdate(); }">
+                            Non-adult only
+                        </button>
                         <button class="sfp-chip @(FilterAdult == true ? "sfp-chip-on" : "")"
-                                @onclick="() => FilterAdult = (FilterAdult == true ? null : true)">Adult only</button>
+                                @onclick="() => { FilterAdult = (FilterAdult == true ? null : true); ScheduleResultCountUpdate(); }">
+                            Adult only
+                        </button>
                     </div>
                 </div>
 

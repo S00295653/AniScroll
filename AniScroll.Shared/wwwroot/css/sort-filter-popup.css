@@ -637,7 +637,29 @@
 .sfp-dp-scroll {
     max-height: 220px;
     overflow-y: auto;
-    overscroll-behavior: contain
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+    .sfp-dp-scroll .sfp-chips {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .sfp-dp-scroll .sfp-chip {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+
+.sfp-dropdown-panel {
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
 }
 
     .sfp-dp-scroll::-webkit-scrollbar {
