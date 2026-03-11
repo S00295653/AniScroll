@@ -165,7 +165,7 @@
 
                 <!-- EPISODES RANGE -->
                 <div class="sfp-section">
-                    <div class="sfp-section-label">Episodes Watched</div>
+                    <div class="sfp-section-label">Episodes</div>
                     <div class="sfp-dual-slider">
                         <input type="number" class="sfp-num-input"
                                min="1" max="@_maxEp" value="@_epFrom"
@@ -785,12 +785,11 @@
         _minYear = 1940;
         _maxYear = DateTime.Now.Year;
 
-        int maxParsed = en
-            .Select(e => ParseEpisodeCount(e.Anime.Episodes))
-            .Where(v => v > 0)
-            .DefaultIfEmpty(1)
-            .Max();
-        _maxEp = Math.Max(maxParsed, en.Any() ? en.Max(e => e.EpisodesWatched) : 1);
+        _maxEp = en
+          .Select(e => ParseEpisodeCount(e.Anime.Episodes))
+          .Where(v => v > 0 && v < int.MaxValue - 1) // exclure les valeurs sentinelles
+          .DefaultIfEmpty(1)
+          .Max();
         _maxEp = Math.Max(_maxEp, 1);
 
         ApplyMetadataCache();
@@ -966,10 +965,19 @@
         if (opts.Adult.HasValue  && e.Anime.IsAdult != opts.Adult.Value) return false;
         if (opts.YearFrom.HasValue  && (!e.Anime.Year.HasValue || e.Anime.Year  < opts.YearFrom))  return false;
         if (opts.YearTo.HasValue    && (!e.Anime.Year.HasValue || e.Anime.Year  > opts.YearTo))    return false;
-        if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom) return false;
-        if (opts.ScoreTo.HasValue   && e.Score > opts.ScoreTo)   return false;
-        if (opts.EpFrom.HasValue    && e.EpisodesWatched < opts.EpFrom) return false;
-        if (opts.EpTo.HasValue      && e.EpisodesWatched > opts.EpTo)   return false;
+        if (opts.ScoreFrom.HasValue || opts.ScoreTo.HasValue)
+        {
+            if (e.Score <= 0) return false; // pas de score → exclu si filtre actif
+            if (opts.ScoreFrom.HasValue && e.Score < opts.ScoreFrom) return false;
+            if (opts.ScoreTo.HasValue && e.Score > opts.ScoreTo) return false;
+        }
+        if (opts.EpFrom.HasValue || opts.EpTo.HasValue)
+        {
+            var epTotal = ParseEpisodeCount(e.Anime.Episodes);
+            if (epTotal <= 0) return false; // pas de total connu → exclu si filtre actif
+            if (opts.EpFrom.HasValue && epTotal < opts.EpFrom) return false;
+            if (opts.EpTo.HasValue && epTotal > opts.EpTo) return false;
+        }
         return true;
     }
 
