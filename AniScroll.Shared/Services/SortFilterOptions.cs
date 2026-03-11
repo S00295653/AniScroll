@@ -5,7 +5,7 @@ namespace AniScroll.Shared.Models
     public class SortFilterOptions
     {
         // ── Sort ─────────────────────────────────────────────────────────────
-        public SortMode Sort { get; set; } = SortMode.RecentlyAdded;
+        public SortMode Sort { get; set; } = SortMode.RecentlyUpdated;
 
         // ── Chip filters ─────────────────────────────────────────────────────
         public HashSet<string> AiringStatuses { get; set; } = new();
@@ -29,7 +29,7 @@ namespace AniScroll.Shared.Models
 
         // ── Helpers ───────────────────────────────────────────────────────────
         public bool IsDefault =>
-            Sort == SortMode.RecentlyAdded &&
+            Sort == SortMode.RecentlyUpdated &&
             !AiringStatuses.Any() && !Formats.Any() && !Seasons.Any() &&
             !Genres.Any() && !Studios.Any() && !Tags.Any() &&
             !Sources.Any() && !Platforms.Any() && !Countries.Any() &&
@@ -43,7 +43,7 @@ namespace AniScroll.Shared.Models
             get
             {
                 int n = 0;
-                if (Sort != SortMode.RecentlyAdded) n++;
+                if (Sort != SortMode.RecentlyUpdated) n++;
                 if (AiringStatuses.Any()) n++;
                 if (Formats.Any()) n++;
                 if (Seasons.Any()) n++;

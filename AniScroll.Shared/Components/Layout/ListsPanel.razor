@@ -11,7 +11,7 @@
         <div class="lists-panel"
              @onclick:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                        transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                            transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -230,7 +230,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">@e.Anime.Title</div>
@@ -299,10 +299,6 @@
     private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
     private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
 
-    /// <summary>
-    /// Called by SortFilterPopup when the random button is pressed.
-    /// Closes the filter popup, clears dropdowns, and opens the picked anime.
-    /// </summary>
     private async Task HandleRandomPicked(AnimeCard anime)
     {
         _showSortFilter = false;
@@ -385,8 +381,6 @@
 
         entries = _sortOptions.Sort switch
         {
-            SortFilterPopup.SortMode.RecentlyAdded => entries.OrderByDescending(e => e.AddedAt),
-            SortFilterPopup.SortMode.OldestFirst => entries.OrderBy(e => e.AddedAt),
             SortFilterPopup.SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
             SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
             SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
@@ -396,7 +390,7 @@
             SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e => e.EpisodesWatched),
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
-            _ => entries.OrderByDescending(e => e.AddedAt),
+            _ => entries.OrderByDescending(e => e.UpdatedAt), // RecentlyUpdated
         };
 
         return entries;
