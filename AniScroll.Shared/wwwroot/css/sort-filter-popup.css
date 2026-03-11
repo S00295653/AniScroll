@@ -74,13 +74,6 @@
     flex-shrink: 0
 }
 
-.sfp-handle-bar {
-    width: 36px;
-    height: 4px;
-    border-radius: 2px;
-    background: rgba(255,255,255,.18)
-}
-
 /* ── Header ─────────────────────────────────────────────────── */
 .sfp-header {
     display: flex;
