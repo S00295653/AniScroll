@@ -41,17 +41,14 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
                     <div class="sfp-chips">
-                        @SortChip(SortMode.RecentlyAdded, "Recently Added")
-                        @SortChip(SortMode.OldestFirst,   "Oldest First")
-                        @SortChip(SortMode.TitleAZ,       "A → Z")
-                        @SortChip(SortMode.TitleZA,       "Z → A")
-                        @SortChip(SortMode.MyScoreDesc,   "My Score ↓")
-                        @SortChip(SortMode.MyScoreAsc,    "My Score ↑")
-                        @SortChip(SortMode.AniListScore,  "AniList Score")
-                        @SortChip(SortMode.EpisodesDesc,  "Episodes ↓")
-                        @SortChip(SortMode.EpisodesAsc,   "Episodes ↑")
-                        @SortChip(SortMode.YearDesc,      "Year ↓")
-                        @SortChip(SortMode.YearAsc,       "Year ↑")
+                        @SortChip(SortMode.RecentlyAdded,   "Recently Added")
+                        @SortChip(SortMode.RecentlyUpdated, "Recently Updated")
+                        @SortChip(SortMode.OldestFirst,     "Oldest First")
+                        @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,      "Title")
+                        @ThreeStateChip(SortMode.MyScoreAsc,   SortMode.MyScoreDesc,  "My Score")
+                        @SortChip(SortMode.AniListScore,    "Rating")
+                        @ThreeStateChip(SortMode.EpisodesAsc,  SortMode.EpisodesDesc, "Episodes")
+                        @ThreeStateChip(SortMode.YearAsc,      SortMode.YearDesc,     "Year")
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -513,7 +510,7 @@
 
     public enum SortMode
     {
-        RecentlyAdded, OldestFirst,
+        RecentlyAdded, RecentlyUpdated, OldestFirst,
         TitleAZ, TitleZA,
         MyScoreDesc, MyScoreAsc, AniListScore,
         EpisodesDesc, EpisodesAsc,
@@ -674,18 +671,6 @@
                         if (el) el.value = val;
                     };
                 }
-                // ── Dual-slider sync clamp fix ───────────────────────────────
-                // Root cause: when hi is dragged past lo, the browser silently
-                // transfers pointer-capture to lo, which then fires oninput.
-                // Blazor reads event.target.value BEFORE our async sfpSetValue
-                // correction arrives → lo teleports.
-                //
-                // Fix (BogdanovB / predragdavidovic pattern):
-                // Register SYNCHRONOUS input listeners with capture:true on BOTH
-                // thumbs. capture:true means they fire before any bubble-phase
-                // listener, including Blazor's own @oninput handler.
-                // By the time Blazor reads event.target.value, el.value is
-                // already corrected → no teleport possible.
                 if (!window.sfpInitDualSlider) {
                     window.sfpInitDualSlider = function(loEl, hiEl) {
                         if (!loEl || !hiEl || loEl._sfpInited) return;
@@ -705,7 +690,6 @@
         }
         if (IsVisible && _jsReady)
         {
-            // Pass BOTH thumb refs so JS can cross-lock pointer-events.
             await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef,  _yearHiRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
             await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef,    _epHiRef);
@@ -1031,22 +1015,33 @@
 
     private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
-        SortMode.TitleAZ      => list.OrderBy(e => e.Anime.Title).ToList(),
-        SortMode.TitleZA      => list.OrderByDescending(e => e.Anime.Title).ToList(),
-        SortMode.MyScoreDesc  => list.OrderByDescending(e => e.Score).ToList(),
-        SortMode.MyScoreAsc   => list.OrderBy(e => e.Score).ToList(),
-        SortMode.AniListScore => list.OrderByDescending(e => double.TryParse(e.Anime.Score, out var s) ? s : 0).ToList(),
-        SortMode.EpisodesDesc => list.OrderByDescending(e => e.EpisodesWatched).ToList(),
-        SortMode.EpisodesAsc  => list.OrderBy(e => e.EpisodesWatched).ToList(),
-        SortMode.YearDesc     => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
-        SortMode.YearAsc      => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
-        SortMode.OldestFirst  => list.OrderBy(e => e.AddedAt).ToList(),
-        _                     => list.OrderByDescending(e => e.UpdatedAt).ToList(),
+        SortMode.RecentlyUpdated  => list.OrderByDescending(e => e.UpdatedAt).ToList(),
+        SortMode.OldestFirst      => list.OrderBy(e => e.AddedAt).ToList(),
+        SortMode.TitleAZ          => list.OrderBy(e => e.Anime.Title).ToList(),
+        SortMode.TitleZA          => list.OrderByDescending(e => e.Anime.Title).ToList(),
+        SortMode.MyScoreDesc      => list.OrderByDescending(e => e.Score).ToList(),
+        SortMode.MyScoreAsc       => list.OrderBy(e => e.Score).ToList(),
+        SortMode.AniListScore     => list.OrderByDescending(e => double.TryParse(e.Anime.Score, out var s) ? s : 0).ToList(),
+        SortMode.EpisodesDesc     => list.OrderByDescending(e => e.EpisodesWatched).ToList(),
+        SortMode.EpisodesAsc      => list.OrderBy(e => e.EpisodesWatched).ToList(),
+        SortMode.YearDesc         => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
+        SortMode.YearAsc          => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
+        _                         => list.OrderByDescending(e => e.AddedAt).ToList(), // RecentlyAdded
     };
 
+    // Standard single-state sort chip (radio behaviour).
     private RenderFragment SortChip(SortMode mode, string label) =>
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
-    @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
+        @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
+
+    // 3-state sort chip: unselected → asc → desc → unselected (back to default).
+    private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
+        @<button class="sfp-chip sfp-chip-3state @(_sort == asc || _sort == desc ? "sfp-chip-on" : "")"
+        @onclick="() => { _sort = _sort == asc ? desc : (_sort == desc ? SortMode.RecentlyAdded : asc); _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
+            @label
+            @if (_sort == asc)  { <span class="sfp-sort-arrow">↑</span> }
+            @if (_sort == desc) { <span class="sfp-sort-arrow">↓</span> }
+        </button>;
 
     private static readonly HashSet<string> _sfpColorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
     {
