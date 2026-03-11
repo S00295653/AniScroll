@@ -137,7 +137,7 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">My Score</div>
                     <div class="sfp-dual-slider">
-                        <input type="number" inputmode="numeric" class="sfp-num-input"
+                        <input type="number" inputmode="decimal" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
@@ -155,7 +155,7 @@
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
-                        <input type="number" inputmode="numeric" class="sfp-num-input"
+                        <input type="number" inputmode="decimal" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
@@ -168,7 +168,7 @@
                     <div class="sfp-section-label">Episodes</div>
                     <div class="sfp-dual-slider">
                         <input type="number" inputmode="numeric" class="sfp-num-input"
-                               min="1" max="@_maxEp"
+                               min="1" max="@_maxEp" value="@_epFrom"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epFrom = Math.Min(Math.Clamp(v, 1, _maxEp), _epTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
                             <div class="sfp-slider-track"></div>
@@ -183,7 +183,7 @@
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" inputmode="numeric" class="sfp-num-input"
-                               min="1" max="@_maxEp"
+                               min="1" max="@_maxEp" value="@_epFrom"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epTo = Math.Max(Math.Clamp(v, 1, _maxEp), _epFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
