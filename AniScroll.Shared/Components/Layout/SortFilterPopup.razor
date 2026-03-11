@@ -87,7 +87,7 @@
                         {
                             var sv = s; bool on = FilterSeasons.Contains(sv);
                             <button class="sfp-chip @(on ? "sfp-chip-on" : "")" @onclick="() => ToggleFilter(FilterSeasons, sv)">
-                                @SeasonEmoji(sv) @(sv[0] + sv[1..].ToLower())
+                                @(sv[0] + sv[1..].ToLower())
                             </button>
                         }
                     </div>
