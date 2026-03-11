@@ -27,7 +27,7 @@
                         <button class="sfp-reset-btn" @onclick="Reset">Reset all</button>
                     }
                     <button class="sfp-close-btn" @onclick="Close">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
                             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
                     </button>
@@ -42,11 +42,11 @@
                     <div class="sfp-section-label">Sort by</div>
                     <div class="sfp-chips">
                         @SortChip(SortMode.RecentlyUpdated, "Recently Updated")
-                        @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,      "Title")
-                        @ThreeStateChip(SortMode.MyScoreAsc,   SortMode.MyScoreDesc,  "My Score")
-                        @SortChip(SortMode.AniListScore,    "Rating")
-                        @ThreeStateChip(SortMode.EpisodesAsc,  SortMode.EpisodesDesc, "Episodes")
-                        @ThreeStateChip(SortMode.YearAsc,      SortMode.YearDesc,     "Year")
+                        @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,         "Title")
+                        @ThreeStateChip(SortMode.MyScoreAsc,   SortMode.MyScoreDesc,     "My Score")
+                        @ThreeStateChip(SortMode.AniListScore, SortMode.AniListScoreAsc, "Rating")
+                        @ThreeStateChip(SortMode.EpisodesAsc,  SortMode.EpisodesDesc,    "Episodes")
+                        @ThreeStateChip(SortMode.YearAsc,      SortMode.YearDesc,        "Year")
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -508,11 +508,13 @@
 
     public enum SortMode
     {
-        RecentlyAdded,   // kept for back-compat with external references
-        OldestFirst,     // kept for back-compat with external references
+        RecentlyAdded,    // kept for back-compat
+        OldestFirst,      // kept for back-compat
         RecentlyUpdated,
         TitleAZ, TitleZA,
-        MyScoreDesc, MyScoreAsc, AniListScore,
+        MyScoreDesc, MyScoreAsc,
+        AniListScore,     // desc
+        AniListScoreAsc,  // asc
         EpisodesDesc, EpisodesAsc,
         YearDesc, YearAsc,
     }
@@ -526,10 +528,7 @@
     private double _scoreFrom, _scoreTo;
     private int    _epFrom, _epTo;
 
-    // Slider wrap refs (for track-click hit-testing)
     private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
-
-    // Individual thumb refs — needed to push values back to the DOM
     private ElementReference _yearLoRef,  _yearHiRef;
     private ElementReference _scoreLoRef, _scoreHiRef;
     private ElementReference _epLoRef,    _epHiRef;
@@ -1013,18 +1012,37 @@
         await OnRandomPicked.InvokeAsync(picked.Anime);
     }
 
+    // ── Sort helpers ─────────────────────────────────────────────────────────
+
+    // Episodes: anime sans épisodes connus → toujours à la fin
+    private static int EpSortKey(UserListEntry e)
+    {
+        var ep = ParseEpisodeCount(e.Anime.Episodes);
+        return ep > 0 ? ep : -1;
+    }
+
+    // AniList score parsing
+    private static double AniScoreKey(UserListEntry e) =>
+        double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : -1;
+
     private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
-        SortMode.TitleAZ          => list.OrderBy(e => e.Anime.Title).ToList(),
-        SortMode.TitleZA          => list.OrderByDescending(e => e.Anime.Title).ToList(),
-        SortMode.MyScoreDesc      => list.OrderByDescending(e => e.Score).ToList(),
-        SortMode.MyScoreAsc       => list.OrderBy(e => e.Score).ToList(),
-        SortMode.AniListScore     => list.OrderByDescending(e => double.TryParse(e.Anime.Score, out var s) ? s : 0).ToList(),
-        SortMode.EpisodesDesc     => list.OrderByDescending(e => e.EpisodesWatched).ToList(),
-        SortMode.EpisodesAsc      => list.OrderBy(e => e.EpisodesWatched).ToList(),
-        SortMode.YearDesc         => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
-        SortMode.YearAsc          => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
-        _                         => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyUpdated
+        SortMode.TitleAZ         => list.OrderBy(e => e.Anime.Title).ToList(),
+        SortMode.TitleZA         => list.OrderByDescending(e => e.Anime.Title).ToList(),
+        SortMode.MyScoreDesc     => list.OrderByDescending(e => e.Score).ToList(),
+        SortMode.MyScoreAsc      => list.OrderBy(e => e.Score).ToList(),
+        // Rating desc : sans score (-1) → fin
+        SortMode.AniListScore    => list.OrderByDescending(e => AniScoreKey(e)).ToList(),
+        // Rating asc  : sans score → fin (on utilise double.MaxValue)
+        SortMode.AniListScoreAsc => list.OrderBy(e => AniScoreKey(e) >= 0 ? AniScoreKey(e) : double.MaxValue).ToList(),
+        // Épisodes desc : sans épisodes (-1) → fin
+        SortMode.EpisodesDesc    => list.OrderByDescending(e => EpSortKey(e)).ToList(),
+        // Épisodes asc  : sans épisodes → fin (on utilise int.MaxValue)
+        SortMode.EpisodesAsc     => list.OrderBy(e => EpSortKey(e) >= 0 ? EpSortKey(e) : int.MaxValue).ToList(),
+        SortMode.YearDesc        => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
+        SortMode.YearAsc         => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
+        _                        => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyUpdated
     };
 
     // Standard single-state sort chip (radio behaviour).
@@ -1032,7 +1050,7 @@
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
         @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
 
-    // 3-state sort chip: unselected → asc → desc → unselected (back to default).
+    // 2-state sort chip: asc ↔ desc, toggle entre les deux.
     private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
         @<button class="sfp-chip sfp-chip-3state @(_sort == asc || _sort == desc ? "sfp-chip-on" : "")"
 @onclick="() => { _sort = _sort == asc ? desc : asc; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">

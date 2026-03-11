@@ -306,7 +306,6 @@
         var part = slash >= 0 ? s[(slash + 1)..] : s.TrimEnd('+', '?');
         return int.TryParse(part, out var v) ? v : 0;
     }
-
     private async Task HandleRandomPicked(AnimeCard anime)
     {
         _showSortFilter = false;
