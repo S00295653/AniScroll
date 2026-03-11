@@ -238,7 +238,7 @@
                                     var metaParts = new List<string>();
                                     if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
                                     if (!string.IsNullOrEmpty(e.Anime.Format)) metaParts.Add(e.Anime.Format);
-                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(FormatEpisodeDisplay(e.Anime.Episodes));
+                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched));
                                     if (e.Score > 0) metaParts.Add("My score: " + e.Score);
                                 }
                                 @if (metaParts.Any())
@@ -476,10 +476,31 @@
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
     private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
 
-    private static string FormatEpisodeDisplay(string? s)
+    private static string FormatEpisodeDisplay(string? s, int watched = 0)
     {
         if (string.IsNullOrWhiteSpace(s) || s == "N/A") return "";
-        // Cas "1155+" ou "done/total" → déjà bien formé, juste ajouter " EP"
-        return s + " EP";
+
+        // Séries en cours sans total connu : "?+"
+        if (s == "?+")
+        {
+            return watched > 0 ? $"{watched}/?+ EP" : "?+ EP";
+        }
+
+        // Séries en cours avec épisodes connus : "1155+"
+        if (s.EndsWith('+'))
+        {
+            var total = s.TrimEnd('+');
+            return watched > 0 ? $"{watched}/{total}+ EP" : $"{s} EP";
+        }
+
+        // Séries avec "done/total" (ex: "11/12" depuis nextAiring)
+        if (s.Contains('/'))
+        {
+            var total = s[(s.IndexOf('/') + 1)..];
+            return watched > 0 ? $"{watched}/{total} EP" : $"{s} EP";
+        }
+
+        // Séries finies avec nombre fixe
+        return watched > 0 ? $"{watched}/{s} EP" : $"{s} EP";
     }
 }
