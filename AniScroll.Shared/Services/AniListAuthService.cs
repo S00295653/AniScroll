@@ -234,6 +234,7 @@ public class AniListAuthService
                 Score = media?["averageScore"]?.ToString() ?? "N/A",
                 Status = mStatus,
                 Format = FormatFormat(media?["format"]?.ToString() ?? ""),
+                Source = FormatSource(media?["source"]?.ToString() ?? ""),
                 Episodes = epDisplay,
                 Description = desc,
                 Season = media?["season"]?.ToString() ?? "",
@@ -326,6 +327,23 @@ public class AniListAuthService
         "ONA" => "ONA",
         "MUSIC" => "Music",
         _ => f
+    };
+
+    private static string FormatSource(string s) => s switch
+    {
+        "ORIGINAL" => "Original",
+        "MANGA" => "Manga",
+        "LIGHT_NOVEL" => "Light Novel",
+        "VISUAL_NOVEL" => "Visual Novel",
+        "VIDEO_GAME" => "Video Game",
+        "WEB_NOVEL" => "Web Novel",
+        "NOVEL" => "Novel",
+        "GAME" => "Game",
+        "COMIC" => "Comic",
+        "PICTURE_BOOK" => "Picture Book",
+        "MULTIMEDIA_PROJECT" => "Multimedia Project",
+        "OTHER" => "Other",
+        _ => s
     };
 
     private async Task<string?> PostGraphQL(string query)
