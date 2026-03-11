@@ -516,7 +516,7 @@
     color: #FFFFFF;
     opacity: 0.7;
     cursor: pointer;
-    transition: background .15s,border-color .15s,color .15s;
+    transition: background .15s, border-color .15s, color .15s, opacity .15s;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -531,6 +531,7 @@
         border-color: var(--sfp-accent-border);
         color: #fff;
         border-radius: 12px 12px 0 0;
+        opacity: 1;
     }
 
 .sfp-dt-left {
