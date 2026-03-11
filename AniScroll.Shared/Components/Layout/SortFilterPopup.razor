@@ -183,7 +183,7 @@
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
                         <input type="number" inputmode="numeric" class="sfp-num-input"
-                               min="1" max="@_maxEp" value="@_epFrom"
+                               min="1" max="@_maxEp" value="@_epTo"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epTo = Math.Max(Math.Clamp(v, 1, _maxEp), _epFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
