@@ -20,5 +20,10 @@ public class AniListImportEntry
     public List<string> CustomListNames { get; set; } = new();
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    // Timestamps from AniList (Unix → UTC DateTime), mapped in AniListAuthService.ParseEntry()
+    public DateTime UpdatedAt { get; set; } = DateTime.MinValue;
+    public DateTime CreatedAt { get; set; } = DateTime.MinValue;
+
     public AnimeCard AnimeCard { get; set; } = new();
 }
