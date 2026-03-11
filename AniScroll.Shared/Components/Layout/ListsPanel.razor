@@ -303,7 +303,10 @@
     {
         if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0;
         var slash = s.IndexOf('/');
-        var part = slash >= 0 ? s[(slash + 1)..] : s.TrimEnd('+', '?');
+        var part = slash >= 0 ? s[(slash + 1)..] : s;
+        // "?" ou "?+" = en cours sans total → valeur très grande
+        if (part.TrimEnd('+', '?', ' ') == "" || part.StartsWith('?')) return int.MaxValue - 1;
+        part = part.TrimEnd('+', '?', ' ');
         return int.TryParse(part, out var v) ? v : 0;
     }
     private async Task HandleRandomPicked(AnimeCard anime)
