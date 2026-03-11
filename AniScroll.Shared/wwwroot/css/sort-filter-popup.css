@@ -760,7 +760,7 @@
     border-radius: 12px;
     background: var(--sfp-surface);
     border: 1px solid var(--sfp-border);
-    color: var(--sfp-muted);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -768,11 +768,20 @@
     transition: background .15s,color .15s,border-color .15s,transform .2s;
 }
 
+    .sfp-random-btn svg {
+        opacity: 0.35; /* On retrouve ici la valeur de sfp-muted */
+        transition: opacity .15s;
+    }
+
     .sfp-random-btn:hover {
         background: var(--sfp-accent-dim);
         border-color: var(--sfp-accent-border);
         color: var(--sfp-accent);
     }
+
+        .sfp-random-btn:hover svg {
+            opacity: 1; /* L'icône devient totalement opaque au survol */
+        }
 
     .sfp-random-btn:active {
         transform: scale(.92)
