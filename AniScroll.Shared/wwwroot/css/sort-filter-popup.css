@@ -322,11 +322,15 @@
     color:var(--sfp-muted);display:flex;align-items:center;justify-content:center;
     cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .2s;
 }
-.sfp-random-btn:hover{
-    background:var(--sfp-accent-dim);border-color:var(--sfp-accent-border);
-    color:var(--sfp-accent);transform:rotate(90deg);
+.sfp-random-btn:hover {
+    background: var(--sfp-accent-dim);
+    border-color: var(--sfp-accent-border);
+    color: var(--sfp-accent);
 }
-.sfp-random-btn:active{transform:rotate(180deg) scale(.92)}
+
+.sfp-random-btn:active {
+    transform: scale(.92)
+}
 .sfp-apply-btn{
     flex:1;height:44px;border-radius:12px;
     background:linear-gradient(135deg,#E94560 0%,#c73652 100%);
