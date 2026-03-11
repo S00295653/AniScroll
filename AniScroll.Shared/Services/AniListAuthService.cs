@@ -92,6 +92,7 @@ public class AniListAuthService
                             averageScore
                             genres
                             episodes
+                            nextAiringEpisode {{ episode timeUntilAiring }}
                             status
                             season
                             seasonYear
@@ -178,8 +179,18 @@ public class AniListAuthService
         string epDisplay = "N/A";
         if (mStatus == "RELEASING")
         {
-            var ep = media?["episodes"];
-            epDisplay = (ep != null && ep.Type != JTokenType.Null) ? ep.ToString() : "?+";
+            int? total = media?["episodes"] != null && media["episodes"]!.Type != JTokenType.Null
+                ? media["episodes"]!.Value<int?>() : null;
+            var nae = media?["nextAiringEpisode"];
+            int? nextEp = (nae != null && nae.Type != JTokenType.Null)
+                ? nae["episode"]?.Value<int?>() : null;
+            if (nextEp.HasValue)
+            {
+                int done = nextEp.Value - 1;
+                epDisplay = total.HasValue ? $"{done}/{total.Value}" : $"{done}+";
+            }
+            else if (total.HasValue) epDisplay = total.Value.ToString();
+            else epDisplay = "?+";
         }
         else if (media?["episodes"] != null && media["episodes"]!.Type != JTokenType.Null)
         {
