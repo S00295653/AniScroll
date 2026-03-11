@@ -41,9 +41,7 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">Sort by</div>
                     <div class="sfp-chips">
-                        @SortChip(SortMode.RecentlyAdded,   "Recently Added")
                         @SortChip(SortMode.RecentlyUpdated, "Recently Updated")
-                        @SortChip(SortMode.OldestFirst,     "Oldest First")
                         @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,      "Title")
                         @ThreeStateChip(SortMode.MyScoreAsc,   SortMode.MyScoreDesc,  "My Score")
                         @SortChip(SortMode.AniListScore,    "Rating")
@@ -510,7 +508,7 @@
 
     public enum SortMode
     {
-        RecentlyAdded, RecentlyUpdated, OldestFirst,
+        RecentlyUpdated,
         TitleAZ, TitleZA,
         MyScoreDesc, MyScoreAsc, AniListScore,
         EpisodesDesc, EpisodesAsc,
@@ -521,7 +519,7 @@
 
     private bool _pointerDownOnOverlay = false;
 
-    private SortMode _sort = SortMode.RecentlyAdded;
+    private SortMode _sort = SortMode.RecentlyUpdated;
     private int    _yearFrom, _yearTo;
     private double _scoreFrom, _scoreTo;
     private int    _epFrom, _epTo;
@@ -632,7 +630,7 @@
     }
 
     private bool HasActiveOptions =>
-        _sort != SortMode.RecentlyAdded || RangeActive ||
+        _sort != SortMode.RecentlyUpdated || RangeActive ||
         FilterAiringStatus.Any() || FilterFormats.Any() || FilterSeasons.Any() ||
         FilterGenres.Any() || FilterStudios.Any() || FilterTags.Any() ||
         FilterSources.Any() || FilterPlatforms.Any() || FilterCountries.Any() || FilterAdult.HasValue;
@@ -646,7 +644,7 @@
     {
         get
         {
-            int n = (_sort != SortMode.RecentlyAdded ? 1 : 0) + (RangeActive ? 1 : 0);
+            int n = (_sort != SortMode.RecentlyUpdated ? 1 : 0) + (RangeActive ? 1 : 0);
             n += new[] { FilterAiringStatus, FilterFormats, FilterSeasons, FilterGenres,
                          FilterStudios, FilterTags, FilterSources, FilterPlatforms, FilterCountries }
                  .Count(s => s.Any());
@@ -974,7 +972,7 @@
 
     private void Reset()
     {
-        _sort = SortMode.RecentlyAdded;
+        _sort = SortMode.RecentlyUpdated;
         FilterAiringStatus.Clear(); FilterFormats.Clear();   FilterSeasons.Clear();
         FilterGenres.Clear();       FilterStudios.Clear();   FilterTags.Clear();
         FilterSources.Clear();      FilterPlatforms.Clear(); FilterCountries.Clear();
@@ -1015,8 +1013,6 @@
 
     private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
-        SortMode.RecentlyUpdated  => list.OrderByDescending(e => e.UpdatedAt).ToList(),
-        SortMode.OldestFirst      => list.OrderBy(e => e.AddedAt).ToList(),
         SortMode.TitleAZ          => list.OrderBy(e => e.Anime.Title).ToList(),
         SortMode.TitleZA          => list.OrderByDescending(e => e.Anime.Title).ToList(),
         SortMode.MyScoreDesc      => list.OrderByDescending(e => e.Score).ToList(),
@@ -1026,7 +1022,7 @@
         SortMode.EpisodesAsc      => list.OrderBy(e => e.EpisodesWatched).ToList(),
         SortMode.YearDesc         => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
         SortMode.YearAsc          => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
-        _                         => list.OrderByDescending(e => e.AddedAt).ToList(), // RecentlyAdded
+        _                         => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyUpdated
     };
 
     // Standard single-state sort chip (radio behaviour).
@@ -1037,7 +1033,7 @@
     // 3-state sort chip: unselected → asc → desc → unselected (back to default).
     private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
         @<button class="sfp-chip sfp-chip-3state @(_sort == asc || _sort == desc ? "sfp-chip-on" : "")"
-        @onclick="() => { _sort = _sort == asc ? desc : (_sort == desc ? SortMode.RecentlyAdded : asc); _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
+        @onclick="() => { _sort = _sort == asc ? desc : (_sort == desc ? SortMode.RecentlyUpdated : asc); _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
             @label
             @if (_sort == asc)  { <span class="sfp-sort-arrow">↑</span> }
             @if (_sort == desc) { <span class="sfp-sort-arrow">↓</span> }
