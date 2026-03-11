@@ -105,7 +105,7 @@
                         </span>
                     </div>
                     <div class="sfp-dual-slider">
-                        <input type="number" class="sfp-num-input sfp-num-year"
+                        <input type="number" inputmode="numeric" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearFrom"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearFrom = Math.Clamp(Math.Min(v, _yearTo), _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
@@ -121,7 +121,7 @@
                                    min="@_minYear" max="@_maxYear" step="1" value="@_yearTo"
                                    @oninput="e => OnYearToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
-                        <input type="number" class="sfp-num-input sfp-num-year"
+                        <input type="number" inputmode="numeric" class="sfp-num-input sfp-num-year"
                                min="@_minYear" max="@_maxYear" step="1"
                                value="@_yearTo"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _yearTo = Math.Clamp(Math.Max(v, _yearFrom), _minYear, _maxYear); ScheduleResultCountUpdate(); } }" />
@@ -137,7 +137,7 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">My Score</div>
                     <div class="sfp-dual-slider">
-                        <input type="number" class="sfp-num-input"
+                        <input type="number" inputmode="numeric" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
@@ -155,7 +155,7 @@
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
-                        <input type="number" class="sfp-num-input"
+                        <input type="number" inputmode="numeric" class="sfp-num-input"
                                min="0" max="10" step="0.5"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                @onchange="e => { if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
@@ -167,8 +167,8 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">Episodes</div>
                     <div class="sfp-dual-slider">
-                        <input type="number" class="sfp-num-input"
-                               min="1" max="@_maxEp" value="@_epFrom"
+                        <input type="number" inputmode="numeric" class="sfp-num-input"
+                               min="1" max="@_maxEp"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epFrom = Math.Min(Math.Clamp(v, 1, _maxEp), _epTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_epWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Episode)">
                             <div class="sfp-slider-track"></div>
@@ -182,8 +182,8 @@
                                    min="1" max="@_maxEp" step="1" value="@_epTo"
                                    @oninput="e => OnEpToInput(int.Parse(e.Value!.ToString()!))" />
                         </div>
-                        <input type="number" class="sfp-num-input"
-                               min="1" max="@_maxEp" value="@_epTo"
+                        <input type="number" inputmode="numeric" class="sfp-num-input"
+                               min="1" max="@_maxEp"
                                @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { _epTo = Math.Max(Math.Clamp(v, 1, _maxEp), _epFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
@@ -228,7 +228,8 @@
                             </div>
                             <div class="sfp-search-row">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="17" y1="17" x2="21" y2="21" />
                                 </svg>
                                 <input class="sfp-search-input" type="text" placeholder="Search genres…"
                                        @bind="_genreSearch" @bind:event="oninput" />
@@ -300,7 +301,8 @@
                             </div>
                             <div class="sfp-search-row">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="17" y1="17" x2="21" y2="21" />
                                 </svg>
                                 <input class="sfp-search-input" type="text" placeholder="Search studios…"
                                        @bind="_studioSearch" @bind:event="oninput" />
@@ -373,7 +375,8 @@
                             </div>
                             <div class="sfp-search-row">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="17" y1="17" x2="21" y2="21" />
                                 </svg>
                                 <input class="sfp-search-input" type="text" placeholder="Search tags…"
                                        @bind="_tagSearch" @bind:event="oninput" />
@@ -491,12 +494,12 @@
             <!-- Footer -->
             <div class="sfp-footer">
                 <button class="sfp-random-btn" @onclick="PickRandom" title="Random anime from current filters">
-                    <svg width="18" height="18" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="400 304 448 352 400 400" />
-                        <polyline points="400 112 448 160 400 208" />
-                        <path d="M64 352h85.19a80 80 0 0066.56-35.62l80.5-121A80 80 0 01362.81 160H448" />
-                        <path d="M64 160h85.19a80 80 0 0166.56 35.62l6.25 9.44" />
-                        <path d="M256 343.94l6.25 9.44A80 80 0 00362.81 352H448" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8" />
+                        <polyline points="16 21 21 21 21 16" />
+                        <line x1="4" y1="20" x2="21" y2="3" />
+                        <path d="M21 16l-5 5" />
+                        <path d="M4 4l5 5" />
                     </svg>
                 </button>
                 <button class="sfp-apply-btn" @onclick="Apply">
