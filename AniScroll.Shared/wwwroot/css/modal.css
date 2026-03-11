@@ -770,28 +770,31 @@
     color: rgba(255, 255, 255, 0.38);
 }
 
+
 /* ── Spoiler pill — COMPOUND selector (higher specificity) ── */
 .tag-pill.tag-pill-spoiler-revealed {
-    color: rgba(245, 197, 24, 0.85);
-    background: rgba(245, 197, 24, 0.10);
-    border-color: rgba(245, 197, 24, 0.22);
+    color: rgba(214, 188, 112, 0.65);
+    background: rgba(52, 45, 18, 0.28);
+    border-color: rgba(184, 158, 82, 0.30);
     font-style: italic;
 }
 
 .tag-pill.tag-pill-spoiler-revealed .tag-pct {
-    color: rgba(245, 197, 24, 0.55);
+    color: rgba(214, 188, 112, 0.65);
 }
 
 .tag-pill.tag-pill-spoiler-revealed:hover {
-    background: rgba(245, 197, 24, 0.18);
-    color: rgba(245, 197, 24, 1);
+    background: rgba(70, 60, 22, 0.38);
+    border-color: rgba(200, 176, 96, 0.42);
+    color: rgba(230, 206, 132, 0.85);
 }
 
 .tag-spoiler-btn {
-    background: rgba(42, 32, 4, 0.28);
-    border: 1px solid rgba(165, 130, 48, 0.28);
-    color: rgba(210, 168, 78, 0.60);
+    background: rgba(52, 45, 18, 0.28);
+    border: 1px solid rgba(184, 158, 82, 0.30);
+    color: rgba(214, 188, 112, 0.65);
     border-radius: 20px;
+    border-style: dashed;
     font-size: 12px;
     font-weight: 500;
     padding: 6px 14px;
@@ -800,36 +803,37 @@
     transition: background 0.18s, color 0.18s, border-color 0.18s;
     letter-spacing: 0.02em;
 }
-.tag-spoiler-btn:hover {
-    background: rgba(58, 44, 6, 0.38);
-    border-color: rgba(200, 162, 68, 0.42);
-    color: rgba(235, 192, 98, 0.82);
-}
+
+    .tag-spoiler-btn:hover {
+        background: rgba(70, 60, 22, 0.38);
+        border-color: rgba(200, 176, 96, 0.42);
+        color: rgba(230, 206, 132, 0.85);
+    }
 
     .tag-spoiler-btn:active {
         transform: scale(0.96);
     }
 
 .tag-spoiler-hide-btn {
-    background: rgba(42, 32, 4, 0.28);
-    border: 1px solid rgba(165, 130, 48, 0.28);
-    color: rgba(210, 168, 78, 0.60);
+    background: rgba(52, 45, 18, 0.28);
+    border: 1px solid rgba(184, 158, 82, 0.30);
+    color: rgba(214, 188, 112, 0.65);
     font-style: italic;
     letter-spacing: 0.025em;
 }
 
     .tag-spoiler-hide-btn:hover {
-        background: rgba(58, 44, 6, 0.38);
-        border-color: rgba(200, 162, 68, 0.42);
-        color: rgba(235, 192, 98, 0.82);
+        background: rgba(70, 60, 22, 0.38);
+        border-color: rgba(200, 176, 96, 0.42);
+        color: rgba(230, 206, 132, 0.85);
         border-style: solid;
         box-shadow: none;
     }
 
 .tag-pill-spoiler-revealed {
-    background: rgba(42, 32, 4, 0.28);
-    border: 1px solid rgba(165, 130, 48, 0.28);
-    color: rgba(210, 168, 78, 0.60);
+    background: rgba(52, 45, 18, 0.28);
+    border: 1px solid rgba(184, 158, 82, 0.30);
+    color: rgba(214, 188, 112, 0.65);
     font-style: italic;
     font-size: 10.5px;
     letter-spacing: 0.012em;
@@ -844,18 +848,19 @@
     }
 
     .tag-pill-spoiler-revealed:hover {
-        background: rgba(58, 44, 6, 0.38);
-        border-color: rgba(200, 162, 68, 0.42);
-        color: rgba(235, 192, 98, 0.82);
+        background: rgba(70, 60, 22, 0.38);
+        border-color: rgba(200, 176, 96, 0.42);
+        color: rgba(230, 206, 132, 0.85);
     }
 
-.tag-pill-spoiler-revealed .tag-pct {
-    color: rgba(195, 155, 72, 0.32);
-}
+    .tag-pill-spoiler-revealed .tag-pct {
+        color: rgba(214, 188, 112, 0.65);
+    }
 
 .tag-spoiler {
     font-style: italic;
 }
+
 
 /* ── Streaming platforms ── */
 .links-sublabel {
