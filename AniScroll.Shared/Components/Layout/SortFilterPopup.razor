@@ -652,7 +652,7 @@
     {
         get
         {
-            int n = (_sort != SortMode.RecentlyUpdated ? 1 : 0) + (RangeActive ? 1 : 0);
+            int n = (_sort != SortMode.RecentlyUpdated ? 1 : 0) + (_yearFrom != _minYear || _yearTo != _maxYear ? 1 : 0) + (_scoreFrom != 0 || _scoreTo != 10 ? 1 : 0) + (_epFrom != 1 || _epTo != _maxEp ? 1 : 0);
             n += FilterAiringStatus.Count + FilterFormats.Count + FilterSeasons.Count
                + FilterGenres.Count + FilterStudios.Count + FilterTags.Count
                + FilterSources.Count + FilterPlatforms.Count + FilterCountries.Count;
