@@ -63,50 +63,51 @@ public class AniListAuthService
 
     public async Task<List<AniListImportEntry>> FetchAnimeListAsync(int userId)
     {
-        // ── Étape 1 : récupérer toutes les entrées triées par dernière modif ──
-        //  On utilise `mediaList` (par userId) avec sort: UPDATED_TIME_DESC
-        //  plutôt que MediaListCollection — les entrées arrivent déjà dans le
-        //  bon ordre et on obtient les custom lists via le champ `customLists`.
+        // MediaListCollection retourne toute la liste en une seule requête,
+        // sans limite de pagination. On trie ensuite côté client par updatedAt desc.
         var q = $@"query {{
-            Page(page: 1, perPage: 500) {{
-                mediaList(userId: {userId}, type: ANIME, sort: UPDATED_TIME_DESC) {{
-                    mediaId
-                    status
-                    score(format: POINT_10_DECIMAL)
-                    progress
-                    repeat
-                    notes
-                    private
-                    hiddenFromStatusLists
-                    updatedAt
-                    createdAt
-                    startedAt   {{ year month day }}
-                    completedAt {{ year month day }}
-                    customLists
-                    media {{
-                        id
-                        title {{ romaji english native }}
-                        coverImage {{ extraLarge large color }}
-                        bannerImage
-                        format
-                        averageScore
-                        genres
-                        episodes
+            MediaListCollection(userId: {userId}, type: ANIME) {{
+                lists {{
+                    name
+                    isCustomList
+                    entries {{
+                        mediaId
                         status
-                        season
-                        seasonYear
-                        description
-                        duration
-                        source
-                        startDate {{ year month day }}
-                        endDate   {{ year month day }}
-                        popularity
-                        favourites
-                        countryOfOrigin
-                        isAdult
-                        studios(isMain: true) {{ nodes {{ id name }} }}
-                        tags {{ name rank isMediaSpoiler }}
-                        externalLinks {{ url site type color icon }}
+                        score(format: POINT_10_DECIMAL)
+                        progress
+                        repeat
+                        notes
+                        private
+                        hiddenFromStatusLists
+                        updatedAt
+                        createdAt
+                        startedAt   {{ year month day }}
+                        completedAt {{ year month day }}
+                        media {{
+                            id
+                            title {{ romaji english native }}
+                            coverImage {{ extraLarge large color }}
+                            bannerImage
+                            format
+                            averageScore
+                            genres
+                            episodes
+                            status
+                            season
+                            seasonYear
+                            description
+                            duration
+                            source
+                            startDate {{ year month day }}
+                            endDate   {{ year month day }}
+                            popularity
+                            favourites
+                            countryOfOrigin
+                            isAdult
+                            studios(isMain: true) {{ nodes {{ id name }} }}
+                            tags {{ name rank isMediaSpoiler }}
+                            externalLinks {{ url site type color icon }}
+                        }}
                     }}
                 }}
             }}
@@ -115,37 +116,44 @@ public class AniListAuthService
         var resp = await PostGraphQL(q);
         if (resp == null) return new();
 
-        var items = JObject.Parse(resp)?["data"]?["Page"]?["mediaList"];
-        if (items == null || !items.HasValues) return new();
+        var lists = JObject.Parse(resp)?["data"]?["MediaListCollection"]?["lists"];
+        if (lists == null || !lists.HasValues) return new();
 
-        // ── Étape 2 : déduplique (un anime peut apparaître dans plusieurs listes)
-        //  On garde la première occurrence (= la plus récemment modifiée, car le
-        //  tri UPDATED_TIME_DESC est appliqué côté serveur).
         var seen = new Dictionary<int, AniListImportEntry>();
 
-        foreach (var entry in items)
+        foreach (var list in lists)
         {
-            int mediaId = entry["mediaId"]?.Value<int>() ?? 0;
-            if (mediaId == 0) continue;
+            var listName = list["name"]?.ToString() ?? "";
+            bool isCustom = list["isCustomList"]?.Value<bool>() ?? false;
+            var entries = list["entries"];
+            if (entries == null || !entries.HasValues) continue;
 
-            if (!seen.ContainsKey(mediaId))
-                seen[mediaId] = ParseEntry(entry);
-
-            // Récupère les custom lists depuis le champ `customLists` (objet JSON
-            // dont les clés sont les noms et les valeurs sont des booléens).
-            var customListsToken = entry["customLists"];
-            if (customListsToken != null && customListsToken.Type == JTokenType.Object)
+            foreach (var entry in entries)
             {
-                foreach (var prop in ((JObject)customListsToken).Properties())
+                int mediaId = entry["mediaId"]?.Value<int>() ?? 0;
+                if (mediaId == 0) continue;
+
+                if (!seen.ContainsKey(mediaId))
+                    seen[mediaId] = ParseEntry(entry);
+                else
                 {
-                    if (prop.Value.Value<bool>() &&
-                        !seen[mediaId].CustomListNames.Contains(prop.Name))
-                        seen[mediaId].CustomListNames.Add(prop.Name);
+                    // Si l'entrée existe déjà, garde le updatedAt le plus récent
+                    var parsed = ParseEntry(entry);
+                    if (parsed.UpdatedAt > seen[mediaId].UpdatedAt)
+                        seen[mediaId] = parsed;
                 }
+
+                if (isCustom && !string.IsNullOrWhiteSpace(listName)
+                    && !seen[mediaId].CustomListNames.Contains(listName))
+                    seen[mediaId].CustomListNames.Add(listName);
             }
         }
 
-        return seen.Values.ToList();
+        // Tri côté client par updatedAt desc — équivalent du sort: UPDATED_TIME_DESC
+        // qu'on avait avec mediaList, mais sans la limite de 50 par page.
+        return seen.Values
+                   .OrderByDescending(e => e.UpdatedAt)
+                   .ToList();
     }
 
     // ── Parsing ───────────────────────────────────────────────────────────
