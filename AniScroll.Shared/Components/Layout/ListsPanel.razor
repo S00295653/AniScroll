@@ -238,7 +238,7 @@
                                     var metaParts = new List<string>();
                                     if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
                                     if (!string.IsNullOrEmpty(e.Anime.Format)) metaParts.Add(e.Anime.Format);
-                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(e.Anime.Episodes + " EP");
+                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched));
                                     if (e.Score > 0) metaParts.Add("My score: " + e.Score);
                                 }
                                 @if (metaParts.Any())
@@ -475,4 +475,18 @@
 
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
     private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
+
+    private static string FormatEpisodeDisplay(string? s, int watched = 0)
+    {
+        if (string.IsNullOrWhiteSpace(s) || s == "N/A") return "";
+        var slash = s.IndexOf('/');
+        var part = slash >= 0 ? s[(slash + 1)..] : s;
+        bool isOngoing = part.StartsWith('?') || part.Trim('+', '?', ' ').Length == 0;
+        if (isOngoing)
+        {
+            var actual = watched > 0 ? watched.ToString() : "?";
+            return $"{actual}+ EP";
+        }
+        return s.TrimEnd('+', '?', ' ') + " EP";
+    }
 }
