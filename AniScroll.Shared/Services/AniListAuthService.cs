@@ -51,10 +51,10 @@ public class AniListAuthService
 
         CurrentUser = new AniListUserProfile
         {
-            Id       = data["id"]?.Value<int>() ?? 0,
-            Name     = data["name"]?.ToString() ?? "",
+            Id = data["id"]?.Value<int>() ?? 0,
+            Name = data["name"]?.ToString() ?? "",
             AvatarUrl = data["avatar"]?["large"]?.ToString()
-                      ?? data["avatar"]?["medium"]?.ToString() ?? ""
+                     ?? data["avatar"]?["medium"]?.ToString() ?? ""
         };
         return CurrentUser;
     }
@@ -77,6 +77,8 @@ public class AniListAuthService
                         notes
                         private
                         hiddenFromStatusLists
+                        updatedAt
+                        createdAt
                         startedAt   {{ year month day }}
                         completedAt {{ year month day }}
                         media {{
@@ -145,21 +147,21 @@ public class AniListAuthService
 
     private AniListImportEntry ParseEntry(JToken e)
     {
-        var media    = e["media"];
+        var media = e["media"];
         var titleObj = media?["title"];
 
         string title = !string.IsNullOrEmpty(titleObj?["english"]?.ToString())
             ? titleObj!["english"]!.ToString()
             : titleObj?["romaji"]?.ToString() ?? "";
 
-        var cover      = media?["coverImage"];
-        string imgUrl  = cover?["extraLarge"]?.ToString() ?? cover?["large"]?.ToString() ?? "";
-        string clrHex  = cover?["color"]?.ToString() ?? "";
+        var cover = media?["coverImage"];
+        string imgUrl = cover?["extraLarge"]?.ToString() ?? cover?["large"]?.ToString() ?? "";
+        string clrHex = cover?["color"]?.ToString() ?? "";
 
         string desc = System.Text.RegularExpressions.Regex
             .Replace(media?["description"]?.ToString() ?? "", "<.*?>", "");
 
-        string mStatus   = media?["status"]?.ToString() ?? "";
+        string mStatus = media?["status"]?.ToString() ?? "";
         string epDisplay = "N/A";
         if (mStatus == "RELEASING")
         {
@@ -171,42 +173,56 @@ public class AniListAuthService
             epDisplay = media["episodes"]!.ToString();
         }
 
+        // AniList returns updatedAt/createdAt as Unix timestamps (long)
+        var updatedAtRaw = e["updatedAt"]?.Value<long?>() ?? 0;
+        var createdAtRaw = e["createdAt"]?.Value<long?>() ?? 0;
+
+        DateTime updatedAt = updatedAtRaw > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(updatedAtRaw).UtcDateTime
+            : DateTime.Now;
+
+        DateTime createdAt = createdAtRaw > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(createdAtRaw).UtcDateTime
+            : DateTime.Now;
+
         return new AniListImportEntry
         {
-            MediaId             = e["mediaId"]?.Value<int>() ?? 0,
-            AniListStatus       = e["status"]?.ToString() ?? "",
-            Score               = e["score"]?.Value<double>() ?? 0,
-            Progress            = e["progress"]?.Value<int>() ?? 0,
-            Repeat              = e["repeat"]?.Value<int>() ?? 0,
-            Notes               = e["notes"]?.ToString() ?? "",
-            IsPrivate           = e["private"]?.Value<bool>() ?? false,
+            MediaId = e["mediaId"]?.Value<int>() ?? 0,
+            AniListStatus = e["status"]?.ToString() ?? "",
+            Score = e["score"]?.Value<double>() ?? 0,
+            Progress = e["progress"]?.Value<int>() ?? 0,
+            Repeat = e["repeat"]?.Value<int>() ?? 0,
+            Notes = e["notes"]?.ToString() ?? "",
+            IsPrivate = e["private"]?.Value<bool>() ?? false,
             HideFromStatusLists = e["hiddenFromStatusLists"]?.Value<bool>() ?? false,
-            StartedAt           = ParseFuzzyDate(e["startedAt"]),
-            CompletedAt         = ParseFuzzyDate(e["completedAt"]),
+            StartedAt = ParseFuzzyDate(e["startedAt"]),
+            CompletedAt = ParseFuzzyDate(e["completedAt"]),
+            UpdatedAt = updatedAt,
+            CreatedAt = createdAt,
             AnimeCard = new AnimeCard
             {
-                Id              = media?["id"]?.Value<int>() ?? 0,
-                Title           = title,
-                NativeTitle     = titleObj?["native"]?.ToString() ?? "",
-                ImageUrl        = imgUrl,
-                BannerUrl       = media?["bannerImage"]?.ToString() ?? "",
-                CoverColor      = clrHex,
-                Score           = media?["averageScore"]?.ToString() ?? "N/A",
-                Status          = mStatus,
-                Format          = FormatFormat(media?["format"]?.ToString() ?? ""),
-                Episodes        = epDisplay,
-                Description     = desc,
-                Season          = media?["season"]?.ToString() ?? "",
-                Year            = media?["seasonYear"]?.Value<int?>(),
-                Genres          = media?["genres"]?.Select(g => g.ToString()).ToList() ?? new(),
-                Duration        = media?["duration"]?.Value<int?>(),
-                Popularity      = media?["popularity"]?.Value<int?>(),
-                Favourites      = media?["favourites"]?.Value<int?>(),
+                Id = media?["id"]?.Value<int>() ?? 0,
+                Title = title,
+                NativeTitle = titleObj?["native"]?.ToString() ?? "",
+                ImageUrl = imgUrl,
+                BannerUrl = media?["bannerImage"]?.ToString() ?? "",
+                CoverColor = clrHex,
+                Score = media?["averageScore"]?.ToString() ?? "N/A",
+                Status = mStatus,
+                Format = FormatFormat(media?["format"]?.ToString() ?? ""),
+                Episodes = epDisplay,
+                Description = desc,
+                Season = media?["season"]?.ToString() ?? "",
+                Year = media?["seasonYear"]?.Value<int?>(),
+                Genres = media?["genres"]?.Select(g => g.ToString()).ToList() ?? new(),
+                Duration = media?["duration"]?.Value<int?>(),
+                Popularity = media?["popularity"]?.Value<int?>(),
+                Favourites = media?["favourites"]?.Value<int?>(),
                 CountryOfOrigin = media?["countryOfOrigin"]?.ToString() ?? "",
-                IsAdult         = media?["isAdult"]?.Value<bool>() ?? false,
-                Studios         = ParseStudios(media?["studios"]?["nodes"]),
-                Tags            = ParseTags(media?["tags"]),
-                ExternalLinks   = ParseExternalLinks(media?["externalLinks"]),
+                IsAdult = media?["isAdult"]?.Value<bool>() ?? false,
+                Studios = ParseStudios(media?["studios"]?["nodes"]),
+                Tags = ParseTags(media?["tags"]),
+                ExternalLinks = ParseExternalLinks(media?["externalLinks"]),
             }
         };
     }
@@ -220,7 +236,7 @@ public class AniListAuthService
             if (s == null || s.Type == JTokenType.Null) continue;
             list.Add(new AnimeStudio
             {
-                Id   = s["id"]?.Value<int>() ?? 0,
+                Id = s["id"]?.Value<int>() ?? 0,
                 Name = s["name"]?.ToString() ?? ""
             });
         }
@@ -236,8 +252,8 @@ public class AniListAuthService
             if (t == null || t.Type == JTokenType.Null) continue;
             list.Add(new AnimeTag
             {
-                Name           = t["name"]?.ToString() ?? "",
-                Rank           = t["rank"]?.Value<int>() ?? 0,
+                Name = t["name"]?.ToString() ?? "",
+                Rank = t["rank"]?.Value<int>() ?? 0,
                 IsMediaSpoiler = t["isMediaSpoiler"]?.Value<bool>() ?? false
             });
         }
@@ -253,11 +269,11 @@ public class AniListAuthService
             if (l == null || l.Type == JTokenType.Null) continue;
             list.Add(new AnimeExternalLink
             {
-                Url   = l["url"]?.ToString()   ?? "",
-                Site  = l["site"]?.ToString()  ?? "",
-                Type  = l["type"]?.ToString()  ?? "",
+                Url = l["url"]?.ToString() ?? "",
+                Site = l["site"]?.ToString() ?? "",
+                Type = l["type"]?.ToString() ?? "",
                 Color = l["color"]?.ToString() ?? "",
-                Icon  = l["icon"]?.ToString()  ?? ""
+                Icon = l["icon"]?.ToString() ?? ""
             });
         }
         return list;
@@ -278,14 +294,14 @@ public class AniListAuthService
 
     private static string FormatFormat(string f) => f switch
     {
-        "TV"       => "TV Series",
+        "TV" => "TV Series",
         "TV_SHORT" => "TV Short",
-        "MOVIE"    => "Movie",
-        "SPECIAL"  => "Special",
-        "OVA"      => "OVA",
-        "ONA"      => "ONA",
-        "MUSIC"    => "Music",
-        _          => f
+        "MOVIE" => "Movie",
+        "SPECIAL" => "Special",
+        "OVA" => "OVA",
+        "ONA" => "ONA",
+        "MUSIC" => "Music",
+        _ => f
     };
 
     private async Task<string?> PostGraphQL(string query)
@@ -293,7 +309,7 @@ public class AniListAuthService
         try
         {
             var payload = new { query };
-            var json    = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var request = new HttpRequestMessage(HttpMethod.Post, ENDPOINT)
