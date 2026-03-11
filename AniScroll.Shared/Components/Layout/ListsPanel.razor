@@ -299,6 +299,14 @@
     private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
     private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
 
+    private static int ParseEp(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0;
+        var slash = s.IndexOf('/');
+        var part = slash >= 0 ? s[(slash + 1)..] : s.TrimEnd('+', '?');
+        return int.TryParse(part, out var v) ? v : 0;
+    }
+
     private async Task HandleRandomPicked(AnimeCard anime)
     {
         _showSortFilter = false;
@@ -386,8 +394,8 @@
             SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
             SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? int.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
             SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e => double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : 0),
-            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e => e.EpisodesWatched),
-            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e => e.EpisodesWatched),
+            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e => ParseEp(e.Anime.Episodes)),
+            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e => ParseEp(e.Anime.Episodes)),
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
             _ => entries.OrderByDescending(e => e.UpdatedAt), // RecentlyUpdated

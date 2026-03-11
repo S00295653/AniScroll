@@ -1035,7 +1035,7 @@
     // 3-state sort chip: unselected → asc → desc → unselected (back to default).
     private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
         @<button class="sfp-chip sfp-chip-3state @(_sort == asc || _sort == desc ? "sfp-chip-on" : "")"
-        @onclick="() => { _sort = _sort == asc ? desc : (_sort == desc ? SortMode.RecentlyUpdated : asc); _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
+@onclick="() => { _sort = _sort == asc ? desc : asc; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
             @label
             @if (_sort == asc)  { <span class="sfp-sort-arrow">↑</span> }
             @if (_sort == desc) { <span class="sfp-sort-arrow">↓</span> }
@@ -1163,7 +1163,6 @@
 
     private static string FormatAiringStatus(string s) => s switch
     { "RELEASING" => "Airing", "FINISHED" => "Finished", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => s };
-    private static string SeasonEmoji(string s)  => s?.ToUpper() switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "" };
     private static string CountryEmoji(string c) => c?.ToUpper() switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
     private static string CountryLabel(string c) => c?.ToUpper() switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => c };
 }
