@@ -602,6 +602,12 @@
     color: var(--sfp-muted);
 }
 
+    .sfp-search-row svg {
+        color: #FFFFFF !important; /* Force le trait à être 100% blanc */
+        opacity: 0.6; /* Applique la transparence sur le rendu final de l'icône */
+        flex-shrink: 0;
+    }
+
 .sfp-search-input {
     flex: 1;
     background: transparent;
