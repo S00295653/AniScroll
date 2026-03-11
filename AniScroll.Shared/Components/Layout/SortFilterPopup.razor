@@ -137,10 +137,9 @@
                 <div class="sfp-section">
                     <div class="sfp-section-label">My Score</div>
                     <div class="sfp-dual-slider">
-                        <input type="number" inputmode="decimal" class="sfp-num-input"
-                               min="0" max="10" step="0.5"
+                        <input type="text" inputmode="decimal" class="sfp-num-input"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }"/>
+                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onclick="e => OnTrackClickAsync(e, SliderType.Score)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
@@ -155,10 +154,9 @@
                                    value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
                                    @oninput="e => OnScoreToInput(double.Parse(e.Value!.ToString()!, System.Globalization.CultureInfo.InvariantCulture))" />
                         </div>
-                        <input type="number" inputmode="decimal" class="sfp-num-input"
-                               min="0" max="10" step="0.5"
+                        <input type="text" inputmode="decimal" class="sfp-num-input"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }"/>
+                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
