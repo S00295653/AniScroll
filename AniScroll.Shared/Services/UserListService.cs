@@ -67,17 +67,17 @@ namespace AniScroll.Shared.Services
         {
             if (_entries.TryGetValue(anime.Id, out var existing))
             {
-                existing.Status    = status;
-                existing.UpdatedAt = DateTime.Now;
+                existing.Status = status;
+                existing.UpdatedAt = DateTime.UtcNow;
             }
             else
             {
                 _entries[anime.Id] = new UserListEntry
                 {
-                    Anime     = anime,
-                    Status    = status,
-                    AddedAt   = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    Anime = anime,
+                    Status = status,
+                    AddedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
             }
             OnChanged?.Invoke();
@@ -86,12 +86,28 @@ namespace AniScroll.Shared.Services
         /// <summary>Full update — replaces the entry wholesale (from the list editor).</summary>
         public void SaveEntry(UserListEntry entry)
         {
-            entry.UpdatedAt = DateTime.Now;
+            entry.UpdatedAt = DateTime.UtcNow;
             if (!_entries.ContainsKey(entry.Anime.Id))
-                entry.AddedAt = DateTime.Now;
+                entry.AddedAt = DateTime.UtcNow;
             _entries[entry.Anime.Id] = entry;
             OnChanged?.Invoke();
         }
+
+        /// <summary>
+        /// Import from AniList — preserves the original AniList timestamps
+        /// (UpdatedAt / AddedAt) instead of overwriting with DateTime.UtcNow.
+        /// Call <see cref="NotifyChanged"/> once after the import loop.
+        /// </summary>
+        public void ImportEntry(UserListEntry entry)
+        {
+            _entries[entry.Anime.Id] = entry;
+        }
+
+        /// <summary>
+        /// Fires OnChanged manually — call once after a batch of
+        /// <see cref="ImportEntry"/> calls to avoid redundant UI refreshes.
+        /// </summary>
+        public void NotifyChanged() => OnChanged?.Invoke();
 
         public void Remove(int animeId)
         {

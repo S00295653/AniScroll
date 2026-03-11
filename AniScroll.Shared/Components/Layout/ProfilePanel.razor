@@ -393,6 +393,10 @@
             }
         }
 
+        // Single notification after the full batch — preserves ordering and avoids
+        // redundant UI re-renders on every SaveEntry call.
+        UserListService.NotifyChanged();
+
         if (showUI)
         {
             _state = PanelState.Done;
@@ -467,33 +471,37 @@
         return (map, newCount);
     }
 
-    /// <summary>Converts an AniList entry into a UserListEntry and saves it.</summary>
+    /// <summary>
+    /// Converts an AniList entry into a UserListEntry and queues it for import.
+    /// Uses ImportEntry (not SaveEntry) to preserve the original AniList timestamps.
+    /// </summary>
     private void ApplyEntry(AniListImportEntry src, Dictionary<string, string> customListMap)
     {
         if (src.AnimeCard.Id == 0 && src.MediaId == 0) return;
 
         if (src.AnimeCard.Id == 0) src.AnimeCard.Id = src.MediaId;
 
-        var existing = UserListService.GetEntry(src.AnimeCard.Id)
-                    ?? new UserListEntry { Anime = src.AnimeCard, AddedAt = DateTime.Now };
+        var listEntry = new UserListEntry
+        {
+            Anime = src.AnimeCard,
+            Status = MapStatus(src.AniListStatus),
+            Score = src.Score,
+            EpisodesWatched = src.Progress,
+            TotalRewatches = src.Repeat,
+            Notes = src.Notes,
+            IsPrivate = src.IsPrivate,
+            HideFromStatusLists = src.HideFromStatusLists,
+            StartDate = src.StartedAt,
+            FinishDate = src.CompletedAt,
+            AddedAt = src.CreatedAt,   // ← timestamp AniList original
+            UpdatedAt = src.UpdatedAt,   // ← timestamp AniList original ✓
+            CustomListIds = src.CustomListNames
+                                     .Where(n => customListMap.ContainsKey(n))
+                                     .Select(n => customListMap[n])
+                                     .ToList(),
+        };
 
-        existing.Anime = src.AnimeCard;
-        existing.Status = MapStatus(src.AniListStatus);
-        existing.Score = src.Score;
-        existing.EpisodesWatched = src.Progress;
-        existing.TotalRewatches = src.Repeat;
-        existing.Notes = src.Notes;
-        existing.IsPrivate = src.IsPrivate;
-        existing.HideFromStatusLists = src.HideFromStatusLists;
-        existing.StartDate = src.StartedAt;
-        existing.FinishDate = src.CompletedAt;
-
-        existing.CustomListIds = src.CustomListNames
-            .Where(n => customListMap.ContainsKey(n))
-            .Select(n => customListMap[n])
-            .ToList();
-
-        UserListService.SaveEntry(existing);
+        UserListService.ImportEntry(listEntry); // ← pas SaveEntry !
     }
 
     private static ListStatus? MapStatus(string s) => s switch
