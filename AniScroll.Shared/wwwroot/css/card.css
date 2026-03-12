@@ -191,11 +191,22 @@
 }
 
 .swipe-feather-right {
-    background: linear-gradient( to left, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.10) 12%, rgba(34, 197, 94, 0.038) 32%, rgba(34, 197, 94, 0.010) 58%, transparent 100% );
+    background: linear-gradient( to left, rgba(34, 197, 94, 0.38) 0%, rgba(34, 197, 94, 0.22) 14%, rgba(34, 197, 94, 0.10) 36%, rgba(34, 197, 94, 0.025) 62%, transparent 100% );
 }
 
 .swipe-feather-left {
-    background: linear-gradient( to right, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.10) 12%, rgba(99, 102, 241, 0.038) 32%, rgba(99, 102, 241, 0.010) 58%, transparent 100% );
+    background: linear-gradient( to right, rgba(99, 102, 241, 0.38) 0%, rgba(99, 102, 241, 0.22) 14%, rgba(99, 102, 241, 0.10) 36%, rgba(99, 102, 241, 0.025) 62%, transparent 100% );
+}
+
+/* On desktop, tone it back down to the original subtlety */
+@media (min-width: 768px) {
+    .swipe-feather-right {
+        background: linear-gradient( to left, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.10) 12%, rgba(34, 197, 94, 0.038) 32%, rgba(34, 197, 94, 0.010) 58%, transparent 100% );
+    }
+
+    .swipe-feather-left {
+        background: linear-gradient( to right, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.10) 12%, rgba(99, 102, 241, 0.038) 32%, rgba(99, 102, 241, 0.010) 58%, transparent 100% );
+    }
 }
 
 /* ── Hint pills ── */
