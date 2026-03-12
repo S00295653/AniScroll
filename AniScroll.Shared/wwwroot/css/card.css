@@ -85,7 +85,7 @@
     height: 100%;
     padding: 16px 20px 110px;
     box-sizing: border-box;
-    overflow: visible;
+    overflow: hidden;
 }
 
 @media (min-width: 768px) {
@@ -93,6 +93,7 @@
         max-width: 600px;
         margin: 0 auto;
         padding: 30px 30px 30px;
+        overflow: hidden;
     }
 }
 
@@ -112,6 +113,7 @@
     align-items: center;
     padding: 6px 0;
     overflow: hidden;
+    position: relative;
 }
 
 /* ========== ANIME IMAGE ========== */
@@ -125,13 +127,28 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
+    /* Pas de box-shadow — on utilise ::after pour un vrai dégradé en bas */
+    box-shadow: none;
     cursor: pointer;
     image-rendering: auto;
     -webkit-image-rendering: auto;
     flex-shrink: 0;
     will-change: transform;
+    position: relative;
 }
+
+    /* Dégradé en bas de l'image — fondu naturel vers le fond sombre */
+    .anime-image::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 45%;
+        background: linear-gradient( to bottom, transparent 0%, rgba(0, 0, 0, 0.50) 60%, rgba(0, 0, 0, 0.80) 100% );
+        border-radius: 0 0 8px 8px;
+        pointer-events: none;
+    }
 
     .anime-image.image-with-transition {
         transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -178,7 +195,7 @@
     background: linear-gradient( to right, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.10) 12%, rgba(99, 102, 241, 0.038) 32%, rgba(99, 102, 241, 0.010) 58%, transparent 100% );
 }
 
-/* ── Hint pill — AGRANDIES ── */
+/* ── Hint pills ── */
 .swipe-hint {
     position: absolute;
     top: 50%;
@@ -191,8 +208,10 @@
     border-radius: 16px;
     pointer-events: none;
     white-space: nowrap;
+    /* blur d'avant — sans brightness */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.45);
 }
 
     .swipe-hint span {
@@ -209,18 +228,16 @@
 
 .swipe-hint-right {
     right: 12px;
-    border: 1.5px solid rgba(34, 197, 94, 0.55);
-    background: rgba(34, 197, 94, 0.18);
+    border: 1.5px solid rgba(34, 197, 94, 0.60);
     color: rgba(134, 239, 172, 0.98);
-    box-shadow: 0 0 28px rgba(34, 197, 94, 0.30), inset 0 0 16px rgba(34, 197, 94, 0.10);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.22);
 }
 
 .swipe-hint-left {
     left: 12px;
-    border: 1.5px solid rgba(99, 102, 241, 0.55);
-    background: rgba(99, 102, 241, 0.18);
+    border: 1.5px solid rgba(99, 102, 241, 0.60);
     color: rgba(165, 180, 252, 0.98);
-    box-shadow: 0 0 28px rgba(99, 102, 241, 0.30), inset 0 0 16px rgba(99, 102, 241, 0.10);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.22);
 }
 
 @media (min-width: 768px) {
