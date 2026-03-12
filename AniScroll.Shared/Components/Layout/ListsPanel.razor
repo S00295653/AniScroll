@@ -317,15 +317,15 @@
             if (o.YearFrom.HasValue || o.YearTo.HasValue) n++;
             if (o.ScoreFrom.HasValue || o.ScoreTo.HasValue) n++;
             if (o.EpFrom.HasValue || o.EpTo.HasValue) n++;
-            if (o.AiringStatuses.Any()) n++;
-            if (o.Formats.Any()) n++;
-            if (o.Seasons.Any()) n++;
-            if (o.Genres.Any()) n++;
-            if (o.Studios.Any()) n++;
-            if (o.Tags.Any()) n++;
-            if (o.Sources.Any()) n++;
-            if (o.Platforms.Any()) n++;
-            if (o.Countries.Any()) n++;
+            n += o.AiringStatuses.Count;
+            n += o.Formats.Count;
+            n += o.Seasons.Count;
+            n += o.Genres.Count;
+            n += o.Studios.Count;
+            n += o.Tags.Count;
+            n += o.Sources.Count;
+            n += o.Platforms.Count;
+            n += o.Countries.Count;
             if (o.Adult.HasValue) n++;
             return n;
         }
