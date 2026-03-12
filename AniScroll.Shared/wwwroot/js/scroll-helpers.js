@@ -497,6 +497,9 @@ window.registerEscapeKey = function (dotNet) {
 
     _escHandler = function (e) {
         if (e.key === 'Escape') {
+            // If the Sort & Filter popup is open it has its own keydown handler
+            // and handles Escape itself — don't let the global handler also fire.
+            if (document.querySelector('.sfp-overlay')) return;
             e.preventDefault();
             _escDotNet.invokeMethodAsync('HandleEscapeKey');
         }
