@@ -740,7 +740,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 18px 20px;
+    padding: 26px 18px 20px;
     border-top: 1px solid var(--sfp-border);
     flex-shrink: 0;
     background: var(--sfp-bg);
@@ -937,10 +937,7 @@
 
 /* Wrapper pour le bouton random + label d'erreur */
 .sfp-random-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
+    position: relative;
     flex-shrink: 0;
 }
 
@@ -956,12 +953,17 @@
     }
 
 .sfp-random-error {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 10px;
     font-weight: 700;
     color: #f87171;
     letter-spacing: .03em;
     white-space: nowrap;
     animation: sfp-fade-in .2s ease;
+    pointer-events: none;
 }
 
 @keyframes sfp-shake {

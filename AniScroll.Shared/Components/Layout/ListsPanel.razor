@@ -10,8 +10,9 @@
     <div class="lists-overlay" @onclick="() => { CloseAllDropdowns(); Close(); }">
         <div class="lists-panel"
              @onclick:stopPropagation="true"
+             @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                            transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -453,6 +454,12 @@
     private void ClearCustomFilters() { _selectedCustomListIds.Clear(); _customDropdownOpen = false; StateHasChanged(); }
 
     private void Close() => OnClose.InvokeAsync();
+    private async Task OnPanelKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && !_showSortFilter)
+            await OnClose.InvokeAsync();
+    }
+
     private async Task HandleEntryClick(UserListEntry entry) { CloseAllDropdowns(); await OnAnimeSelected.InvokeAsync(entry.Anime); }
 
     private void HandleTouchStart(TouchEventArgs e)

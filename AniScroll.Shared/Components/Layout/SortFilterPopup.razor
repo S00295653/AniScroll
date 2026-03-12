@@ -6,7 +6,8 @@
 
 @if (IsVisible)
 {
-    <div class="sfp-overlay" @onclick="OnOverlayClick" @onpointerdown="() => _pointerDownOnOverlay = true">
+    <div class="sfp-overlay" @onclick="OnOverlayClick" @onpointerdown="() => _pointerDownOnOverlay = true"
+         @onkeydown:stopPropagation="true">
         <div class="sfp-panel" @onclick:stopPropagation="true" @onpointerdown:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true">
 
