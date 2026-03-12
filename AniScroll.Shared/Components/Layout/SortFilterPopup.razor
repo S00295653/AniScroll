@@ -721,7 +721,7 @@
         if (_yearFrom  > _yearTo)  (_yearFrom,  _yearTo)  = (_yearTo,  _yearFrom);
         if (_scoreFrom > _scoreTo) (_scoreFrom, _scoreTo) = (_scoreTo, _scoreFrom);
         if (_epFrom    > _epTo)    (_epFrom,    _epTo)    = (_epTo,    _epFrom);
-        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+        _resultCount = CountResults();
         _ = EnsureMetadataAsync();
     }
 
@@ -938,7 +938,7 @@
         _ = Task.Delay(100, token).ContinueWith(_ =>
         {
             if (token.IsCancellationRequested) return;
-            _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+            _resultCount = CountResults();
             InvokeAsync(StateHasChanged);
         }, TaskContinuationOptions.NotOnCanceled);
     }
@@ -946,7 +946,16 @@
     private void ToggleFilter(HashSet<string> set, string value)
     {
         if (!set.Remove(value)) set.Add(value);
-        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+        _resultCount = CountResults();
+    }
+
+    private int CountResults()
+    {
+        var opts = BuildOptions();
+        var q = AllEntries.Where(e => PassesFilters(e, opts));
+        if (opts.Sort == SortMode.Favourites)
+            q = q.Where(e => UserListService.IsFavorited(e.Anime.Id));
+        return q.Count();
     }
 
     private SortFilterOptions BuildOptions() => new()
@@ -1000,7 +1009,7 @@
         _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
         _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10;
         _epFrom = 1; _epTo = _maxEp;
-        _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions()));
+        _resultCount = CountResults();
     }
 
     private async Task Apply() { await OnApply.InvokeAsync(BuildOptions()); await OnClose.InvokeAsync(); }
@@ -1064,7 +1073,9 @@
     // Standard single-state sort chip (radio behaviour).
     private RenderFragment SortChip(SortMode mode, string label) =>
         @<button class="sfp-chip @(_sort == mode ? "sfp-chip-on" : "")"
-        @onclick="() => { _sort = mode; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">@label</button>;
+    @onclick="() => { _sort = mode; _resultCount = CountResults(); }">
+    @label
+    </button>;
 
     // 2-state sort chip: asc ↔ desc, toggle entre les deux.
     private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
