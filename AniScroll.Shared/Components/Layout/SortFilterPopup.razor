@@ -706,7 +706,7 @@
 
             if (_isDisposed || !IsVisible) return;
 
-            if (firstRender && !_jsReady)
+            if (!_jsReady)
             {
                 await JS.InvokeVoidAsync("eval", @"
                 if (!window.sfpTrackClick) {

@@ -494,17 +494,17 @@ window.sfpUnregisterEscape = function () { _sfpEscDotNet = null; };
 window.registerEscapeKey = function (dotNet) {
     _escDotNet = dotNet;
 
-    // Remove any previous listener before adding a new one
     if (_escHandler) {
-        document.removeEventListener('keydown', _escHandler);
+        document.removeEventListener('keydown', _escHandler, { capture: true });
     }
 
     _escHandler = function (e) {
         if (e.key === 'Escape') {
             if (document.querySelector('.sfp-overlay')) {
-                // SFP is open — delegate to its own handler
+                // SFP ouvert : on intercepte l'event en capture avant Blazor
+                e.preventDefault();
+                e.stopPropagation();          // ← empêche Blazor de voir l'event
                 if (_sfpEscDotNet) {
-                    e.preventDefault();
                     _sfpEscDotNet.invokeMethodAsync('HandleEscapeFromJS');
                 }
                 return;
@@ -514,12 +514,13 @@ window.registerEscapeKey = function (dotNet) {
         }
     };
 
-    document.addEventListener('keydown', _escHandler);
+    // capture: true → on intercepte avant tous les handlers bubble (dont Blazor)
+    document.addEventListener('keydown', _escHandler, { capture: true });
 };
 
 window.unregisterEscapeKey = function () {
     if (_escHandler) {
-        document.removeEventListener('keydown', _escHandler);
+        document.removeEventListener('keydown', _escHandler, { capture: true });
         _escHandler = null;
     }
     _escDotNet = null;
