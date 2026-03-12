@@ -648,6 +648,8 @@ window.unregisterEscapeKey = function () {
                 const img = q('.anime-image');
                 if (img) {
                     img.classList.add('image-with-transition');
+                    void img.offsetWidth; // force reflow — without this the browser batches
+                    // the class + transform change and skips the transition
                     img.style.transform = '';
                     setTimeout(() => img.classList.remove('image-with-transition'), 300);
                 }
