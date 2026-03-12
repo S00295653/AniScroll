@@ -142,59 +142,89 @@ namespace AniScroll.Shared.Services
         }
 
         /// <summary>
-        /// Paginates through AniList studios (50 per page) and caches the result.
-        /// Calls <paramref name="onBatch"/> after every 5 pages so the UI can refresh
-        /// progressively. Uses ≈ 20 req/min to stay safely under the 30/min rate limit.
-        /// Safe to call multiple times — subsequent calls are no-ops while loading or
-        /// once fully cached.
+        /// Fetches all AniList studios using batched multi-page GraphQL aliases.
+        /// Each request fetches <c>BATCH_SIZE</c> pages at once, reducing total
+        /// API calls by ~8× compared to one-page-per-request.
+        /// Budget: ~1 request / 4 s  =  15 req/min, leaving 15/min for user actions.
+        /// Terminates naturally when every page in a batch reports hasNextPage=false.
         /// </summary>
         public async Task FetchAllStudiosAsync(Func<Task>? onBatch = null)
         {
             if (_cachedStudios != null || _studiosLoading) return;
             _studiosLoading = true;
 
+            const int BATCH_SIZE = 8;   // pages per GraphQL request
+            const int BATCH_DELAY = 4000; // ms between requests ≈ 15 req/min
+
             var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            int page = 1;
+            int batchStart = 1;
 
             try
             {
-                while (page <= 50) // cap at 2 500 studios
+                while (true)
                 {
-                    // Yield if rate-limited
+                    // Yield until rate-limit window resets
                     while (IsRateLimited()) await Task.Delay(2000);
 
-                    var q = $@"query {{
-                        Page(page: {page}, perPage: 50) {{
-                            pageInfo {{ hasNextPage }}
-                            studios {{ name }}
-                        }}
-                    }}";
-
-                    var resp = await PostGraphQL(q);
-                    if (resp == null) break;
-
-                    var pd   = JObject.Parse(resp)?["data"]?["Page"];
-                    var stds = pd?["studios"];
-                    if (stds != null)
-                        foreach (var s in stds)
-                        {
-                            var n = s["name"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(n)) all.Add(n);
-                        }
-
-                    // Progressive cache update every 5 pages
-                    if (page % 5 == 0)
+                    // Build one query with BATCH_SIZE page aliases
+                    var sb = new System.Text.StringBuilder("query {");
+                    for (int i = 0; i < BATCH_SIZE; i++)
                     {
-                        _cachedStudios = all.OrderBy(x => x).ToList();
-                        if (onBatch != null) await onBatch();
+                        int p = batchStart + i;
+                        sb.Append($" p{p}: Page(page: {p}, perPage: 50) {{")
+                          .Append(" pageInfo { hasNextPage }")
+                          .Append(" studios { name }")
+                          .Append(" }");
+                    }
+                    sb.Append(" }");
+
+                    string? resp = null;
+                    try { resp = await PostGraphQL(sb.ToString()); }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync batch {batchStart} error: {ex.Message}");
                     }
 
-                    bool hasNext = pd?["pageInfo"]?["hasNextPage"]?.Value<bool>() ?? false;
-                    if (!hasNext) break;
+                    if (resp == null) break;
 
-                    page++;
-                    await Task.Delay(3000); // ≈ 20 req/min — leaves headroom for user actions
+                    JObject? data = null;
+                    try { data = JObject.Parse(resp)?["data"] as JObject; }
+                    catch { /* malformed JSON – stop */ break; }
+                    if (data == null) break;
+
+                    bool anyHasNext = false;
+
+                    for (int i = 0; i < BATCH_SIZE; i++)
+                    {
+                        int p = batchStart + i;
+                        var pd = data[$"p{p}"];
+                        if (pd == null) continue;
+
+                        var stds = pd["studios"];
+                        if (stds != null)
+                            foreach (var s in stds)
+                            {
+                                var n = s["name"]?.ToString();
+                                if (!string.IsNullOrWhiteSpace(n)) all.Add(n);
+                            }
+
+                        if (pd["pageInfo"]?["hasNextPage"]?.Value<bool>() == true)
+                            anyHasNext = true;
+                    }
+
+                    // Progressive UI update after every batch
+                    _cachedStudios = all.OrderBy(x => x).ToList();
+                    if (onBatch != null) await onBatch();
+
+                    if (!anyHasNext) break; // all pages exhausted
+
+                    batchStart += BATCH_SIZE;
+                    await Task.Delay(BATCH_DELAY);
                 }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync fatal: {ex.Message}");
             }
             finally
             {

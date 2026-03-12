@@ -1080,10 +1080,14 @@
     // 2-state sort chip: asc ↔ desc, toggle entre les deux.
     private RenderFragment ThreeStateChip(SortMode asc, SortMode desc, string label) =>
         @<button class="sfp-chip sfp-chip-3state @(_sort == asc || _sort == desc ? "sfp-chip-on" : "")"
-@onclick="() => { _sort = _sort == asc ? desc : asc; _resultCount = AllEntries.Count(e => PassesFilters(e, BuildOptions())); }">
-            @label
-            @if (_sort == asc)  { <span class="sfp-sort-arrow">↑</span> }
-            @if (_sort == desc) { <span class="sfp-sort-arrow">↓</span> }
+        @onclick="() => { _sort = _sort == asc ? desc : asc; _resultCount = CountResults(); }">
+        @label
+        @if (_sort == asc)  {
+            <span class="sfp-sort-arrow">↑</span>
+            }
+        @if (_sort == desc) {
+            <span class="sfp-sort-arrow">↓</span>
+           }
         </button>;
 
     private static readonly HashSet<string> _sfpColorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
