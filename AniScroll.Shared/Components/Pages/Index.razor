@@ -56,30 +56,40 @@
                              style="opacity:@_rOp.ToString("F3", _ic)"></div>
                         <div class="swipe-feather swipe-feather-left"
                              style="opacity:@_lOp.ToString("F3", _ic)"></div>
-
-                        <div class="swipe-hint swipe-hint-right"
-                             style="opacity:@_rOp.ToString("F3", _ic)">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.8"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            <span>Completed</span>
-                        </div>
-
-                        <div class="swipe-hint swipe-hint-left"
-                             style="opacity:@_lOp.ToString("F3", _ic)">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            <span>Planning</span>
-                        </div>
                     }
 
                     <div class="content-wrapper">
                         <div class="image-section">
+                            @* ── Hints déplacés ici : top:50% = mi-hauteur image ── *@
+                            @if (isVisible)
+                            {
+                                var _ic2 = System.Globalization.CultureInfo.InvariantCulture;
+                                var _rOp2 = currentDragXOffset > 5
+                                ? Math.Min(1.0, (currentDragXOffset - 5.0) / 50.0) : 0.0;
+                                var _lOp2 = currentDragXOffset < -5
+                                ? Math.Min(1.0, (-currentDragXOffset - 5.0) / 50.0) : 0.0;
+
+                                <div class="swipe-hint swipe-hint-right"
+                                     style="opacity:@_rOp2.ToString("F3", _ic2)">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2.8"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    <span>Completed</span>
+                                </div>
+
+                                <div class="swipe-hint swipe-hint-left"
+                                     style="opacity:@_lOp2.ToString("F3", _ic2)">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" stroke-width="2.5"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>Planning</span>
+                                </div>
+                            }
+
                             <div class="anime-image @GetImageTransitionClass(index)"
                                  style="background-image: url('@anime.ImageUrl'); @GetImageTransform(index)"
                                  @onclick="async () => await HandleImageClick(anime)"></div>
