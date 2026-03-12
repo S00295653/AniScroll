@@ -934,3 +934,55 @@
 .sfp-num-year {
     width: 66px
 }
+
+/* Wrapper pour le bouton random + label d'erreur */
+.sfp-random-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.sfp-random-btn-error {
+    background: rgba(239,68,68,.18) !important;
+    border-color: rgba(239,68,68,.55) !important;
+    color: #f87171 !important;
+    animation: sfp-shake .35s cubic-bezier(.36,.07,.19,.97);
+}
+
+    .sfp-random-btn-error svg {
+        opacity: 1 !important;
+    }
+
+.sfp-random-error {
+    font-size: 10px;
+    font-weight: 700;
+    color: #f87171;
+    letter-spacing: .03em;
+    white-space: nowrap;
+    animation: sfp-fade-in .2s ease;
+}
+
+@keyframes sfp-shake {
+    0%,100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-4px);
+    }
+
+    40% {
+        transform: translateX(4px);
+    }
+
+    60% {
+        transform: translateX(-3px);
+    }
+
+    80% {
+        transform: translateX(3px);
+    }
+}
+ 

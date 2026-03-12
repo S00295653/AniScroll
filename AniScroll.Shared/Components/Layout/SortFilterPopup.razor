@@ -26,7 +26,7 @@
                     {
                         <button class="sfp-reset-btn" @onclick="Reset">Reset all</button>
                     }
-                    <button class="sfp-close-btn" @onclick="Close">
+                    <button class="sfp-close-btn" @onclick="Apply">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
                             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
@@ -488,15 +488,33 @@
 
             <!-- Footer -->
             <div class="sfp-footer">
-                <button class="sfp-random-btn" @onclick="PickRandom" title="Random anime from current filters">
-                    <svg width="30" height="30" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="400 304 448 352 400 400" />
-                        <polyline points="400 112 448 160 400 208" />
-                        <path d="M64 352h85.19a80 80 0 0066.56-35.62L256 256" />
-                        <path d="M64 160h85.19a80 80 0 0166.56 35.62l80.5 120.76A80 80 0 00362.81 352H416" />
-                        <path d="M416 160h-53.19a80 80 0 00-66.56 35.62L288 208" />
-                    </svg>
-                </button>
+                <div class="sfp-random-wrap">
+                    <button class="sfp-random-btn @(_randomNoResults ? "sfp-random-btn-error" : "")"
+                            @onclick="PickRandom" title="Random anime from current filters">
+                        @if (_randomNoResults)
+                        {
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg width="30" height="30" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="400 304 448 352 400 400" />
+                                <polyline points="400 112 448 160 400 208" />
+                                <path d="M64 352h85.19a80 80 0 0066.56-35.62L256 256" />
+                                <path d="M64 160h85.19a80 80 0 0166.56 35.62l80.5 120.76A80 80 0 00362.81 352H416" />
+                                <path d="M416 160h-53.19a80 80 0 00-66.56 35.62L288 208" />
+                            </svg>
+                        }
+                    </button>
+                    @if (_randomNoResults)
+                    {
+                        <span class="sfp-random-error">No results</span>
+                    }
+                </div>
                 <button class="sfp-apply-btn" @onclick="Apply">
                     Show <span class="sfp-result-count">@_resultCount</span> result@(_resultCount != 1 ? "s" : "")
                 </button>
@@ -604,6 +622,7 @@
     private int    _maxEp   = 1;
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
+    private bool _randomNoResults = false;
 
     // ── Fill styles ──────────────────────────────────────────────────────────
 
@@ -1009,6 +1028,7 @@
         _genreDropdownOpen = false; _tagDropdownOpen = false; _studioDropdownOpen = false;
         _yearFrom = _minYear; _yearTo = _maxYear; _scoreFrom = 0; _scoreTo = 10;
         _epFrom = 1; _epTo = _maxEp;
+        _randomNoResults = false;
         _resultCount = CountResults();
     }
 
@@ -1023,16 +1043,32 @@
 
     private async Task OnPanelKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Escape") await Close();
+        if (e.Key == "Escape") await Apply();
     }
 
     private Task Close() => OnClose.InvokeAsync();
 
     private async Task PickRandom()
     {
-        var opts    = BuildOptions();
+        var opts = BuildOptions();
         var matches = AllEntries.Where(e => PassesFilters(e, opts)).ToList();
-        if (!matches.Any()) { matches = AllEntries.ToList(); if (!matches.Any()) return; }
+        if (opts.Sort == SortMode.Favourites)
+            matches = matches.Where(e => UserListService.IsFavorited(e.Anime.Id)).ToList();
+
+        if (!matches.Any())
+        {
+            _randomNoResults = true;
+            StateHasChanged();
+            // Auto-clear after 2.5 s
+            _ = Task.Delay(2500).ContinueWith(_ => InvokeAsync(() =>
+            {
+                _randomNoResults = false;
+                StateHasChanged();
+            }));
+            return;
+        }
+
+        _randomNoResults = false;
         matches = ApplySort(matches, opts.Sort);
         var picked = matches[new Random().Next(matches.Count)];
         await OnApply.InvokeAsync(opts);

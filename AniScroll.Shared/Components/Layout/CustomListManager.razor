@@ -394,6 +394,18 @@
         _confirmDeleteVisible = false;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsVisible)
+        {
+            try { await JS.InvokeVoidAsync("preventWheelScroll", _panelRef); } catch { }
+        }
+        else
+        {
+            try { await JS.InvokeVoidAsync("removeWheelScrollPrevention", _panelRef); } catch { }
+        }
+    }
+
     public void Dispose() => _dotNetRef?.Dispose();
 
     // ── RebuildRows ───────────────────────────────────────────────────────
