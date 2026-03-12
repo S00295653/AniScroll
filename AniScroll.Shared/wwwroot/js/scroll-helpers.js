@@ -623,6 +623,8 @@ window.unregisterEscapeKey = function () {
         paint();
     }
 
+    const HORIZ_THRESHOLD = 85;
+
     function onEnd() {
         if (!isDragging) return;
         isDragging = false;
@@ -630,6 +632,28 @@ window.unregisterEscapeKey = function () {
             suppressNextClick = true;
             setTimeout(() => { suppressNextClick = false; }, 100);
         }
+
+        // Snap-back: Blazor's vdom diff won't touch the DOM if style didn't change
+        // in its own render tree, so we animate back to center in JS directly.
+        if (axis === 'horizontal' && Math.abs(curX) < HORIZ_THRESHOLD) {
+            const c = card();
+            if (c) {
+                const q = s => c.querySelector(s);
+                // Fade out feathers & hints immediately
+                ['.swipe-feather-right', '.swipe-feather-left',
+                    '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
+                        const el = q(sel); if (el) el.style.opacity = 0;
+                    });
+                // Animate image back to center
+                const img = q('.anime-image');
+                if (img) {
+                    img.classList.add('image-with-transition');
+                    img.style.transform = '';
+                    setTimeout(() => img.classList.remove('image-with-transition'), 300);
+                }
+            }
+        }
+
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
