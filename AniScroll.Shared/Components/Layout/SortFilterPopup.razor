@@ -1047,7 +1047,7 @@
 
     private List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
-        SortMode.Favourites => list.OrderByDescending(e => UserListService.IsFavorited(e.Anime.Id)).ThenByDescending(e => e.UpdatedAt).ToList(),
+        SortMode.Favourites => list.Where(e => UserListService.IsFavorited(e.Anime.Id)).OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)).ToList(),
         SortMode.TitleAZ => list.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase).ToList(),
         SortMode.TitleZA => list.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase).ToList(),
         SortMode.MyScoreDesc => list.OrderByDescending(e => e.Score).ToList(),

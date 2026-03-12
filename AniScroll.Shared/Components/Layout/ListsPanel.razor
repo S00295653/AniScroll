@@ -233,7 +233,13 @@
                                                                 @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
-                                <div class="entry-title">@e.Anime.Title</div>
+                                <div class="entry-title">
+                                    @e.Anime.Title
+                                    @if (UserListService.IsFavorited(e.Anime.Id))
+                                    {
+                                        <span class="entry-fav-badge" title="Favourited">♥</span>
+                                    }
+                                </div>
                                 @{
                                     var metaParts = new List<string>();
                                     if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
@@ -417,8 +423,8 @@
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
             SortFilterPopup.SortMode.Favourites => entries
-                .OrderByDescending(e => UserListService.IsFavorited(e.Anime.Id))
-                .ThenByDescending(e => e.UpdatedAt),
+                 .Where(e => UserListService.IsFavorited(e.Anime.Id))
+                 .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
             _ => entries.OrderByDescending(e => e.UpdatedAt),
          };
 

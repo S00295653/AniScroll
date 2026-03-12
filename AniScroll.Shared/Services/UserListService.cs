@@ -5,25 +5,40 @@ namespace AniScroll.Shared.Services
     public class UserListService
     {
         private readonly Dictionary<int, UserListEntry> _entries = new();
-        private readonly HashSet<int> _favorites = new();
+
+        // Key = animeId, Value = UTC timestamp when it was favourited
+        // (most recently favourited → highest DateTime)
+        private readonly Dictionary<int, DateTime> _favorites = new();
 
         public event Action? OnChanged;
 
         // ── Favorites ─────────────────────────────────────────────────────────
 
-        public bool IsFavorited(int animeId) => _favorites.Contains(animeId);
+        public bool IsFavorited(int animeId) => _favorites.ContainsKey(animeId);
+
+        /// <summary>Returns the UTC time at which this anime was favourited, or MinValue.</summary>
+        public DateTime GetFavoritedAt(int animeId) =>
+            _favorites.TryGetValue(animeId, out var dt) ? dt : DateTime.MinValue;
 
         /// <summary>Toggles the favourite state. Returns the new state.</summary>
         public bool ToggleFavorite(int animeId)
         {
             bool isFav;
-            if (!_favorites.Remove(animeId)) { _favorites.Add(animeId); isFav = true; }
-            else isFav = false;
+            if (_favorites.ContainsKey(animeId))
+            {
+                _favorites.Remove(animeId);
+                isFav = false;
+            }
+            else
+            {
+                _favorites[animeId] = DateTime.UtcNow;
+                isFav = true;
+            }
             OnChanged?.Invoke();
             return isFav;
         }
 
-        public IReadOnlyCollection<int> GetFavoriteIds() => _favorites;
+        public IReadOnlyCollection<int> GetFavoriteIds() => _favorites.Keys.ToList();
 
         public bool IsInList(int animeId) => _entries.ContainsKey(animeId);
 

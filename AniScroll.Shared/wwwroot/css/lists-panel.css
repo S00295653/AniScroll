@@ -431,3 +431,13 @@
     color: #fbbf24 !important;
     background: rgba(251,191,36,0.08) !important;
 }
+
+.entry-fav-badge {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 11px;
+    color: #f43f5e;
+    vertical-align: middle;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px #f43f5e88);
+}
