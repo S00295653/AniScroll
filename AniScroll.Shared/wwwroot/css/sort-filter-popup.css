@@ -740,7 +740,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 26px 18px 20px;
+    padding: 20px 18px 20px;
     border-top: 1px solid var(--sfp-border);
     flex-shrink: 0;
     background: var(--sfp-bg);
@@ -954,7 +954,7 @@
 
 .sfp-random-error {
     position: absolute;
-    bottom: calc(100% + 6px);
+    bottom: calc(100% + 5px);
     left: 50%;
     transform: translateX(-50%);
     font-size: 10px;
