@@ -416,10 +416,10 @@
 
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
-            SortFilterPopup.SortMode.Favourites =>
-               entries.OrderByDescending(e => UserListService.IsFavorited(e.Anime.Id))
-                      .ThenByDescending(e => e.UpdatedAt),
-            _ => entries.OrderByDescending(e => e.UpdatedAt), // RecentlyUpdated
+            SortFilterPopup.SortMode.Favourites => entries
+                .OrderByDescending(e => UserListService.IsFavorited(e.Anime.Id))
+                .ThenByDescending(e => e.UpdatedAt),
+            _ => entries.OrderByDescending(e => e.UpdatedAt),
          };
 
         return entries;
