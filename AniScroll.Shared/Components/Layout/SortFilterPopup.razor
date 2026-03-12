@@ -627,6 +627,20 @@
     private bool _randomNoResults = false;
     private DotNetObjectReference<SortFilterPopup>? _selfRef;
 
+    private bool _isDisposed;
+
+    public void Dispose()
+    {
+        _isDisposed = true;          // ← nouveau : bloque les callbacks en vol
+        _debounceCtS?.Cancel();
+        if (_selfRef != null)
+        {
+            _ = JS.InvokeVoidAsync("sfpUnregisterEscape");
+            _selfRef.Dispose();
+            _selfRef = null;
+        }
+    }
+
     // ── Fill styles ──────────────────────────────────────────────────────────
 
     private string YearFillStyle
@@ -687,6 +701,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_isDisposed) return;
+
         if (IsVisible && _selfRef == null)
         {
             _selfRef = DotNetObjectReference.Create(this);
@@ -697,44 +713,54 @@
             await JS.InvokeVoidAsync("sfpUnregisterEscape");
             _selfRef.Dispose();
             _selfRef = null;
+            return; // popup fermé → rien d'autre à faire
         }
+
+        if (!IsVisible) return; // garde : tout ce qui suit n'a de sens que popup ouvert
 
         if (firstRender && !_jsReady)
         {
             await JS.InvokeVoidAsync("eval", @"
-                if (!window.sfpTrackClick) {
-                    window.sfpTrackClick = function(el, clientX) {
-                        var r = el.getBoundingClientRect();
-                        return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
-                    };
-                }
-                if (!window.sfpSetValue) {
-                    window.sfpSetValue = function(el, val) {
-                        if (el) el.value = val;
-                    };
-                }
-                if (!window.sfpInitDualSlider) {
-                    window.sfpInitDualSlider = function(loEl, hiEl) {
-                        if (!loEl || !hiEl || loEl._sfpInited) return;
-                        loEl._sfpInited = true;
-                        loEl.addEventListener('input', function() {
-                            var hi = parseFloat(hiEl.value);
-                            if (parseFloat(loEl.value) > hi) loEl.value = hi;
-                        }, { capture: true });
-                        hiEl.addEventListener('input', function() {
-                            var lo = parseFloat(loEl.value);
-                            if (parseFloat(hiEl.value) < lo) hiEl.value = lo;
-                        }, { capture: true });
-                    };
-                }
-            ");
+            if (!window.sfpTrackClick) {
+                window.sfpTrackClick = function(el, clientX) {
+                    var r = el.getBoundingClientRect();
+                    return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
+                };
+            }
+            if (!window.sfpSetValue) {
+                window.sfpSetValue = function(el, val) {
+                    if (el) el.value = val;
+                };
+            }
+            if (!window.sfpInitDualSlider) {
+                window.sfpInitDualSlider = function(loEl, hiEl) {
+                    if (!loEl || !hiEl || loEl._sfpInited) return;
+                    loEl._sfpInited = true;
+                    loEl.addEventListener('input', function() {
+                        var hi = parseFloat(hiEl.value);
+                        if (parseFloat(loEl.value) > hi) loEl.value = hi;
+                    }, { capture: true });
+                    hiEl.addEventListener('input', function() {
+                        var lo = parseFloat(loEl.value);
+                        if (parseFloat(hiEl.value) < lo) hiEl.value = lo;
+                    }, { capture: true });
+                };
+            }
+        ");
             _jsReady = true;
         }
-        if (IsVisible && _jsReady)
+
+        if (_jsReady)
         {
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef,  _yearHiRef);
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
-            await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef,    _epHiRef);
+            // Les ElementReferences peuvent être invalides si un re-render concurrent a eu lieu
+            // (debounce, fetch metadata…). On absorbe silencieusement.
+            try
+            {
+                await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef, _yearHiRef);
+                await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
+                await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef, _epHiRef);
+            }
+            catch (Exception) { /* refs pas encore prêtes ou composant déjà démonté */ }
         }
     }
 
