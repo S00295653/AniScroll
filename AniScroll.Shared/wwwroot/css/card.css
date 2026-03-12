@@ -76,6 +76,23 @@
     background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.15) 60%, transparent 100%);
 }
 
+/* ========== CARD ENTRANCE ANIMATION ========== */
+@keyframes cardEntranceContent {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card-entering .content-wrapper {
+    animation: cardEntranceContent 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* ========== CONTENT WRAPPER ========== */
 .content-wrapper {
     position: relative;

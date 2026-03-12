@@ -672,6 +672,15 @@ window.unregisterEscapeKey = function () {
         axis = 'none'; hasMoved = false;
     };
 
+    window.animateCardEntrance = function () {
+        const c = card();
+        if (!c) return;
+        c.classList.remove('card-entering');
+        void c.offsetWidth; // force reflow so re-adding the class restarts the animation
+        c.classList.add('card-entering');
+        setTimeout(() => c.classList.remove('card-entering'), 420);
+    };
+
     // ── Native listeners ──────────────────────────────────────────────────────
 
     document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
