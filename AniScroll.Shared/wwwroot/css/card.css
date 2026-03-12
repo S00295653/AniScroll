@@ -85,7 +85,8 @@
     height: 100%;
     padding: 16px 20px 110px;
     box-sizing: border-box;
-    overflow: hidden;
+    /* overflow visible so the image is not clipped during horizontal swipe */
+    overflow: visible;
 }
 
 @media (min-width: 768px) {
@@ -93,7 +94,7 @@
         max-width: 600px;
         margin: 0 auto;
         padding: 30px 30px 30px;
-        overflow: hidden;
+        overflow: visible;
     }
 }
 
@@ -112,8 +113,10 @@
     justify-content: center;
     align-items: center;
     padding: 6px 0;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
+    /* Always on top of info-section so image never slides behind text */
+    z-index: 20;
 }
 
 /* ========== ANIME IMAGE ========== */
@@ -127,8 +130,8 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    /* Pas de box-shadow — on utilise ::after pour un vrai dégradé en bas */
-    box-shadow: none;
+    /* Restored drop shadow */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
     cursor: pointer;
     image-rendering: auto;
     -webkit-image-rendering: auto;
@@ -208,7 +211,6 @@
     border-radius: 16px;
     pointer-events: none;
     white-space: nowrap;
-    /* blur d'avant — sans brightness */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     background: rgba(0, 0, 0, 0.45);
