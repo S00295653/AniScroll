@@ -131,10 +131,8 @@
     -webkit-image-rendering: auto;
     flex-shrink: 0;
     will-change: transform;
-    /* No transition by default — added via class during swipe animation */
 }
 
-    /* Applied programmatically during fly-off and snap-back */
     .anime-image.image-with-transition {
         transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -161,129 +159,85 @@
 }
 
 
-/* ========================================================
-   HORIZONTAL SWIPE INDICATORS
-   ======================================================== */
+/* ======================================================
+   SWIPE INDICATORS — Feather doux
+   ====================================================== */
 
-/* ── Full-height edge glow strip ── */
-.swipe-edge-glow {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 18px; /* wider strip */
-    pointer-events: none;
-    z-index: 20;
-}
+/*
+  Two overlay divs per card (right = COMPLETED, left = PLANNING).
+  Opacity is driven inline by Blazor (0 → 1 as the drag progresses).
+  The gradient fades from the edge inward across ~78% of the screen width,
+  mimicking the "feather doux" from the preview tool.
+*/
 
-.swipe-edge-right {
-    right: 0;
-    background: linear-gradient(to left, rgba(34, 197, 94, 1) 0%, rgba(34, 197, 94, 0.5) 40%, transparent 100%);
-    box-shadow: 6px 0 40px 8px rgba(34, 197, 94, 0.6);
-}
-
-.swipe-edge-left {
-    left: 0;
-    background: linear-gradient(to right, rgba(99, 102, 241, 1) 0%, rgba(99, 102, 241, 0.5) 40%, transparent 100%);
-    box-shadow: -6px 0 40px 8px rgba(99, 102, 241, 0.6);
-}
-
-/* ── Full-card colour tint ── */
-.swipe-tint {
+.swipe-feather {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 4;
+    z-index: 5;
+    /* opacity set inline */
 }
 
-.swipe-tint-right {
-    background: linear-gradient( to right, transparent 20%, rgba(34, 197, 94, 0.26) 100% );
+/* Green feather — right edge → center */
+.swipe-feather-right {
+    background: linear-gradient( to left, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.10) 12%, rgba(34, 197, 94, 0.038) 32%, rgba(34, 197, 94, 0.010) 58%, transparent 100% );
 }
 
-.swipe-tint-left {
-    background: linear-gradient( to left, transparent 20%, rgba(99, 102, 241, 0.26) 100% );
+/* Indigo feather — left edge → center */
+.swipe-feather-left {
+    background: linear-gradient( to right, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.10) 12%, rgba(99, 102, 241, 0.038) 32%, rgba(99, 102, 241, 0.010) 58%, transparent 100% );
 }
 
-/* ── Badge (icon + label) ─────────────────────────────────────────────
-   Positioned inward from the edge so it's clearly visible,
-   vertically centred on the upper-half of the screen (where the
-   poster lives) rather than the absolute vertical middle.
-   ──────────────────────────────────────────────────────────────────── */
+/* ── Hint pill ── */
 .swipe-hint {
     position: absolute;
-    top: 28%; /* sits near the poster, not the text area */
+    top: 50%;
     transform: translateY(-50%);
     z-index: 30;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 100px;
     pointer-events: none;
-    padding: 20px 16px;
-    border-radius: 16px;
-    min-width: 76px;
-    text-align: center;
-    /* opacity driven inline; tiny transition for smoothness */
-    transition: opacity 0.05s linear;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    white-space: nowrap;
+    /* opacity driven inline */
 }
 
     .swipe-hint span {
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 1.8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
         text-transform: uppercase;
-        line-height: 1;
     }
 
-/* Right = COMPLETED (emerald green) */
 .swipe-hint-right {
-    right: 18px; /* inward from edge */
-    background: rgba(34, 197, 94, 0.20);
-    border: 2px solid rgba(34, 197, 94, 0.65);
-    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15), 0 0 32px rgba(34, 197, 94, 0.45), inset 0 0 24px rgba(34, 197, 94, 0.10);
-    color: #6ee7a0; /* brighter text */
+    right: 12px;
+    border: 0.5px solid rgba(34, 197, 94, 0.22);
+    color: rgba(134, 239, 172, 0.90); /* green-300 */
 }
 
-    .swipe-hint-right svg {
-        filter: drop-shadow(0 0 8px rgba(34, 197, 94, 1));
-    }
-
-/* Left = PLANNING (indigo) */
 .swipe-hint-left {
-    left: 18px; /* inward from edge */
-    background: rgba(99, 102, 241, 0.20);
-    border: 2px solid rgba(99, 102, 241, 0.65);
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15), 0 0 32px rgba(99, 102, 241, 0.45), inset 0 0 24px rgba(99, 102, 241, 0.10);
-    color: #c7d2fe; /* brighter text */
+    left: 12px;
+    border: 0.5px solid rgba(99, 102, 241, 0.22);
+    color: rgba(165, 180, 252, 0.90); /* indigo-300 */
 }
-
-    .swipe-hint-left svg {
-        filter: drop-shadow(0 0 8px rgba(99, 102, 241, 1));
-    }
 
 @media (min-width: 768px) {
     .swipe-hint {
-        padding: 24px 20px;
-        min-width: 88px;
-        border-radius: 18px;
-        top: 30%;
+        padding: 6px 13px;
     }
 
         .swipe-hint span {
-            font-size: 12px;
-            letter-spacing: 2px;
+            font-size: 11px;
+            letter-spacing: 1.4px;
         }
 
     .swipe-hint-right {
-        right: 26px;
+        right: 18px;
     }
 
     .swipe-hint-left {
-        left: 26px;
-    }
-
-    .swipe-edge-glow {
-        width: 22px;
+        left: 18px;
     }
 }
