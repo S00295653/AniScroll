@@ -28,7 +28,7 @@
             var distance = Math.Abs(index - currentIndex);
 
             <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
-                 style="@GetCardStyle(index)"
+                 style="transform: translateY(@GetCardTranslateY(index)px); height: @(CARD_HEIGHT)px;"
                  @onmousedown="(e) => HandleCardMouseDown(e, index)"
                  @onmousemove="HandleCardMouseMove"
                  @onmouseup="HandleCardMouseUp"
@@ -42,12 +42,14 @@
                     <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
                     <div class="gradient-overlay"></div>
 
-                    @* ── Swipe edge glows ── *@
+                    @* ── Swipe visual indicators (active card only) ── *@
                     @if (isVisible)
                     {
                         var _ic = System.Globalization.CultureInfo.InvariantCulture;
-                        var _rightOp = currentDragXOffset > 10 ? Math.Min(1.0, (currentDragXOffset - 10.0) / 65.0) : 0.0;
-                        var _leftOp = currentDragXOffset < -10 ? Math.Min(1.0, (-currentDragXOffset - 10.0) / 65.0) : 0.0;
+                        var _rightOp = currentDragXOffset > 5
+                        ? Math.Min(1.0, (currentDragXOffset - 5.0) / 55.0) : 0.0;
+                        var _leftOp = currentDragXOffset < -5
+                        ? Math.Min(1.0, (-currentDragXOffset - 5.0) / 55.0) : 0.0;
 
                         <div class="swipe-edge-glow swipe-edge-right"
                              style="opacity:@_rightOp.ToString("F3", _ic)"></div>
@@ -61,7 +63,7 @@
 
                         <div class="swipe-hint swipe-hint-right"
                              style="opacity:@_rightOp.ToString("F3", _ic)">
-                            <svg width="34" height="34" viewBox="0 0 24 24" fill="none"
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.8"
                                  stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="20 6 9 17 4 12"></polyline>
@@ -71,7 +73,7 @@
 
                         <div class="swipe-hint swipe-hint-left"
                              style="opacity:@_leftOp.ToString("F3", _ic)">
-                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.5"
                                  stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -82,8 +84,8 @@
 
                     <div class="content-wrapper">
                         <div class="image-section">
-                            <div class="anime-image"
-                                 style="background-image: url('@anime.ImageUrl');"
+                            <div class="anime-image @GetImageTransitionClass(index)"
+                                 style="background-image: url('@anime.ImageUrl'); @GetImageTransform(index)"
                                  @onclick="async () => await HandleImageClick(anime)"></div>
                         </div>
 
@@ -304,8 +306,8 @@
     private enum SwipeAxis { None, Vertical, Horizontal }
     private SwipeAxis _swipeAxis = SwipeAxis.None;
     private double currentDragXOffset = 0;
-    private const double AXIS_LOCK_PX = 8.0;        // px before direction is locked
-    private const double HORIZ_SWIPE_THRESHOLD = 85.0; // px to trigger the list action
+    private const double AXIS_LOCK_PX = 8.0;
+    private const double HORIZ_SWIPE_THRESHOLD = 85.0;
 
     // ─── Misc ────────────────────────────────────────────────────────────────
     private ElementReference appContainer;
@@ -313,7 +315,7 @@
     private DateTime lastRenderTime = DateTime.Now;
     private const int THROTTLE_MS = 8;
     private bool hasMoved = false;
-    private const double clickThreshold = 8; // slightly larger than before
+    private const double clickThreshold = 8;
 
     // ─── Popup ───────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
@@ -347,20 +349,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            await LoadAnimes(60, isBackgroundLoad: false);
-        }
+        try { await LoadAnimes(60, isBackgroundLoad: false); }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Init Error] {ex}");
             isLoading = false;
         }
-        finally
-        {
-            isInitialLoadComplete = true;
-            StateHasChanged();
-        }
+        finally { isInitialLoadComplete = true; StateHasChanged(); }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -459,10 +454,7 @@
             preloadedIndices.Add(idx);
         }
         if (urls.Count > 0)
-        {
-            try { await JS.InvokeVoidAsync("preloadImages", (object)urls.ToArray()); }
-            catch { }
-        }
+            try { await JS.InvokeVoidAsync("preloadImages", (object)urls.ToArray()); } catch { }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -504,7 +496,6 @@
         }
 
         animes.AddRange(result.Animes);
-
         for (int i = startIndex; i < animes.Count; i++)
             newlyCreatedCards.Add(i);
 
@@ -543,34 +534,34 @@
     {
         if (newlyCreatedCards.Contains(index)) return "no-transition";
         if (isDraggingCard) return "no-transition";
-        if (isTransitioning) return "with-transition";
+        if (isTransitioning && _swipeAxis != SwipeAxis.Horizontal) return "with-transition";
         return "no-transition";
     }
 
-    /// <summary>
-    /// Returns the full inline style string for a card, combining Y (stack position),
-    /// X (horizontal swipe), and a subtle rotation.
-    /// </summary>
-    private string GetCardStyle(int index)
+    // Card only moves on the Y axis — X animation lives on the image element.
+    private double GetCardTranslateY(int index)
     {
-        var ic = System.Globalization.CultureInfo.InvariantCulture;
-
         double y = (index - currentIndex) * CARD_HEIGHT;
-        double x = 0;
-        double rot = 0;
-
-        // Vertical drag moves all cards together (original behaviour)
         if (isDraggingCard && _swipeAxis != SwipeAxis.Horizontal)
             y += currentDragOffset;
+        return y;
+    }
 
-        // Horizontal drag + fly-off: only the active card moves sideways
-        if (index == currentIndex)
-        {
-            x = currentDragXOffset;
-            rot = Math.Max(-20.0, Math.Min(20.0, x * 0.022));
-        }
+    // Only the active card's image gets the horizontal transform + rotation.
+    private string GetImageTransform(int index)
+    {
+        if (index != currentIndex || currentDragXOffset == 0) return "";
+        var ic = System.Globalization.CultureInfo.InvariantCulture;
+        double rot = Math.Max(-18.0, Math.Min(18.0, currentDragXOffset * 0.025));
+        return $"transform: translateX({currentDragXOffset.ToString(ic)}px) rotate({rot.ToString("F3", ic)}deg);";
+    }
 
-        return $"transform: translateY({y.ToString(ic)}px) translateX({x.ToString(ic)}px) rotate({rot.ToString("F3", ic)}deg); height: {CARD_HEIGHT.ToString(ic)}px;";
+    // Add a CSS transition to the image during fly-off or snap-back.
+    private string GetImageTransitionClass(int index)
+    {
+        if (index != currentIndex) return "";
+        if (isTransitioning) return "image-with-transition";
+        return "";
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -600,28 +591,15 @@
         if (Math.Abs(dx) > clickThreshold || Math.Abs(dy) > clickThreshold)
             hasMoved = true;
 
-        // Lock swipe axis once the finger/pointer moves far enough
-        if (_swipeAxis == SwipeAxis.None)
-        {
-            double adx = Math.Abs(dx), ady = Math.Abs(dy);
-            if (adx > AXIS_LOCK_PX || ady > AXIS_LOCK_PX)
-                _swipeAxis = adx > ady ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
-        }
+        if (_swipeAxis == SwipeAxis.None && (Math.Abs(dx) > AXIS_LOCK_PX || Math.Abs(dy) > AXIS_LOCK_PX))
+            _swipeAxis = Math.Abs(dx) > Math.Abs(dy) ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
 
         var now = DateTime.Now;
         if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
         lastRenderTime = now;
 
-        if (_swipeAxis == SwipeAxis.Vertical)
-        {
-            currentDragOffset = dy;
-            currentDragXOffset = 0;
-        }
-        else if (_swipeAxis == SwipeAxis.Horizontal)
-        {
-            currentDragXOffset = dx;
-            currentDragOffset = 0;
-        }
+        if (_swipeAxis == SwipeAxis.Vertical) { currentDragOffset = dy; currentDragXOffset = 0; }
+        else if (_swipeAxis == SwipeAxis.Horizontal) { currentDragXOffset = dx; currentDragOffset = 0; }
 
         StateHasChanged();
     }
@@ -631,10 +609,8 @@
         if (!isDraggingCard) return;
         isDraggingCard = false;
 
-        if (_swipeAxis == SwipeAxis.Horizontal)
-            await FinishHorizontalSwipe();
-        else
-            await FinishSwipe();
+        if (_swipeAxis == SwipeAxis.Horizontal) await FinishHorizontalSwipe();
+        else await FinishSwipe();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -666,28 +642,15 @@
         if (Math.Abs(dx) > clickThreshold || Math.Abs(dy) > clickThreshold)
             hasMoved = true;
 
-        // Lock swipe axis
-        if (_swipeAxis == SwipeAxis.None)
-        {
-            double adx = Math.Abs(dx), ady = Math.Abs(dy);
-            if (adx > AXIS_LOCK_PX || ady > AXIS_LOCK_PX)
-                _swipeAxis = adx > ady ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
-        }
+        if (_swipeAxis == SwipeAxis.None && (Math.Abs(dx) > AXIS_LOCK_PX || Math.Abs(dy) > AXIS_LOCK_PX))
+            _swipeAxis = Math.Abs(dx) > Math.Abs(dy) ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
 
         var now = DateTime.Now;
         if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
         lastRenderTime = now;
 
-        if (_swipeAxis == SwipeAxis.Vertical)
-        {
-            currentDragOffset = dy;
-            currentDragXOffset = 0;
-        }
-        else if (_swipeAxis == SwipeAxis.Horizontal)
-        {
-            currentDragXOffset = dx;
-            currentDragOffset = 0;
-        }
+        if (_swipeAxis == SwipeAxis.Vertical) { currentDragOffset = dy; currentDragXOffset = 0; }
+        else if (_swipeAxis == SwipeAxis.Horizontal) { currentDragXOffset = dx; currentDragOffset = 0; }
 
         StateHasChanged();
     }
@@ -697,13 +660,11 @@
         if (!isDraggingCard) return;
         isDraggingCard = false;
 
-        if (_swipeAxis == SwipeAxis.Horizontal)
-            await FinishHorizontalSwipe();
-        else
-            await FinishSwipe();
+        if (_swipeAxis == SwipeAxis.Horizontal) await FinishHorizontalSwipe();
+        else await FinishSwipe();
     }
 
-    // ─── Vertical finish (unchanged logic) ───────────────────────────────────
+    // ─── Vertical finish ─────────────────────────────────────────────────────
 
     private async Task FinishSwipe()
     {
@@ -738,26 +699,23 @@
         hasMoved = false;
     }
 
-    // ─── Horizontal finish (new) ──────────────────────────────────────────────
+    // ─── Horizontal finish ────────────────────────────────────────────────────
 
     private async Task FinishHorizontalSwipe()
     {
         if (Math.Abs(currentDragXOffset) >= HORIZ_SWIPE_THRESHOLD)
         {
             bool isRight = currentDragXOffset > 0;
-            string status = isRight ? "COMPLETED" : "PLANNING";
 
-            // Fly the card off-screen with a transition
+            // Image flies off-screen
             isTransitioning = true;
-            currentDragXOffset = isRight ? 1600.0 : -1600.0;
+            currentDragXOffset = isRight ? 1400.0 : -1400.0;
             StateHasChanged();
 
-            // Fire the list action (hook this up to your AniListService)
-            await HandleListAction(animes[currentIndex], status);
+            await HandleListAction(animes[currentIndex], isRight ? "COMPLETED" : "PLANNING");
 
-            await Task.Delay(310); // match CSS transition duration
+            await Task.Delay(300); // matches .image-with-transition duration
 
-            // Advance to next card, reset everything in a single render
             if (currentIndex < animes.Count - 1) currentIndex++;
 
             isTransitioning = false;
@@ -774,26 +732,18 @@
             currentDragXOffset = 0;
             StateHasChanged();
 
-            await Task.Delay(250);
+            await Task.Delay(260);
             isTransitioning = false;
             _swipeAxis = SwipeAxis.None;
             hasMoved = false;
         }
     }
 
-    /// <summary>
-    /// Called when the user swipes an anime to a list.
-    /// Hook this up to your AniListService to persist the status.
-    /// </summary>
     private async Task HandleListAction(AnimeCard anime, string status)
     {
         System.Diagnostics.Debug.WriteLine($"[Swipe] \"{anime.Title}\" → {status}");
-
-        // ── Example AniList integration ──────────────────────────────────────
         // if (AniListAuth.IsAuthenticated && anime.Id > 0)
         //     await AniListService.SaveMediaListEntryAsync(anime.Id, status);
-        // ────────────────────────────────────────────────────────────────────
-
         await Task.CompletedTask;
     }
 
@@ -803,7 +753,7 @@
 
     private async Task HandleImageClick(AnimeCard anime)
     {
-        // Guard against drag-and-release falsely triggering a click
+        // Block if any movement or if axis was ever determined (even if snapped back)
         if (hasMoved || isDraggingCard || _swipeAxis != SwipeAxis.None) return;
         await ShowAnimeDetails(anime);
     }
@@ -934,17 +884,8 @@
         StateHasChanged();
     }
 
-    private void HandleListsClicked()
-    {
-        showListsPanel = true;
-        StateHasChanged();
-    }
-
-    private void CloseListsPanel()
-    {
-        showListsPanel = false;
-        StateHasChanged();
-    }
+    private void HandleListsClicked() { showListsPanel = true; StateHasChanged(); }
+    private void CloseListsPanel() { showListsPanel = false; StateHasChanged(); }
 
     private async Task HandleListsAnimeSelected(AnimeCard anime)
     {
@@ -952,10 +893,7 @@
         await ShowAnimeDetails(anime);
     }
 
-    private void HandleProfileClicked()
-    {
-        _showProfilePanel = !_showProfilePanel;
-    }
+    private void HandleProfileClicked() { _showProfilePanel = !_showProfilePanel; }
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  DISPOSE

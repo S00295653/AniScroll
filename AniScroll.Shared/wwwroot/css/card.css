@@ -17,7 +17,7 @@
     }
 
     .anime-card.with-transition {
-        transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
     .anime-card.active {
@@ -131,7 +131,13 @@
     -webkit-image-rendering: auto;
     flex-shrink: 0;
     will-change: transform;
+    /* No transition by default — added via class during swipe animation */
 }
+
+    /* Applied programmatically during fly-off and snap-back */
+    .anime-image.image-with-transition {
+        transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
 
 @media (min-width: 768px) {
     .anime-image {
@@ -159,27 +165,26 @@
    HORIZONTAL SWIPE INDICATORS
    ======================================================== */
 
-/* ── Screen-edge glow strip ── */
+/* ── Full-height edge glow strip ── */
 .swipe-edge-glow {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 10px;
+    width: 18px; /* wider strip */
     pointer-events: none;
     z-index: 20;
-    /* opacity controlled inline */
 }
 
 .swipe-edge-right {
     right: 0;
-    background: linear-gradient(to left, rgba(34, 197, 94, 0.9), transparent);
-    box-shadow: 4px 0 24px rgba(34, 197, 94, 0.5);
+    background: linear-gradient(to left, rgba(34, 197, 94, 1) 0%, rgba(34, 197, 94, 0.5) 40%, transparent 100%);
+    box-shadow: 6px 0 40px 8px rgba(34, 197, 94, 0.6);
 }
 
 .swipe-edge-left {
     left: 0;
-    background: linear-gradient(to right, rgba(99, 102, 241, 0.9), transparent);
-    box-shadow: -4px 0 24px rgba(99, 102, 241, 0.5);
+    background: linear-gradient(to right, rgba(99, 102, 241, 1) 0%, rgba(99, 102, 241, 0.5) 40%, transparent 100%);
+    box-shadow: -6px 0 40px 8px rgba(99, 102, 241, 0.6);
 }
 
 /* ── Full-card colour tint ── */
@@ -188,21 +193,24 @@
     inset: 0;
     pointer-events: none;
     z-index: 4;
-    /* opacity controlled inline */
 }
 
 .swipe-tint-right {
-    background: linear-gradient( to right, transparent 30%, rgba(34, 197, 94, 0.18) 100% );
+    background: linear-gradient( to right, transparent 20%, rgba(34, 197, 94, 0.26) 100% );
 }
 
 .swipe-tint-left {
-    background: linear-gradient( to left, transparent 30%, rgba(99, 102, 241, 0.18) 100% );
+    background: linear-gradient( to left, transparent 20%, rgba(99, 102, 241, 0.26) 100% );
 }
 
-/* ── Badge hint (icon + label) ── */
+/* ── Badge (icon + label) ─────────────────────────────────────────────
+   Positioned inward from the edge so it's clearly visible,
+   vertically centred on the upper-half of the screen (where the
+   poster lives) rather than the absolute vertical middle.
+   ──────────────────────────────────────────────────────────────────── */
 .swipe-hint {
     position: absolute;
-    top: 50%;
+    top: 28%; /* sits near the poster, not the text area */
     transform: translateY(-50%);
     z-index: 30;
     display: flex;
@@ -210,66 +218,72 @@
     align-items: center;
     gap: 10px;
     pointer-events: none;
-    padding: 18px 14px;
-    border-radius: 14px;
-    min-width: 68px;
+    padding: 20px 16px;
+    border-radius: 16px;
+    min-width: 76px;
     text-align: center;
-    /* transition only for opacity so it feels responsive */
-    transition: opacity 0.06s linear;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    /* opacity driven inline; tiny transition for smoothness */
+    transition: opacity 0.05s linear;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
     .swipe-hint span {
         font-size: 11px;
         font-weight: 800;
-        letter-spacing: 1.6px;
+        letter-spacing: 1.8px;
         text-transform: uppercase;
+        line-height: 1;
     }
 
-/* Right = COMPLETED (green) */
+/* Right = COMPLETED (emerald green) */
 .swipe-hint-right {
-    right: 14px;
-    background: rgba(34, 197, 94, 0.16);
-    border: 2px solid rgba(34, 197, 94, 0.50);
-    box-shadow: 0 0 28px rgba(34, 197, 94, 0.25), inset 0 0 18px rgba(34, 197, 94, 0.06);
-    color: #4ade80; /* green-400 */
+    right: 18px; /* inward from edge */
+    background: rgba(34, 197, 94, 0.20);
+    border: 2px solid rgba(34, 197, 94, 0.65);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15), 0 0 32px rgba(34, 197, 94, 0.45), inset 0 0 24px rgba(34, 197, 94, 0.10);
+    color: #6ee7a0; /* brighter text */
 }
 
     .swipe-hint-right svg {
-        filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
+        filter: drop-shadow(0 0 8px rgba(34, 197, 94, 1));
     }
 
 /* Left = PLANNING (indigo) */
 .swipe-hint-left {
-    left: 14px;
-    background: rgba(99, 102, 241, 0.16);
-    border: 2px solid rgba(99, 102, 241, 0.50);
-    box-shadow: 0 0 28px rgba(99, 102, 241, 0.25), inset 0 0 18px rgba(99, 102, 241, 0.06);
-    color: #a5b4fc; /* indigo-300 */
+    left: 18px; /* inward from edge */
+    background: rgba(99, 102, 241, 0.20);
+    border: 2px solid rgba(99, 102, 241, 0.65);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15), 0 0 32px rgba(99, 102, 241, 0.45), inset 0 0 24px rgba(99, 102, 241, 0.10);
+    color: #c7d2fe; /* brighter text */
 }
 
     .swipe-hint-left svg {
-        filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.8));
+        filter: drop-shadow(0 0 8px rgba(99, 102, 241, 1));
     }
 
 @media (min-width: 768px) {
     .swipe-hint {
-        padding: 22px 18px;
-        min-width: 80px;
-        border-radius: 16px;
+        padding: 24px 20px;
+        min-width: 88px;
+        border-radius: 18px;
+        top: 30%;
     }
 
         .swipe-hint span {
             font-size: 12px;
-            letter-spacing: 1.8px;
+            letter-spacing: 2px;
         }
 
     .swipe-hint-right {
-        right: 22px;
+        right: 26px;
     }
 
     .swipe-hint-left {
-        left: 22px;
+        left: 26px;
+    }
+
+    .swipe-edge-glow {
+        width: 22px;
     }
 }
