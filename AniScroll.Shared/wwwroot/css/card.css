@@ -25,7 +25,7 @@
         z-index: 10;
     }
 
-/* ========== BACKGROUND IMAGE ========== */
+/* ========== BACKGROUND IMAGE (blurred bg) ========== */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -51,88 +51,45 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.39) 0%, rgba(0,0,0,0.78) 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.90) 100%);
 }
 
-/* ========== BLUR EDGES ========== */
-.anime-card::before,
-.anime-card::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 40px;
-    pointer-events: none;
-    z-index: 2;
-}
-
-.anime-card::before {
-    top: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.15) 60%, transparent 100%);
-}
-
-.anime-card::after {
-    bottom: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.15) 60%, transparent 100%);
-}
-
-/* ========== CONTENT WRAPPER ========== */
+/* ========== CONTENT WRAPPER — layout de base ========== */
 .content-wrapper {
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 3;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    /* FIX: use overflow:hidden so image never clips behind nav bar */
     overflow: hidden;
-    padding: 12px 18px 108px;
-    box-sizing: border-box;
 }
 
-@media (min-width: 768px) {
-    .content-wrapper {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 30px 30px 30px;
-        overflow: hidden;
-    }
-}
-
-@media (min-width: 1025px) {
-    .content-wrapper {
-        max-width: 680px;
-        padding: 40px 40px 40px;
-    }
-}
-
-/* ========== IMAGE SECTION ========== */
+/* ========== IMAGE SECTION — couvre tout le card ========== */
 .image-section {
-    flex: 1 1 0;
-    min-height: 0;
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 4px 0;
+    align-items: flex-start;
+    padding-top: 0;
     overflow: hidden;
 }
 
 /* ========== ANIME IMAGE ========== */
 .anime-image {
-    height: 100%;
-    max-height: min(52vh, 420px);
-    max-width: min(76vw, 290px);
-    min-height: 90px;
+    /* Hauteur presque complète du card, ratio 2/3 centré */
+    height: calc(100% - 96px); /* laisser la nav en bas */
+    width: auto;
+    max-width: 100%;
     aspect-ratio: 2 / 3;
-    border-radius: 10px;
+    border-radius: 0;
     background-size: cover;
-    background-position: center center;
+    background-position: center top;
     background-repeat: no-repeat;
-    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.80);
     cursor: pointer;
     image-rendering: auto;
-    -webkit-image-rendering: auto;
     flex-shrink: 0;
     will-change: transform;
+    /* pas de box-shadow — le gradient overlay fait le travail */
+    box-shadow: none;
 }
 
     .anime-image.image-with-transition {
@@ -141,38 +98,66 @@
 
 @media (min-width: 768px) {
     .anime-image {
-        max-height: min(60vh, 520px);
-        max-width: min(68vw, 360px);
-        min-height: 120px;
+        height: calc(100% - 64px);
+        border-radius: 0;
     }
 
         .anime-image:hover {
-            transform: scale(1.02);
+            transform: scale(1.015);
             transition: transform 0.2s ease;
         }
 }
 
-@media (min-width: 1025px) {
-    .anime-image {
-        max-height: min(64vh, 580px);
-        max-width: min(58vw, 400px);
-        min-height: 140px;
+/* ========== INFO SECTION — overlay sur la moitié basse de l'image ========== */
+.info-section {
+    position: absolute;
+    /* commence à mi-hauteur du card */
+    top: 48%;
+    left: 0;
+    right: 0;
+    /* s'arrête juste au-dessus de la nav bar */
+    bottom: 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 22px 20px;
+    /* fondu : transparent en haut → sombre en bas */
+    background: linear-gradient( to bottom, transparent 0%, rgba(0,0,0,0.52) 20%, rgba(0,0,0,0.84) 42%, rgba(0,0,0,0.95) 100% );
+    overflow: hidden;
+    pointer-events: none;
+}
+
+    /* Réactiver les clics sur les enfants interactifs */
+    .info-section > * {
+        pointer-events: auto;
+    }
+
+@media (min-width: 768px) {
+    .info-section {
+        top: 50%;
+        bottom: 68px;
+        padding: 0 36px 28px;
+        max-width: 600px;
+        left: 50%;
+        right: auto;
+        width: 100%;
+        transform: translateX(-50%);
     }
 }
 
-/* ========== INFO SECTION (text below image) ========== */
-.info-section {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 10px;
+@media (min-width: 1025px) {
+    .info-section {
+        max-width: 680px;
+        padding: 0 44px 32px;
+    }
 }
 
+/* ========== TEXTES ========== */
 .title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.25;
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.2;
     color: #fff;
     cursor: pointer;
     display: -webkit-box;
@@ -180,24 +165,27 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.9);
+    margin: 0;
 }
 
 .title-long {
-    font-size: 1.1rem;
+    font-size: 1.22rem;
 }
 
 .title-very-long {
-    font-size: 0.97rem;
+    font-size: 1.02rem;
 }
 
 .season-info {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.55);
+    font-size: 0.86rem;
+    color: rgba(255,255,255,0.58);
     font-weight: 500;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.8);
 }
 
 .status-dot {
@@ -218,14 +206,15 @@
     }
 
 .genres {
-    font-size: 0.82rem;
-    color: rgba(255,255,255,0.45);
+    font-size: 0.84rem;
+    color: rgba(255,255,255,0.48);
     font-weight: 400;
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
 }
 
 .stats {
@@ -237,44 +226,47 @@
 .badge {
     display: inline-flex;
     align-items: center;
-    padding: 5px 12px;
+    padding: 5px 13px;
     border-radius: 20px;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 600;
     letter-spacing: 0.02em;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .badge-score {
     background: rgba(255, 200, 50, 0.15);
     color: #fcd34d;
-    border: 1px solid rgba(255, 200, 50, 0.25);
+    border: 1px solid rgba(255, 200, 50, 0.28);
 }
 
 .badge-episodes {
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.65);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.70);
+    border: 1px solid rgba(255,255,255,0.14);
 }
 
 .description-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    min-height: 0;
+    gap: 5px;
 }
 
 .description-preview {
-    font-size: 0.88rem;
+    font-size: 0.87rem;
     line-height: 1.55;
-    color: rgba(255,255,255,0.65);
+    color: rgba(255,255,255,0.62);
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.8);
     margin: 0;
 }
 
+/* ── Read More — identique à l'original ── */
 .read-more-btn {
     align-self: flex-start;
     background: none;
@@ -296,34 +288,56 @@
 
 @media (min-width: 768px) {
     .title {
-        font-size: 1.55rem;
+        font-size: 1.75rem;
     }
 
     .title-long {
-        font-size: 1.3rem;
+        font-size: 1.50rem;
     }
 
     .title-very-long {
-        font-size: 1.1rem;
+        font-size: 1.25rem;
     }
 
     .description-preview {
         font-size: 0.93rem;
-        -webkit-line-clamp: 5;
+        -webkit-line-clamp: 4;
     }
 
     .genres {
-        font-size: 0.88rem;
+        font-size: 0.90rem;
     }
 
     .badge {
-        font-size: 0.88rem;
-        padding: 6px 14px;
+        font-size: 0.90rem;
+        padding: 6px 15px;
     }
 }
 
+/* ========== BORDS FLOUTÉS (top/bottom) ========== */
+.anime-card::before,
+.anime-card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 52px;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.anime-card::before {
+    top: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.58) 0%, transparent 100%);
+}
+
+.anime-card::after {
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.58) 0%, transparent 100%);
+}
+
 /* ======================================================
-   SWIPE INDICATORS — Feather doux (renforcé mobile)
+   SWIPE INDICATORS — Feather renforcé
    ====================================================== */
 
 .swipe-feather {
@@ -333,17 +347,17 @@
     z-index: 5;
 }
 
-/* Green feather — right edge → center  (RENFORCÉ) */
+/* Green feather — droite (Completed) */
 .swipe-feather-right {
-    background: linear-gradient( to left, rgba(34, 197, 94, 0.55) 0%, rgba(34, 197, 94, 0.30) 10%, rgba(34, 197, 94, 0.12) 28%, rgba(34, 197, 94, 0.04) 52%, transparent 100% );
+    background: linear-gradient( to left, rgba(34, 197, 94, 0.62) 0%, rgba(34, 197, 94, 0.34) 10%, rgba(34, 197, 94, 0.13) 28%, rgba(34, 197, 94, 0.03) 55%, transparent 100% );
 }
 
-/* Indigo/violet feather — left edge → center  (RENFORCÉ) */
+/* Purple feather — gauche (Planning) */
 .swipe-feather-left {
-    background: linear-gradient( to right, rgba(139, 92, 246, 0.55) 0%, rgba(139, 92, 246, 0.30) 10%, rgba(139, 92, 246, 0.12) 28%, rgba(139, 92, 246, 0.04) 52%, transparent 100% );
+    background: linear-gradient( to right, rgba(139, 92, 246, 0.62) 0%, rgba(139, 92, 246, 0.34) 10%, rgba(139, 92, 246, 0.13) 28%, rgba(139, 92, 246, 0.03) 55%, transparent 100% );
 }
 
-/* ── Hint pill — plus gros et plus visible ── */
+/* ── Hint pills ── */
 .swipe-hint {
     position: absolute;
     top: 50%;
@@ -356,8 +370,8 @@
     border-radius: 100px;
     pointer-events: none;
     white-space: nowrap;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
     .swipe-hint span {
@@ -369,18 +383,18 @@
 
 .swipe-hint-right {
     right: 14px;
-    border: 1px solid rgba(34, 197, 94, 0.45);
-    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.50);
+    background: rgba(34, 197, 94, 0.15);
     color: rgba(134, 239, 172, 0.95);
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.20), inset 0 0 12px rgba(34, 197, 94, 0.08);
+    box-shadow: 0 0 22px rgba(34, 197, 94, 0.28);
 }
 
 .swipe-hint-left {
     left: 14px;
-    border: 1px solid rgba(139, 92, 246, 0.45);
-    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.50);
+    background: rgba(139, 92, 246, 0.15);
     color: rgba(196, 181, 253, 0.95);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.20), inset 0 0 12px rgba(139, 92, 246, 0.08);
+    box-shadow: 0 0 22px rgba(139, 92, 246, 0.28);
 }
 
 @media (min-width: 768px) {
@@ -395,10 +409,10 @@
         }
 
     .swipe-hint-right {
-        right: 20px;
+        right: 22px;
     }
 
     .swipe-hint-left {
-        left: 20px;
+        left: 22px;
     }
 }
