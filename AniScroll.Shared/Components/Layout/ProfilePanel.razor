@@ -397,6 +397,21 @@
         // redundant UI re-renders on every SaveEntry call.
         UserListService.NotifyChanged();
 
+        // ── Import AniList favourites ─────────────────────────────
+        try
+        {
+            var favIds = await AniListAuth.FetchFavouriteIdsAsync();
+            if (favIds.Count > 0)
+            {
+                UserListService.ImportFavorites(favIds);
+                UserListService.NotifyChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine("[Import] Favourites fetch failed: " + ex.Message);
+        }
+
         if (showUI)
         {
             _state = PanelState.Done;

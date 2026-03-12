@@ -6,8 +6,10 @@ namespace AniScroll.Shared.Services
     {
         private readonly Dictionary<int, UserListEntry> _entries = new();
 
-        // Key = animeId, Value = UTC timestamp when it was favourited
-        // (most recently favourited → highest DateTime)
+        // Key = animeId, Value = UTC time it was favourited.
+        // AniList doesn't expose individual "favourited at" timestamps,
+        // so imported favourites receive a synthetic decreasing timestamp
+        // (index 0 = most recently favourited per AniList's ordering).
         private readonly Dictionary<int, DateTime> _favorites = new();
 
         public event Action? OnChanged;
@@ -38,6 +40,38 @@ namespace AniScroll.Shared.Services
             return isFav;
         }
 
+        /// <summary>
+        /// Bulk-imports favourites from AniList.
+        /// <paramref name="orderedIds"/> must be ordered most-recently-favourited first
+        /// (as returned by FetchFavouriteIdsAsync). Existing local favourites whose ID
+        /// appears in the list keep their timestamp if it is more recent; otherwise the
+        /// imported timestamp wins. IDs not in the list are left untouched.
+        /// Call <see cref="NotifyChanged"/> once after calling this.
+        /// </summary>
+        public void ImportFavorites(IReadOnlyList<int> orderedIds)
+        {
+            // Assign synthetic timestamps: index 0 → importBase, index 1 → importBase - 1s, …
+            // Slightly in the past so any locally-toggled favourite (which uses DateTime.UtcNow)
+            // naturally sorts ahead of imported ones after the import.
+            var importBase = DateTime.UtcNow.AddSeconds(-1);
+
+            for (int i = 0; i < orderedIds.Count; i++)
+            {
+                int id = orderedIds[i];
+                var importedAt = importBase.AddSeconds(-i);
+
+                if (_favorites.TryGetValue(id, out var existing))
+                {
+                    if (importedAt > existing)
+                        _favorites[id] = importedAt;
+                }
+                else
+                {
+                    _favorites[id] = importedAt;
+                }
+            }
+        }
+
         public IReadOnlyCollection<int> GetFavoriteIds() => _favorites.Keys.ToList();
 
         public bool IsInList(int animeId) => _entries.ContainsKey(animeId);
@@ -50,7 +84,7 @@ namespace AniScroll.Shared.Services
 
         private List<UserCustomList> _customLists = new();
 
-        // ── Status list settings (color + display name, user-editable) ────────
+        // ── Status list settings ──────────────────────────────────────────────
         private List<StatusListSetting> _statusSettings = GetDefaultStatusSettings();
 
         private static List<StatusListSetting> GetDefaultStatusSettings() => new()
@@ -74,15 +108,12 @@ namespace AniScroll.Shared.Services
 
         // ── Custom list accessors ─────────────────────────────────────────────
 
-        /// <summary>Toutes les listes (status-type + regular), triées par Order.</summary>
         public List<UserCustomList> GetCustomLists() =>
             _customLists.OrderBy(l => l.Order).ToList();
 
-        /// <summary>Listes de type "Status" (IsStatusList=true), triées par Order.</summary>
         public List<UserCustomList> GetStatusTypeLists() =>
             _customLists.Where(l => l.IsStatusList).OrderBy(l => l.Order).ToList();
 
-        /// <summary>Listes custom normales (IsStatusList=false), triées par Order.</summary>
         public List<UserCustomList> GetRegularCustomLists() =>
             _customLists.Where(l => !l.IsStatusList).OrderBy(l => l.Order).ToList();
 
@@ -94,7 +125,6 @@ namespace AniScroll.Shared.Services
 
         // ── Entry CRUD ────────────────────────────────────────────────────────
 
-        /// <summary>Quick add/update — only changes Status, preserves other fields.</summary>
         public void AddOrUpdate(AnimeCard anime, ListStatus status)
         {
             if (_entries.TryGetValue(anime.Id, out var existing))
@@ -115,7 +145,6 @@ namespace AniScroll.Shared.Services
             OnChanged?.Invoke();
         }
 
-        /// <summary>Full update — replaces the entry wholesale (from the list editor).</summary>
         public void SaveEntry(UserListEntry entry)
         {
             entry.UpdatedAt = DateTime.UtcNow;
@@ -125,20 +154,11 @@ namespace AniScroll.Shared.Services
             OnChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Import from AniList — preserves the original AniList timestamps
-        /// (UpdatedAt / AddedAt) instead of overwriting with DateTime.UtcNow.
-        /// Call <see cref="NotifyChanged"/> once after the import loop.
-        /// </summary>
         public void ImportEntry(UserListEntry entry)
         {
             _entries[entry.Anime.Id] = entry;
         }
 
-        /// <summary>
-        /// Fires OnChanged manually — call once after a batch of
-        /// <see cref="ImportEntry"/> calls to avoid redundant UI refreshes.
-        /// </summary>
         public void NotifyChanged() => OnChanged?.Invoke();
 
         public void Remove(int animeId)
@@ -161,11 +181,6 @@ namespace AniScroll.Shared.Services
                 ? _entries.Count
                 : _entries.Values.Count(e => e.Status == status);
 
-        /// <summary>
-        /// Count of entries that are actually tracked (have a status or belong to at
-        /// least one custom list). This is what the "My Lists" badge should show —
-        /// it excludes entries created purely as AniList stubs with no local status.
-        /// </summary>
         public int CountTracked() =>
             _entries.Values.Count(e => e.Status.HasValue || e.CustomListIds.Any());
 

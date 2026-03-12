@@ -63,8 +63,6 @@ public class AniListAuthService
 
     public async Task<List<AniListImportEntry>> FetchAnimeListAsync(int userId)
     {
-        // MediaListCollection retourne toute la liste en une seule requête,
-        // sans limite de pagination. On trie ensuite côté client par updatedAt desc.
         var q = $@"query {{
             MediaListCollection(userId: {userId}, type: ANIME) {{
                 lists {{
@@ -138,7 +136,6 @@ public class AniListAuthService
                     seen[mediaId] = ParseEntry(entry);
                 else
                 {
-                    // Si l'entrée existe déjà, garde le updatedAt le plus récent
                     var parsed = ParseEntry(entry);
                     if (parsed.UpdatedAt > seen[mediaId].UpdatedAt)
                         seen[mediaId] = parsed;
@@ -150,11 +147,58 @@ public class AniListAuthService
             }
         }
 
-        // Tri côté client par updatedAt desc — équivalent du sort: UPDATED_TIME_DESC
-        // qu'on avait avec mediaList, mais sans la limite de 50 par page.
         return seen.Values
                    .OrderByDescending(e => e.UpdatedAt)
                    .ToList();
+    }
+
+    // ── Favourites ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fetches all anime IDs the authenticated user has favourited on AniList,
+    /// paginating automatically. Returns them ordered as AniList provides them
+    /// (most recently favourited first).
+    /// </summary>
+    public async Task<List<int>> FetchFavouriteIdsAsync()
+    {
+        if (!IsAuthenticated) return new();
+
+        var ids = new List<int>();
+        int page = 1;
+
+        while (true)
+        {
+            var q = $@"query {{
+                Viewer {{
+                    favourites {{
+                        anime(page: {page}, perPage: 50) {{
+                            pageInfo {{ hasNextPage }}
+                            nodes {{ id }}
+                        }}
+                    }}
+                }}
+            }}";
+
+            var resp = await PostGraphQL(q);
+            if (resp == null) break;
+
+            var animeFavs = JObject.Parse(resp)?["data"]?["Viewer"]?["favourites"]?["anime"];
+            if (animeFavs == null) break;
+
+            var nodes = animeFavs["nodes"];
+            if (nodes != null && nodes.HasValues)
+                foreach (var node in nodes)
+                {
+                    int id = node["id"]?.Value<int>() ?? 0;
+                    if (id > 0) ids.Add(id);
+                }
+
+            bool hasNext = animeFavs["pageInfo"]?["hasNextPage"]?.Value<bool>() ?? false;
+            if (!hasNext) break;
+            page++;
+        }
+
+        return ids;
     }
 
     // ── Parsing ───────────────────────────────────────────────────────────
@@ -197,7 +241,6 @@ public class AniListAuthService
             epDisplay = media["episodes"]!.ToString();
         }
 
-        // AniList returns updatedAt/createdAt as Unix timestamps (long)
         var updatedAtRaw = e["updatedAt"]?.Value<long?>() ?? 0;
         var createdAtRaw = e["createdAt"]?.Value<long?>() ?? 0;
 
