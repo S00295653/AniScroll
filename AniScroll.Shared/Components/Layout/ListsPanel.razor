@@ -61,9 +61,9 @@
                         <line x1="6" y1="12" x2="18" y2="12" />
                         <line x1="9" y1="18" x2="15" y2="18" />
                     </svg>
-                    @if (!_sortOptions.IsDefault && _sortOptions.ActiveFilterCount > 0)
+                    @if (!_sortOptions.IsDefault && SortFilterCategoryCount > 0)
                     {
-                        <span class="lists-sort-badge">@_sortOptions.ActiveFilterCount</span>
+                        <span class="lists-sort-badge">@SortFilterCategoryCount</span>
                     }
                 </button>
 
@@ -304,6 +304,33 @@
     private bool _showSortFilter = false;
 
     private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
+
+    // Compte le nombre de catégories actives (pas d'items individuels)
+    // Ex : 3 genres sélectionnés = 1, sort ≠ default = 1, année filtrée = 1 → total 3
+    private int SortFilterCategoryCount
+    {
+        get
+        {
+            var o = _sortOptions;
+            int n = 0;
+            if (o.Sort != SortFilterPopup.SortMode.RecentlyUpdated) n++;
+            if (o.YearFrom.HasValue || o.YearTo.HasValue) n++;
+            if (o.ScoreFrom.HasValue || o.ScoreTo.HasValue) n++;
+            if (o.EpFrom.HasValue || o.EpTo.HasValue) n++;
+            if (o.AiringStatuses.Any()) n++;
+            if (o.Formats.Any()) n++;
+            if (o.Seasons.Any()) n++;
+            if (o.Genres.Any()) n++;
+            if (o.Studios.Any()) n++;
+            if (o.Tags.Any()) n++;
+            if (o.Sources.Any()) n++;
+            if (o.Platforms.Any()) n++;
+            if (o.Countries.Any()) n++;
+            if (o.Adult.HasValue) n++;
+            return n;
+        }
+    }
+
     private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
 
     private static int ParseEp(string? s)
