@@ -1024,6 +1024,7 @@
             _scoreBarDragging = false;
             _epBarDragging = false;
             _lastAnimeId = CurrentAnime?.Id;
+            isFavorited = UserListService.IsFavorited(CurrentAnime.Id);
             RefreshListState();
         }
     }
@@ -1060,13 +1061,14 @@
 
     private void RefreshListState()
     {
-        if (CurrentAnime == null) { isInList = false; currentListStatus = null; currentCustomListId = null; return; }
+        if (CurrentAnime == null) { isInList = false; currentListStatus = null; currentCustomListId = null; isFavorited = false; return; }
         var entry = UserListService.GetEntry(CurrentAnime.Id);
         isInList = entry != null;
         currentListStatus = entry?.Status;
         // Display the status-type custom list in the header button (first match)
         var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
         currentCustomListId = entry?.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
+        isFavorited = UserListService.IsFavorited(CurrentAnime.Id);
     }
 
     // ── Auto-save ─────────────────────────────────────────────────────────────
@@ -1556,7 +1558,12 @@
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
     private void OnShare() { }
-    private void OnFavorite() { isFavorited = !isFavorited; StateHasChanged(); }
+    private void OnFavorite()
+    {
+        if (CurrentAnime == null) return;
+        isFavorited = UserListService.ToggleFavorite(CurrentAnime.Id);
+        StateHasChanged();
+    }
 
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
 

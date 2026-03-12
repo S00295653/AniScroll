@@ -5,8 +5,25 @@ namespace AniScroll.Shared.Services
     public class UserListService
     {
         private readonly Dictionary<int, UserListEntry> _entries = new();
+        private readonly HashSet<int> _favorites = new();
 
         public event Action? OnChanged;
+
+        // ── Favorites ─────────────────────────────────────────────────────────
+
+        public bool IsFavorited(int animeId) => _favorites.Contains(animeId);
+
+        /// <summary>Toggles the favourite state. Returns the new state.</summary>
+        public bool ToggleFavorite(int animeId)
+        {
+            bool isFav;
+            if (!_favorites.Remove(animeId)) { _favorites.Add(animeId); isFav = true; }
+            else isFav = false;
+            OnChanged?.Invoke();
+            return isFav;
+        }
+
+        public IReadOnlyCollection<int> GetFavoriteIds() => _favorites;
 
         public bool IsInList(int animeId) => _entries.ContainsKey(animeId);
 

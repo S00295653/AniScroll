@@ -42,6 +42,7 @@
                     <div class="sfp-section-label">Sort by</div>
                     <div class="sfp-chips">
                         @SortChip(SortMode.RecentlyUpdated, "Recently Updated")
+                        @SortChip(SortMode.Favourites, "❤️ Favourites")
                         @ThreeStateChip(SortMode.TitleAZ,      SortMode.TitleZA,         "Title")
                         @ThreeStateChip(SortMode.MyScoreDesc, SortMode.MyScoreAsc, "My Score")
                         @ThreeStateChip(SortMode.AniListScore, SortMode.AniListScoreAsc, "Rating")
@@ -518,6 +519,7 @@
         RecentlyAdded,    // kept for back-compat
         OldestFirst,      // kept for back-compat
         RecentlyUpdated,
+        Favourites,
         TitleAZ, TitleZA,
         MyScoreDesc, MyScoreAsc,
         AniListScore,     // desc
@@ -1043,23 +1045,21 @@
     double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
         System.Globalization.CultureInfo.InvariantCulture, out var s) && s > 0 ? s : -1;
 
-    private static List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
+    private List<UserListEntry> ApplySort(List<UserListEntry> list, SortMode sort) => sort switch
     {
-        SortMode.TitleAZ         => list.OrderBy(e => e.Anime.Title).ToList(),
-        SortMode.TitleZA         => list.OrderByDescending(e => e.Anime.Title).ToList(),
-        SortMode.MyScoreDesc     => list.OrderByDescending(e => e.Score).ToList(),
-        SortMode.MyScoreAsc      => list.OrderBy(e => e.Score).ToList(),
-        // Rating desc : sans score (-1) → fin
-        SortMode.AniListScore    => list.OrderByDescending(e => AniScoreKey(e)).ToList(),
-        // Rating asc  : sans score → fin (on utilise double.MaxValue)
+        SortMode.Favourites => list.OrderByDescending(e => UserListService.IsFavorited(e.Anime.Id))
+                                        .ThenByDescending(e => e.UpdatedAt).ToList(),
+        SortMode.TitleAZ => list.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase).ToList(),
+        SortMode.TitleZA => list.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase).ToList(),
+        SortMode.MyScoreDesc => list.OrderByDescending(e => e.Score).ToList(),
+        SortMode.MyScoreAsc => list.OrderBy(e => e.Score).ToList(),
+        SortMode.AniListScore => list.OrderByDescending(e => AniScoreKey(e)).ToList(),
         SortMode.AniListScoreAsc => list.OrderBy(e => AniScoreKey(e) >= 0 ? AniScoreKey(e) : double.MaxValue).ToList(),
-        // Épisodes desc : sans épisodes (-1) → fin
-        SortMode.EpisodesDesc    => list.OrderByDescending(e => EpSortKey(e)).ToList(),
-        // Épisodes asc  : sans épisodes → fin (on utilise int.MaxValue)
-        SortMode.EpisodesAsc     => list.OrderBy(e => EpSortKey(e) >= 0 ? EpSortKey(e) : int.MaxValue).ToList(),
-        SortMode.YearDesc        => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
-        SortMode.YearAsc         => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
-        _                        => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyUpdated
+        SortMode.EpisodesDesc => list.OrderByDescending(e => EpSortKey(e)).ToList(),
+        SortMode.EpisodesAsc => list.OrderBy(e => EpSortKey(e) >= 0 ? EpSortKey(e) : int.MaxValue).ToList(),
+        SortMode.YearDesc => list.OrderByDescending(e => e.Anime.Year ?? 0).ToList(),
+        SortMode.YearAsc => list.OrderBy(e => e.Anime.Year ?? 0).ToList(),
+        _ => list.OrderByDescending(e => e.UpdatedAt).ToList(), // RecentlyUpdated
     };
 
     // Standard single-state sort chip (radio behaviour).
