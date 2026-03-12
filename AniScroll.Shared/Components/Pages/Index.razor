@@ -28,15 +28,11 @@
             var isVisible = index == currentIndex;
             var distance = Math.Abs(index - currentIndex);
 
+            @* Move/up/end handlers removed — drag.js owns them natively *@
             <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
                  style="transform: translateY(@GetCardTranslateY(index)px); height: @(CARD_HEIGHT)px;"
                  @onmousedown="(e) => HandleCardMouseDown(e, index)"
-                 @onmousemove="HandleCardMouseMove"
-                 @onmouseup="HandleCardMouseUp"
-                 @onmouseleave="HandleCardMouseUp"
-                 @ontouchstart="(e) => HandleCardTouchStart(e, index)"
-                 @ontouchmove="HandleCardTouchMove"
-                 @ontouchend="HandleCardTouchEnd">
+                 @ontouchstart="(e) => HandleCardTouchStart(e, index)">
 
                 @if (distance <= RENDER_WINDOW)
                 {
@@ -46,31 +42,17 @@
                     @* ── Swipe feather overlays (active card only) ── *@
                     @if (isVisible)
                     {
-                        var _ic = System.Globalization.CultureInfo.InvariantCulture;
-                        var _rOp = currentDragXOffset > 5
-                        ? Math.Min(1.0, (currentDragXOffset - 5.0) / 50.0) : 0.0;
-                        var _lOp = currentDragXOffset < -5
-                        ? Math.Min(1.0, (-currentDragXOffset - 5.0) / 50.0) : 0.0;
-
-                        <div class="swipe-feather swipe-feather-right"
-                             style="opacity:@_rOp.ToString("F3", _ic)"></div>
-                        <div class="swipe-feather swipe-feather-left"
-                             style="opacity:@_lOp.ToString("F3", _ic)"></div>
+                        @* Opacity starts at 0 — drag.js updates it directly during drag *@
+                        <div class="swipe-feather swipe-feather-right" style="opacity:0"></div>
+                        <div class="swipe-feather swipe-feather-left" style="opacity:0"></div>
                     }
 
                     <div class="content-wrapper">
                         <div class="image-section">
-                            @* ── Hints déplacés ici : top:50% = mi-hauteur image ── *@
                             @if (isVisible)
                             {
-                                var _ic2 = System.Globalization.CultureInfo.InvariantCulture;
-                                var _rOp2 = currentDragXOffset > 5
-                                ? Math.Min(1.0, (currentDragXOffset - 5.0) / 50.0) : 0.0;
-                                var _lOp2 = currentDragXOffset < -5
-                                ? Math.Min(1.0, (-currentDragXOffset - 5.0) / 50.0) : 0.0;
-
-                                <div class="swipe-hint swipe-hint-right"
-                                     style="opacity:@_rOp2.ToString("F3", _ic2)">
+                                @* Hints start hidden — drag.js drives their opacity *@
+                                <div class="swipe-hint swipe-hint-right" style="opacity:0">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
                                          stroke="currentColor" stroke-width="2.8"
                                          stroke-linecap="round" stroke-linejoin="round">
@@ -79,8 +61,7 @@
                                     <span>Completed</span>
                                 </div>
 
-                                <div class="swipe-hint swipe-hint-left"
-                                     style="opacity:@_lOp2.ToString("F3", _ic2)">
+                                <div class="swipe-hint swipe-hint-left" style="opacity:0">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
                                          stroke="currentColor" stroke-width="2.5"
                                          stroke-linecap="round" stroke-linejoin="round">
@@ -299,10 +280,8 @@
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
 
-    // ─── Drag state ──────────────────────────────────────────────────────────
+    // ─── Drag state (structural — visual state lives in drag.js) ─────────────
     private bool isDraggingCard = false;
-    private double dragStartY = 0;
-    private double dragStartX = 0;
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
 
@@ -310,16 +289,12 @@
     private enum SwipeAxis { None, Vertical, Horizontal }
     private SwipeAxis _swipeAxis = SwipeAxis.None;
     private double currentDragXOffset = 0;
-    private const double AXIS_LOCK_PX = 8.0;
     private const double HORIZ_SWIPE_THRESHOLD = 85.0;
 
     // ─── Misc ────────────────────────────────────────────────────────────────
     private ElementReference appContainer;
     private HashSet<int> newlyCreatedCards = new();
-    private DateTime lastRenderTime = DateTime.Now;
-    private const int THROTTLE_MS = 8;
     private bool hasMoved = false;
-    private const double clickThreshold = 8;
 
     // ─── Popup ───────────────────────────────────────────────────────────────
     private bool showDetailPopup = false;
@@ -365,6 +340,8 @@
 
             _dotNetRef = DotNetObjectReference.Create(this);
             try { await JS.InvokeVoidAsync("registerEscapeKey", _dotNetRef); } catch { }
+            // Hand the .NET ref to drag.js so it can call back on drag-end
+            try { await JS.InvokeVoidAsync("initCardDrag", _dotNetRef); } catch { }
         }
 
         _ = PreloadNearbyImages();
@@ -493,21 +470,15 @@
     {
         if (newlyCreatedCards.Contains(index)) return "no-transition";
         if (isDraggingCard) return "no-transition";
-        // Horizontal swipe animates the image, not the card — keep card still
         if (isTransitioning && _swipeAxis != SwipeAxis.Horizontal) return "with-transition";
         return "no-transition";
     }
 
-    // Card moves only on Y axis — X lives on the image element
+    // Only used for initial positioning; drag.js overrides during drag
     private double GetCardTranslateY(int index)
-    {
-        double y = (index - currentIndex) * CARD_HEIGHT;
-        if (isDraggingCard && _swipeAxis != SwipeAxis.Horizontal)
-            y += currentDragOffset;
-        return y;
-    }
+        => (index - currentIndex) * CARD_HEIGHT;
 
-    // Only the active card's image gets X translation + subtle rotation
+    // Applied after drag-end fly-off / snap-back transition
     private string GetImageTransform(int index)
     {
         if (index != currentIndex || currentDragXOffset == 0) return "";
@@ -516,84 +487,46 @@
         return $"transform: translateX({currentDragXOffset.ToString(ic)}px) rotate({rot.ToString("F3", ic)}deg);";
     }
 
-    // Smooth transition on the image during fly-off or snap-back
     private string GetImageTransitionClass(int index)
         => (index == currentIndex && isTransitioning) ? "image-with-transition" : "";
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //  MOUSE INPUT
+    //  INPUT — Start only (drag.js owns move/end)
     // ═══════════════════════════════════════════════════════════════════════════
 
     private void HandleCardMouseDown(MouseEventArgs e, int index)
     {
         if (index != currentIndex) return;
         isDraggingCard = true;
-        dragStartY = e.ClientY; dragStartX = e.ClientX;
-        currentDragOffset = 0; currentDragXOffset = 0;
-        _swipeAxis = SwipeAxis.None; isTransitioning = false; hasMoved = false;
+        isTransitioning = false;
+        _ = JS.InvokeVoidAsync("startCardDrag", e.ClientX, e.ClientY);
     }
-
-    private void HandleCardMouseMove(MouseEventArgs e)
-    {
-        if (!isDraggingCard) return;
-        double dx = e.ClientX - dragStartX, dy = e.ClientY - dragStartY;
-        if (Math.Abs(dx) > clickThreshold || Math.Abs(dy) > clickThreshold) hasMoved = true;
-        if (_swipeAxis == SwipeAxis.None && (Math.Abs(dx) > AXIS_LOCK_PX || Math.Abs(dy) > AXIS_LOCK_PX))
-            _swipeAxis = Math.Abs(dx) > Math.Abs(dy) ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
-
-        var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
-        lastRenderTime = now;
-
-        if (_swipeAxis == SwipeAxis.Vertical) { currentDragOffset = dy; currentDragXOffset = 0; }
-        else if (_swipeAxis == SwipeAxis.Horizontal) { currentDragXOffset = dx; currentDragOffset = 0; }
-        StateHasChanged();
-    }
-
-    private async Task HandleCardMouseUp(MouseEventArgs e)
-    {
-        if (!isDraggingCard) return;
-        isDraggingCard = false;
-        if (_swipeAxis == SwipeAxis.Horizontal) await FinishHorizontalSwipe();
-        else await FinishSwipe();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    //  TOUCH INPUT
-    // ═══════════════════════════════════════════════════════════════════════════
 
     private Task HandleCardTouchStart(TouchEventArgs e, int index)
     {
         if (index != currentIndex || e.Touches.Length == 0) return Task.CompletedTask;
         isDraggingCard = true;
-        dragStartY = e.Touches[0].ClientY; dragStartX = e.Touches[0].ClientX;
-        currentDragOffset = 0; currentDragXOffset = 0;
-        _swipeAxis = SwipeAxis.None; isTransitioning = false; hasMoved = false;
+        isTransitioning = false;
+        _ = JS.InvokeVoidAsync("startCardDrag", e.Touches[0].ClientX, e.Touches[0].ClientY);
         return Task.CompletedTask;
     }
 
-    private void HandleCardTouchMove(TouchEventArgs e)
+    // ─── Drag-end callback from drag.js ──────────────────────────────────────
+
+    [JSInvokable]
+    public async Task OnDragEnd(double xOffset, double yOffset, string axisName, bool moved)
     {
-        if (!isDraggingCard || e.Touches.Length == 0) return;
-        var touch = e.Touches[0];
-        double dx = touch.ClientX - dragStartX, dy = touch.ClientY - dragStartY;
-        if (Math.Abs(dx) > clickThreshold || Math.Abs(dy) > clickThreshold) hasMoved = true;
-        if (_swipeAxis == SwipeAxis.None && (Math.Abs(dx) > AXIS_LOCK_PX || Math.Abs(dy) > AXIS_LOCK_PX))
-            _swipeAxis = Math.Abs(dx) > Math.Abs(dy) ? SwipeAxis.Horizontal : SwipeAxis.Vertical;
-
-        var now = DateTime.Now;
-        if ((now - lastRenderTime).TotalMilliseconds < THROTTLE_MS) return;
-        lastRenderTime = now;
-
-        if (_swipeAxis == SwipeAxis.Vertical) { currentDragOffset = dy; currentDragXOffset = 0; }
-        else if (_swipeAxis == SwipeAxis.Horizontal) { currentDragXOffset = dx; currentDragOffset = 0; }
-        StateHasChanged();
-    }
-
-    private async Task HandleCardTouchEnd(TouchEventArgs e)
-    {
-        if (!isDraggingCard) return;
+        hasMoved = moved;
         isDraggingCard = false;
+        currentDragXOffset = xOffset;
+        currentDragOffset = yOffset;
+        _swipeAxis = axisName switch
+        {
+            "horizontal" => SwipeAxis.Horizontal,
+            "vertical" => SwipeAxis.Vertical,
+            _ => SwipeAxis.None
+        };
+
         if (_swipeAxis == SwipeAxis.Horizontal) await FinishHorizontalSwipe();
         else await FinishSwipe();
     }
@@ -674,7 +607,6 @@
 
     private async Task HandleImageClick(AnimeCard anime)
     {
-        // Never open popup if the user dragged (even a little)
         if (hasMoved || isDraggingCard || _swipeAxis != SwipeAxis.None) return;
         await ShowAnimeDetails(anime);
     }

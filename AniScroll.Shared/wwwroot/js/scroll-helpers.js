@@ -19,7 +19,7 @@ window.getScrollSectionHeight = function () {
 window.getScrollInfo = function (element) {
     if (!element) return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
     return {
-        scrollTop:    element.scrollTop,
+        scrollTop: element.scrollTop,
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight
     };
@@ -156,15 +156,15 @@ window.cpGetRect = function (el) {
 
 window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
     const MARGIN = 12;
-    const GAP    = 8;
+    const GAP = 8;
 
-    const a  = anchorEl.getBoundingClientRect();
+    const a = anchorEl.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
     const popupEl = document.querySelector('.cp-popup');
-    const popupH  = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
-    const w       = Math.min(popupW, vw - 2 * MARGIN);
+    const popupH = popupEl ? popupEl.getBoundingClientRect().height : _estimatedPopupH;
+    const w = Math.min(popupW, vw - 2 * MARGIN);
 
     const spaceBelow = vh - a.bottom - GAP;
     const spaceAbove = a.top - GAP;
@@ -180,7 +180,7 @@ window.cpGetPosition = function (anchorEl, popupW, _estimatedPopupH) {
 
     let left = a.left;
     if (left + w > vw - MARGIN) left = vw - MARGIN - w;
-    if (left < MARGIN)          left = MARGIN;
+    if (left < MARGIN) left = MARGIN;
 
     return { left, top };
 };
@@ -194,21 +194,21 @@ window.cpStartSvDrag = function (svEl, dotNet) {
         const r = _cpSvEl.getBoundingClientRect();
         _cpSvDotNet.invokeMethodAsync('OnSvDrag',
             Math.max(0, Math.min(1, (cx - r.left) / r.width)),
-            Math.max(0, Math.min(1, (cy - r.top)  / r.height)));
+            Math.max(0, Math.min(1, (cy - r.top) / r.height)));
     };
     const onMM = e => { if (_cpSvActive) onMove(e.clientX, e.clientY); };
     const onTM = e => { if (_cpSvActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
     const stop = () => {
         _cpSvActive = false;
         document.removeEventListener('mousemove', onMM);
-        document.removeEventListener('mouseup',   stop);
+        document.removeEventListener('mouseup', stop);
         document.removeEventListener('touchmove', onTM);
-        document.removeEventListener('touchend',  stop);
+        document.removeEventListener('touchend', stop);
     };
     document.addEventListener('mousemove', onMM);
-    document.addEventListener('mouseup',   stop);
+    document.addEventListener('mouseup', stop);
     document.addEventListener('touchmove', onTM, { passive: false });
-    document.addEventListener('touchend',  stop);
+    document.addEventListener('touchend', stop);
 };
 
 // Hue drag
@@ -225,24 +225,24 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
     const stop = () => {
         _cpHueActive = false;
         document.removeEventListener('mousemove', onMM);
-        document.removeEventListener('mouseup',   stop);
+        document.removeEventListener('mouseup', stop);
         document.removeEventListener('touchmove', onTM);
-        document.removeEventListener('touchend',  stop);
+        document.removeEventListener('touchend', stop);
     };
     document.addEventListener('mousemove', onMM);
-    document.addEventListener('mouseup',   stop);
+    document.addEventListener('mouseup', stop);
     document.addEventListener('touchmove', onTM, { passive: false });
-    document.addEventListener('touchend',  stop);
+    document.addEventListener('touchend', stop);
 };
 
 window.cpStopDrag = function () { _cpSvActive = false; _cpHueActive = false; };
 
 window.cpRandomSwatchColor = function () {
     const swatches = [
-        '#ef4444','#f97316','#f59e0b','#eab308',
-        '#84cc16','#22c55e','#10b981','#14b8a6',
-        '#06b6d4','#0ea5e9','#3b82f6','#6366f1',
-        '#8b5cf6','#a855f7','#d946ef','#ec4899',
+        '#ef4444', '#f97316', '#f59e0b', '#eab308',
+        '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+        '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
+        '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
     ];
     return swatches[Math.floor(Math.random() * swatches.length)];
 };
@@ -258,7 +258,7 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     const rows = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'));
     if (fromIndex < 0 || fromIndex >= rows.length) return;
 
-    const dragged  = rows[fromIndex];
+    const dragged = rows[fromIndex];
     const bodyRect = body.getBoundingClientRect();
     const origRect = dragged.getBoundingClientRect();
 
@@ -273,34 +273,34 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
 
     body.style.position = 'relative';
 
-    dragged.style.position  = 'absolute';
-    dragged.style.left      = '0';
-    dragged.style.right     = '0';
-    dragged.style.zIndex    = '50';
-    dragged.style.top       = initialBodyY + 'px';
-    dragged.style.opacity   = '0.5';
+    dragged.style.position = 'absolute';
+    dragged.style.left = '0';
+    dragged.style.right = '0';
+    dragged.style.zIndex = '50';
+    dragged.style.top = initialBodyY + 'px';
+    dragged.style.opacity = '0.5';
     dragged.style.boxShadow = '0 8px 28px rgba(0,0,0,0.55)';
     dragged.style.transition = 'none';
 
-    const ph           = document.createElement('div');
-    ph.style.height    = rowH + 'px';
+    const ph = document.createElement('div');
+    ph.style.height = rowH + 'px';
     ph.style.flexShrink = '0';
     body.insertBefore(ph, dragged);
 
     let toIndex = fromIndex;
-    let ended   = false;
+    let ended = false;
 
-    try { dragged.setPointerCapture(pointerId); } catch (_) {}
+    try { dragged.setPointerCapture(pointerId); } catch (_) { }
 
     function onMove(clientY) {
-        const delta  = clientY - startClientY;
+        const delta = clientY - startClientY;
         const newTop = Math.max(0, initialBodyY + delta);
         dragged.style.top = newTop + 'px';
 
         const centreY = newTop + rowH / 2;
 
         const others = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
-                            .filter(r => r !== dragged);
+            .filter(r => r !== dragged);
 
         let best = 0;
         for (let i = 0; i < others.length; i++) {
@@ -326,38 +326,38 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         if (ended) return;
         ended = true;
 
-        document.removeEventListener('pointermove',   onPM);
-        document.removeEventListener('pointerup',     onPU);
+        document.removeEventListener('pointermove', onPM);
+        document.removeEventListener('pointerup', onPU);
         document.removeEventListener('pointercancel', onPU);
-        document.removeEventListener('touchmove',     onTM);
-        document.removeEventListener('touchend',      onTE);
+        document.removeEventListener('touchmove', onTM);
+        document.removeEventListener('touchend', onTE);
 
-        dragged.style.position  = '';
-        dragged.style.left      = '';
-        dragged.style.right     = '';
-        dragged.style.zIndex    = '';
-        dragged.style.top       = '';
-        dragged.style.opacity   = '';
+        dragged.style.position = '';
+        dragged.style.left = '';
+        dragged.style.right = '';
+        dragged.style.zIndex = '';
+        dragged.style.top = '';
+        dragged.style.opacity = '';
         dragged.style.boxShadow = '';
         dragged.style.transition = '';
-        body.style.position     = '';
+        body.style.position = '';
         ph.remove();
 
-        try { dragged.releasePointerCapture(pointerId); } catch (_) {}
+        try { dragged.releasePointerCapture(pointerId); } catch (_) { }
 
         dotNet.invokeMethodAsync('OnDragComplete', fromIndex, toIndex);
     }
 
     const onPM = e => onMove(e.clientY);
-    const onPU = ()  => onEnd();
+    const onPU = () => onEnd();
     const onTM = e => { if (e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientY); } };
-    const onTE = ()  => onEnd();
+    const onTE = () => onEnd();
 
-    document.addEventListener('pointermove',   onPM);
-    document.addEventListener('pointerup',     onPU);
+    document.addEventListener('pointermove', onPM);
+    document.addEventListener('pointerup', onPU);
     document.addEventListener('pointercancel', onPU);
-    document.addEventListener('touchmove',     onTM, { passive: false });
-    document.addEventListener('touchend',      onTE);
+    document.addEventListener('touchmove', onTM, { passive: false });
+    document.addEventListener('touchend', onTE);
 };
 
 
@@ -386,10 +386,10 @@ window.registerEdgeSwipeInterceptor = function (scrollEl, edgeZone) {
             scrollEl.style.overflowY = 'hidden';
             const restore = () => {
                 scrollEl.style.overflowY = '';
-                document.removeEventListener('touchend',    restore);
+                document.removeEventListener('touchend', restore);
                 document.removeEventListener('touchcancel', restore);
             };
-            document.addEventListener('touchend',    restore, { once: true });
+            document.addEventListener('touchend', restore, { once: true });
             document.addEventListener('touchcancel', restore, { once: true });
         }
     };
@@ -529,42 +529,17 @@ window.unregisterEscapeKey = function () {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SFP (Sort & Filter Panel) — drag-release protection
-//
-//  Prevents the overlay "apply on click" from firing when the user
-//  pressed a pointer inside the panel and released outside
-//  (e.g. while dragging a range-slider thumb past the panel edge).
-//
-//  Usage from Blazor OnAfterRenderAsync:
-//    var cleanup = await JS.InvokeAsync<IJSObjectReference>(
-//        "sfpRegisterPanelDragProtect", overlayRef, panelRef);
-//  And call cleanup.InvokeVoidAsync("call") on dispose if needed.
 // ═══════════════════════════════════════════════════════════════════════
 
 (function () {
     let _sfpDownInside = false;
 
-    /**
-     * overlayEl — the .sfp-overlay element that triggers apply-on-click
-     * panelEl   — the .sfp-panel  element that should NOT trigger it on drag-out
-     *
-     * Returns a cleanup function. Call it when the panel is hidden to avoid leaks.
-     */
     window.sfpRegisterPanelDragProtect = function (overlayEl, panelEl) {
-        if (!overlayEl || !panelEl) return function () {};
+        if (!overlayEl || !panelEl) return function () { };
 
-        // Pointer pressed INSIDE the panel → mark flag
         const onPanelDown = () => { _sfpDownInside = true; };
-
-        // Pointer pressed directly on the overlay → clear flag (normal click)
         const onOverlayDown = () => { _sfpDownInside = false; };
-
-        // On any pointer-up on the document, reset the flag after this tick
-        // (so the overlay's click handler, which fires synchronously before
-        // the next tick, can still read the correct value)
         const onDocUp = () => { setTimeout(() => { _sfpDownInside = false; }, 0); };
-
-        // Intercept the overlay click *before* Blazor's handler sees it
-        // when the drag started inside the panel
         const onOverlayClick = (e) => {
             if (_sfpDownInside) {
                 e.stopImmediatePropagation();
@@ -572,19 +547,126 @@ window.unregisterEscapeKey = function () {
             }
         };
 
-        panelEl.addEventListener  ('pointerdown', onPanelDown,    { capture: true });
-        overlayEl.addEventListener('pointerdown', onOverlayDown,  { capture: true });
-        overlayEl.addEventListener('click',       onOverlayClick, { capture: true });
-        document.addEventListener ('pointerup',   onDocUp,        { capture: true });
+        panelEl.addEventListener('pointerdown', onPanelDown, { capture: true });
+        overlayEl.addEventListener('pointerdown', onOverlayDown, { capture: true });
+        overlayEl.addEventListener('click', onOverlayClick, { capture: true });
+        document.addEventListener('pointerup', onDocUp, { capture: true });
 
         return function cleanup() {
-            panelEl.removeEventListener  ('pointerdown', onPanelDown,    { capture: true });
-            overlayEl.removeEventListener('pointerdown', onOverlayDown,  { capture: true });
-            overlayEl.removeEventListener('click',       onOverlayClick, { capture: true });
-            document.removeEventListener ('pointerup',   onDocUp,        { capture: true });
+            panelEl.removeEventListener('pointerdown', onPanelDown, { capture: true });
+            overlayEl.removeEventListener('pointerdown', onOverlayDown, { capture: true });
+            overlayEl.removeEventListener('click', onOverlayClick, { capture: true });
+            document.removeEventListener('pointerup', onDocUp, { capture: true });
         };
     };
 
-    /** Readable from Blazor via JS interop if a second check is ever needed. */
     window.sfpIsPointerDownInPanel = function () { return _sfpDownInside; };
+})();
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CARD DRAG — native JS, zero Blazor overhead on every move frame
+// ═══════════════════════════════════════════════════════════════════════
+
+(function () {
+    let _dotNet = null;
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let curX = 0, curY = 0;
+    let axis = 'none'; // 'none' | 'horizontal' | 'vertical'
+    let hasMoved = false;
+    let suppressNextClick = false;
+
+    const AXIS_LOCK = 8, MOVE_THRESHOLD = 8;
+
+    function card() { return document.querySelector('.anime-card.active'); }
+
+    function paint() {
+        const c = card();
+        if (!c) return;
+
+        if (axis !== 'horizontal') {
+            c.style.transform = `translateY(${curY}px)`;
+        }
+
+        const rOp = curX > 5 ? Math.min(1, (curX - 5) / 50) : 0;
+        const lOp = curX < -5 ? Math.min(1, (-curX - 5) / 50) : 0;
+        const q = s => c.querySelector(s);
+
+        const fr = q('.swipe-feather-right'), fl = q('.swipe-feather-left');
+        const hr = q('.swipe-hint-right'), hl = q('.swipe-hint-left');
+        const img = q('.anime-image');
+
+        if (fr) fr.style.opacity = rOp;
+        if (fl) fl.style.opacity = lOp;
+        if (hr) hr.style.opacity = rOp;
+        if (hl) hl.style.opacity = lOp;
+
+        if (img) {
+            if (curX !== 0) {
+                const rot = Math.max(-16, Math.min(16, curX * 0.022));
+                img.style.transform = `translateX(${curX}px) rotate(${rot}deg)`;
+            } else {
+                img.style.transform = '';
+            }
+        }
+    }
+
+    function onMove(x, y) {
+        if (!isDragging) return;
+        const dx = x - startX, dy = y - startY;
+        if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) hasMoved = true;
+        if (axis === 'none' && (Math.abs(dx) > AXIS_LOCK || Math.abs(dy) > AXIS_LOCK))
+            axis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+        if (axis === 'vertical') { curY = dy; curX = 0; }
+        else if (axis === 'horizontal') { curX = dx; curY = 0; }
+        paint();
+    }
+
+    function onEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        if (hasMoved) {
+            suppressNextClick = true;
+            setTimeout(() => { suppressNextClick = false; }, 100);
+        }
+        if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    window.initCardDrag = function (dotNetRef) {
+        _dotNet = dotNetRef;
+    };
+
+    window.startCardDrag = function (x, y) {
+        isDragging = true;
+        startX = x; startY = y;
+        curX = 0; curY = 0;
+        axis = 'none'; hasMoved = false;
+    };
+
+    // ── Native listeners ──────────────────────────────────────────────────────
+
+    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
+
+    document.addEventListener('touchmove', e => {
+        if (isDragging && e.touches.length) {
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => { if (isDragging) onEnd(); });
+    document.addEventListener('touchcancel', () => { if (isDragging) onEnd(); });
+
+    // Suppress the click that fires right after a drag (capture phase → before Blazor)
+    document.addEventListener('click', e => {
+        if (suppressNextClick) {
+            e.stopPropagation();
+            e.preventDefault();
+            suppressNextClick = false;
+        }
+    }, true);
 })();
