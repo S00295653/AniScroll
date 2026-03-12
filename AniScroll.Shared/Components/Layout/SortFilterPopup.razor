@@ -3,6 +3,7 @@
 @inject UserListService UserListService
 @inject AniListService AniListService
 @inject IJSRuntime JS
+@implements IDisposable
 
 @if (IsVisible)
 {
@@ -624,6 +625,7 @@
     private int    _resultCount = 0;
     private CancellationTokenSource? _debounceCtS;
     private bool _randomNoResults = false;
+    private DotNetObjectReference<SortFilterPopup>? _selfRef;
 
     // ── Fill styles ──────────────────────────────────────────────────────────
 
@@ -685,6 +687,18 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (IsVisible && _selfRef == null)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("sfpRegisterEscape", _selfRef);
+        }
+        else if (!IsVisible && _selfRef != null)
+        {
+            await JS.InvokeVoidAsync("sfpUnregisterEscape");
+            _selfRef.Dispose();
+            _selfRef = null;
+        }
+
         if (firstRender && !_jsReady)
         {
             await JS.InvokeVoidAsync("eval", @"
@@ -1048,6 +1062,20 @@
     }
 
     private Task Close() => OnClose.InvokeAsync();
+
+    [Microsoft.JSInterop.JSInvokable]
+    public async Task HandleEscapeFromJS() => await Apply();
+
+    public void Dispose()
+    {
+        _debounceCtS?.Cancel();
+        if (_selfRef != null)
+        {
+            _ = JS.InvokeVoidAsync("sfpUnregisterEscape");
+            _selfRef.Dispose();
+            _selfRef = null;
+        }
+    }
 
     private async Task PickRandom()
     {

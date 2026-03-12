@@ -485,7 +485,11 @@ window.aniListRemoveToken = function () {
 // ═══════════════════════════════════════════════════════════════════════
 
 let _escHandler = null;
-let _escDotNet  = null;
+let _escDotNet = null;
+let _sfpEscDotNet = null;
+
+window.sfpRegisterEscape = function (dotNet) { _sfpEscDotNet = dotNet; };
+window.sfpUnregisterEscape = function () { _sfpEscDotNet = null; };
 
 window.registerEscapeKey = function (dotNet) {
     _escDotNet = dotNet;
@@ -497,9 +501,14 @@ window.registerEscapeKey = function (dotNet) {
 
     _escHandler = function (e) {
         if (e.key === 'Escape') {
-            // If the Sort & Filter popup is open it has its own keydown handler
-            // and handles Escape itself — don't let the global handler also fire.
-            if (document.querySelector('.sfp-overlay')) return;
+            if (document.querySelector('.sfp-overlay')) {
+                // SFP is open — delegate to its own handler
+                if (_sfpEscDotNet) {
+                    e.preventDefault();
+                    _sfpEscDotNet.invokeMethodAsync('HandleEscapeFromJS');
+                }
+                return;
+            }
             e.preventDefault();
             _escDotNet.invokeMethodAsync('HandleEscapeKey');
         }
