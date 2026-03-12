@@ -587,6 +587,8 @@ namespace AniScroll.Shared.Services
             season
             seasonYear
             status
+            countryOfOrigin
+            isAdult
             startDate { year month day }
             endDate   { year month day }
             popularity
@@ -625,6 +627,8 @@ namespace AniScroll.Shared.Services
             season
             seasonYear
             status
+            countryOfOrigin
+            isAdult
             startDate { year month day }
             endDate   { year month day }
             popularity
@@ -860,34 +864,36 @@ namespace AniScroll.Shared.Services
 
                 return new AnimeCard
                 {
-                    Id          = m["id"]?.Value<int>() ?? 0,
-                    Title       = title,
+                    Id = m["id"]?.Value<int>() ?? 0,
+                    Title = title,
                     NativeTitle = nativeTitle,
-                    ImageUrl    = imageUrl,
-                    BannerUrl   = m["bannerImage"]?.ToString() ?? "",
-                    CoverColor  = coverColor,
-                    Score       = score,
+                    ImageUrl = imageUrl,
+                    BannerUrl = m["bannerImage"]?.ToString() ?? "",
+                    CoverColor = coverColor,
+                    Score = score,
                     Description = description,
-                    Season      = season,
-                    Year        = year,
-                    Status      = status,
-                    Episodes    = epDisplay,
-                    Genres      = genres,
-                    Format      = FormatFormat(m["format"]?.ToString() ?? ""),
-                    Source      = FormatSource(m["source"]?.ToString() ?? ""),
-                    Duration    = m["duration"]?.Value<int?>(),
-                    StartDate   = FormatDate(m["startDate"]),
-                    EndDate     = FormatDate(m["endDate"]),
-                    Popularity  = m["popularity"]?.Value<int?>(),
-                    Favourites  = m["favourites"]?.Value<int?>(),
-                    Studios     = studios,
-                    Relations   = relations,
-                    TrailerUrl  = trailerUrl,
-                    Tags        = tags,
+                    Season = season,
+                    Year = year,
+                    Status = status,
+                    Episodes = epDisplay,
+                    Genres = genres,
+                    Format = FormatFormat(m["format"]?.ToString() ?? ""),
+                    Source = FormatSource(m["source"]?.ToString() ?? ""),
+                    Duration = m["duration"]?.Value<int?>(),
+                    StartDate = FormatDate(m["startDate"]),
+                    EndDate = FormatDate(m["endDate"]),
+                    Popularity = m["popularity"]?.Value<int?>(),
+                    Favourites = m["favourites"]?.Value<int?>(),
+                    Studios = studios,
+                    Relations = relations,
+                    TrailerUrl = trailerUrl,
+                    Tags = tags,
                     ExternalLinks = extLinks,
-                    Rankings    = rankings,
+                    Rankings = rankings,
                     NextAiringEpisodeNum = nextEp,
-                    NextAiringTimeUntil  = timeUntil
+                    NextAiringTimeUntil = timeUntil,
+                    CountryOfOrigin = m["countryOfOrigin"]?.ToString() ?? "",   // ← ajouter
+                    IsAdult = m["isAdult"]?.Value<bool>() ?? false,     // ← ajouter
                 };
             }
             catch (Exception ex)
