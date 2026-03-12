@@ -434,7 +434,7 @@
 
 /* Heart overlay on poster — top-left corner */
 .entry-poster {
-    position: relative; /* needed for the absolute child */
+    position: relative;
 }
 
 .entry-poster-fav {
