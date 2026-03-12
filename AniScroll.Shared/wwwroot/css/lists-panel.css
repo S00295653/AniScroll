@@ -433,19 +433,13 @@
 }
 
 /* Heart overlay on poster — top-left corner */
-.entry-poster {
-    position: relative;
-}
-
-.entry-poster-fav {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    font-size: 13px;
-    line-height: 1;
+.entry-fav-badge {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 11px;
     color: #f43f5e;
-    text-shadow: 0 0 6px #f43f5e, 0 0 12px rgba(244, 63, 94, 0.7);
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-select: none;
+    vertical-align: middle;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px #f43f5e88);
 }
+ 

@@ -231,13 +231,15 @@
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
                                                     @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
-                                @if (UserListService.IsFavorited(e.Anime.Id))
-                                {
-                                    <span class="entry-poster-fav">♥</span>
-                                }
                             </div>
                             <div class="entry-info">
-                                <div class="entry-title">@e.Anime.Title</div>
+                                <div class="entry-title">
+                                    @e.Anime.Title
+                                    @if (UserListService.IsFavorited(e.Anime.Id))
+                                    {
+                                        <span class="entry-fav-badge" title="Favourited">♥</span>
+                                    }
+                                </div>
                                 @{
                                     var metaParts = new List<string>();
                                     if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
