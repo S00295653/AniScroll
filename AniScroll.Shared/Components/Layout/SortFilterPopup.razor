@@ -689,65 +689,62 @@
     {
         if (_isDisposed) return;
 
-        if (IsVisible && _selfRef == null)
+        try
         {
-            _selfRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("sfpRegisterEscape", _selfRef);
-        }
-        else if (!IsVisible && _selfRef != null)
-        {
-            await JS.InvokeVoidAsync("sfpUnregisterEscape");
-            _selfRef.Dispose();
-            _selfRef = null;
-            return; // popup fermé → rien d'autre à faire
-        }
-
-        if (!IsVisible) return; // garde : tout ce qui suit n'a de sens que popup ouvert
-
-        if (firstRender && !_jsReady)
-        {
-            await JS.InvokeVoidAsync("eval", @"
-            if (!window.sfpTrackClick) {
-                window.sfpTrackClick = function(el, clientX) {
-                    var r = el.getBoundingClientRect();
-                    return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
-                };
-            }
-            if (!window.sfpSetValue) {
-                window.sfpSetValue = function(el, val) {
-                    if (el) el.value = val;
-                };
-            }
-            if (!window.sfpInitDualSlider) {
-                window.sfpInitDualSlider = function(loEl, hiEl) {
-                    if (!loEl || !hiEl || loEl._sfpInited) return;
-                    loEl._sfpInited = true;
-                    loEl.addEventListener('input', function() {
-                        var hi = parseFloat(hiEl.value);
-                        if (parseFloat(loEl.value) > hi) loEl.value = hi;
-                    }, { capture: true });
-                    hiEl.addEventListener('input', function() {
-                        var lo = parseFloat(loEl.value);
-                        if (parseFloat(hiEl.value) < lo) hiEl.value = lo;
-                    }, { capture: true });
-                };
-            }
-        ");
-            _jsReady = true;
-        }
-
-        if (_jsReady)
-        {
-            // Les ElementReferences peuvent être invalides si un re-render concurrent a eu lieu
-            // (debounce, fetch metadata…). On absorbe silencieusement.
-            try
+            if (IsVisible && _selfRef == null)
             {
-                await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef, _yearHiRef);
-                await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
-                await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef, _epHiRef);
+                _selfRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("sfpRegisterEscape", _selfRef);
             }
-            catch (Exception) { /* refs pas encore prêtes ou composant déjà démonté */ }
+            else if (!IsVisible && _selfRef != null)
+            {
+                await JS.InvokeVoidAsync("sfpUnregisterEscape");
+                _selfRef.Dispose();
+                _selfRef = null;
+                return;
+            }
+
+            if (_isDisposed || !IsVisible) return;
+
+            if (firstRender && !_jsReady)
+            {
+                await JS.InvokeVoidAsync("eval", @"
+                if (!window.sfpTrackClick) {
+                    window.sfpTrackClick = function(el, clientX) {
+                        var r = el.getBoundingClientRect();
+                        return r.width > 0 ? Math.min(1, Math.max(0, (clientX - r.left) / r.width)) : 0;
+                    };
+                }
+                if (!window.sfpSetValue) {
+                    window.sfpSetValue = function(el, val) {
+                        if (el) el.value = val;
+                    };
+                }
+                if (!window.sfpInitDualSlider) {
+                    window.sfpInitDualSlider = function(loEl, hiEl) {
+                        if (!loEl || !hiEl || loEl._sfpInited) return;
+                        loEl._sfpInited = true;
+                        loEl.addEventListener('input', function() {
+                            var hi = parseFloat(hiEl.value);
+                            if (parseFloat(loEl.value) > hi) loEl.value = hi;
+                        }, { capture: true });
+                        hiEl.addEventListener('input', function() {
+                            var lo = parseFloat(loEl.value);
+                            if (parseFloat(hiEl.value) < lo) hiEl.value = lo;
+                        }, { capture: true });
+                    };
+                }
+            ");
+                _jsReady = true;
+            }
+
+            if (_isDisposed || !IsVisible || !_jsReady) return;
+
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _yearLoRef, _yearHiRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _scoreLoRef, _scoreHiRef);
+            await JS.InvokeVoidAsync("sfpInitDualSlider", _epLoRef, _epHiRef);
         }
+        catch (Exception) { /* composant démonté ou refs périmées entre deux awaits */ }
     }
 
     protected override void OnParametersSet()
