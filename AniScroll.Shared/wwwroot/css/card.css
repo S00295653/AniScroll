@@ -83,9 +83,10 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 16px 20px 110px;
+    /* FIX: use overflow:hidden so image never clips behind nav bar */
+    overflow: hidden;
+    padding: 12px 18px 108px;
     box-sizing: border-box;
-    overflow: visible;
 }
 
 @media (min-width: 768px) {
@@ -93,6 +94,7 @@
         max-width: 600px;
         margin: 0 auto;
         padding: 30px 30px 30px;
+        overflow: hidden;
     }
 }
 
@@ -110,22 +112,22 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 6px 0;
+    padding: 4px 0;
     overflow: hidden;
 }
 
 /* ========== ANIME IMAGE ========== */
 .anime-image {
     height: 100%;
-    max-height: min(55vh, 440px);
-    max-width: min(78vw, 300px);
+    max-height: min(52vh, 420px);
+    max-width: min(76vw, 290px);
     min-height: 90px;
     aspect-ratio: 2 / 3;
-    border-radius: 8px;
+    border-radius: 10px;
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.75);
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.80);
     cursor: pointer;
     image-rendering: auto;
     -webkit-image-rendering: auto;
@@ -158,37 +160,190 @@
     }
 }
 
+/* ========== INFO SECTION (text below image) ========== */
+.info-section {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+    cursor: pointer;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
+}
+
+.title-long {
+    font-size: 1.1rem;
+}
+
+.title-very-long {
+    font-size: 0.97rem;
+}
+
+.season-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+    .status-dot.releasing {
+        background: #22c55e;
+        box-shadow: 0 0 5px #22c55e99;
+    }
+
+    .status-dot.upcoming {
+        background: #f59e0b;
+        box-shadow: 0 0 5px #f59e0b99;
+    }
+
+.genres {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    font-weight: 400;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.badge-score {
+    background: rgba(255, 200, 50, 0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(255, 200, 50, 0.25);
+}
+
+.badge-episodes {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.12);
+}
+
+.description-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+}
+
+.description-preview {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.65);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.read-more-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.35);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+    .read-more-btn:hover {
+        color: rgba(255,255,255,0.65);
+    }
+
+@media (min-width: 768px) {
+    .title {
+        font-size: 1.55rem;
+    }
+
+    .title-long {
+        font-size: 1.3rem;
+    }
+
+    .title-very-long {
+        font-size: 1.1rem;
+    }
+
+    .description-preview {
+        font-size: 0.93rem;
+        -webkit-line-clamp: 5;
+    }
+
+    .genres {
+        font-size: 0.88rem;
+    }
+
+    .badge {
+        font-size: 0.88rem;
+        padding: 6px 14px;
+    }
+}
 
 /* ======================================================
-   SWIPE INDICATORS — Feather doux
+   SWIPE INDICATORS — Feather doux (renforcé mobile)
    ====================================================== */
-
-/*
-  Two overlay divs per card (right = COMPLETED, left = PLANNING).
-  Opacity is driven inline by Blazor (0 → 1 as the drag progresses).
-  The gradient fades from the edge inward across ~78% of the screen width,
-  mimicking the "feather doux" from the preview tool.
-*/
 
 .swipe-feather {
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 5;
-    /* opacity set inline */
 }
 
-/* Green feather — right edge → center */
+/* Green feather — right edge → center  (RENFORCÉ) */
 .swipe-feather-right {
-    background: linear-gradient( to left, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.10) 12%, rgba(34, 197, 94, 0.038) 32%, rgba(34, 197, 94, 0.010) 58%, transparent 100% );
+    background: linear-gradient( to left, rgba(34, 197, 94, 0.55) 0%, rgba(34, 197, 94, 0.30) 10%, rgba(34, 197, 94, 0.12) 28%, rgba(34, 197, 94, 0.04) 52%, transparent 100% );
 }
 
-/* Indigo feather — left edge → center */
+/* Indigo/violet feather — left edge → center  (RENFORCÉ) */
 .swipe-feather-left {
-    background: linear-gradient( to right, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.10) 12%, rgba(99, 102, 241, 0.038) 32%, rgba(99, 102, 241, 0.010) 58%, transparent 100% );
+    background: linear-gradient( to right, rgba(139, 92, 246, 0.55) 0%, rgba(139, 92, 246, 0.30) 10%, rgba(139, 92, 246, 0.12) 28%, rgba(139, 92, 246, 0.04) 52%, transparent 100% );
 }
 
-/* ── Hint pill ── */
+/* ── Hint pill — plus gros et plus visible ── */
 .swipe-hint {
     position: absolute;
     top: 50%;
@@ -196,48 +351,54 @@
     z-index: 30;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 11px;
+    gap: 6px;
+    padding: 8px 16px;
     border-radius: 100px;
     pointer-events: none;
     white-space: nowrap;
-    /* opacity driven inline */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
     .swipe-hint span {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 1.2px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
         text-transform: uppercase;
     }
 
 .swipe-hint-right {
-    right: 12px;
-    border: 0.5px solid rgba(34, 197, 94, 0.22);
-    color: rgba(134, 239, 172, 0.90); /* green-300 */
+    right: 14px;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    background: rgba(34, 197, 94, 0.12);
+    color: rgba(134, 239, 172, 0.95);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.20), inset 0 0 12px rgba(34, 197, 94, 0.08);
 }
 
 .swipe-hint-left {
-    left: 12px;
-    border: 0.5px solid rgba(99, 102, 241, 0.22);
-    color: rgba(165, 180, 252, 0.90); /* indigo-300 */
+    left: 14px;
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    background: rgba(139, 92, 246, 0.12);
+    color: rgba(196, 181, 253, 0.95);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.20), inset 0 0 12px rgba(139, 92, 246, 0.08);
 }
 
 @media (min-width: 768px) {
     .swipe-hint {
-        padding: 6px 13px;
+        padding: 9px 18px;
+        gap: 7px;
     }
 
         .swipe-hint span {
-            font-size: 11px;
-            letter-spacing: 1.4px;
+            font-size: 12px;
+            letter-spacing: 1.6px;
         }
 
     .swipe-hint-right {
-        right: 18px;
+        right: 20px;
     }
 
     .swipe-hint-left {
-        left: 18px;
+        left: 20px;
     }
 }

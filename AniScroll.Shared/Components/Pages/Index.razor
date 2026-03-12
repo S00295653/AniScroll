@@ -4,6 +4,7 @@
 @using System.Text.Json
 @inject AniListService AniListService
 @inject AniListAuthService AniListAuth
+@inject UserListService UserListService
 @inject HttpClient Http
 @inject IJSRuntime JS
 @implements IAsyncDisposable
@@ -651,9 +652,9 @@
 
     private async Task HandleListAction(AnimeCard anime, string status)
     {
-        System.Diagnostics.Debug.WriteLine($"[Swipe] \"{anime.Title}\" → {status}");
-        // if (AniListAuth.IsAuthenticated && anime.Id > 0)
-        //     await AniListService.SaveMediaListEntryAsync(anime.Id, status);
+        var listStatus = status == "COMPLETED" ? ListStatus.Completed : ListStatus.Planning;
+        UserListService.AddOrUpdate(anime, listStatus);
+        System.Diagnostics.Debug.WriteLine($"[Swipe] \"{anime.Title}\" → {listStatus}");
         await Task.CompletedTask;
     }
 
