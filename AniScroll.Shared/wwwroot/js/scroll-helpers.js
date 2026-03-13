@@ -558,9 +558,8 @@ window.unregisterEscapeKey = function () {
     const AXIS_LOCK = 8;
     const MOVE_THRESHOLD = 8;
     const HORIZ_THRESHOLD = 85;
-    // Snap-back easing — feels like a spring release
+    const SNAPBACK_MS = 260;
     const SNAPBACK_EASING = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    const SNAPBACK_MS = 280;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -577,30 +576,33 @@ window.unregisterEscapeKey = function () {
         img.style.transition = '';
     }
 
-    // ── Smooth snap-back: animate all cards to their baseline, THEN notify Blazor
+    // ── Smooth snap-back ──────────────────────────────────────────────────────
+    // transition and transform MUST be applied in separate frames.
+    // Same JS tick → browser batches them → no animation (instant jump).
+    //
+    // rAF 1: enable transition on all cards
+    // rAF 2: set target transform → browser animates from current painted pos → target
     function snapCardsToBaseline(callback) {
         if (!_cardBaseTransforms.length) { callback(); return; }
 
-        const transition = `transform ${SNAPBACK_MS}ms ${SNAPBACK_EASING}`;
+        // rAF 1 — enable transition (cards still at their mid-drag position)
+        requestAnimationFrame(() => {
+            _cardBaseTransforms.forEach(item => {
+                item.el.style.transition = `transform ${SNAPBACK_MS}ms ${SNAPBACK_EASING}`;
+            });
 
-        // 1. Appliquer la transition sur toutes les cartes
-        _cardBaseTransforms.forEach(item => {
-            item.el.style.transition = transition;
+            // rAF 2 — NOW change transform; browser sees a clear from→to and animates
+            requestAnimationFrame(() => {
+                _cardBaseTransforms.forEach(item => {
+                    item.el.style.transform = `translateY(${item.baseY}px)`;
+                });
+
+                setTimeout(() => {
+                    _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
+                    callback();
+                }, SNAPBACK_MS);
+            });
         });
-
-        // 2. Forcer un reflow AVANT de changer le transform
-        //    Sans ça, browser traite transition + transform comme un changement instantané
-        document.body.offsetHeight;
-
-        // 3. Maintenant appliquer le transform cible → animation se déclenche
-        _cardBaseTransforms.forEach(item => {
-            item.el.style.transform = `translateY(${item.baseY}px)`;
-        });
-
-        setTimeout(() => {
-            _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
-            callback();
-        }, SNAPBACK_MS);
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
@@ -744,9 +746,7 @@ window.unregisterEscapeKey = function () {
         }
 
         // ── VERTICAL + fallback ───────────────────────────────────────────────
-        // Animate all cards back to their baseline FIRST, then notify Blazor.
-        // This gives a smooth spring-back even when the swipe doesn't validate,
-        // while still letting Blazor correctly reposition cards on a valid swipe.
+        // Smoothly animate cards back to baseline, THEN notify Blazor.
         snapCardsToBaseline(() => {
             if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
         });
