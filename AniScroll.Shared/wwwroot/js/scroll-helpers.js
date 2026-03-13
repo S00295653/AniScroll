@@ -566,19 +566,14 @@ window.unregisterEscapeKey = function () {
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
-    // Strategy: forcibly set the card to its "from" state via inline style,
-    // then on the next frame remove it so the CSS animation takes over cleanly.
-    // This avoids any conflict with Blazor's translateY inline style.
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
-        // 1. Kill any leftover inline transform Blazor may have put (translateY(0))
-        //    and force the card invisible so there's no flash before the animation.
+        // Force the card invisible at its natural position before animating
         c.style.opacity = '0';
-        c.style.transform = 'translateY(0px)'; // pin it at 0 — no jump
+        c.style.transform = 'translateY(0px)';
 
-        // 2. Also prep the image: start from below
         const img = c.querySelector('.anime-image');
         if (img) {
             img.style.transition = 'none';
@@ -586,19 +581,17 @@ window.unregisterEscapeKey = function () {
             img.style.transform = 'translateY(36px) scale(0.91)';
         }
 
-        // 3. One rAF to let the browser apply the "from" state, then animate
+        // Double rAF: first applies "from" state, second starts the animation
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                // Remove the inline overrides — CSS animation takes over
                 c.style.opacity = '';
                 c.style.transform = '';
 
                 c.classList.remove('card-entering');
-                void c.offsetWidth; // force reflow to restart animation
+                void c.offsetWidth;
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Animate the image separately with its own keyframe
                 if (img) {
                     img.style.transition = '';
                     img.style.opacity = '';
@@ -701,36 +694,23 @@ window.unregisterEscapeKey = function () {
         if (horizValid) {
             const c = activeCard();
             if (c) {
+                // ── Fade out the whole card immediately — no flash of old content ──
+                c.style.transition = 'opacity 0.15s ease-out';
+                c.style.opacity = '0';
+
+                // ── Image flies off behind the fade ───────────────────────────────
                 const flyX = isRight ? 920 : -920;
                 const flyY = -90;
                 const rot = isRight ? 38 : -38;
 
-                // ── Image flies off ───────────────────────────────────────────
                 const img = c.querySelector('.anime-image');
                 if (img) {
                     img.style.transition =
-                        'transform 0.38s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
-                        'opacity   0.28s ease-in 0.04s';
+                        'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
+                        'opacity   0.36s ease-in 0.06s';
                     img.style.transform =
                         `translateX(${flyX}px) translateY(${flyY}px) rotate(${rot}deg)`;
                     img.style.opacity = '0';
-                }
-
-                // ── Everything else (text, bg, feathers) fades out fast ───────
-                const content = c.querySelector('.content-wrapper');
-                if (content) {
-                    content.style.transition = 'opacity 0.18s ease-in 0.10s';
-                    content.style.opacity = '0';
-                }
-                const bg = c.querySelector('.bg-image');
-                if (bg) {
-                    bg.style.transition = 'opacity 0.20s ease-in 0.08s';
-                    bg.style.opacity = '0';
-                }
-                const overlay = c.querySelector('.gradient-overlay');
-                if (overlay) {
-                    overlay.style.transition = 'opacity 0.20s ease-in 0.08s';
-                    overlay.style.opacity = '0';
                 }
 
                 ['.swipe-feather-right', '.swipe-feather-left',
@@ -740,7 +720,7 @@ window.unregisterEscapeKey = function () {
                     });
             }
 
-            // Notify Blazor after the fly-off — total budget 380ms
+            // Notify Blazor after the card is already invisible (150ms fade done)
             setTimeout(() => {
                 _pendingEntrance = true;
                 if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
@@ -752,14 +732,12 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: watch for the new .active card after Blazor re-render
-    //    This is the only reliable hook — no setTimeout guessing.
+    // ── MutationObserver: fires when Blazor adds .active to the new card ──────
     const _observer = new MutationObserver(() => {
         if (!_pendingEntrance) return;
         const c = activeCard();
         if (!c) return;
         _pendingEntrance = false;
-        // Give Blazor one more microtask to finish patching the DOM
         Promise.resolve().then(() => runEntrance());
     });
 
