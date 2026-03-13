@@ -1,15 +1,14 @@
-/* ======================================================
-   SWIPE SETTINGS POPUP
-   Add to: AniScroll.Shared/wwwroot/css/swipe-settings.css
-   (and import it in your main CSS bundle / index.html)
+﻿/* ======================================================
+   SWIPE SETTINGS  —  swipe-settings.css
    ====================================================== */
 
+/* ── Overlay ─────────────────────────────────────────── */
 .swset-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.78);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 3000;
     display: flex;
     align-items: flex-end;
@@ -27,19 +26,27 @@
     }
 }
 
+/* ── Panel ───────────────────────────────────────────── */
 .swset-panel {
     background: #0e0e16;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255,255,255,0.07);
     border-bottom: none;
     border-radius: 18px 18px 0 0;
     width: 100%;
-    max-width: 480px;
-    padding: 20px 20px 36px;
-    animation: swsetSlideUp 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    max-width: 520px;
+    padding: 18px 18px 32px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 14px;
+    animation: swsetSlideUp 0.26s cubic-bezier(0.25,0.46,0.45,0.94);
+    max-height: 92dvh;
+    overflow-y: auto;
+    scrollbar-width: none;
 }
+
+    .swset-panel::-webkit-scrollbar {
+        display: none;
+    }
 
 @media (min-width: 540px) {
     .swset-overlay {
@@ -47,19 +54,15 @@
     }
 
     .swset-panel {
-        border: 1px solid rgba(255, 255, 255, 0.09);
+        border: 1px solid rgba(255,255,255,0.09);
         border-radius: 16px;
-        max-height: 88dvh;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255,255,255,0.15) transparent;
         margin-bottom: 0;
     }
 }
 
 @keyframes swsetSlideUp {
     from {
-        transform: translateY(40px);
+        transform: translateY(32px);
         opacity: 0;
     }
 
@@ -69,11 +72,17 @@
     }
 }
 
-/* Header */
+/* ── Header ──────────────────────────────────────────── */
 .swset-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.swset-header-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
 }
 
 .swset-title {
@@ -84,17 +93,18 @@
 }
 
 .swset-close {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 0.18s, transform 0.13s;
+    transition: background 0.15s, transform 0.12s;
+    flex-shrink: 0;
 }
 
     .swset-close:active {
@@ -103,156 +113,431 @@
 
 .swset-subtitle {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.38);
-    margin-top: -10px;
+    color: rgba(255,255,255,0.35);
     line-height: 1.5;
+    margin-top: -6px;
 }
 
-/* Section */
-.swset-section {
+    .swset-subtitle strong {
+        color: rgba(255,255,255,0.6);
+        font-weight: 700;
+    }
+
+/* ── Preview wrapper  (zones + skeleton side by side) ── */
+.swset-preview-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+    min-height: 320px;
+}
+
+/* ── Side zone (dashed box) ──────────────────────────── */
+.swset-zone {
+    width: 72px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px dashed color-mix(in srgb, var(--zc) 45%, transparent);
+    background: color-mix(in srgb, var(--zc) 5%, transparent);
+    z-index: 2;
+}
+
+.swset-zone-left {
+    border-right: none;
+    border-radius: 11px 0 0 11px;
+}
+
+.swset-zone-right {
+    border-left: none;
+    border-radius: 0 11px 11px 0;
+}
+
+/* colour glow spilling inward */
+.swset-zone-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.swset-zone-inner {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-
-.swset-section-label {
-    display: flex;
     align-items: center;
-    gap: 8px;
-}
-
-.swset-direction-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 11px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
-.swset-right-badge {
-    background: rgba(34, 197, 94, 0.12);
-    border: 1px solid rgba(34, 197, 94, 0.30);
-    color: #4ade80;
-}
-
-.swset-left-badge {
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.30);
-    color: #818cf8;
-}
-
-/* Options grid */
-.swset-options {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.swset-option {
-    display: flex;
-    align-items: center;
+    justify-content: center;
     gap: 7px;
-    padding: 9px 11px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 12px;
-    font-weight: 600;
+    padding: 10px 4px;
+    text-align: center;
+}
+
+.swset-zone-svg {
+    color: var(--zc);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 6px var(--zc));
+}
+
+.swset-zone-label {
+    color: var(--zc);
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    word-break: break-word;
+    max-width: 58px;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--zc) 60%, transparent);
+}
+
+.swset-zone-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--zc) 40%, transparent);
+    background: color-mix(in srgb, var(--zc) 14%, transparent);
+    color: var(--zc);
+    font-size: 10px;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
     font-family: inherit;
-    text-align: left;
+    transition: background 0.15s, transform 0.12s;
     white-space: nowrap;
 }
 
-    .swset-option:active {
-        transform: scale(0.94);
+    .swset-zone-edit-btn:active {
+        transform: scale(0.91);
     }
 
-    .swset-option:hover:not(.swset-option-selected) {
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.80);
+    .swset-zone-edit-btn:hover {
+        background: color-mix(in srgb, var(--zc) 22%, transparent);
     }
 
-.swset-option-dot {
-    width: 7px;
-    height: 7px;
+/* ── Skeleton card (centre) ──────────────────────────── */
+.swset-skeleton-card {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    background: #0a0a12;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* blurred background "wallpaper" */
+.swset-sk-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 30%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(168,85,247,0.09) 0%, transparent 60%);
+}
+
+.swset-sk-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.72) 100%);
+}
+
+/* colour feathers on skeleton edges */
+.swset-sk-feather {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.swset-sk-feather-left {
+    left: 0;
+}
+
+.swset-sk-feather-right {
+    right: 0;
+}
+
+/* swipe hint pills on the skeleton */
+.swset-sk-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+}
+
+.swset-sk-hint-left {
+    left: 4px;
+}
+
+.swset-sk-hint-right {
+    right: 4px;
+    flex-direction: row-reverse;
+}
+
+/* poster placeholder */
+.swset-sk-poster {
+    position: absolute;
+    top: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44%;
+    aspect-ratio: 2/3;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    z-index: 4;
+}
+
+/* text lines */
+.swset-sk-info {
+    position: absolute;
+    bottom: 68px;
+    left: 10px;
+    right: 10px;
+    z-index: 4;
+}
+
+.swset-sk-line {
+    border-radius: 3px;
+    background: rgba(255,255,255,0.10);
+    animation: swsetShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes swsetShimmer {
+    0%,100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* nav bar at bottom */
+.swset-sk-navbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(0,0,0,0.85);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+    z-index: 5;
+}
+
+.swset-sk-nav-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* ── Picker overlay ──────────────────────────────────── */
+.swset-picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 3100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: swsetFadeIn 0.15s ease;
+}
+
+@media (min-width: 540px) {
+    .swset-picker-overlay {
+        align-items: center;
+    }
+}
+
+/* ── Picker panel ────────────────────────────────────── */
+.swset-picker-panel {
+    background: #0e0e16;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-bottom: none;
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    max-height: 78dvh;
+    animation: swsetSlideUp 0.22s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+@media (min-width: 540px) {
+    .swset-picker-panel {
+        border-radius: 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+}
+
+.swset-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.swset-picker-direction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+}
+
+.swset-picker-badge-right {
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.30);
+    color: #4ade80;
+}
+
+.swset-picker-badge-left {
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.30);
+    color: #818cf8;
+}
+
+.swset-picker-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 14px 28px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+    flex: 1;
+}
+
+    .swset-picker-scroll::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .swset-picker-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.14);
+        border-radius: 2px;
+    }
+
+.swset-picker-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.28);
+    margin-bottom: 8px;
+    padding-left: 2px;
+}
+
+.swset-picker-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.swset-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.60);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: background 0.13s, border-color 0.13s, color 0.13s, transform 0.10s;
+}
+
+    .swset-picker-item:active {
+        transform: scale(0.97);
+    }
+
+    .swset-picker-item:hover:not(.swset-picker-item-sel) {
+        background: rgba(255,255,255,0.07);
+        color: rgba(255,255,255,0.85);
+    }
+
+.swset-picker-item-sel {
+    font-weight: 700;
+}
+
+.swset-picker-dot {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-.swset-option-icon {
-    font-size: 13px;
+.swset-picker-icon {
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
+    width: 16px;
+    justify-content: center;
 }
 
-.swset-option-label {
+.swset-picker-name {
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.swset-check {
+.swset-picker-check {
     flex-shrink: 0;
     margin-left: auto;
 }
 
-/* Preview bar */
-.swset-preview {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-}
-
-.swset-preview-side {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 10px;
-    border-radius: 9px;
-    border: 1px solid;
-    font-size: 12px;
-    font-weight: 700;
-    background: transparent;
-    transition: color 0.2s, border-color 0.2s;
-}
-
-.swset-preview-left {
-    justify-content: flex-start;
-    flex-direction: row-reverse;
-}
-
-.swset-preview-right {
-    justify-content: flex-start;
-}
-
-.swset-preview-icon {
-    font-size: 14px;
-}
-
-.swset-preview-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.swset-preview-card {
-    flex-shrink: 0;
-    width: 36px;
-    height: 50px;
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+/* ── Settings open button (in overlay-controls) ─────── */
+.swset-open-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.50);
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    transition: background 0.16s, color 0.16s, transform 0.12s;
 }
+
+    .swset-open-btn:hover {
+        background: rgba(255,255,255,0.14);
+        color: rgba(255,255,255,0.9);
+    }
+
+    .swset-open-btn:active {
+        transform: scale(0.88);
+    }
