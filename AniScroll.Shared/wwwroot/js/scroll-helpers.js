@@ -729,7 +729,6 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: watch for the new .active card after Blazor re-render
     const _observer = new MutationObserver(() => {
         const c = activeCard();
         if (!c) return;
