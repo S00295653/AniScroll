@@ -2,7 +2,6 @@
    SCROLLER SETTINGS  —  scroller-settings.css
    ====================================================== */
 
-/* ── Screen ───────────────────────────────────────────── */
 .swset-screen {
     position: fixed;
     inset: 0;
@@ -26,7 +25,7 @@
     }
 }
 
-/* ── Top bar ──────────────────────────────────────────── */
+/* ── Top bar ───────────────────────────────────────────── */
 .swset-topbar {
     flex-shrink: 0;
     display: flex;
@@ -72,19 +71,19 @@
     letter-spacing: -0.01em;
 }
 
-/* ── Section block — 55% of remaining space ──────────── */
+/* ── Section block — 55% ───────────────────────────────── */
 .swset-section-block {
     flex: 0 0 55%;
     min-height: 0;
     position: relative;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    animation: swsetFadeUp 0.25s ease-out 0.06s both;
+    animation: swsetFadeUp 0.22s ease-out 0.05s both;
 }
 
 @keyframes swsetFadeUp {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(6px);
     }
 
     to {
@@ -93,42 +92,65 @@
     }
 }
 
-/* ── Preview card — fills the section, position:relative ── */
+/* ── Preview card — fills section completely ───────────── */
 .swset-preview-card {
     position: absolute;
     inset: 0;
     overflow: hidden;
 }
 
-/* ── Background (mirrors .bg-image) ──────────────────── */
+/* mirrors .bg-image */
 .swset-sk-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: radial-gradient(ellipse at 30% 30%, rgba(70,70,130,0.35) 0%, transparent 55%), radial-gradient(ellipse at 70% 65%, rgba(50,50,100,0.25) 0%, transparent 55%), #0b0b16;
+    background: radial-gradient(ellipse at 30% 30%, rgba(80,70,150,0.45) 0%, transparent 55%), radial-gradient(ellipse at 72% 60%, rgba(30,60,120,0.35) 0%, transparent 55%), #0c0c18;
 }
 
-/* ── Dark overlay (mirrors .gradient-overlay) ─────────── */
+/* mirrors .gradient-overlay */
 .swset-sk-overlay {
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.50) 42%, rgba(0,0,0,0.80) 100%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0.78) 100%);
 }
 
-/* ══════════════════════════════════════════════════════
-   LEFT / RIGHT SIDE OVERLAYS
-   Each one: full-height strip on the edge, contains
-   the feather gradient + hint pill + Edit button
-   ══════════════════════════════════════════════════════ */
+/* mirrors .content-wrapper */
+.swset-sk-content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════
+   IMAGE SECTION — ~55% height, full width.
+   Feathers + hints + Edit buttons live INSIDE.
+   ══════════════════════════════════════════════ */
+.swset-sk-image-section {
+    flex: 0 0 54%;
+    min-height: 0;
+    position: relative; /* anchor for absolute children */
+    overflow: hidden;
+}
+
+/* the anime image bg placeholder */
+.swset-sk-image-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(90,80,160,0.30) 0%, transparent 60%), rgba(255,255,255,0.02);
+}
+
+/* ── Left / Right side overlays — absolute INSIDE image section ── */
 .swset-side {
     position: absolute;
     top: 0;
     bottom: 0;
+    width: 45%;
+    pointer-events: none;
     z-index: 10;
-    width: 44%; /* feather reach */
-    pointer-events: none; /* only the UI children are interactive */
 }
 
 .swset-side-left {
@@ -139,30 +161,31 @@
     right: 0;
 }
 
-/* feather — one gradient, covers the side strip */
+/* single feather gradient */
 .swset-side-feather {
     position: absolute;
     inset: 0;
     pointer-events: none;
 }
 
-/* UI column — hint + button, vertically centred */
+/* hint + button column, centred vertically in the image section */
 .swset-side-ui {
     position: absolute;
     top: 0;
     bottom: 0;
+    left: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     gap: 10px;
-    padding: 0 12px;
+    padding: 0 14px;
     pointer-events: all;
 }
 
-.swset-side-right .swset-side-ui {
-    right: 0;
+.swset-side-ui-right {
     left: auto;
+    right: 0;
     align-items: flex-end;
 }
 
@@ -171,28 +194,29 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 11px;
+    padding: 7px 12px;
     border-radius: 10px;
     border: 1.5px solid;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    background: rgba(0,0,0,0.50);
+    background: rgba(0,0,0,0.52);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     white-space: nowrap;
-    animation: swsetHintIn 0.35s ease-out 0.15s both;
+    animation: swHintL 0.32s ease-out 0.12s both;
 }
 
-.swset-hint-right {
+.swset-hint-r {
     flex-direction: row-reverse;
+    animation-name: swHintR;
 }
 
-@keyframes swsetHintIn {
+@keyframes swHintL {
     from {
         opacity: 0;
-        transform: translateX(-12px);
+        transform: translateX(-10px);
     }
 
     to {
@@ -201,14 +225,10 @@
     }
 }
 
-.swset-side-right .swset-hint {
-    animation-name: swsetHintInR;
-}
-
-@keyframes swsetHintInR {
+@keyframes swHintR {
     from {
         opacity: 0;
-        transform: translateX(12px);
+        transform: translateX(10px);
     }
 
     to {
@@ -222,7 +242,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 7px 12px;
+    padding: 6px 12px;
     border-radius: 9px;
     border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
     background: color-mix(in srgb, var(--zc) 18%, rgba(0,0,0,0.55));
@@ -235,11 +255,11 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     transition: background 0.14s, transform 0.11s;
-    animation: swsetHintIn 0.35s ease-out 0.22s both;
+    animation: swHintL 0.32s ease-out 0.20s both;
 }
 
 .swset-side-right .swset-edit-btn {
-    animation-name: swsetHintInR;
+    animation-name: swHintR;
 }
 
 .swset-edit-btn:active {
@@ -250,67 +270,29 @@
     background: color-mix(in srgb, var(--zc) 30%, rgba(0,0,0,0.45));
 }
 
-/* ══════════════════════════════════════════════════════
-   CONTENT — mirrors .content-wrapper layout exactly
-   ══════════════════════════════════════════════════════ */
-.swset-sk-content {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* mirrors .image-section — full width, ~55% height like the real card */
-.swset-sk-image-section {
-    flex: 0 0 52%;
-    min-height: 0;
-    position: relative;
-    overflow: hidden;
-}
-
-/* mirrors .anime-image — full width background image */
-.swset-sk-poster {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(160deg, rgba(60,60,110,0.6) 0%, rgba(30,30,70,0.8) 40%, rgba(15,15,40,0.95) 100%);
-    border-radius: 0;
-}
-
-@keyframes skFloat {
-    0%, 100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-5px);
-    }
-}
-
-/* mirrors .info-section */
+/* ══════════════════════════════════════════════
+   INFO SECTION — mirrors .info-section exactly
+   ══════════════════════════════════════════════ */
 .swset-sk-info-section {
     flex: 1;
     min-height: 0;
-    padding: 12px 16px 6px;
+    padding: 12px 16px 8px;
     display: flex;
     flex-direction: column;
-    gap: 0;
     overflow: hidden;
 }
 
-/* shared line */
 .swset-sk-line {
     border-radius: 4px;
-    background: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.11);
     flex-shrink: 0;
-    animation: skLine 0.30s ease-out both;
+    animation: skLineIn 0.28s ease-out both;
 }
 
-@keyframes skLine {
+@keyframes skLineIn {
     from {
         opacity: 0;
-        transform: scaleX(0.78);
+        transform: scaleX(0.75);
         transform-origin: left;
     }
 
@@ -320,47 +302,52 @@
     }
 }
 
-/* title — big like h1 in real card */
+/* h1.title */
 .swset-sk-title {
-    height: 16px;
+    height: 15px;
     border-radius: 5px;
     margin-bottom: 8px;
-    opacity: 0.90;
 }
-/* season-info */
+/* .season-info */
 .swset-sk-season {
     height: 7px;
     border-radius: 3px;
     margin-bottom: 7px;
-    opacity: 0.45;
+    opacity: 0.48;
 }
-/* genres — slightly colored tint to evoke the real colored genres */
+/* .genres */
 .swset-sk-genres {
     height: 6px;
     border-radius: 3px;
     margin-bottom: 9px;
-    opacity: 0.38;
-    background: rgba(180,130,255,0.25);
+    background: rgba(180,130,255,0.22); /* evokes colored genre text */
 }
 
 /* .stats */
 .swset-sk-stats {
     display: flex;
     gap: 6px;
-    margin-bottom: 9px;
+    margin-bottom: 10px;
     flex-shrink: 0;
-    animation: skLine 0.30s ease-out both;
+    animation: skLineIn 0.28s ease-out both;
 }
 
 .swset-sk-badge {
     height: 22px;
-    width: 52px;
     border-radius: 7px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.09);
     border: 1px solid rgba(255,255,255,0.10);
 }
 
-/* description block */
+.swset-sk-badge-score {
+    width: 52px;
+}
+
+.swset-sk-badge-ep {
+    width: 58px;
+}
+
+/* .description-container */
 .swset-sk-desc-block {
     display: flex;
     flex-direction: column;
@@ -372,24 +359,20 @@
 .swset-sk-desc {
     height: 5px;
     border-radius: 3px;
-    opacity: 0.30;
+    opacity: 0.32;
 }
 
-/* read-more — matches the blue "Read More" button style */
+/* Read More link */
 .swset-sk-read-more {
     align-self: flex-start;
-    padding: 0;
-    background: none;
-    border: none;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: rgba(100,160,255,0.50);
-    letter-spacing: 0.01em;
+    color: rgba(96,165,250,0.55); /* matches the blue "Read More" in real card */
     flex-shrink: 0;
-    animation: skLine 0.30s ease-out both;
+    animation: skLineIn 0.28s ease-out both;
 }
 
-/* ── Future settings (45%) ────────────────────────────── */
+/* ── Future settings (45%) ─────────────────────────────── */
 .swset-future-sections {
     flex: 1;
     min-height: 0;
@@ -397,7 +380,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* ── Picker screen ───────────────────────────────────── */
+/* ── Picker screen ─────────────────────────────────────── */
 .swset-picker-screen {
     z-index: 3100;
 }
@@ -505,7 +488,7 @@
     margin-left: auto;
 }
 
-/* ── Settings open button ────────────────────────────── */
+/* ── Settings open button ──────────────────────────────── */
 .swset-open-btn {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
