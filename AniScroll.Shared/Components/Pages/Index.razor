@@ -570,26 +570,32 @@
         {
             bool isRight = currentDragXOffset > 0;
 
-            // Fly the image off-screen
-            isTransitioning = true;
-            currentDragXOffset = isRight ? 1400.0 : -1400.0;
-            StateHasChanged();
-
+            // ── FIX : on enregistre l'action et on avance l'index IMMÉDIATEMENT
+            //    sans aucun délai — drag.js gère déjà le fly-off visuellement.
+            //    Blazor re-rend le nouvel anime pendant que le fly-off JS se joue.
             await HandleListAction(animes[currentIndex], isRight ? "COMPLETED" : "PLANNING");
-            await Task.Delay(300);
 
             if (currentIndex < animes.Count - 1) currentIndex++;
-            isTransitioning = false; currentDragXOffset = 0;
-            currentDragOffset = 0; _swipeAxis = SwipeAxis.None; hasMoved = false;
-            StateHasChanged();
+
+            // Reset tous les états de drag
+            isTransitioning = false;
+            currentDragXOffset = 0;
+            currentDragOffset = 0;
+            _swipeAxis = SwipeAxis.None;
+            hasMoved = false;
+
+            StateHasChanged(); // Blazor rend le nouvel anime immédiatement
         }
         else
         {
-            // Snap back
-            isTransitioning = true; currentDragXOffset = 0;
+            // Snap back — pas de changement d'index
+            isTransitioning = true;
+            currentDragXOffset = 0;
             StateHasChanged();
             await Task.Delay(260);
-            isTransitioning = false; _swipeAxis = SwipeAxis.None; hasMoved = false;
+            isTransitioning = false;
+            _swipeAxis = SwipeAxis.None;
+            hasMoved = false;
         }
     }
 

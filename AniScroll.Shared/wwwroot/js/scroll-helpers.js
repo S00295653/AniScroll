@@ -568,15 +568,13 @@ window.unregisterEscapeKey = function () {
     // ── Entrance animation for the new card after a horizontal swipe ──────────
     // Strategy: forcibly set the card to its "from" state via inline style,
     // then on the next frame remove it so the CSS animation takes over cleanly.
-    // This avoids any conflict with Blazor's translateY inline style.
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
-        // 1. Kill any leftover inline transform Blazor may have put (translateY(0))
-        //    and force the card invisible so there's no flash before the animation.
+        // 1. Force the card invisible so there's no flash before the animation.
         c.style.opacity = '0';
-        c.style.transform = 'translateY(0px)'; // pin it at 0 — no jump
+        c.style.transform = 'translateY(0px)';
 
         // 2. Also prep the image: start from below
         const img = c.querySelector('.anime-image');
@@ -589,16 +587,14 @@ window.unregisterEscapeKey = function () {
         // 3. One rAF to let the browser apply the "from" state, then animate
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                // Remove the inline overrides — CSS animation takes over
                 c.style.opacity = '';
                 c.style.transform = '';
 
                 c.classList.remove('card-entering');
-                void c.offsetWidth; // force reflow to restart animation
+                void c.offsetWidth;
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Animate the image separately with its own keyframe
                 if (img) {
                     img.style.transition = '';
                     img.style.opacity = '';
@@ -722,10 +718,12 @@ window.unregisterEscapeKey = function () {
                     });
             }
 
-            // ── FIX: Tell Blazor IMMEDIATELY so it re-renders the new anime
-            //    card right away during the fly-off animation.
-            //    The MutationObserver will catch the new .active card and call
-            //    runEntrance(), which hides it first then animates it in cleanly.
+            // ── FIX: notifie Blazor IMMÉDIATEMENT — plus de setTimeout 420ms.
+            //    Blazor (FinishHorizontalSwipe) change currentIndex sans délai
+            //    et appelle StateHasChanged() → le nouvel anime est rendu dans
+            //    le DOM PENDANT que le fly-off JS se joue encore.
+            //    Le MutationObserver détecte la nouvelle .active card et appelle
+            //    runEntrance() qui la cache puis l'anime proprement.
             _pendingEntrance = true;
             if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
             return;
