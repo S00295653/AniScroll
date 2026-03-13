@@ -574,15 +574,9 @@ window.unregisterEscapeKey = function () {
         const c = activeCard();
         if (!c) return;
 
+        // Masque brièvement la carte pour éviter le flash
         c.style.opacity = '0';
         c.style.transform = 'translateY(0px)';
-
-        const img = c.querySelector('.anime-image');
-        if (img) {
-            img.style.transition = 'none';
-            img.style.opacity = '0';
-            img.style.transform = 'translateY(36px) scale(0.91)';
-        }
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -594,14 +588,12 @@ window.unregisterEscapeKey = function () {
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
+                // Image : simple reset, pas d'animation d'entrée
+                const img = c.querySelector('.anime-image');
                 if (img) {
                     img.style.transition = '';
                     img.style.opacity = '';
                     img.style.transform = '';
-                    img.classList.remove('img-entering');
-                    void img.offsetWidth;
-                    img.classList.add('img-entering');
-                    setTimeout(() => img.classList.remove('img-entering'), 560);
                 }
             });
         });
@@ -729,6 +721,7 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
+    // ── MutationObserver: watch for .active card changes after Blazor re-render
     const _observer = new MutationObserver(() => {
         const c = activeCard();
         if (!c) return;
@@ -740,7 +733,7 @@ window.unregisterEscapeKey = function () {
         }
 
         // Nettoie les styles résiduels du fly-off horizontal
-        // (cas : on revient sur une carte précédemment swipée)
+        // (cas : on revient en vertical sur une carte précédemment swipée)
         const img = c.querySelector('.anime-image');
         if (img) {
             img.style.transition = '';
