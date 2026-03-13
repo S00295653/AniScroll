@@ -722,11 +722,12 @@ window.unregisterEscapeKey = function () {
                     });
             }
 
-            // Tell Blazor after the fly-off; it will re-render with the new active card
-            setTimeout(() => {
-                _pendingEntrance = true;
-                if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
-            }, 420);
+            // ── FIX: Tell Blazor IMMEDIATELY so it re-renders the new anime
+            //    card right away during the fly-off animation.
+            //    The MutationObserver will catch the new .active card and call
+            //    runEntrance(), which hides it first then animates it in cleanly.
+            _pendingEntrance = true;
+            if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
             return;
         }
 
