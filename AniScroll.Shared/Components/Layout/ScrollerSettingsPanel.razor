@@ -1,4 +1,4 @@
-﻿@* AniScroll.Shared/Components/Layout/SwipeSettingsPopup.razor *@
+﻿@* AniScroll.Shared/Components/Layout/ScrollerSettingsPanel.razor *@
 @using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
 @using AniScroll.Shared.Helpers
@@ -27,100 +27,103 @@
                 </svg>
                 <span class="swset-title">Swipe Settings</span>
             </div>
-            <!-- spacer to balance the back button -->
             <div style="width:38px;"></div>
         </div>
 
-        <p class="swset-subtitle">Tap <strong>Edit</strong> on either side to change what a swipe does</p>
-
-        <!-- ── Skeleton preview (fills remaining space) ───────────────── -->
-        @{
-            var lc = GetEffectiveColor(false);
-            var rc = GetEffectiveColor(true);
-            var leftLabel = GetEffectiveLabel(false);
-            var rightLabel = GetEffectiveLabel(true);
-        }
-        <div class="swset-preview-wrap">
-
-            <!-- ── LEFT zone ──────────────────────────────────────────── -->
-            <div class="swset-zone swset-zone-left" style="--zc:@lc;">
-                <div class="swset-zone-glow"
-                     style="background:linear-gradient(to right,@(lc)45 0%,transparent 100%);"></div>
-                <div class="swset-zone-inner">
-                    <span class="swset-zone-svg">@((MarkupString)GetSvgIcon(_leftStatus))</span>
-                    <span class="swset-zone-label">@leftLabel</span>
-                    <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(false)">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit
-                    </button>
-                </div>
+        <!-- ── Swipe Action section (40% of page) ──────────────────────── -->
+        <div class="swset-section-block">
+            <div class="swset-section-header">
+                <span class="swset-section-label">Swipe Actions</span>
+                <span class="swset-section-hint">Tap <strong>Edit</strong> to change what a swipe does</span>
             </div>
 
-            <!-- ── Skeleton card ──────────────────────────────────────── -->
-            <div class="swset-skeleton-card">
-                <!-- ambient bg -->
-                <div class="swset-sk-bg"></div>
-                <div class="swset-sk-gradient"></div>
+            @{
+                var lc = GetEffectiveColor(false);
+                var rc = GetEffectiveColor(true);
+                var leftLabel = GetEffectiveLabel(false);
+                var rightLabel = GetEffectiveLabel(true);
+            }
+            <div class="swset-preview-wrap">
 
-                <!-- colour feathers on edges -->
-                <div class="swset-sk-feather swset-sk-feather-left"
-                     style="background:linear-gradient(to right,@(lc)35 0%,transparent 100%);"></div>
-                <div class="swset-sk-feather swset-sk-feather-right"
-                     style="background:linear-gradient(to left,@(rc)35 0%,transparent 100%);"></div>
-
-                <!-- hint pills -->
-                <div class="swset-sk-hint swset-sk-hint-left"
-                     style="color:@lc;border-color:@(lc)80;box-shadow:0 0 14px @(lc)22;">
-                    @((MarkupString)GetSvgIcon(_leftStatus))
-                    <span>@leftLabel</span>
+                <!-- ── LEFT zone ──────────────────────────────────────────── -->
+                <div class="swset-zone swset-zone-left" style="--zc:@lc;">
+                    <div class="swset-zone-glow"
+                         style="background:linear-gradient(to right,@(lc)45 0%,transparent 100%);"></div>
+                    <div class="swset-zone-inner">
+                        <span class="swset-zone-svg">@((MarkupString)GetSvgIcon(_leftStatus))</span>
+                        <span class="swset-zone-label">@leftLabel</span>
+                        <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(false)">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
                 </div>
-                <div class="swset-sk-hint swset-sk-hint-right"
-                     style="color:@rc;border-color:@(rc)80;box-shadow:0 0 14px @(rc)22;">
-                    <span>@rightLabel</span>
-                    @((MarkupString)GetSvgIcon(_rightStatus))
+
+                <!-- ── Skeleton card ──────────────────────────────────────── -->
+                <div class="swset-skeleton-card">
+                    <div class="swset-sk-bg"></div>
+                    <div class="swset-sk-gradient"></div>
+
+                    <div class="swset-sk-feather swset-sk-feather-left"
+                         style="background:linear-gradient(to right,@(lc)35 0%,transparent 100%);"></div>
+                    <div class="swset-sk-feather swset-sk-feather-right"
+                         style="background:linear-gradient(to left,@(rc)35 0%,transparent 100%);"></div>
+
+                    <div class="swset-sk-hint swset-sk-hint-left"
+                         style="color:@lc;border-color:@(lc)80;box-shadow:0 0 14px @(lc)22;">
+                        @((MarkupString)GetSvgIcon(_leftStatus))
+                        <span>@leftLabel</span>
+                    </div>
+                    <div class="swset-sk-hint swset-sk-hint-right"
+                         style="color:@rc;border-color:@(rc)80;box-shadow:0 0 14px @(rc)22;">
+                        <span>@rightLabel</span>
+                        @((MarkupString)GetSvgIcon(_rightStatus))
+                    </div>
+
+                    <div class="swset-sk-poster"></div>
+
+                    <div class="swset-sk-info">
+                        <div class="swset-sk-line" style="width:82%;height:11px;margin-bottom:7px;border-radius:5px;"></div>
+                        <div class="swset-sk-line" style="width:52%;height:7px; margin-bottom:14px;border-radius:4px;opacity:0.55;"></div>
+                        <div class="swset-sk-line" style="width:92%;height:6px; margin-bottom:5px; border-radius:3px;opacity:0.4;"></div>
+                        <div class="swset-sk-line" style="width:78%;height:6px; margin-bottom:5px; border-radius:3px;opacity:0.4;"></div>
+                        <div class="swset-sk-line" style="width:64%;height:6px; border-radius:3px;opacity:0.4;"></div>
+                    </div>
                 </div>
 
-                <!-- poster -->
-                <div class="swset-sk-poster"></div>
-
-                <!-- text lines under poster -->
-                <div class="swset-sk-info">
-                    <div class="swset-sk-line" style="width:82%;height:11px;margin-bottom:7px;border-radius:5px;"></div>
-                    <div class="swset-sk-line" style="width:52%;height:7px; margin-bottom:12px;border-radius:4px;"></div>
-                    <div class="swset-sk-line" style="width:92%;height:6px; margin-bottom:5px; border-radius:3px;"></div>
-                    <div class="swset-sk-line" style="width:78%;height:6px; margin-bottom:5px; border-radius:3px;"></div>
-                    <div class="swset-sk-line" style="width:64%;height:6px; border-radius:3px;"></div>
+                <!-- ── RIGHT zone ─────────────────────────────────────────── -->
+                <div class="swset-zone swset-zone-right" style="--zc:@rc;">
+                    <div class="swset-zone-glow"
+                         style="background:linear-gradient(to left,@(rc)45 0%,transparent 100%);"></div>
+                    <div class="swset-zone-inner">
+                        <span class="swset-zone-svg">@((MarkupString)GetSvgIcon(_rightStatus))</span>
+                        <span class="swset-zone-label">@rightLabel</span>
+                        <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(true)">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- ── RIGHT zone ─────────────────────────────────────────── -->
-            <div class="swset-zone swset-zone-right" style="--zc:@rc;">
-                <div class="swset-zone-glow"
-                     style="background:linear-gradient(to left,@(rc)45 0%,transparent 100%);"></div>
-                <div class="swset-zone-inner">
-                    <span class="swset-zone-svg">@((MarkupString)GetSvgIcon(_rightStatus))</span>
-                    <span class="swset-zone-label">@rightLabel</span>
-                    <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(true)">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit
-                    </button>
-                </div>
-            </div>
-
-        </div><!-- /preview-wrap -->
+            </div><!-- /preview-wrap -->
+        </div><!-- /section-block -->
+        <!-- ── Future settings sections (remaining 60%) ─────────────────── -->
+        <div class="swset-future-sections">
+            <!-- Placeholder for upcoming settings -->
+        </div>
 
     </div>
 
     <!-- /screen -->
-    <!-- ── Picker : full-screen page ────────────────────────────────── -->
+    <!-- ── Picker screen ────────────────────────────────────────────── -->
     @if (_pickerOpen)
     {
         <div class="swset-screen swset-picker-screen">
@@ -176,10 +179,6 @@
                                 style="@(isSel ? $"border-color:{col}55;background:color-mix(in srgb,{col} 14%,transparent);color:{col};" : "")"
                                 @onclick="() => PickStatus(s, null)">
                             <span class="swset-picker-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
-                            <!-- SVG icon rendered directly so colour inherits -->
-                            <span class="swset-picker-icon" style="color:@(isSel? col : "rgba(255,255,255,0.55)");">
-                                @((MarkupString)GetSvgIcon(s))
-                            </span>
                             <span class="swset-picker-name">@setting.DisplayName</span>
                             @if (isSel)
                             {
@@ -193,11 +192,11 @@
                     }
                 </div>
 
-                <!-- Custom status-type lists -->
                 @{
                     var statusCustomLists = UserListService.GetStatusTypeLists();
                     var regularCustomLists = UserListService.GetRegularCustomLists();
                 }
+
                 @if (statusCustomLists.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
@@ -210,11 +209,6 @@
                                     style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
                                     @onclick="() => PickStatus(null, cll.Id)">
                                 <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                <!-- coloured dot acts as icon for custom lists -->
-                                <span class="swset-picker-icon">
-                                    <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
-                                                                     background:@cll.Color;box-shadow:0 0 7px @(cll.Color)99;"></span>
-                                </span>
                                 <span class="swset-picker-name">@cll.Name</span>
                                 @if (isSel)
                                 {
@@ -229,7 +223,6 @@
                     </div>
                 }
 
-                <!-- Regular custom lists -->
                 @if (regularCustomLists.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
@@ -242,10 +235,6 @@
                                     style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
                                     @onclick="() => PickStatus(null, cll.Id)">
                                 <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                <span class="swset-picker-icon">
-                                    <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
-                                                                     background:@cll.Color;box-shadow:0 0 7px @(cll.Color)99;"></span>
-                                </span>
                                 <span class="swset-picker-name">@cll.Name</span>
                                 @if (isSel)
                                 {
