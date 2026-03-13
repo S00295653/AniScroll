@@ -87,7 +87,7 @@ window.preloadImages = function (urls) {
 };
 
 
-// ── Element bounds / pointer helpers ────────────────────────────────────────
+// ── Element bounds / pointer helpers ─────────────────────────────────────────
 
 window.getElementBounds = function (element) {
     if (!element) return { left: 0, width: 0 };
@@ -111,7 +111,7 @@ window.capturePointer = function (element, pointerId) {
 };
 
 
-// ── Input helpers ────────────────────────────────────────────────────────────
+// ── Input helpers ─────────────────────────────────────────────────────────────
 
 window.selectInputContent = function (element) {
     if (element) {
@@ -197,7 +197,12 @@ window.cpStartSvDrag = function (svEl, dotNet) {
             Math.max(0, Math.min(1, (cy - r.top) / r.height)));
     };
     const onMM = e => { if (_cpSvActive) onMove(e.clientX, e.clientY); };
-    const onTM = e => { if (_cpSvActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const onTM = e => {
+        if (_cpSvActive && e.touches.length) {
+            e.preventDefault();
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
     const stop = () => {
         _cpSvActive = false;
         document.removeEventListener('mousemove', onMM);
@@ -218,10 +223,16 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
     _cpHueEl = hueEl; _cpHueDotNet = dotNet; _cpHueActive = true;
     const onMove = cx => {
         const r = _cpHueEl.getBoundingClientRect();
-        _cpHueDotNet.invokeMethodAsync('OnHueDrag', Math.max(0, Math.min(1, (cx - r.left) / r.width)));
+        _cpHueDotNet.invokeMethodAsync('OnHueDrag',
+            Math.max(0, Math.min(1, (cx - r.left) / r.width)));
     };
     const onMM = e => { if (_cpHueActive) onMove(e.clientX); };
-    const onTM = e => { if (_cpHueActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX); } };
+    const onTM = e => {
+        if (_cpHueActive && e.touches.length) {
+            e.preventDefault();
+            onMove(e.touches[0].clientX);
+        }
+    };
     const stop = () => {
         _cpHueActive = false;
         document.removeEventListener('mousemove', onMM);
@@ -272,7 +283,6 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
     const initialBodyY = origRect.top - bodyRect.top + body.scrollTop;
 
     body.style.position = 'relative';
-
     dragged.style.position = 'absolute';
     dragged.style.left = '0';
     dragged.style.right = '0';
@@ -298,14 +308,12 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         dragged.style.top = newTop + 'px';
 
         const centreY = newTop + rowH / 2;
-
         const others = Array.from(body.querySelectorAll('.clm2-row:not(.clm2-row-new)'))
             .filter(r => r !== dragged);
 
         let best = 0;
         for (let i = 0; i < others.length; i++) {
-            const mid = others[i].offsetTop + rowH / 2;
-            if (centreY > mid) best = i + 1;
+            if (centreY > others[i].offsetTop + rowH / 2) best = i + 1;
         }
         toIndex = best;
 
@@ -314,11 +322,8 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
             body.insertBefore(ph, anchor);
         } else {
             const last = others[others.length - 1];
-            if (last && last.nextSibling) {
-                body.insertBefore(ph, last.nextSibling);
-            } else {
-                body.appendChild(ph);
-            }
+            if (last && last.nextSibling) body.insertBefore(ph, last.nextSibling);
+            else body.appendChild(ph);
         }
     }
 
@@ -344,7 +349,6 @@ window.startRowDrag = function (dotNet, _panel, body, pointerId, fromIndex, star
         ph.remove();
 
         try { dragged.releasePointerCapture(pointerId); } catch (_) { }
-
         dotNet.invokeMethodAsync('OnDragComplete', fromIndex, toIndex);
     }
 
@@ -412,9 +416,7 @@ window.preventWheelScroll = function (el) {
         let node = e.target;
         while (node && node !== el) {
             const oy = window.getComputedStyle(node).overflowY;
-            if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) {
-                return;
-            }
+            if ((oy === 'auto' || oy === 'scroll') && node.scrollHeight > node.clientHeight) return;
             node = node.parentElement;
         }
         e.preventDefault();
@@ -428,32 +430,23 @@ window.removeWheelScrollPrevention = function (el) {
     delete el._noWheel;
 };
 
+
 // ═══════════════════════════════════════════════════════════════════════
 //  AniList OAuth helpers
 // ═══════════════════════════════════════════════════════════════════════
 
-/**
- * Returns { token: string|null, isNewAuth: bool }
- * isNewAuth=true  → fresh OAuth redirect  → show ProfilePanel so user sees "Import"
- * isNewAuth=false → previously saved token → silent auto-import in background
- */
 window.aniListGetToken = function () {
     try {
         const hash = window.location.hash;
-
-        // Parse #access_token=…&token_type=Bearer&expires_in=…
         if (hash && hash.includes('access_token=')) {
             const params = new URLSearchParams(hash.substring(1));
             const token = params.get('access_token');
             if (token) {
-                // Persist & clean URL so the token doesn't show in browser history
                 localStorage.setItem('anilist_token', token);
                 history.replaceState(null, '', window.location.pathname + window.location.search);
                 return { token: token, isNewAuth: true };
             }
         }
-
-        // Fall back to a previously saved token (silent auto-import path)
         const saved = localStorage.getItem('anilist_token');
         return { token: saved || null, isNewAuth: false };
     } catch (e) {
@@ -462,26 +455,19 @@ window.aniListGetToken = function () {
     }
 };
 
-/** Persists the token to localStorage. */
 window.aniListSaveToken = function (token) {
-    try {
-        if (token) localStorage.setItem('anilist_token', token);
-    } catch (e) {
-        console.warn('[oauth-helpers] aniListSaveToken error:', e);
-    }
+    try { if (token) localStorage.setItem('anilist_token', token); }
+    catch (e) { console.warn('[oauth-helpers] aniListSaveToken error:', e); }
 };
 
-/** Removes the persisted token from localStorage. */
 window.aniListRemoveToken = function () {
-    try {
-        localStorage.removeItem('anilist_token');
-    } catch (e) {
-        console.warn('[oauth-helpers] aniListRemoveToken error:', e);
-    }
+    try { localStorage.removeItem('anilist_token'); }
+    catch (e) { console.warn('[oauth-helpers] aniListRemoveToken error:', e); }
 };
+
 
 // ═══════════════════════════════════════════════════════════════════════
-//  ESCAPE KEY — global handler for PC keyboard support
+//  ESCAPE KEY
 // ═══════════════════════════════════════════════════════════════════════
 
 let _escHandler = null;
@@ -493,24 +479,18 @@ window.sfpUnregisterEscape = function () { _sfpEscDotNet = null; };
 
 window.registerEscapeKey = function (dotNet) {
     _escDotNet = dotNet;
-
-    if (_escHandler) {
-        document.removeEventListener('keydown', _escHandler, { capture: true });
-    }
+    if (_escHandler) document.removeEventListener('keydown', _escHandler, { capture: true });
 
     _escHandler = function (e) {
-        if (e.key === 'Escape') {
-            if (document.querySelector('.sfp-overlay')) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (_sfpEscDotNet) {
-                    _sfpEscDotNet.invokeMethodAsync('HandleEscapeFromJS');
-                }
-                return;
-            }
+        if (e.key !== 'Escape') return;
+        if (document.querySelector('.sfp-overlay')) {
             e.preventDefault();
-            _escDotNet.invokeMethodAsync('HandleEscapeKey');
+            e.stopPropagation();
+            if (_sfpEscDotNet) _sfpEscDotNet.invokeMethodAsync('HandleEscapeFromJS');
+            return;
         }
+        e.preventDefault();
+        _escDotNet.invokeMethodAsync('HandleEscapeKey');
     };
 
     document.addEventListener('keydown', _escHandler, { capture: true });
@@ -526,7 +506,7 @@ window.unregisterEscapeKey = function () {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-//  SFP (Sort & Filter Panel) — drag-release protection
+//  SFP — drag-release protection
 // ═══════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -539,10 +519,7 @@ window.unregisterEscapeKey = function () {
         const onOverlayDown = () => { _sfpDownInside = false; };
         const onDocUp = () => { setTimeout(() => { _sfpDownInside = false; }, 0); };
         const onOverlayClick = (e) => {
-            if (_sfpDownInside) {
-                e.stopImmediatePropagation();
-                _sfpDownInside = false;
-            }
+            if (_sfpDownInside) { e.stopImmediatePropagation(); _sfpDownInside = false; }
         };
 
         panelEl.addEventListener('pointerdown', onPanelDown, { capture: true });
@@ -571,22 +548,82 @@ window.unregisterEscapeKey = function () {
     let isDragging = false;
     let startX = 0, startY = 0;
     let curX = 0, curY = 0;
-    let axis = 'none'; // 'none' | 'horizontal' | 'vertical'
+    let axis = 'none';   // 'none' | 'horizontal' | 'vertical'
     let hasMoved = false;
     let suppressNextClick = false;
 
-    const AXIS_LOCK = 8, MOVE_THRESHOLD = 8;
+    // Flag: next time a new .active card appears, run the entrance animation
+    let _pendingEntrance = false;
+
+    const AXIS_LOCK = 8;
+    const MOVE_THRESHOLD = 8;
     const HORIZ_THRESHOLD = 85;
 
-    function card() { return document.querySelector('.anime-card.active'); }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    function paint() {
-        const c = card();
+    function activeCard() {
+        return document.querySelector('.anime-card.active');
+    }
+
+    // ── Entrance animation for the new card after a horizontal swipe ──────────
+    // Strategy: forcibly set the card to its "from" state via inline style,
+    // then on the next frame remove it so the CSS animation takes over cleanly.
+    // This avoids any conflict with Blazor's translateY inline style.
+    function runEntrance() {
+        const c = activeCard();
         if (!c) return;
 
-        if (axis !== 'horizontal') {
-            c.style.transform = `translateY(${curY}px)`;
+        // 1. Kill any leftover inline transform Blazor may have put (translateY(0))
+        //    and force the card invisible so there's no flash before the animation.
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(0px)'; // pin it at 0 — no jump
+
+        // 2. Also prep the image: start from below
+        const img = c.querySelector('.anime-image');
+        if (img) {
+            img.style.transition = 'none';
+            img.style.opacity = '0';
+            img.style.transform = 'translateY(36px) scale(0.91)';
         }
+
+        // 3. One rAF to let the browser apply the "from" state, then animate
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                // Remove the inline overrides — CSS animation takes over
+                c.style.opacity = '';
+                c.style.transform = '';
+
+                c.classList.remove('card-entering');
+                void c.offsetWidth; // force reflow to restart animation
+                c.classList.add('card-entering');
+                setTimeout(() => c.classList.remove('card-entering'), 500);
+
+                // Animate the image separately with its own keyframe
+                if (img) {
+                    img.style.transition = '';
+                    img.style.opacity = '';
+                    img.style.transform = '';
+                    img.classList.remove('img-entering');
+                    void img.offsetWidth;
+                    img.classList.add('img-entering');
+                    setTimeout(() => img.classList.remove('img-entering'), 560);
+                }
+            });
+        });
+    }
+
+    // ── Paint (live drag feedback) ────────────────────────────────────────────
+
+    function paint() {
+        const c = activeCard();
+        if (!c) return;
+
+        if (axis === 'vertical') {
+            c.style.transform = `translateY(${curY}px)`;
+            return;
+        }
+
+        if (axis !== 'horizontal') return;
 
         const rOp = curX > 5 ? Math.min(1, (curX - 5) / 50) : 0;
         const lOp = curX < -5 ? Math.min(1, (-curX - 5) / 50) : 0;
@@ -611,16 +648,21 @@ window.unregisterEscapeKey = function () {
         }
     }
 
+    // ── Move ──────────────────────────────────────────────────────────────────
+
     function onMove(x, y) {
         if (!isDragging) return;
         const dx = x - startX, dy = y - startY;
         if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) hasMoved = true;
         if (axis === 'none' && (Math.abs(dx) > AXIS_LOCK || Math.abs(dy) > AXIS_LOCK))
             axis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+
         if (axis === 'vertical') { curY = dy; curX = 0; }
         else if (axis === 'horizontal') { curX = dx; curY = 0; }
         paint();
     }
+
+    // ── End ───────────────────────────────────────────────────────────────────
 
     function onEnd() {
         if (!isDragging) return;
@@ -631,12 +673,12 @@ window.unregisterEscapeKey = function () {
             setTimeout(() => { suppressNextClick = false; }, 100);
         }
 
-        const validated = axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD;
+        const horizValid = axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD;
         const isRight = curX > 0;
 
-        if (axis === 'horizontal' && !validated) {
-            // ── Snap-back ──────────────────────────────────────────────────
-            const c = card();
+        // ── HORIZONTAL: snap-back ─────────────────────────────────────────────
+        if (axis === 'horizontal' && !horizValid) {
+            const c = activeCard();
             if (c) {
                 const q = s => c.querySelector(s);
                 ['.swipe-feather-right', '.swipe-feather-left',
@@ -651,12 +693,16 @@ window.unregisterEscapeKey = function () {
                     setTimeout(() => img.classList.remove('image-with-transition'), 300);
                 }
             }
-        } else if (validated) {
-            // ── Fly-off style Tinder — 100 % JS, Blazor notifié après ──────
-            const c = card();
+            if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+            return;
+        }
+
+        // ── HORIZONTAL: validated — Tinder fly-off ────────────────────────────
+        if (horizValid) {
+            const c = activeCard();
             if (c) {
                 const flyX = isRight ? 920 : -920;
-                const flyY = -90;        // légère montée en arc
+                const flyY = -90;
                 const rot = isRight ? 38 : -38;
 
                 const img = c.querySelector('.anime-image');
@@ -669,7 +715,6 @@ window.unregisterEscapeKey = function () {
                     img.style.opacity = '0';
                 }
 
-                // Feathers + hints s'effacent immédiatement
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
                         const el = c.querySelector(sel);
@@ -677,33 +722,38 @@ window.unregisterEscapeKey = function () {
                     });
             }
 
-            // Notifier Blazor après la fin du fly-off → pas d'écrasement du transform
+            // Tell Blazor after the fly-off; it will re-render with the new active card
             setTimeout(() => {
+                _pendingEntrance = true;
                 if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
-
-                // Entrée de la nouvelle carte après que Blazor ait re-render (~60ms)
-                setTimeout(() => {
-                    const next = card();
-                    if (!next) return;
-                    next.classList.remove('card-entering');
-                    void next.offsetWidth;
-                    next.classList.add('card-entering');
-                    setTimeout(() => next.classList.remove('card-entering'), 480);
-                }, 60);
             }, 420);
-
-            return; // early return — le invoke est dans le setTimeout ci-dessus
+            return;
         }
 
-        // Cas vertical ou snap-back : notifier Blazor immédiatement
+        // ── VERTICAL + fallback ───────────────────────────────────────────────
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
+    // ── MutationObserver: watch for the new .active card after Blazor re-render
+    //    This is the only reliable hook — no setTimeout guessing.
+    const _observer = new MutationObserver(() => {
+        if (!_pendingEntrance) return;
+        const c = activeCard();
+        if (!c) return;
+        _pendingEntrance = false;
+        // Give Blazor one more microtask to finish patching the DOM
+        Promise.resolve().then(() => runEntrance());
+    });
+
+    _observer.observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
     // ── Public API ────────────────────────────────────────────────────────────
 
-    window.initCardDrag = function (dotNetRef) {
-        _dotNet = dotNetRef;
-    };
+    window.initCardDrag = function (dotNetRef) { _dotNet = dotNetRef; };
 
     window.startCardDrag = function (x, y) {
         isDragging = true;
@@ -713,12 +763,7 @@ window.unregisterEscapeKey = function () {
     };
 
     window.animateCardEntrance = function () {
-        const c = card();
-        if (!c) return;
-        c.classList.remove('card-entering');
-        void c.offsetWidth;
-        c.classList.add('card-entering');
-        setTimeout(() => c.classList.remove('card-entering'), 480);
+        runEntrance();
     };
 
     // ── Native listeners ──────────────────────────────────────────────────────
@@ -736,7 +781,7 @@ window.unregisterEscapeKey = function () {
     document.addEventListener('touchend', () => { if (isDragging) onEnd(); });
     document.addEventListener('touchcancel', () => { if (isDragging) onEnd(); });
 
-    // Supprime le click parasite après un drag
+    // Suppress the ghost click that fires right after a drag
     document.addEventListener('click', e => {
         if (suppressNextClick) {
             e.stopPropagation();

@@ -76,31 +76,29 @@
     background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.15) 60%, transparent 100%);
 }
 
-/* ========== CARD ENTRANCE ANIMATIONS ========== */
+/* ========== CARD ENTRANCE — after horizontal swipe ========== */
 
-/* Fond de la carte — fade + léger dézoom */
-@keyframes cardEntranceSwipe {
+/* Whole card: simple fade-in, no scale (avoids conflict with Blazor's translateY) */
+@keyframes cardEntranceFade {
     from {
         opacity: 0;
-        transform: scale(0.94);
     }
 
     to {
         opacity: 1;
-        transform: scale(1);
     }
 }
 
-/* Image — monte depuis le bas avec micro-bounce */
-@keyframes cardEntranceImage {
+/* Image: rises from below with a gentle bounce */
+@keyframes imgEntrance {
     0% {
         opacity: 0;
-        transform: translateY(36px) scale(0.91);
+        transform: translateY(40px) scale(0.90);
     }
 
-    62% {
+    60% {
         opacity: 1;
-        transform: translateY(-5px) scale(1.02);
+        transform: translateY(-6px) scale(1.02);
     }
 
     100% {
@@ -109,11 +107,11 @@
     }
 }
 
-/* Texte — glisse depuis le bas, léger délai */
-@keyframes cardEntranceText {
+/* Info text: slides up, delayed so image leads */
+@keyframes infoEntrance {
     from {
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(18px);
     }
 
     to {
@@ -122,17 +120,19 @@
     }
 }
 
+/* Applied to .anime-card by JS after a horizontal swipe */
 .card-entering {
-    animation: cardEntranceSwipe 0.40s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: cardEntranceFade 0.32s ease-out both;
 }
 
-    .card-entering .anime-image {
-        animation: cardEntranceImage 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.03s both;
+    .card-entering .info-section {
+        animation: infoEntrance 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both;
     }
 
-    .card-entering .info-section {
-        animation: cardEntranceText 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both;
-    }
+/* Applied directly to .anime-image by JS (separate from card-entering) */
+.img-entering {
+    animation: imgEntrance 0.46s cubic-bezier(0.22, 1, 0.36, 1) 0.02s both !important;
+}
 
 /* ========== CONTENT WRAPPER ========== */
 .content-wrapper {
@@ -143,7 +143,6 @@
     height: 100%;
     padding: 16px 20px 110px;
     box-sizing: border-box;
-    /* overflow visible so the image is not clipped during horizontal swipe */
     overflow: visible;
 }
 
@@ -173,7 +172,6 @@
     padding: 6px 0;
     overflow: visible;
     position: relative;
-    /* Always on top of info-section so image never slides behind text */
     z-index: 20;
 }
 
@@ -197,7 +195,6 @@
     position: relative;
 }
 
-    /* Dégradé en bas de l'image */
     .anime-image::after {
         content: '';
         position: absolute;
