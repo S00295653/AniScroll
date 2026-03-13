@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                        transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -231,7 +231,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                                @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -243,11 +243,11 @@
                                 </div>
 
                                 @{
-                                    bool hasScore = e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score);
-                                    bool hasFormat = !string.IsNullOrEmpty(e.Anime.Format);
+                                    bool hasScore    = e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score);
+                                    bool hasFormat   = !string.IsNullOrEmpty(e.Anime.Format);
                                     bool hasEpisodes = e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes);
-                                    bool hasMyScore = e.Score > 0;
-                                    bool hasAnyMeta = hasScore || hasFormat || hasEpisodes || hasMyScore;
+                                    bool hasMyScore  = e.Score > 0;
+                                    bool hasAnyMeta  = hasScore || hasFormat || hasEpisodes || hasMyScore;
                                 }
                                 @if (hasAnyMeta)
                                 {
@@ -256,7 +256,7 @@
                                         {
                                             <span class="entry-meta-item">
                                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                                                 </svg>
                                                 @e.Anime.Score
                                             </span>
@@ -265,7 +265,7 @@
                                         {
                                             @if (hasScore)
                                             {
-                                                <span class="entry-meta-sep">·</span>
+                                                <span class="entry-meta-sep">•</span>
                                             }
                                             <span class="entry-meta-item">@e.Anime.Format</span>
                                         }
@@ -273,7 +273,7 @@
                                         {
                                             @if (hasScore || hasFormat)
                                             {
-                                                <span class="entry-meta-sep">·</span>
+                                                <span class="entry-meta-sep">•</span>
                                             }
                                             <span class="entry-meta-item">@FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched)</span>
                                         }
@@ -281,7 +281,7 @@
                                         {
                                             @if (hasScore || hasFormat || hasEpisodes)
                                             {
-                                                <span class="entry-meta-sep">·</span>
+                                                <span class="entry-meta-sep">•</span>
                                             }
                                             <span class="entry-meta-item">My score: @e.Score</span>
                                         }
@@ -516,7 +516,7 @@
                  .Where(e => UserListService.IsFavorited(e.Anime.Id))
                  .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
             _ => entries.OrderByDescending(e => e.UpdatedAt),
-        };
+         };
 
         return entries;
     }
