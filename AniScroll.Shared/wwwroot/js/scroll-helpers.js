@@ -566,14 +566,19 @@ window.unregisterEscapeKey = function () {
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
+    // Strategy: forcibly set the card to its "from" state via inline style,
+    // then on the next frame remove it so the CSS animation takes over cleanly.
+    // This avoids any conflict with Blazor's translateY inline style.
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
-        // Force the card invisible at its natural position before animating
+        // 1. Kill any leftover inline transform Blazor may have put (translateY(0))
+        //    and force the card invisible so there's no flash before the animation.
         c.style.opacity = '0';
-        c.style.transform = 'translateY(0px)';
+        c.style.transform = 'translateY(0px)'; // pin it at 0 — no jump
 
+        // 2. Also prep the image: start from below
         const img = c.querySelector('.anime-image');
         if (img) {
             img.style.transition = 'none';
@@ -581,17 +586,19 @@ window.unregisterEscapeKey = function () {
             img.style.transform = 'translateY(36px) scale(0.91)';
         }
 
-        // Double rAF: first applies "from" state, second starts the animation
+        // 3. One rAF to let the browser apply the "from" state, then animate
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+                // Remove the inline overrides — CSS animation takes over
                 c.style.opacity = '';
                 c.style.transform = '';
 
                 c.classList.remove('card-entering');
-                void c.offsetWidth;
+                void c.offsetWidth; // force reflow to restart animation
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
+                // Animate the image separately with its own keyframe
                 if (img) {
                     img.style.transition = '';
                     img.style.opacity = '';
@@ -694,11 +701,6 @@ window.unregisterEscapeKey = function () {
         if (horizValid) {
             const c = activeCard();
             if (c) {
-                // ── Fade out the whole card immediately — no flash of old content ──
-                c.style.transition = 'opacity 0.15s ease-out';
-                c.style.opacity = '0';
-
-                // ── Image flies off behind the fade ───────────────────────────────
                 const flyX = isRight ? 920 : -920;
                 const flyY = -90;
                 const rot = isRight ? 38 : -38;
@@ -716,15 +718,15 @@ window.unregisterEscapeKey = function () {
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
                         const el = c.querySelector(sel);
-                        if (el) { el.style.transition = 'opacity 0.10s'; el.style.opacity = 0; }
+                        if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
                     });
             }
 
-            // Notify Blazor after the card is already invisible (150ms fade done)
+            // Tell Blazor after the fly-off; it will re-render with the new active card
             setTimeout(() => {
                 _pendingEntrance = true;
                 if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
-            }, 380);
+            }, 420);
             return;
         }
 
@@ -732,12 +734,14 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: fires when Blazor adds .active to the new card ──────
+    // ── MutationObserver: watch for the new .active card after Blazor re-render
+    //    This is the only reliable hook — no setTimeout guessing.
     const _observer = new MutationObserver(() => {
         if (!_pendingEntrance) return;
         const c = activeCard();
         if (!c) return;
         _pendingEntrance = false;
+        // Give Blazor one more microtask to finish patching the DOM
         Promise.resolve().then(() => runEntrance());
     });
 
