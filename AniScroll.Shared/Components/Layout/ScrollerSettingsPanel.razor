@@ -8,18 +8,18 @@
 {
     <div class="swset-screen">
 
+        <!-- Header bar -->
         <div class="swset-topbar">
             <button class="swset-back-btn" @onclick="Close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                     stroke-linejoin="round">
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="15 18 9 12 15 6" />
                 </svg>
             </button>
             <div class="swset-topbar-center">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" style="color:rgba(255,255,255,0.4);flex-shrink:0;">
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     style="color:rgba(255,255,255,0.4);flex-shrink:0;">
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
@@ -28,7 +28,7 @@
             <div style="width:38px;"></div>
         </div>
 
-        <!-- ── Swipe Action section — 55% of remaining page ── -->
+        <!-- ── Swipe Action section — 55% ── -->
         <div class="swset-section-block">
             <div class="swset-section-header">
                 <span class="swset-section-label">Swipe Actions</span>
@@ -41,9 +41,11 @@
                 var leftLabel = GetEffectiveLabel(false);
                 var rightLabel = GetEffectiveLabel(true);
             }
+
+            <!-- Preview: zones + card side by side -->
             <div class="swset-preview-wrap">
 
-                <!-- LEFT zone — only gradient + Edit button -->
+                <!-- LEFT edit zone -->
                 <div class="swset-zone swset-zone-left" style="--zc:@lc;">
                     <div class="swset-zone-gradient"
                          style="background:linear-gradient(to right,color-mix(in srgb,@lc 30%,transparent),transparent);"></div>
@@ -59,53 +61,69 @@
                     </div>
                 </div>
 
-                <!-- Skeleton card — mirrors real card layout -->
+                <!-- ── SKELETON CARD — exact same structure as .anime-card ── -->
                 <div class="swset-skeleton-card">
-                    <div class="swset-sk-bg"></div>
 
-                    <!-- single feather per side -->
-                    <div class="swset-sk-feather swset-sk-feather-left"
-                         style="background:linear-gradient(to right,@(lc)45 0%,transparent 100%);"></div>
+                    <!-- bg-image equivalent -->
+                    <div class="swset-sk-bg-image"></div>
+                    <!-- gradient-overlay equivalent -->
+                    <div class="swset-sk-gradient-overlay"></div>
+
+                    <!-- swipe feather overlays — one per side -->
                     <div class="swset-sk-feather swset-sk-feather-right"
-                         style="background:linear-gradient(to left,@(rc)45 0%,transparent 100%);"></div>
+                         style="background:linear-gradient(to left,@(rc)55 0%,@(rc)22 18%,transparent 55%);"></div>
+                    <div class="swset-sk-feather swset-sk-feather-left"
+                         style="background:linear-gradient(to right,@(lc)55 0%,@(lc)22 18%,transparent 55%);"></div>
 
-                    <!-- hint pills — anchored to image section -->
-                    <div class="swset-sk-hint swset-sk-hint-left"
-                         style="color:@lc;border-color:@(lc)70;box-shadow:0 0 18px @(lc)35;">
-                        @((MarkupString)GetSvgIcon(_leftStatus))
-                        <span>@leftLabel</span>
-                    </div>
-                    <div class="swset-sk-hint swset-sk-hint-right"
-                         style="color:@rc;border-color:@(rc)70;box-shadow:0 0 18px @(rc)35;">
-                        <span>@rightLabel</span>
-                        @((MarkupString)GetSvgIcon(_rightStatus))
-                    </div>
+                    <!-- content-wrapper equivalent -->
+                    <div class="swset-sk-content-wrapper">
 
-                    <!-- image section -->
-                    <div class="swset-sk-image-section">
-                        <div class="swset-sk-poster"></div>
-                    </div>
-
-                    <!-- gradient that covers image→info transition -->
-                    <div class="swset-sk-card-gradient"></div>
-
-                    <!-- info section — flows naturally below image, no overlap -->
-                    <div class="swset-sk-info-section">
-                        <div class="swset-sk-line swset-sk-title" style="width:76%;animation-delay:0.05s;"></div>
-                        <div class="swset-sk-line swset-sk-subtitle" style="width:40%;animation-delay:0.10s;"></div>
-                        <div class="swset-sk-line swset-sk-meta" style="width:85%;animation-delay:0.15s;"></div>
-                        <div class="swset-sk-badges">
-                            <div class="swset-sk-badge" style="animation-delay:0.18s;"></div>
-                            <div class="swset-sk-badge" style="animation-delay:0.21s;"></div>
+                        <!-- image-section equivalent -->
+                        <div class="swset-sk-image-section">
+                            <!-- swipe hint left -->
+                            <div class="swset-sk-swipe-hint swset-sk-hint-left"
+                                 style="color:@lc;border-color:@(lc)80;box-shadow:0 0 14px @(lc)30;">
+                                @((MarkupString)GetSvgIcon(_leftStatus))
+                                <span>@leftLabel</span>
+                            </div>
+                            <!-- swipe hint right -->
+                            <div class="swset-sk-swipe-hint swset-sk-hint-right"
+                                 style="color:@rc;border-color:@(rc)80;box-shadow:0 0 14px @(rc)30;">
+                                <span>@rightLabel</span>
+                                @((MarkupString)GetSvgIcon(_rightStatus))
+                            </div>
+                            <!-- anime-image equivalent -->
+                            <div class="swset-sk-anime-image"></div>
                         </div>
-                        <div class="swset-sk-line swset-sk-desc" style="width:96%;animation-delay:0.24s;"></div>
-                        <div class="swset-sk-line swset-sk-desc" style="width:88%;animation-delay:0.27s;"></div>
-                        <div class="swset-sk-line swset-sk-desc" style="width:72%;animation-delay:0.30s;"></div>
-                        <div class="swset-sk-read-more" style="animation-delay:0.34s;">Read More</div>
+
+                        <!-- info-section equivalent -->
+                        <div class="swset-sk-info-section">
+                            <!-- title -->
+                            <div class="swset-sk-line swset-sk-title" style="width:72%;"></div>
+                            <!-- season-info -->
+                            <div class="swset-sk-line swset-sk-season" style="width:38%;"></div>
+                            <!-- genres -->
+                            <div class="swset-sk-line swset-sk-genres" style="width:82%;"></div>
+                            <!-- stats badges -->
+                            <div class="swset-sk-stats">
+                                <div class="swset-sk-badge"></div>
+                                <div class="swset-sk-badge"></div>
+                            </div>
+                            <!-- description lines -->
+                            <div class="swset-sk-desc-block">
+                                <div class="swset-sk-line swset-sk-desc" style="width:100%;"></div>
+                                <div class="swset-sk-line swset-sk-desc" style="width:93%;"></div>
+                                <div class="swset-sk-line swset-sk-desc" style="width:85%;"></div>
+                                <div class="swset-sk-line swset-sk-desc" style="width:70%;"></div>
+                            </div>
+                            <!-- read-more button -->
+                            <div class="swset-sk-read-more">Read More</div>
+                        </div>
+
                     </div>
                 </div>
 
-                <!-- RIGHT zone — only gradient + Edit button -->
+                <!-- RIGHT edit zone -->
                 <div class="swset-zone swset-zone-right" style="--zc:@rc;">
                     <div class="swset-zone-gradient"
                          style="background:linear-gradient(to left,color-mix(in srgb,@rc 30%,transparent),transparent);"></div>
@@ -129,15 +147,14 @@
 
     </div>
 
+    <!-- ── Picker screen ── -->
     @if (_pickerOpen)
     {
         <div class="swset-screen swset-picker-screen">
-
             <div class="swset-topbar">
                 <button class="swset-back-btn" @onclick="ClosePicker">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                         stroke-linejoin="round">
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
                 </button>
@@ -145,16 +162,12 @@
                     <div class="swset-picker-direction-badge @(_pickingRight ? "swset-picker-badge-right" : "swset-picker-badge-left")">
                         @if (_pickingRight)
                         {
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                             <span>Swipe Right</span>
                         }
                         else
                         {
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                             <span>Swipe Left</span>
                         }
                     </div>
@@ -163,7 +176,6 @@
             </div>
 
             <div class="swset-picker-scroll">
-
                 <div class="swset-picker-section-label">Status Lists</div>
                 <div class="swset-picker-grid">
                     @foreach (var setting in UserListService.GetStatusSettings())
@@ -178,18 +190,16 @@
                             <span class="swset-picker-name">@setting.DisplayName</span>
                             @if (isSel)
                             {
-                                <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                                <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                             }
                         </button>
                     }
                 </div>
 
                 @{
-                    var statusCustomLists = UserListService.GetStatusTypeLists();
-                    var regularCustomLists = UserListService.GetRegularCustomLists();
+                    var statusCustomLists = UserListService.GetStatusTypeLists(); var regularCustomLists = UserListService.GetRegularCustomLists();
                 }
+
                 @if (statusCustomLists.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
@@ -230,7 +240,6 @@
                         }
                     </div>
                 }
-
             </div>
         </div>
     }

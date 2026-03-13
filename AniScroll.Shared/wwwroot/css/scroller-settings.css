@@ -2,7 +2,7 @@
    SCROLLER SETTINGS  —  scroller-settings.css
    ====================================================== */
 
-/* ── Full-page screen — fade in, no slide ──────────────── */
+/* ── Screen — fade in ────────────────────────────────── */
 .swset-screen {
     position: fixed;
     inset: 0;
@@ -72,20 +72,20 @@
     letter-spacing: -0.01em;
 }
 
-/* ── Section block — 55% of remaining height ───────────── */
+/* ── Section block — 55% ─────────────────────────────── */
 .swset-section-block {
     flex: 0 0 55%;
     min-height: 0;
     display: flex;
     flex-direction: column;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    animation: swsetFadeUp 0.28s ease-out 0.08s both;
+    animation: swsetFadeUp 0.25s ease-out 0.06s both;
 }
 
 @keyframes swsetFadeUp {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(6px);
     }
 
     to {
@@ -99,29 +99,28 @@
     display: flex;
     align-items: baseline;
     gap: 10px;
-    padding: 10px 18px 6px;
+    padding: 9px 18px 5px;
 }
 
 .swset-section-label {
     font-size: 11px;
     font-weight: 800;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.50);
     text-transform: uppercase;
     letter-spacing: 0.07em;
 }
 
 .swset-section-hint {
     font-size: 11px;
-    color: rgba(255,255,255,0.28);
-    line-height: 1.5;
+    color: rgba(255,255,255,0.26);
 }
 
     .swset-section-hint strong {
-        color: rgba(255,255,255,0.50);
+        color: rgba(255,255,255,0.46);
         font-weight: 700;
     }
 
-/* ── Preview wrapper ─────────────────────────────────────── */
+/* ── Preview wrapper ─────────────────────────────────── */
 .swset-preview-wrap {
     flex: 1;
     min-height: 0;
@@ -129,9 +128,9 @@
     align-items: stretch;
 }
 
-/* ── Side zones — only gradient + button, no border ──────── */
+/* ── Side zones ──────────────────────────────────────── */
 .swset-zone {
-    width: 72px;
+    width: 68px;
     flex-shrink: 0;
     position: relative;
     display: flex;
@@ -140,11 +139,11 @@
 }
 
 .swset-zone-left {
-    background: color-mix(in srgb, var(--zc) 6%, #08080f);
+    background: color-mix(in srgb, var(--zc) 7%, #08080f);
 }
 
 .swset-zone-right {
-    background: color-mix(in srgb, var(--zc) 6%, #08080f);
+    background: color-mix(in srgb, var(--zc) 7%, #08080f);
 }
 
 .swset-zone-gradient {
@@ -175,8 +174,8 @@
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.14s, transform 0.11s;
     white-space: nowrap;
+    transition: background 0.14s, transform 0.11s;
 }
 
     .swset-zone-edit-btn:active {
@@ -187,89 +186,58 @@
         background: color-mix(in srgb, var(--zc) 26%, transparent);
     }
 
-/* ── Skeleton card — flex column, mirrors real card ──────── */
+/* ══════════════════════════════════════════════════════
+   SKELETON CARD — mirrors .anime-card exactly
+   ══════════════════════════════════════════════════════ */
 .swset-skeleton-card {
     flex: 1;
     min-width: 0;
     position: relative;
+    overflow: hidden;
+    /* same dark base as the real card */
+    background: #0b0b14;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    background: #090910;
 }
 
-/* ambient bg */
-.swset-sk-bg {
+/* mirrors .bg-image */
+.swset-sk-bg-image {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 35% 25%, rgba(80,80,140,0.25) 0%, transparent 60%), radial-gradient(ellipse at 65% 70%, rgba(60,60,110,0.18) 0%, transparent 60%);
+    z-index: 0;
+}
+
+/* mirrors .gradient-overlay */
+.swset-sk-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.82) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* swipe feather overlays — one per side, position:absolute */
+.swset-sk-feather {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.12) 0%, transparent 55%), radial-gradient(ellipse at 70% 70%, rgba(168,85,247,0.09) 0%, transparent 55%);
+    z-index: 2;
 }
 
-/* single feather per side */
-.swset-sk-feather {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 36%;
-    pointer-events: none;
+/* mirrors .content-wrapper */
+.swset-sk-content-wrapper {
+    position: relative;
     z-index: 3;
-}
-
-.swset-sk-feather-left {
-    left: 0;
-}
-
-.swset-sk-feather-right {
-    right: 0;
-}
-
-/* hint pills — vertically centred inside image section (top 45%) */
-.swset-sk-hint {
-    position: absolute;
-    top: 22%;
-    z-index: 10;
+    flex: 1;
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 11px;
-    border-radius: 12px;
-    border: 1.5px solid;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    background: rgba(0,0,0,0.50);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    white-space: nowrap;
-    animation: swsetPillIn 0.4s ease-out 0.15s both;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-.swset-sk-hint-left {
-    left: 6px;
-}
-
-.swset-sk-hint-right {
-    right: 6px;
-    flex-direction: row-reverse;
-}
-
-@keyframes swsetPillIn {
-    from {
-        opacity: 0;
-        transform: translateY(-6px) scale(0.92);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* ── IMAGE SECTION (~45% of card height) ─────────────────── */
+/* mirrors .image-section */
 .swset-sk-image-section {
-    flex: 0 0 45%;
+    flex: 0 0 48%;
     position: relative;
     display: flex;
     align-items: center;
@@ -277,63 +245,95 @@
     overflow: hidden;
 }
 
-/* poster */
-.swset-sk-poster {
-    width: 42%;
+/* mirrors .anime-image */
+.swset-sk-anime-image {
+    width: 52%;
     aspect-ratio: 2/3;
     border-radius: 8px;
     background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.11);
+    border: 1px solid rgba(255,255,255,0.10);
     position: relative;
-    z-index: 4;
-    animation: swsetPosterFloat 4s ease-in-out infinite;
+    z-index: 1;
+    animation: skPosterFloat 5s ease-in-out infinite;
 }
 
-@keyframes swsetPosterFloat {
+@keyframes skPosterFloat {
     0%, 100% {
         transform: translateY(0px);
     }
 
     50% {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
     }
 }
 
-/* gradient bridge between image and info */
-.swset-sk-card-gradient {
-    flex-shrink: 0;
-    height: 40px;
-    margin-top: -40px;
-    position: relative;
-    z-index: 5;
-    background: linear-gradient(to bottom, transparent 0%, #090910 100%);
-    pointer-events: none;
+/* mirrors .swipe-hint */
+.swset-sk-swipe-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    border: 1.5px solid;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    white-space: nowrap;
+    animation: skHintIn 0.35s ease-out 0.12s both;
 }
 
-/* ── INFO SECTION — no overlap, flows below image ───────── */
+.swset-sk-hint-left {
+    left: 8px;
+}
+
+.swset-sk-hint-right {
+    right: 8px;
+    flex-direction: row-reverse;
+}
+
+@keyframes skHintIn {
+    from {
+        opacity: 0;
+        transform: translateY(calc(-50% - 8px));
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(-50%);
+    }
+}
+
+/* mirrors .info-section */
 .swset-sk-info-section {
     flex: 1;
     min-height: 0;
-    position: relative;
-    z-index: 6;
-    padding: 4px 14px 10px;
+    padding: 10px 14px 8px;
     display: flex;
     flex-direction: column;
     gap: 0;
-    background: #090910;
+    overflow: hidden;
 }
 
-/* shared line base */
+/* shared skeleton line */
 .swset-sk-line {
     border-radius: 4px;
     background: rgba(255,255,255,0.09);
-    animation: swsetLineIn 0.35s ease-out both;
+    flex-shrink: 0;
+    animation: skLineIn 0.30s ease-out both;
 }
 
-@keyframes swsetLineIn {
+@keyframes skLineIn {
     from {
         opacity: 0;
-        transform: scaleX(0.85);
+        transform: scaleX(0.80);
         transform-origin: left;
     }
 
@@ -343,68 +343,95 @@
     }
 }
 
-/* title */
+/* mirrors h1.title */
 .swset-sk-title {
-    height: 12px;
-    margin-bottom: 7px;
+    height: 13px;
     border-radius: 5px;
-    opacity: 0.95;
+    margin-bottom: 6px;
+    animation-delay: 0.08s;
 }
-/* season / year */
-.swset-sk-subtitle {
+/* mirrors .season-info */
+.swset-sk-season {
     height: 7px;
-    margin-bottom: 8px;
     border-radius: 3px;
-    opacity: 0.55;
+    margin-bottom: 6px;
+    opacity: 0.60;
+    animation-delay: 0.13s;
 }
-/* genres */
-.swset-sk-meta {
+/* mirrors .genres */
+.swset-sk-genres {
     height: 6px;
-    margin-bottom: 9px;
     border-radius: 3px;
-    opacity: 0.45;
-}
-/* description */
-.swset-sk-desc {
-    height: 5px;
-    margin-bottom: 5px;
-    border-radius: 3px;
-    opacity: 0.35;
+    margin-bottom: 8px;
+    opacity: 0.48;
+    animation-delay: 0.17s;
 }
 
-/* badges row */
-.swset-sk-badges {
+/* mirrors .stats */
+.swset-sk-stats {
     display: flex;
     gap: 6px;
     margin-bottom: 9px;
-    animation: swsetLineIn 0.35s ease-out both;
+    flex-shrink: 0;
+    animation: skLineIn 0.30s ease-out 0.21s both;
 }
 
 .swset-sk-badge {
-    height: 18px;
-    width: 44px;
+    height: 19px;
+    width: 46px;
     border-radius: 6px;
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.07);
 }
 
-/* read more button skeleton */
-.swset-sk-read-more {
-    margin-top: 6px;
-    align-self: flex-start;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.20);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    animation: swsetLineIn 0.35s ease-out both;
+/* mirrors .description-container */
+.swset-sk-desc-block {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 7px;
+    flex-shrink: 0;
 }
 
-/* ── Future settings (45%) ────────────────────────────────── */
+.swset-sk-desc {
+    height: 5px;
+    border-radius: 3px;
+    opacity: 0.38;
+}
+
+    .swset-sk-desc:nth-child(1) {
+        animation-delay: 0.25s;
+    }
+
+    .swset-sk-desc:nth-child(2) {
+        animation-delay: 0.29s;
+    }
+
+    .swset-sk-desc:nth-child(3) {
+        animation-delay: 0.33s;
+    }
+
+    .swset-sk-desc:nth-child(4) {
+        animation-delay: 0.37s;
+    }
+
+/* mirrors .read-more-btn */
+.swset-sk-read-more {
+    align-self: flex-start;
+    padding: 4px 11px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.18);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    animation: skLineIn 0.30s ease-out 0.40s both;
+}
+
+/* ── Future settings (45%) ────────────────────────────── */
 .swset-future-sections {
     flex: 1;
     min-height: 0;
@@ -412,7 +439,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* ── Picker screen ────────────────────────────────────────── */
+/* ── Picker screen ───────────────────────────────────── */
 .swset-picker-screen {
     z-index: 3100;
 }
@@ -520,7 +547,7 @@
     margin-left: auto;
 }
 
-/* ── Settings open button ─────────────────────────────────── */
+/* ── Settings open button ────────────────────────────── */
 .swset-open-btn {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
