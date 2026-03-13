@@ -197,7 +197,12 @@ window.cpStartSvDrag = function (svEl, dotNet) {
             Math.max(0, Math.min(1, (cy - r.top) / r.height)));
     };
     const onMM = e => { if (_cpSvActive) onMove(e.clientX, e.clientY); };
-    const onTM = e => { if (_cpSvActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const onTM = e => {
+        if (_cpSvActive && e.touches.length) {
+            e.preventDefault();
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
     const stop = () => {
         _cpSvActive = false;
         document.removeEventListener('mousemove', onMM);
@@ -218,10 +223,16 @@ window.cpStartHueDrag = function (hueEl, dotNet) {
     _cpHueEl = hueEl; _cpHueDotNet = dotNet; _cpHueActive = true;
     const onMove = cx => {
         const r = _cpHueEl.getBoundingClientRect();
-        _cpHueDotNet.invokeMethodAsync('OnHueDrag', Math.max(0, Math.min(1, (cx - r.left) / r.width)));
+        _cpHueDotNet.invokeMethodAsync('OnHueDrag',
+            Math.max(0, Math.min(1, (cx - r.left) / r.width)));
     };
     const onMM = e => { if (_cpHueActive) onMove(e.clientX); };
-    const onTM = e => { if (_cpHueActive && e.touches.length) { e.preventDefault(); onMove(e.touches[0].clientX); } };
+    const onTM = e => {
+        if (_cpHueActive && e.touches.length) {
+            e.preventDefault();
+            onMove(e.touches[0].clientX);
+        }
+    };
     const stop = () => {
         _cpHueActive = false;
         document.removeEventListener('mousemove', onMM);
@@ -529,34 +540,43 @@ window.unregisterEscapeKey = function () {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-//  HORIZONTAL CARD DRAG — JS handles only the horizontal fly-off.
-//  Vertical drag stays entirely in Blazor (live card positions).
+//  CARD DRAG — native JS, zero Blazor overhead on every move frame
 // ═══════════════════════════════════════════════════════════════════════
 
 (function () {
     let _dotNet = null;
-    let _active = false;
+    let isDragging = false;
     let startX = 0, startY = 0;
-    let curX = 0;
+    let curX = 0, curY = 0;
+    let axis = 'none';   // 'none' | 'horizontal' | 'vertical'
     let hasMoved = false;
     let suppressNextClick = false;
+
+    // Flag: next time a new .active card appears, run the entrance animation
     let _pendingEntrance = false;
 
+    const AXIS_LOCK = 8;
+    const MOVE_THRESHOLD = 8;
     const HORIZ_THRESHOLD = 85;
-    const MOVE_THRESHOLD = 4;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    function activeCard() { return document.querySelector('.anime-card.active'); }
+    function activeCard() {
+        return document.querySelector('.anime-card.active');
+    }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
+    // Strategy: forcibly set the card to its "from" state via inline style,
+    // then on the next frame remove it so the CSS animation takes over cleanly.
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
+        // 1. Force the card invisible so there's no flash before the animation.
         c.style.opacity = '0';
         c.style.transform = 'translateY(0px)';
 
+        // 2. Also prep the image: start from below
         const img = c.querySelector('.anime-image');
         if (img) {
             img.style.transition = 'none';
@@ -564,6 +584,7 @@ window.unregisterEscapeKey = function () {
             img.style.transform = 'translateY(36px) scale(0.91)';
         }
 
+        // 3. One rAF to let the browser apply the "from" state, then animate
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 c.style.opacity = '';
@@ -587,10 +608,18 @@ window.unregisterEscapeKey = function () {
         });
     }
 
-    // ── Paint horizontal drag visuals ─────────────────────────────────────────
+    // ── Paint (live drag feedback) ────────────────────────────────────────────
+
     function paint() {
         const c = activeCard();
         if (!c) return;
+
+        if (axis === 'vertical') {
+            c.style.transform = `translateY(${curY}px)`;
+            return;
+        }
+
+        if (axis !== 'horizontal') return;
 
         const rOp = curX > 5 ? Math.min(1, (curX - 5) / 50) : 0;
         const lOp = curX < -5 ? Math.min(1, (-curX - 5) / 50) : 0;
@@ -606,36 +635,45 @@ window.unregisterEscapeKey = function () {
         if (hl) hl.style.opacity = lOp;
 
         if (img) {
-            const rot = Math.max(-16, Math.min(16, curX * 0.022));
-            img.style.transform = curX !== 0
-                ? `translateX(${curX}px) rotate(${rot}deg)`
-                : '';
+            if (curX !== 0) {
+                const rot = Math.max(-16, Math.min(16, curX * 0.022));
+                img.style.transform = `translateX(${curX}px) rotate(${rot}deg)`;
+            } else {
+                img.style.transform = '';
+            }
         }
     }
 
     // ── Move ──────────────────────────────────────────────────────────────────
-    function onMove(x) {
-        if (!_active) return;
-        curX = x - startX;
-        if (Math.abs(curX) > MOVE_THRESHOLD) hasMoved = true;
+
+    function onMove(x, y) {
+        if (!isDragging) return;
+        const dx = x - startX, dy = y - startY;
+        if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) hasMoved = true;
+        if (axis === 'none' && (Math.abs(dx) > AXIS_LOCK || Math.abs(dy) > AXIS_LOCK))
+            axis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+
+        if (axis === 'vertical') { curY = dy; curX = 0; }
+        else if (axis === 'horizontal') { curX = dx; curY = 0; }
         paint();
     }
 
     // ── End ───────────────────────────────────────────────────────────────────
+
     function onEnd() {
-        if (!_active) return;
-        _active = false;
+        if (!isDragging) return;
+        isDragging = false;
 
         if (hasMoved) {
             suppressNextClick = true;
             setTimeout(() => { suppressNextClick = false; }, 100);
         }
 
-        const validated = Math.abs(curX) >= HORIZ_THRESHOLD;
+        const horizValid = axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD;
         const isRight = curX > 0;
 
-        if (!validated) {
-            // Snap back
+        // ── HORIZONTAL: snap-back ─────────────────────────────────────────────
+        if (axis === 'horizontal' && !horizValid) {
             const c = activeCard();
             if (c) {
                 const q = s => c.querySelector(s);
@@ -651,47 +689,58 @@ window.unregisterEscapeKey = function () {
                     setTimeout(() => img.classList.remove('image-with-transition'), 300);
                 }
             }
-            if (_dotNet) _dotNet.invokeMethodAsync('OnHorizontalSwipeEnd', curX, false, hasMoved);
+            if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
             return;
         }
 
-        // Validated fly-off
-        const c = activeCard();
-        if (c) {
-            const flyX = isRight ? 920 : -920;
-            const flyY = -90;
-            const rot = isRight ? 38 : -38;
+        // ── HORIZONTAL: validated — Tinder fly-off ────────────────────────────
+        if (horizValid) {
+            const c = activeCard();
+            if (c) {
+                const flyX = isRight ? 920 : -920;
+                const flyY = -90;
+                const rot = isRight ? 38 : -38;
 
-            const img = c.querySelector('.anime-image');
-            if (img) {
-                img.style.transition =
-                    'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
-                    'opacity   0.36s ease-in 0.06s';
-                img.style.transform =
-                    `translateX(${flyX}px) translateY(${flyY}px) rotate(${rot}deg)`;
-                img.style.opacity = '0';
+                const img = c.querySelector('.anime-image');
+                if (img) {
+                    img.style.transition =
+                        'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
+                        'opacity   0.36s ease-in 0.06s';
+                    img.style.transform =
+                        `translateX(${flyX}px) translateY(${flyY}px) rotate(${rot}deg)`;
+                    img.style.opacity = '0';
+                }
+
+                ['.swipe-feather-right', '.swipe-feather-left',
+                    '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
+                        const el = c.querySelector(sel);
+                        if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
+                    });
             }
 
-            ['.swipe-feather-right', '.swipe-feather-left',
-                '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
-                    const el = c.querySelector(sel);
-                    if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
-                });
+            // ── FIX: notifie Blazor IMMÉDIATEMENT — plus de setTimeout 420ms.
+            //    Blazor (FinishHorizontalSwipe) change currentIndex sans délai
+            //    et appelle StateHasChanged() → le nouvel anime est rendu dans
+            //    le DOM PENDANT que le fly-off JS se joue encore.
+            //    Le MutationObserver détecte la nouvelle .active card et appelle
+            //    runEntrance() qui la cache puis l'anime proprement.
+            _pendingEntrance = true;
+            if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+            return;
         }
 
-        // Notify Blazor immediately — it changes currentIndex without delay
-        // so the new anime renders DURING the fly-off animation.
-        // The MutationObserver picks up the new .active card and calls runEntrance().
-        _pendingEntrance = true;
-        if (_dotNet) _dotNet.invokeMethodAsync('OnHorizontalSwipeEnd', curX, true, hasMoved);
+        // ── VERTICAL + fallback ───────────────────────────────────────────────
+        if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: detect new .active card after Blazor re-render ──────
+    // ── MutationObserver: watch for the new .active card after Blazor re-render
+    //    This is the only reliable hook — no setTimeout guessing.
     const _observer = new MutationObserver(() => {
         if (!_pendingEntrance) return;
         const c = activeCard();
         if (!c) return;
         _pendingEntrance = false;
+        // Give Blazor one more microtask to finish patching the DOM
         Promise.resolve().then(() => runEntrance());
     });
 
@@ -703,36 +752,35 @@ window.unregisterEscapeKey = function () {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    // Called by Blazor (initCardDrag) once on first render
     window.initCardDrag = function (dotNetRef) { _dotNet = dotNetRef; };
 
-    // Called by Blazor when the axis is locked to horizontal
-    window.startCardDragHorizontal = function (sx, sy) {
-        _active = true;
-        startX = sx;
-        startY = sy;
-        curX = 0;
-        hasMoved = false;
+    window.startCardDrag = function (x, y) {
+        isDragging = true;
+        startX = x; startY = y;
+        curX = 0; curY = 0;
+        axis = 'none'; hasMoved = false;
     };
 
-    window.animateCardEntrance = function () { runEntrance(); };
+    window.animateCardEntrance = function () {
+        runEntrance();
+    };
 
-    // ── Native listeners (mouse + touch) ──────────────────────────────────────
+    // ── Native listeners ──────────────────────────────────────────────────────
 
-    document.addEventListener('mousemove', e => { if (_active) onMove(e.clientX); });
-    document.addEventListener('mouseup', () => { if (_active) onEnd(); });
+    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
 
     document.addEventListener('touchmove', e => {
-        if (_active && e.touches.length) {
-            onMove(e.touches[0].clientX);
+        if (isDragging && e.touches.length) {
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
             e.preventDefault();
         }
     }, { passive: false });
 
-    document.addEventListener('touchend', () => { if (_active) onEnd(); });
-    document.addEventListener('touchcancel', () => { if (_active) onEnd(); });
+    document.addEventListener('touchend', () => { if (isDragging) onEnd(); });
+    document.addEventListener('touchcancel', () => { if (isDragging) onEnd(); });
 
-    // Suppress ghost click after drag
+    // Suppress the ghost click that fires right after a drag
     document.addEventListener('click', e => {
         if (suppressNextClick) {
             e.stopPropagation();
