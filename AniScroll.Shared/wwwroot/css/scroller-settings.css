@@ -109,6 +109,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    z-index: 2; /* above the skeleton */
 }
 
 /* colored bg tint */
@@ -246,11 +247,11 @@
     overflow: hidden;
 }
 
-/* blurred bg (like the real card bg) */
+/* blurred bg — flat, no glow */
 .swset-sk-img-bg {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 50%, rgba(80,60,150,0.45) 0%, transparent 65%), radial-gradient(ellipse at 20% 80%, rgba(30,50,120,0.30) 0%, transparent 55%), #0e0e1e;
+    background: #0e0e1e;
 }
 
 /* centered cover (the anime poster rectangle) */
@@ -327,7 +328,7 @@
     opacity: 0.40;
 }
 
-/* genres row */
+/* genres row — simple bars */
 .swset-sk-genres {
     display: flex;
     gap: 5px;
@@ -339,11 +340,11 @@
 .swset-sk-genre {
     height: 6px;
     border-radius: 10px;
-    background: rgba(180,120,255,0.30);
+    background: rgba(255,255,255,0.09);
     flex-shrink: 0;
 }
 
-/* stats badges */
+/* stats badges — simple rounded bars */
 .swset-sk-stats {
     display: flex;
     gap: 6px;
@@ -354,34 +355,18 @@
 
 .swset-sk-badge-score,
 .swset-sk-badge-ep {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0 8px;
     height: 20px;
     border-radius: 6px;
-    font-size: 9px;
-    font-weight: 700;
-    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 .swset-sk-badge-score {
-    background: rgba(234,179,8,0.14);
-    color: rgba(234,179,8,0.55);
+    width: 48px;
 }
 
 .swset-sk-badge-ep {
-    background: rgba(100,140,220,0.12);
-    color: rgba(150,185,255,0.45);
-}
-
-.swset-sk-score-num, .swset-sk-ep-num {
-    display: inline-block;
-    width: 18px;
-    height: 7px;
-    background: currentColor;
-    border-radius: 3px;
-    opacity: 0.5;
+    width: 56px;
 }
 
 /* description */
