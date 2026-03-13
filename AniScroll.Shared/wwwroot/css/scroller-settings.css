@@ -71,13 +71,11 @@
     letter-spacing: -0.01em;
 }
 
-/* ── Preview section — 55% of remaining height ──────── */
+/* ── Section block — 55% ────────────────────────────── */
 .swset-section-block {
     flex: 0 0 55%;
     min-height: 0;
-    position: relative;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    overflow: hidden;
     animation: swsetUp 0.22s ease-out 0.05s both;
 }
 
@@ -93,212 +91,218 @@
     }
 }
 
-/* ── Card — fills section absolutely ───────────────── */
-.swset-card {
-    position: absolute;
-    inset: 0;
+/* ══════════════════════════════════════════════════════
+   THE 3-COLUMN ROW
+   [zone-left] [skeleton] [zone-right]
+   ══════════════════════════════════════════════════════ */
+.swset-row {
     display: flex;
-    flex-direction: column;
-    background: #0c0c18;
+    height: 100%;
+    align-items: stretch;
+}
+
+/* ── Side zones ─────────────────────────────────────── */
+.swset-zone {
+    flex: 0 0 80px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
 }
 
+/* colored bg tint */
+.swset-zone-left {
+    background: color-mix(in srgb, var(--zc) 10%, #08080f);
+}
+
+.swset-zone-right {
+    background: color-mix(in srgb, var(--zc) 10%, #08080f);
+}
+
+/* gradient overlay */
+.swset-zone-grad {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* hint + edit column */
+.swset-zone-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 6px;
+}
+
+.swset-zone-content-r {
+    align-items: center;
+}
+
+/* hint pill */
+.swset-zone-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border: 1.5px solid;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(0,0,0,0.50);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    white-space: nowrap;
+    animation: zoneInL 0.28s ease-out 0.10s both;
+}
+
+.swset-zone-hint-r {
+    flex-direction: row-reverse;
+    animation-name: zoneInR;
+}
+
+@keyframes zoneInL {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes zoneInR {
+    from {
+        opacity: 0;
+        transform: translateX(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* edit button */
+.swset-zone-edit {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
+    background: color-mix(in srgb, var(--zc) 16%, rgba(0,0,0,0.5));
+    color: var(--zc);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background 0.14s, transform 0.11s;
+    animation: zoneInL 0.28s ease-out 0.18s both;
+}
+
+.swset-zone-right .swset-zone-edit {
+    animation-name: zoneInR;
+}
+
+.swset-zone-edit:active {
+    transform: scale(0.88);
+}
+
+.swset-zone-edit:hover {
+    background: color-mix(in srgb, var(--zc) 28%, rgba(0,0,0,0.45));
+}
+
 /* ══════════════════════════════════════════════════════
-   IMAGE AREA — full width, ~57% of card height
-   Mirrors how the real card shows the anime cover image
+   SKELETON CARD — fills remaining width
    ══════════════════════════════════════════════════════ */
-.swset-img-area {
-    flex: 0 0 57%;
+.swset-skeleton {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #0c0c18;
+    border-left: 1px solid rgba(255,255,255,0.05);
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ── Image area — full width, ~55% height ── */
+.swset-sk-img {
+    flex: 0 0 52%;
     min-height: 0;
     position: relative;
     overflow: hidden;
 }
 
-/* blurred bg (like the .bg-image div behind the centered cover) */
-.swset-img-blur-bg {
+/* blurred bg (like the real card bg) */
+.swset-sk-img-bg {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 40%, rgba(80,60,160,0.50) 0%, transparent 65%), radial-gradient(ellipse at 20% 70%, rgba(30,40,120,0.40) 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(60,20,100,0.35) 0%, transparent 55%), #0e0e1e;
+    background: radial-gradient(ellipse at 50% 50%, rgba(80,60,150,0.45) 0%, transparent 65%), radial-gradient(ellipse at 20% 80%, rgba(30,50,120,0.30) 0%, transparent 55%), #0e0e1e;
 }
 
-/* centered cover card (the actual anime image area) */
-.swset-img-cover {
+/* centered cover (the anime poster rectangle) */
+.swset-sk-img-cover {
     position: absolute;
-    top: 6%;
-    bottom: 6%;
+    top: 8%;
+    bottom: 8%;
     left: 50%;
     transform: translateX(-50%);
-    width: 42%;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.09);
+    width: 40%;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 8px;
     z-index: 2;
 }
 
-/* bottom fade into info section */
-.swset-img-fade {
+/* bottom fade */
+.swset-sk-img-fade {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60%;
+    height: 50%;
     z-index: 3;
     pointer-events: none;
     background: linear-gradient(to bottom, transparent 0%, #0c0c18 100%);
 }
 
-/* ── Left / Right overlays — INSIDE .swset-img-area ── */
-.swset-ol {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 44%;
-    pointer-events: none;
-    z-index: 10;
-}
-
-.swset-ol-left {
-    left: 0;
-}
-
-.swset-ol-right {
-    right: 0;
-}
-
-.swset-ol-feather {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
-
-/* hint + Edit column, centred vertically */
-.swset-ol-ui {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 10px;
-    padding: 0 14px;
-    pointer-events: all;
-}
-
-.swset-ol-ui-r {
-    left: auto;
-    right: 0;
-    align-items: flex-end;
-}
-
-/* hint pill */
-.swset-ol-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    border-radius: 10px;
-    border: 1.5px solid;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    white-space: nowrap;
-    animation: olInL 0.30s ease-out 0.10s both;
-}
-
-.swset-ol-hint-r {
-    flex-direction: row-reverse;
-    animation-name: olInR;
-}
-
-@keyframes olInL {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes olInR {
-    from {
-        opacity: 0;
-        transform: translateX(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* Edit button */
-.swset-ol-edit {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border-radius: 9px;
-    border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
-    background: color-mix(in srgb, var(--zc) 18%, rgba(0,0,0,0.55));
-    color: var(--zc);
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    white-space: nowrap;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    transition: background 0.14s, transform 0.11s;
-    animation: olInL 0.30s ease-out 0.18s both;
-}
-
-.swset-ol-right .swset-ol-edit {
-    animation-name: olInR;
-}
-
-.swset-ol-edit:active {
-    transform: scale(0.88);
-}
-
-.swset-ol-edit:hover {
-    background: color-mix(in srgb, var(--zc) 28%, rgba(0,0,0,0.45));
-}
-
-/* ══════════════════════════════════════════════════════
-   INFO AREA — mirrors .info-section pixel-perfectly
-   ══════════════════════════════════════════════════════ */
-.swset-info-area {
+/* ── Info area — mirrors .info-section ── */
+.swset-sk-info {
     flex: 1;
     min-height: 0;
-    padding: 10px 16px 8px;
+    padding: 10px 14px 8px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: #0c0c18;
 }
 
-/* shared skeleton block */
-.swset-sk-block {
+/* shared line */
+.swset-sk-line {
     display: block;
-    background: rgba(255,255,255,0.10);
     border-radius: 4px;
+    background: rgba(255,255,255,0.10);
     flex-shrink: 0;
-    animation: skIn 0.26s ease-out both;
+    animation: skIn 0.24s ease-out both;
 }
 
 @keyframes skIn {
     from {
         opacity: 0;
-        transform: scaleX(0.75);
+        transform: scaleX(0.7);
         transform-origin: left;
     }
 
@@ -308,101 +312,104 @@
     }
 }
 
-/* title (h1) — big and bold */
+/* title */
 .swset-sk-title {
-    height: 18px;
+    height: 16px;
     border-radius: 5px;
     margin-bottom: 7px;
     opacity: 0.88;
 }
-
-/* season-info — small grey line */
+/* season */
 .swset-sk-season {
-    height: 7px;
+    height: 6px;
     border-radius: 3px;
-    margin-bottom: 8px;
-    opacity: 0.42;
+    margin-bottom: 7px;
+    opacity: 0.40;
 }
 
-/* genres — horizontal row of colored pill shapes */
+/* genres row */
 .swset-sk-genres {
     display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-bottom: 9px;
+    gap: 5px;
+    margin-bottom: 8px;
     flex-shrink: 0;
-    animation: skIn 0.26s ease-out both;
+    animation: skIn 0.24s ease-out both;
 }
 
-.swset-sk-genre-pill {
-    height: 7px;
+.swset-sk-genre {
+    height: 6px;
     border-radius: 10px;
-    background: rgba(180,120,255,0.35); /* evokes colored genre text */
+    background: rgba(180,120,255,0.30);
     flex-shrink: 0;
 }
 
-/* stats row — ★ score badge + EP badge */
+/* stats badges */
 .swset-sk-stats {
     display: flex;
-    gap: 7px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 9px;
     flex-shrink: 0;
-    animation: skIn 0.26s ease-out both;
+    animation: skIn 0.24s ease-out both;
 }
 
 .swset-sk-badge-score,
 .swset-sk-badge-ep {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 0 9px;
-    height: 22px;
-    border-radius: 7px;
-    border: 1px solid rgba(255,255,255,0.12);
-    font-size: 10px;
+    gap: 4px;
+    padding: 0 8px;
+    height: 20px;
+    border-radius: 6px;
+    font-size: 9px;
     font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.10);
 }
 
 .swset-sk-badge-score {
-    background: rgba(234,179,8,0.15);
-    color: rgba(234,179,8,0.60);
+    background: rgba(234,179,8,0.14);
+    color: rgba(234,179,8,0.55);
 }
 
 .swset-sk-badge-ep {
-    background: rgba(100,130,200,0.12);
-    color: rgba(150,180,255,0.45);
+    background: rgba(100,140,220,0.12);
+    color: rgba(150,185,255,0.45);
 }
 
-.swset-sk-star {
-    font-size: 11px;
+.swset-sk-score-num, .swset-sk-ep-num {
+    display: inline-block;
+    width: 18px;
+    height: 7px;
+    background: currentColor;
+    border-radius: 3px;
+    opacity: 0.5;
 }
 
-/* description lines */
+/* description */
 .swset-sk-desc-wrap {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    margin-bottom: 8px;
+    gap: 4px;
+    margin-bottom: 7px;
     flex-shrink: 0;
 }
 
 .swset-sk-desc {
     height: 5px;
     border-radius: 3px;
-    opacity: 0.30;
+    opacity: 0.28;
 }
 
-/* Read More — blue link text exactly like the real card */
-.swset-sk-read-more {
+/* Read More */
+.swset-sk-readmore {
     align-self: flex-start;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: rgba(96,165,250,0.60);
+    color: rgba(96,165,250,0.55);
     flex-shrink: 0;
-    animation: skIn 0.26s ease-out both;
+    animation: skIn 0.24s ease-out both;
 }
 
-/* ── Future settings (45%) ─────────────────────────── */
+/* ── Future settings ─────────────────────────────────── */
 .swset-future-sections {
     flex: 1;
     min-height: 0;
@@ -410,7 +417,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* ── Picker screen ─────────────────────────────────── */
+/* ── Picker screen ───────────────────────────────────── */
 .swset-picker-screen {
     z-index: 3100;
 }
@@ -518,7 +525,7 @@
     margin-left: auto;
 }
 
-/* ── Settings open button ──────────────────────────── */
+/* ── Settings open button ───────────────────────────── */
 .swset-open-btn {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
