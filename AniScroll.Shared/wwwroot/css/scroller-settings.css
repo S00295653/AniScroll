@@ -264,16 +264,19 @@
 
 /* mirrors .image-section */
 .swset-sk-image-section {
-    flex: 0 0 30%;
+    flex: 0 0 38%;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden;
 }
 
 /* mirrors .anime-image (the poster) */
 .swset-sk-poster {
-    width: 28%;
+    height: 82%;
+    width: auto;
     aspect-ratio: 2/3;
     border-radius: 8px;
     background: rgba(255,255,255,0.07);
