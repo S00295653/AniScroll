@@ -262,26 +262,20 @@
     overflow: hidden;
 }
 
-/* mirrors .image-section */
+/* mirrors .image-section — full width, ~55% height like the real card */
 .swset-sk-image-section {
-    flex: 0 0 38%;
+    flex: 0 0 52%;
     min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
     overflow: hidden;
 }
 
-/* mirrors .anime-image (the poster) */
+/* mirrors .anime-image — full width background image */
 .swset-sk-poster {
-    height: 82%;
-    width: auto;
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.11);
-    animation: skFloat 5s ease-in-out infinite;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, rgba(60,60,110,0.6) 0%, rgba(30,30,70,0.8) 40%, rgba(15,15,40,0.95) 100%);
+    border-radius: 0;
 }
 
 @keyframes skFloat {
@@ -298,9 +292,11 @@
 .swset-sk-info-section {
     flex: 1;
     min-height: 0;
-    padding: 10px 16px 8px;
+    padding: 12px 16px 6px;
     display: flex;
     flex-direction: column;
+    gap: 0;
+    overflow: hidden;
 }
 
 /* shared line */
@@ -324,25 +320,27 @@
     }
 }
 
-/* title (h1) */
+/* title — big like h1 in real card */
 .swset-sk-title {
-    height: 13px;
+    height: 16px;
     border-radius: 5px;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
+    opacity: 0.90;
 }
 /* season-info */
 .swset-sk-season {
     height: 7px;
     border-radius: 3px;
     margin-bottom: 7px;
-    opacity: 0.58;
+    opacity: 0.45;
 }
-/* genres */
+/* genres — slightly colored tint to evoke the real colored genres */
 .swset-sk-genres {
     height: 6px;
     border-radius: 3px;
     margin-bottom: 9px;
-    opacity: 0.46;
+    opacity: 0.38;
+    background: rgba(180,130,255,0.25);
 }
 
 /* .stats */
@@ -355,11 +353,11 @@
 }
 
 .swset-sk-badge {
-    height: 20px;
-    width: 48px;
+    height: 22px;
+    width: 52px;
     border-radius: 7px;
     background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
 }
 
 /* description block */
@@ -374,21 +372,19 @@
 .swset-sk-desc {
     height: 5px;
     border-radius: 3px;
-    opacity: 0.36;
+    opacity: 0.30;
 }
 
-/* read-more */
+/* read-more — matches the blue "Read More" button style */
 .swset-sk-read-more {
     align-self: flex-start;
-    padding: 5px 13px;
-    border-radius: 7px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    font-size: 9px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 11px;
     font-weight: 700;
-    color: rgba(255,255,255,0.20);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    color: rgba(100,160,255,0.50);
+    letter-spacing: 0.01em;
     flex-shrink: 0;
     animation: skLine 0.30s ease-out both;
 }
