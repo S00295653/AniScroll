@@ -555,6 +555,9 @@ window.unregisterEscapeKey = function () {
     // Flag: next time a new .active card appears, run the entrance animation
     let _pendingEntrance = false;
 
+    // Track the last active card element to detect genuine card changes
+    let _lastActiveCard = null;
+
     // Snapshot of every card's baseY at drag-start, so vertical drag can
     // offset ALL cards simultaneously (neighbour peeks while dragging).
     let _cardBaseTransforms = [];
@@ -567,6 +570,17 @@ window.unregisterEscapeKey = function () {
 
     function activeCard() {
         return document.querySelector('.anime-card.active');
+    }
+
+    // ── Hard-reset an image: disable transition first so there's no animation
+    function resetImage(img) {
+        if (!img) return;
+        img.style.transition = 'none';  // kill any CSS transition immediately
+        img.style.opacity = '';
+        img.style.transform = '';
+        // Force reflow so the browser applies the reset before re-enabling transitions
+        void img.offsetWidth;
+        img.style.transition = '';
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
@@ -588,13 +602,8 @@ window.unregisterEscapeKey = function () {
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Image : simple reset, pas d'animation d'entrée
-                const img = c.querySelector('.anime-image');
-                if (img) {
-                    img.style.transition = '';
-                    img.style.opacity = '';
-                    img.style.transform = '';
-                }
+                // Image : simple reset, no entrance animation
+                resetImage(c.querySelector('.anime-image'));
             });
         });
     }
@@ -721,10 +730,12 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: watch for .active card changes after Blazor re-render
+    // ── MutationObserver: fires on every class change in the DOM.
+    //    We only act when the *active card itself* has changed.
     const _observer = new MutationObserver(() => {
         const c = activeCard();
-        if (!c) return;
+        if (!c || c === _lastActiveCard) return;  // same card → nothing to do
+        _lastActiveCard = c;
 
         if (_pendingEntrance) {
             _pendingEntrance = false;
@@ -732,14 +743,9 @@ window.unregisterEscapeKey = function () {
             return;
         }
 
-        // Nettoie les styles résiduels du fly-off horizontal
-        // (cas : on revient en vertical sur une carte précédemment swipée)
-        const img = c.querySelector('.anime-image');
-        if (img) {
-            img.style.transition = '';
-            img.style.opacity = '';
-            img.style.transform = '';
-        }
+        // Vertical nav (or any other cause): hard-reset the image immediately
+        // with transition:none so there's zero animated slide-in from the edge.
+        resetImage(c.querySelector('.anime-image'));
     });
 
     _observer.observe(document.body, {
