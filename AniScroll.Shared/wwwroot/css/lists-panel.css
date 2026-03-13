@@ -284,11 +284,33 @@
 }
 
 .entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 11px;
     color: #6b7280;
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.entry-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.entry-meta-sep {
+    color: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+/* Icône dans le badge de statut */
+.entry-status-badge svg {
+    vertical-align: middle;
+    flex-shrink: 0;
 }
 
 .entry-status-badge {

@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                        transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -231,7 +231,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -241,23 +241,83 @@
                                         <span class="entry-fav-badge" title="Favourited">♥</span>
                                     }
                                 </div>
+
                                 @{
-                                    var metaParts = new List<string>();
-                                    if (e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score)) metaParts.Add("★ " + e.Anime.Score);
-                                    if (!string.IsNullOrEmpty(e.Anime.Format)) metaParts.Add(e.Anime.Format);
-                                    if (e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes)) metaParts.Add(FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched));
-                                    if (e.Score > 0) metaParts.Add("My score: " + e.Score);
+                                    bool hasScore = e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score);
+                                    bool hasFormat = !string.IsNullOrEmpty(e.Anime.Format);
+                                    bool hasEpisodes = e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes);
+                                    bool hasMyScore = e.Score > 0;
+                                    bool hasAnyMeta = hasScore || hasFormat || hasEpisodes || hasMyScore;
                                 }
-                                @if (metaParts.Any())
+                                @if (hasAnyMeta)
                                 {
-                                    <div class="entry-meta">@string.Join(" · ", metaParts)</div>
+                                    <div class="entry-meta">
+                                        @if (hasScore)
+                                        {
+                                            <span class="entry-meta-item">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="color:#fbbf24;flex-shrink:0;">
+                                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                                </svg>
+                                                @e.Anime.Score
+                                            </span>
+                                        }
+                                        @if (hasFormat)
+                                        {
+                                            @if (hasScore)
+                                            {
+                                                <span class="entry-meta-sep">·</span>
+                                            }
+                                            <span class="entry-meta-item">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                                                    <line x1="7" y1="2" x2="7" y2="22" />
+                                                    <line x1="17" y1="2" x2="17" y2="22" />
+                                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                                    <line x1="2" y1="7" x2="7" y2="7" />
+                                                    <line x1="17" y1="7" x2="22" y2="7" />
+                                                    <line x1="2" y1="17" x2="7" y2="17" />
+                                                    <line x1="17" y1="17" x2="22" y2="17" />
+                                                </svg>
+                                                @e.Anime.Format
+                                            </span>
+                                        }
+                                        @if (hasEpisodes)
+                                        {
+                                            @if (hasScore || hasFormat)
+                                            {
+                                                <span class="entry-meta-sep">·</span>
+                                            }
+                                            <span class="entry-meta-item">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
+                                                </svg>
+                                                @FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched)
+                                            </span>
+                                        }
+                                        @if (hasMyScore)
+                                        {
+                                            @if (hasScore || hasFormat || hasEpisodes)
+                                            {
+                                                <span class="entry-meta-sep">·</span>
+                                            }
+                                            <span class="entry-meta-item">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                    <circle cx="12" cy="8" r="6" />
+                                                    <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.11" />
+                                                </svg>
+                                                @e.Score
+                                            </span>
+                                        }
+                                    </div>
                                 }
+
                                 @if (e.Status.HasValue)
                                 {
                                     var sc = GetStatusColor(e.Status.Value);
                                     <div class="entry-status-badge"
                                          style="color:@sc;background:color-mix(in srgb,@(sc) 12%,transparent);border:1px solid color-mix(in srgb,@(sc) 30%,transparent);">
-                                        @GetStatusIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
+                                        @GetStatusSvgIcon(e.Status.Value) @GetStatusLabel(e.Status.Value)
                                     </div>
                                 }
                                 @{
@@ -305,8 +365,6 @@
 
     private void OpenSortFilter() { CloseAllDropdowns(); _showSortFilter = true; StateHasChanged(); }
 
-    // Compte le nombre de catégories actives (pas d'items individuels)
-    // Ex : 3 genres sélectionnés = 1, sort ≠ default = 1, année filtrée = 1 → total 3
     private int SortFilterCategoryCount
     {
         get
@@ -338,7 +396,6 @@
         if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0;
         var slash = s.IndexOf('/');
         var part = slash >= 0 ? s[(slash + 1)..] : s;
-        // "?" ou "?+" = en cours sans total → valeur très grande
         if (part.TrimEnd('+', '?', ' ') == "" || part.StartsWith('?')) return int.MaxValue - 1;
         part = part.TrimEnd('+', '?', ' ');
         return int.TryParse(part, out var v) ? v : 0;
@@ -375,6 +432,37 @@
 
     private MarkupString GlowDot(string color) => UiHelpers.GlowDot(color);
     private string GetStatusColor(ListStatus s) => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
+
+    // ── SVG icons for status badges ──────────────────────────────────────
+    private MarkupString GetStatusSvgIcon(ListStatus s) => s switch
+    {
+        ListStatus.Watching => new MarkupString(
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"flex-shrink:0;\">" +
+            "<polygon points=\"5 3 19 12 5 21 5 3\"/></svg>"),
+
+        ListStatus.Rewatching => new MarkupString(
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<polyline points=\"1 4 1 10 7 10\"/>" +
+            "<path d=\"M3.51 15a9 9 0 1 0 .49-3.32\"/></svg>"),
+
+        ListStatus.Completed => new MarkupString(
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
+
+        ListStatus.Planning => new MarkupString(
+            "<svg width=\"10\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>"),
+
+        ListStatus.Paused => new MarkupString(
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"flex-shrink:0;\">" +
+            "<rect x=\"6\" y=\"4\" width=\"4\" height=\"16\"/><rect x=\"14\" y=\"4\" width=\"4\" height=\"16\"/></svg>"),
+
+        ListStatus.Dropped => new MarkupString(
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
+            "<line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>"),
+
+        _ => new MarkupString("")
+    };
 
     private string _activeStatusColor
     {
@@ -429,32 +517,23 @@
             SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
             SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
             SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? double.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
-
-            // Rating desc: no score (-1 sentinel) → end
             SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e =>
                 double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : -1d),
-
-            // Rating asc: no score → end (MaxValue)
             SortFilterPopup.SortMode.AniListScoreAsc => entries.OrderBy(e =>
                 double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : double.MaxValue),
-
-            // Episodes desc: unknown count (-1) → end
             SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e =>
                 { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : -1; }),
-
-            // Episodes asc: unknown count → end (MaxValue)
             SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e =>
                 { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : int.MaxValue; }),
-
             SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
             SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
             SortFilterPopup.SortMode.Favourites => entries
                  .Where(e => UserListService.IsFavorited(e.Anime.Id))
                  .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
             _ => entries.OrderByDescending(e => e.UpdatedAt),
-         };
+        };
 
         return entries;
     }
@@ -517,33 +596,26 @@
     }
 
     private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
-    private string GetStatusIcon(ListStatus s) => UiHelpers.GetStatusIcon(s);
 
     private static string FormatEpisodeDisplay(string? s, int watched = 0)
     {
         if (string.IsNullOrWhiteSpace(s) || s == "N/A") return "";
 
-        // Séries en cours sans total connu : "?+"
         if (s == "?+")
-        {
             return watched > 0 ? $"{watched}/?+ EP" : "?+ EP";
-        }
 
-        // Séries en cours avec épisodes connus : "1155+"
         if (s.EndsWith('+'))
         {
             var total = s.TrimEnd('+');
             return watched > 0 ? $"{watched}/{total}+ EP" : $"{s} EP";
         }
 
-        // Séries avec "done/total" (ex: "11/12" depuis nextAiring)
         if (s.Contains('/'))
         {
             var total = s[(s.IndexOf('/') + 1)..];
             return watched > 0 ? $"{watched}/{total} EP" : $"{s} EP";
         }
 
-        // Séries finies avec nombre fixe
         return watched > 0 ? $"{watched}/{s} EP" : $"{s} EP";
     }
 }
