@@ -552,14 +552,19 @@ window.unregisterEscapeKey = function () {
     let hasMoved = false;
     let suppressNextClick = false;
 
+    // RAF throttle
+    let _rafId = 0;
+
+    // Cache of active card's children — populated at drag-start, never queried mid-drag
+    let _cached = {};
+
     // Flag: next time a new .active card appears, run the entrance animation
     let _pendingEntrance = false;
 
     // Track the last active card element to detect genuine card changes
     let _lastActiveCard = null;
 
-    // Snapshot of every card's baseY at drag-start, so vertical drag can
-    // offset ALL cards simultaneously (neighbour peeks while dragging).
+    // Snapshot of every card's baseY at drag-start
     let _cardBaseTransforms = [];
 
     const AXIS_LOCK = 8;
@@ -572,23 +577,20 @@ window.unregisterEscapeKey = function () {
         return document.querySelector('.anime-card.active');
     }
 
-    // ── Hard-reset an image: disable transition first so there's no animation
     function resetImage(img) {
         if (!img) return;
-        img.style.transition = 'none';  // kill any CSS transition immediately
+        img.style.transition = 'none';
         img.style.opacity = '';
         img.style.transform = '';
-        // Force reflow so the browser applies the reset before re-enabling transitions
         void img.offsetWidth;
         img.style.transition = '';
     }
 
-    // ── Entrance animation for the new card after a horizontal swipe ──────────
+    // ── Entrance animation ────────────────────────────────────────────────────
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
-        // Masque brièvement la carte pour éviter le flash
         c.style.opacity = '0';
         c.style.transform = 'translateY(0px)';
 
@@ -602,20 +604,15 @@ window.unregisterEscapeKey = function () {
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Image : simple reset, no entrance animation
                 resetImage(c.querySelector('.anime-image'));
             });
         });
     }
 
-    // ── Paint (live drag feedback) ────────────────────────────────────────────
+    // ── Paint (live drag feedback) — uses cached elements, never queries DOM ──
 
     function paint() {
-        const c = activeCard();
-        if (!c) return;
-
         if (axis === 'vertical') {
-            // Offset ALL cards so the next/prev anime peeks in while dragging
             _cardBaseTransforms.forEach(item => {
                 item.el.style.transform = `translateY(${item.baseY + curY}px)`;
             });
@@ -626,28 +623,23 @@ window.unregisterEscapeKey = function () {
 
         const rOp = curX > 5 ? Math.min(1, (curX - 5) / 50) : 0;
         const lOp = curX < -5 ? Math.min(1, (-curX - 5) / 50) : 0;
-        const q = s => c.querySelector(s);
 
-        const fr = q('.swipe-feather-right'), fl = q('.swipe-feather-left');
-        const hr = q('.swipe-hint-right'), hl = q('.swipe-hint-left');
-        const img = q('.anime-image');
+        if (_cached.fr) _cached.fr.style.opacity = rOp;
+        if (_cached.fl) _cached.fl.style.opacity = lOp;
+        if (_cached.hr) _cached.hr.style.opacity = rOp;
+        if (_cached.hl) _cached.hl.style.opacity = lOp;
 
-        if (fr) fr.style.opacity = rOp;
-        if (fl) fl.style.opacity = lOp;
-        if (hr) hr.style.opacity = rOp;
-        if (hl) hl.style.opacity = lOp;
-
-        if (img) {
+        if (_cached.img) {
             if (curX !== 0) {
                 const rot = Math.max(-16, Math.min(16, curX * 0.022));
-                img.style.transform = `translateX(${curX}px) rotate(${rot}deg)`;
+                _cached.img.style.transform = `translateX(${curX}px) rotate(${rot}deg)`;
             } else {
-                img.style.transform = '';
+                _cached.img.style.transform = '';
             }
         }
     }
 
-    // ── Move ──────────────────────────────────────────────────────────────────
+    // ── Move — RAF-throttled so paint() runs at most once per display frame ───
 
     function onMove(x, y) {
         if (!isDragging) return;
@@ -658,7 +650,8 @@ window.unregisterEscapeKey = function () {
 
         if (axis === 'vertical') { curY = dy; curX = 0; }
         else if (axis === 'horizontal') { curX = dx; curY = 0; }
-        paint();
+
+        if (!_rafId) _rafId = requestAnimationFrame(() => { _rafId = 0; paint(); });
     }
 
     // ── End ───────────────────────────────────────────────────────────────────
@@ -666,6 +659,9 @@ window.unregisterEscapeKey = function () {
     function onEnd() {
         if (!isDragging) return;
         isDragging = false;
+
+        // Cancel any pending RAF so a stale paint doesn't fire after release
+        if (_rafId) { cancelAnimationFrame(_rafId); _rafId = 0; }
 
         if (hasMoved) {
             suppressNextClick = true;
@@ -679,12 +675,11 @@ window.unregisterEscapeKey = function () {
         if (axis === 'horizontal' && !horizValid) {
             const c = activeCard();
             if (c) {
-                const q = s => c.querySelector(s);
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
-                        const el = q(sel); if (el) el.style.opacity = 0;
+                        const el = c.querySelector(sel); if (el) el.style.opacity = 0;
                     });
-                const img = q('.anime-image');
+                const img = c.querySelector('.anime-image');
                 if (img) {
                     img.classList.add('image-with-transition');
                     void img.offsetWidth;
@@ -730,11 +725,10 @@ window.unregisterEscapeKey = function () {
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
-    // ── MutationObserver: fires on every class change in the DOM.
-    //    We only act when the *active card itself* has changed.
+    // ── MutationObserver ──────────────────────────────────────────────────────
     const _observer = new MutationObserver(() => {
         const c = activeCard();
-        if (!c || c === _lastActiveCard) return;  // same card → nothing to do
+        if (!c || c === _lastActiveCard) return;
         _lastActiveCard = c;
 
         if (_pendingEntrance) {
@@ -743,8 +737,6 @@ window.unregisterEscapeKey = function () {
             return;
         }
 
-        // Vertical nav (or any other cause): hard-reset the image immediately
-        // with transition:none so there's zero animated slide-in from the edge.
         resetImage(c.querySelector('.anime-image'));
     });
 
@@ -764,13 +756,23 @@ window.unregisterEscapeKey = function () {
         curX = 0; curY = 0;
         axis = 'none'; hasMoved = false;
 
-        // Snapshot current translateY of every rendered card so vertical drag
-        // can offset them all simultaneously — neighbour peeks in while dragging.
+        // Snapshot every card's current translateY for vertical neighbour-peek
         _cardBaseTransforms = [];
         document.querySelectorAll('.anime-card').forEach(card => {
             const m = card.style.transform.match(/translateY\(([-\d.]+)px\)/);
             _cardBaseTransforms.push({ el: card, baseY: m ? parseFloat(m[1]) : 0 });
         });
+
+        // Cache active card's children once — paint() will never querySelector mid-drag
+        _cached = { fr: null, fl: null, hr: null, hl: null, img: null };
+        const c = activeCard();
+        if (c) {
+            _cached.fr = c.querySelector('.swipe-feather-right');
+            _cached.fl = c.querySelector('.swipe-feather-left');
+            _cached.hr = c.querySelector('.swipe-hint-right');
+            _cached.hl = c.querySelector('.swipe-hint-left');
+            _cached.img = c.querySelector('.anime-image');
+        }
     };
 
     window.animateCardEntrance = function () {
