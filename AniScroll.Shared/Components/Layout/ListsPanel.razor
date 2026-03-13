@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                        transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -231,7 +231,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -243,11 +243,11 @@
                                 </div>
 
                                 @{
-                                    bool hasScore    = e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score);
-                                    bool hasFormat   = !string.IsNullOrEmpty(e.Anime.Format);
+                                    bool hasScore = e.Anime.Score != "N/A" && !string.IsNullOrEmpty(e.Anime.Score);
+                                    bool hasFormat = !string.IsNullOrEmpty(e.Anime.Format);
                                     bool hasEpisodes = e.Anime.Episodes != "N/A" && !string.IsNullOrEmpty(e.Anime.Episodes);
-                                    bool hasMyScore  = e.Score > 0;
-                                    bool hasAnyMeta  = hasScore || hasFormat || hasEpisodes || hasMyScore;
+                                    bool hasMyScore = e.Score > 0;
+                                    bool hasAnyMeta = hasScore || hasFormat || hasEpisodes || hasMyScore;
                                 }
                                 @if (hasAnyMeta)
                                 {
@@ -256,7 +256,7 @@
                                         {
                                             <span class="entry-meta-item">
                                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                                 </svg>
                                                 @e.Anime.Score
                                             </span>
@@ -412,20 +412,20 @@
     // ── SVG icons for status badges ──────────────────────────────────────
     private MarkupString GetStatusSvgIcon(ListStatus s) => s switch
     {
-        // Play triangle — stroke-only so round linejoin visibly rounds all corners
+        // Play triangle — rounded corners via stroke trick
         ListStatus.Watching => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<polygon points=\"6 3 19 12 6 21\"/></svg>"),
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<polygon points=\"5 3 19 12 5 21\"/></svg>"),
 
-        // ~330° circular arc + angled arrowhead at upper-left — matches reference image
+        // ~300° clockwise arc + corner arrow — clear gap, no overlap
         ListStatus.Rewatching => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<path d=\"M7.5 4.2A9 9 0 1 1 4.2 7.5\"/>" +
-            "<polyline points=\"4.2 5 4.2 7.5 6.4 6.3\"/></svg>"),
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<path d=\"M21 2v6h-6\"/>" +
+            "<path d=\"M21 13a9 9 0 1 1-3-7.7L21 8\"/></svg>"),
 
-        // Checkmark — heavier stroke so the rounded knee is clearly visible
+        // Checkmark — linecap + linejoin round already give soft look
         ListStatus.Completed => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
             "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
 
         // Bookmark outline (pièce jointe)
@@ -433,11 +433,11 @@
             "<svg width=\"10\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
             "<path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>"),
 
-        // Pause bars — rx rounded rects
+        // Pause bars — rx rounded rectangles
         ListStatus.Paused => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
-            "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" +
-            "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
+            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"flex-shrink:0;\">" +
+            "<rect x=\"5\" y=\"4\" width=\"4\" height=\"16\" rx=\"2\"/>" +
+            "<rect x=\"15\" y=\"4\" width=\"4\" height=\"16\" rx=\"2\"/></svg>"),
 
         // X mark — bigger + round caps
         ListStatus.Dropped => new MarkupString(
@@ -516,7 +516,7 @@
                  .Where(e => UserListService.IsFavorited(e.Anime.Id))
                  .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
             _ => entries.OrderByDescending(e => e.UpdatedAt),
-         };
+        };
 
         return entries;
     }
