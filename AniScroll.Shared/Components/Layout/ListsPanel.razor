@@ -419,9 +419,8 @@
 
         // Rotate CCW — Feather icons style, matches reference image
         ListStatus.Rewatching => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<polyline points=\"1 4 1 10 7 10\"/>" +
-            "<path d=\"M3.51 15a9 9 0 1 0 .49-3.32\"/></svg>"),
+           "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+          "<polyline points=\"23 4 23 10 17 10\"/>" + "<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"/></svg>"),
 
         // Checkmark — heavier stroke so the rounded knee is clearly visible
         ListStatus.Completed => new MarkupString(
@@ -435,7 +434,7 @@
 
         // Pause bars — rx rounded rects
         ListStatus.Paused => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" + 
             "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" + "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
 
         // X mark — bigger + round caps
