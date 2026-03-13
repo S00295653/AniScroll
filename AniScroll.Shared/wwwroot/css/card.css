@@ -76,22 +76,63 @@
     background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.35) 30%, rgba(0,0,0,0.15) 60%, transparent 100%);
 }
 
-/* ========== CARD ENTRANCE ANIMATION ========== */
-@keyframes cardEntranceContent {
+/* ========== CARD ENTRANCE ANIMATIONS ========== */
+
+/* Fond de la carte — fade + léger dézoom */
+@keyframes cardEntranceSwipe {
     from {
         opacity: 0;
-        transform: translateY(22px) scale(0.97);
+        transform: scale(0.94);
     }
 
     to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Image — monte depuis le bas avec micro-bounce */
+@keyframes cardEntranceImage {
+    0% {
+        opacity: 0;
+        transform: translateY(36px) scale(0.91);
+    }
+
+    62% {
+        opacity: 1;
+        transform: translateY(-5px) scale(1.02);
+    }
+
+    100% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
 }
 
-.card-entering .content-wrapper {
-    animation: cardEntranceContent 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+/* Texte — glisse depuis le bas, léger délai */
+@keyframes cardEntranceText {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
+
+.card-entering {
+    animation: cardEntranceSwipe 0.40s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+    .card-entering .anime-image {
+        animation: cardEntranceImage 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.03s both;
+    }
+
+    .card-entering .info-section {
+        animation: cardEntranceText 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both;
+    }
 
 /* ========== CONTENT WRAPPER ========== */
 .content-wrapper {
@@ -147,7 +188,6 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    /* Restored drop shadow */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
     cursor: pointer;
     image-rendering: auto;
@@ -157,7 +197,7 @@
     position: relative;
 }
 
-    /* Dégradé en bas de l'image — fondu naturel vers le fond sombre */
+    /* Dégradé en bas de l'image */
     .anime-image::after {
         content: '';
         position: absolute;
@@ -215,7 +255,6 @@
     background: linear-gradient( to right, rgba(99, 102, 241, 0.38) 0%, rgba(99, 102, 241, 0.22) 14%, rgba(99, 102, 241, 0.10) 36%, rgba(99, 102, 241, 0.025) 62%, transparent 100% );
 }
 
-/* On desktop, tone it back down to the original subtlety */
 @media (min-width: 768px) {
     .swipe-feather-right {
         background: linear-gradient( to left, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.10) 12%, rgba(34, 197, 94, 0.038) 32%, rgba(34, 197, 94, 0.010) 58%, transparent 100% );

@@ -501,9 +501,8 @@ window.registerEscapeKey = function (dotNet) {
     _escHandler = function (e) {
         if (e.key === 'Escape') {
             if (document.querySelector('.sfp-overlay')) {
-                // SFP ouvert : on intercepte l'event en capture avant Blazor
                 e.preventDefault();
-                e.stopPropagation();          // ← empêche Blazor de voir l'event
+                e.stopPropagation();
                 if (_sfpEscDotNet) {
                     _sfpEscDotNet.invokeMethodAsync('HandleEscapeFromJS');
                 }
@@ -514,7 +513,6 @@ window.registerEscapeKey = function (dotNet) {
         }
     };
 
-    // capture: true → on intercepte avant tous les handlers bubble (dont Blazor)
     document.addEventListener('keydown', _escHandler, { capture: true });
 };
 
@@ -578,6 +576,7 @@ window.unregisterEscapeKey = function () {
     let suppressNextClick = false;
 
     const AXIS_LOCK = 8, MOVE_THRESHOLD = 8;
+    const HORIZ_THRESHOLD = 85;
 
     function card() { return document.querySelector('.anime-card.active'); }
 
@@ -623,53 +622,81 @@ window.unregisterEscapeKey = function () {
         paint();
     }
 
-    const HORIZ_THRESHOLD = 85;
-
     function onEnd() {
         if (!isDragging) return;
         isDragging = false;
+
         if (hasMoved) {
             suppressNextClick = true;
             setTimeout(() => { suppressNextClick = false; }, 100);
         }
 
-        // Snap-back: Blazor's vdom diff won't touch the DOM if style didn't change
-        // in its own render tree, so we animate back to center in JS directly.
-        if (axis === 'horizontal' && Math.abs(curX) < HORIZ_THRESHOLD) {
+        const validated = axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD;
+        const isRight = curX > 0;
+
+        if (axis === 'horizontal' && !validated) {
+            // ── Snap-back ──────────────────────────────────────────────────
             const c = card();
             if (c) {
                 const q = s => c.querySelector(s);
-                // Fade out feathers & hints immediately
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
                         const el = q(sel); if (el) el.style.opacity = 0;
                     });
-                // Animate image back to center
                 const img = q('.anime-image');
                 if (img) {
                     img.classList.add('image-with-transition');
-                    void img.offsetWidth; // force reflow — without this the browser batches
-                    // the class + transform change and skips the transition
+                    void img.offsetWidth;
                     img.style.transform = '';
                     setTimeout(() => img.classList.remove('image-with-transition'), 300);
                 }
             }
-        }
+        } else if (validated) {
+            // ── Fly-off style Tinder — 100 % JS, Blazor notifié après ──────
+            const c = card();
+            if (c) {
+                const flyX = isRight ? 920 : -920;
+                const flyY = -90;        // légère montée en arc
+                const rot = isRight ? 38 : -38;
 
-        if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+                const img = c.querySelector('.anime-image');
+                if (img) {
+                    img.style.transition =
+                        'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
+                        'opacity   0.36s ease-in 0.06s';
+                    img.style.transform =
+                        `translateX(${flyX}px) translateY(${flyY}px) rotate(${rot}deg)`;
+                    img.style.opacity = '0';
+                }
 
-        // If swipe was validated, schedule the entrance animation after the fly-off
-        // delay (300ms) + a frame for Blazor to re-render the new active card.
-        if (axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD) {
+                // Feathers + hints s'effacent immédiatement
+                ['.swipe-feather-right', '.swipe-feather-left',
+                    '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
+                        const el = c.querySelector(sel);
+                        if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
+                    });
+            }
+
+            // Notifier Blazor après la fin du fly-off → pas d'écrasement du transform
             setTimeout(() => {
-                const c = card();
-                if (!c) return;
-                c.classList.remove('card-entering');
-                void c.offsetWidth;
-                c.classList.add('card-entering');
-                setTimeout(() => c.classList.remove('card-entering'), 420);
-            }, 360);
+                if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+
+                // Entrée de la nouvelle carte après que Blazor ait re-render (~60ms)
+                setTimeout(() => {
+                    const next = card();
+                    if (!next) return;
+                    next.classList.remove('card-entering');
+                    void next.offsetWidth;
+                    next.classList.add('card-entering');
+                    setTimeout(() => next.classList.remove('card-entering'), 480);
+                }, 60);
+            }, 420);
+
+            return; // early return — le invoke est dans le setTimeout ci-dessus
         }
+
+        // Cas vertical ou snap-back : notifier Blazor immédiatement
+        if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -689,9 +716,9 @@ window.unregisterEscapeKey = function () {
         const c = card();
         if (!c) return;
         c.classList.remove('card-entering');
-        void c.offsetWidth; // force reflow so re-adding the class restarts the animation
+        void c.offsetWidth;
         c.classList.add('card-entering');
-        setTimeout(() => c.classList.remove('card-entering'), 420);
+        setTimeout(() => c.classList.remove('card-entering'), 480);
     };
 
     // ── Native listeners ──────────────────────────────────────────────────────
@@ -709,7 +736,7 @@ window.unregisterEscapeKey = function () {
     document.addEventListener('touchend', () => { if (isDragging) onEnd(); });
     document.addEventListener('touchcancel', () => { if (isDragging) onEnd(); });
 
-    // Suppress the click that fires right after a drag (capture phase → before Blazor)
+    // Supprime le click parasite après un drag
     document.addEventListener('click', e => {
         if (suppressNextClick) {
             e.stopPropagation();
