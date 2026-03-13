@@ -552,6 +552,10 @@
             {
                 currentIndex--;
             }
+            else if (currentDragOffset > 0 && currentIndex == 0)
+            {
+                _ = JS.InvokeVoidAsync("snapCardsBack");
+            }
         }
         else
         {
