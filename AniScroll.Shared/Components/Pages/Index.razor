@@ -553,6 +553,10 @@
                 currentIndex--;
             }
         }
+        else
+        {
+            _ = JS.InvokeVoidAsync("snapCardsBack");
+        }
 
         isTransitioning = true; currentDragOffset = 0; currentDragXOffset = 0;
         _swipeAxis = SwipeAxis.None;
