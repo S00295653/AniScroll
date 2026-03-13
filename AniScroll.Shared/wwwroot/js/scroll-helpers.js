@@ -548,23 +548,19 @@ window.unregisterEscapeKey = function () {
     let isDragging = false;
     let startX = 0, startY = 0;
     let curX = 0, curY = 0;
-    let axis = 'none';   // 'none' | 'horizontal' | 'vertical'
+    let axis = 'none';
     let hasMoved = false;
     let suppressNextClick = false;
-
-    // Flag: next time a new .active card appears, run the entrance animation
     let _pendingEntrance = false;
-
-    // Track the last active card element to detect genuine card changes
     let _lastActiveCard = null;
-
-    // Snapshot of every card's baseY at drag-start, so vertical drag can
-    // offset ALL cards simultaneously (neighbour peeks while dragging).
     let _cardBaseTransforms = [];
 
     const AXIS_LOCK = 8;
     const MOVE_THRESHOLD = 8;
     const HORIZ_THRESHOLD = 85;
+    // Snap-back easing — feels like a spring release
+    const SNAPBACK_EASING = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    const SNAPBACK_MS = 280;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -572,27 +568,31 @@ window.unregisterEscapeKey = function () {
         return document.querySelector('.anime-card.active');
     }
 
-    // ── Hard-reset an image: disable transition first so there's no animation
     function resetImage(img) {
         if (!img) return;
         img.style.transition = 'none';
         img.style.opacity = '';
         img.style.transform = '';
-        void img.offsetWidth; // force reflow
+        void img.offsetWidth;
         img.style.transition = '';
     }
 
-    // ── Snap all cards back to their pre-drag baseline (no animation) ─────────
-    // Used before calling OnDragEnd so Blazor always finds cards at the correct
-    // starting position — fixes the "card stays mid-screen on failed swipe" bug.
-    function snapCardsToBaseline() {
+    // ── Smooth snap-back: animate all cards to their baseline, THEN notify Blazor
+    function snapCardsToBaseline(callback) {
+        if (!_cardBaseTransforms.length) { callback(); return; }
+
+        const transition = `transform ${SNAPBACK_MS}ms ${SNAPBACK_EASING}`;
+
         _cardBaseTransforms.forEach(item => {
-            item.el.style.transition = 'none';
+            item.el.style.transition = transition;
             item.el.style.transform = `translateY(${item.baseY}px)`;
         });
-        // One reflow to commit the instant reset before transitions re-enable
-        if (_cardBaseTransforms.length) document.body.offsetHeight;
-        _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
+
+        // After the animation completes, strip the inline transition and call back
+        setTimeout(() => {
+            _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
+            callback();
+        }, SNAPBACK_MS);
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
@@ -613,20 +613,18 @@ window.unregisterEscapeKey = function () {
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Image: simple reset, no entrance animation
                 resetImage(c.querySelector('.anime-image'));
             });
         });
     }
 
-    // ── Paint (live drag feedback) ────────────────────────────────────────────
+    // ── Paint ─────────────────────────────────────────────────────────────────
 
     function paint() {
         const c = activeCard();
         if (!c) return;
 
         if (axis === 'vertical') {
-            // Offset ALL cards so the next/prev anime peeks in while dragging
             _cardBaseTransforms.forEach(item => {
                 item.el.style.transform = `translateY(${item.baseY + curY}px)`;
             });
@@ -738,18 +736,16 @@ window.unregisterEscapeKey = function () {
         }
 
         // ── VERTICAL + fallback ───────────────────────────────────────────────
-        // Reset all card positions to their pre-drag baseline BEFORE notifying
-        // Blazor. This is critical: if Blazor decides the index hasn't changed,
-        // it won't touch the DOM — leaving cards stranded mid-screen. By
-        // snapping back to baseY here, we guarantee correct positioning in all
-        // cases. If Blazor DOES change the index, it will then override these
-        // values with the new positions + with-transition, which is correct.
-        snapCardsToBaseline();
-        if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+        // Animate all cards back to their baseline FIRST, then notify Blazor.
+        // This gives a smooth spring-back even when the swipe doesn't validate,
+        // while still letting Blazor correctly reposition cards on a valid swipe.
+        snapCardsToBaseline(() => {
+            if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+        });
     }
 
-    // ── MutationObserver: fires on every class change in the DOM.
-    //    We only act when the *active card itself* has changed.
+    // ── MutationObserver ──────────────────────────────────────────────────────
+
     const _observer = new MutationObserver(() => {
         const c = activeCard();
         if (!c || c === _lastActiveCard) return;
@@ -761,7 +757,6 @@ window.unregisterEscapeKey = function () {
             return;
         }
 
-        // Vertical nav: hard-reset the image (no animated slide from edge)
         resetImage(c.querySelector('.anime-image'));
     });
 
@@ -781,8 +776,6 @@ window.unregisterEscapeKey = function () {
         curX = 0; curY = 0;
         axis = 'none'; hasMoved = false;
 
-        // Snapshot current translateY of every rendered card so vertical drag
-        // can offset them all simultaneously — neighbour peeks in while dragging.
         _cardBaseTransforms = [];
         document.querySelectorAll('.anime-card').forEach(card => {
             const m = card.style.transform.match(/translateY\(([-\d.]+)px\)/);
@@ -790,9 +783,7 @@ window.unregisterEscapeKey = function () {
         });
     };
 
-    window.animateCardEntrance = function () {
-        runEntrance();
-    };
+    window.animateCardEntrance = function () { runEntrance(); };
 
     // ── Native listeners ──────────────────────────────────────────────────────
 
@@ -809,7 +800,6 @@ window.unregisterEscapeKey = function () {
     document.addEventListener('touchend', () => { if (isDragging) onEnd(); });
     document.addEventListener('touchcancel', () => { if (isDragging) onEnd(); });
 
-    // Suppress the ghost click that fires right after a drag
     document.addEventListener('click', e => {
         if (suppressNextClick) {
             e.stopPropagation();
