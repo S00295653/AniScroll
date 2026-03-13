@@ -731,11 +731,23 @@ window.unregisterEscapeKey = function () {
 
     // ── MutationObserver: watch for the new .active card after Blazor re-render
     const _observer = new MutationObserver(() => {
-        if (!_pendingEntrance) return;
         const c = activeCard();
         if (!c) return;
-        _pendingEntrance = false;
-        Promise.resolve().then(() => runEntrance());
+
+        if (_pendingEntrance) {
+            _pendingEntrance = false;
+            Promise.resolve().then(() => runEntrance());
+            return;
+        }
+
+        // Nettoie les styles résiduels du fly-off horizontal
+        // (cas : on revient sur une carte précédemment swipée)
+        const img = c.querySelector('.anime-image');
+        if (img) {
+            img.style.transition = '';
+            img.style.opacity = '';
+            img.style.transform = '';
+        }
     });
 
     _observer.observe(document.body, {
