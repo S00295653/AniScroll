@@ -609,7 +609,7 @@ window.unregisterEscapeKey = function () {
         });
     }
 
-    // ── Paint (live drag feedback) — uses cached elements, never queries DOM ──
+    // ── Paint — uses cached elements, never queries DOM mid-drag ─────────────
 
     function paint() {
         if (axis === 'vertical') {
@@ -639,7 +639,7 @@ window.unregisterEscapeKey = function () {
         }
     }
 
-    // ── Move — RAF-throttled so paint() runs at most once per display frame ───
+    // ── Move — RAF-throttled, at most one paint per display frame ─────────────
 
     function onMove(x, y) {
         if (!isDragging) return;
@@ -660,8 +660,12 @@ window.unregisterEscapeKey = function () {
         if (!isDragging) return;
         isDragging = false;
 
-        // Cancel any pending RAF so a stale paint doesn't fire after release
+        // Cancel any pending RAF so no stale paint fires after release
         if (_rafId) { cancelAnimationFrame(_rafId); _rafId = 0; }
+
+        // Restore expensive GPU effects now that drag is over
+        const c = activeCard();
+        if (c) c.classList.remove('dragging');
 
         if (hasMoved) {
             suppressNextClick = true;
@@ -673,13 +677,13 @@ window.unregisterEscapeKey = function () {
 
         // ── HORIZONTAL: snap-back ─────────────────────────────────────────────
         if (axis === 'horizontal' && !horizValid) {
-            const c = activeCard();
-            if (c) {
+            const card = activeCard();
+            if (card) {
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
-                        const el = c.querySelector(sel); if (el) el.style.opacity = 0;
+                        const el = card.querySelector(sel); if (el) el.style.opacity = 0;
                     });
-                const img = c.querySelector('.anime-image');
+                const img = card.querySelector('.anime-image');
                 if (img) {
                     img.classList.add('image-with-transition');
                     void img.offsetWidth;
@@ -693,13 +697,13 @@ window.unregisterEscapeKey = function () {
 
         // ── HORIZONTAL: validated — Tinder fly-off ────────────────────────────
         if (horizValid) {
-            const c = activeCard();
-            if (c) {
+            const card = activeCard();
+            if (card) {
                 const flyX = isRight ? 920 : -920;
                 const flyY = -90;
                 const rot = isRight ? 38 : -38;
 
-                const img = c.querySelector('.anime-image');
+                const img = card.querySelector('.anime-image');
                 if (img) {
                     img.style.transition =
                         'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
@@ -711,7 +715,7 @@ window.unregisterEscapeKey = function () {
 
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
-                        const el = c.querySelector(sel);
+                        const el = card.querySelector(sel);
                         if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
                     });
             }
@@ -763,7 +767,7 @@ window.unregisterEscapeKey = function () {
             _cardBaseTransforms.push({ el: card, baseY: m ? parseFloat(m[1]) : 0 });
         });
 
-        // Cache active card's children once — paint() will never querySelector mid-drag
+        // Cache active card children once — paint() never querySelector mid-drag
         _cached = { fr: null, fl: null, hr: null, hl: null, img: null };
         const c = activeCard();
         if (c) {
@@ -772,6 +776,11 @@ window.unregisterEscapeKey = function () {
             _cached.hr = c.querySelector('.swipe-hint-right');
             _cached.hl = c.querySelector('.swipe-hint-left');
             _cached.img = c.querySelector('.anime-image');
+
+            // Disable box-shadow + backdrop-filter for the duration of the drag.
+            // These are the two most expensive GPU ops on mobile — removing them
+            // during motion cuts rasterisation cost to near zero.
+            c.classList.add('dragging');
         }
     };
 

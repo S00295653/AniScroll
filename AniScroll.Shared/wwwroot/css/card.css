@@ -331,3 +331,18 @@
         left: 18px;
     }
 }
+
+/* Supprime les ops GPU coûteuses pendant le drag */
+.anime-card.dragging .anime-image {
+    box-shadow: none;
+}
+
+.anime-card.dragging .swipe-hint {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.anime-card.dragging .swipe-hint-right,
+.anime-card.dragging .swipe-hint-left {
+    box-shadow: none;
+}
