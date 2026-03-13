@@ -265,7 +265,7 @@
                                         {
                                             @if (hasScore)
                                             {
-                                                <span class="entry-meta-sep">•</span>
+                                                <span class="entry-meta-sep">·</span>
                                             }
                                             <span class="entry-meta-item">@e.Anime.Format</span>
                                         }
@@ -273,7 +273,7 @@
                                         {
                                             @if (hasScore || hasFormat)
                                             {
-                                                <span class="entry-meta-sep">•</span>
+                                                <span class="entry-meta-sep">·</span>
                                             }
                                             <span class="entry-meta-item">@FormatEpisodeDisplay(e.Anime.Episodes, e.EpisodesWatched)</span>
                                         }
@@ -281,9 +281,9 @@
                                         {
                                             @if (hasScore || hasFormat || hasEpisodes)
                                             {
-                                                <span class="entry-meta-sep">•</span>
+                                                <span class="entry-meta-sep">·</span>
                                             }
-                                            <span class="entry-meta-item">My score: @e.Score</span>
+                                            <span class="entry-meta-item">@e.Score</span>
                                         }
                                     </div>
                                 }
@@ -412,20 +412,20 @@
     // ── SVG icons for status badges ──────────────────────────────────────
     private MarkupString GetStatusSvgIcon(ListStatus s) => s switch
     {
-        // Play triangle — rounded corners via stroke trick
+        // Play outline — ionicon style (rounded path, stroke only)
         ListStatus.Watching => new MarkupString(
-            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<polygon points=\"5 3 19 12 5 21\"/></svg>"),
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-miterlimit=\"10\" stroke-width=\"32\" style=\"flex-shrink:0;\">" +
+            "<path d=\"M112 111v290c0 17.44 17 28.52 31 20.16l247.9-148.37c12.12-7.25 12.12-26.33 0-33.58L143 90.84c-14-8.36-31 2.72-31 20.16z\"/></svg>"),
 
-        // ~300° clockwise arc + corner arrow — clear gap, no overlap
+        // Circular arrow — flipped vertically
         ListStatus.Rewatching => new MarkupString(
-            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<path d=\"M21 2v6h-6\"/>" +
-            "<path d=\"M21 13a9 9 0 1 1-3-7.7L21 8\"/></svg>"),
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;transform:scaleY(-1);\">" +
+            "<path d=\"M7.5 4.2A9 9 0 1 1 4.2 7.5\"/>" +
+            "<polyline points=\"4.2 5 4.2 7.5 6.4 6.3\"/></svg>"),
 
-        // Checkmark — linecap + linejoin round already give soft look
+        // Checkmark — heavier stroke so the rounded knee is clearly visible
         ListStatus.Completed => new MarkupString(
-            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
             "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
 
         // Bookmark outline (pièce jointe)
@@ -433,11 +433,11 @@
             "<svg width=\"10\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
             "<path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>"),
 
-        // Pause bars — rx rounded rectangles
+        // Pause bars — rx rounded rects
         ListStatus.Paused => new MarkupString(
-            "<svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"currentColor\" style=\"flex-shrink:0;\">" +
-            "<rect x=\"5\" y=\"4\" width=\"4\" height=\"16\" rx=\"2\"/>" +
-            "<rect x=\"15\" y=\"4\" width=\"4\" height=\"16\" rx=\"2\"/></svg>"),
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
+            "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" +
+            "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
 
         // X mark — bigger + round caps
         ListStatus.Dropped => new MarkupString(
