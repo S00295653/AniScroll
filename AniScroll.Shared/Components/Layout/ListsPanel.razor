@@ -92,7 +92,7 @@
                         <div class="lf-dd-menu" @onclick:stopPropagation="true">
                             <button class="lf-dd-option @(!statusActive ? "lf-dd-selected" : "")"
                                     @onclick="() => SelectStatus(null, null)">
-                                <span class="lf-dd-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,0.35);box-shadow:0 0 5px rgba(255,255,255,0.5);"></span>
+                                <span class="lf-dd-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background: rgba(255, 255, 255, 0.6);box-shadow: 0 0 6px rgba(255,255,255,0.6), 0 0 2px rgba(255,255,255,0.35);"></span>
                                 <span class="lf-dd-option-label">All</span>
                                 @if (!statusActive)
                                 {
@@ -419,13 +419,16 @@
 
         // Rotate CCW — Feather icons style, matches reference image
         ListStatus.Rewatching => new MarkupString(
-           "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-          "<polyline points=\"23 4 23 10 17 10\"/>" + "<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"/></svg>"),
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"11\" height=\"11\" viewBox=\"0 0 232 232\" fill=\"currentColor\" stroke=\"none\" style=\"flex-shrink:0;\">" +
+            "<g transform=\"translate(0,232) scale(0.1,-0.1)\">" +
+            "<path d=\"M975 2166 c-129 -26 -266 -85 -375 -160 l-65 -46 -5 81 c-5 73 -8 83 -33 105 -47 40 -123 23 -145 -33 -13 -33 -53 -465 -43 -475 6 -7 369 -38 443 -38 62 0 98 33 98 89 0 64 -30 90 -113 101 -38 4 -71 11 -74 13 -8 8 86 73 154 106 392 192 874 22 1063 -374 220 -461 -53 -1013 -552 -1116 -113 -23 -188 -24 -304 -4 -315 55 -579 313 -638 623 -19 98 -47 132 -111 132 -31 0 -81 -43 -88 -75 -11 -60 44 -251 105 -364 103 -191 279 -354 473 -439 147 -64 213 -77 400 -77 147 0 181 3 250 23 288 83 507 264 636 527 76 156 94 238 94 430 0 134 -4 174 -23 245 -91 341 -349 605 -690 706 -73 22 -112 27 -237 30 -101 2 -173 -1 -220 -10z\"/>" +
+            "</g>" +
+            "</svg>"),
 
         // Checkmark — heavier stroke so the rounded knee is clearly visible
         ListStatus.Completed => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
+           "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
+           "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
 
         // Bookmark outline (pièce jointe)
         ListStatus.Planning => new MarkupString(
