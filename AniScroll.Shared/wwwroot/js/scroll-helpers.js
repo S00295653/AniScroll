@@ -555,6 +555,10 @@ window.unregisterEscapeKey = function () {
     // Flag: next time a new .active card appears, run the entrance animation
     let _pendingEntrance = false;
 
+    // Snapshot of every card's baseY at drag-start, so vertical drag can
+    // offset ALL cards simultaneously (neighbour peeks while dragging).
+    let _cardBaseTransforms = [];
+
     const AXIS_LOCK = 8;
     const MOVE_THRESHOLD = 8;
     const HORIZ_THRESHOLD = 85;
@@ -566,17 +570,13 @@ window.unregisterEscapeKey = function () {
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
-    // Strategy: forcibly set the card to its "from" state via inline style,
-    // then on the next frame remove it so the CSS animation takes over cleanly.
     function runEntrance() {
         const c = activeCard();
         if (!c) return;
 
-        // 1. Force the card invisible so there's no flash before the animation.
         c.style.opacity = '0';
         c.style.transform = 'translateY(0px)';
 
-        // 2. Also prep the image: start from below
         const img = c.querySelector('.anime-image');
         if (img) {
             img.style.transition = 'none';
@@ -584,7 +584,6 @@ window.unregisterEscapeKey = function () {
             img.style.transform = 'translateY(36px) scale(0.91)';
         }
 
-        // 3. One rAF to let the browser apply the "from" state, then animate
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 c.style.opacity = '';
@@ -615,7 +614,10 @@ window.unregisterEscapeKey = function () {
         if (!c) return;
 
         if (axis === 'vertical') {
-            c.style.transform = `translateY(${curY}px)`;
+            // Offset ALL cards so the next/prev anime peeks in while dragging
+            _cardBaseTransforms.forEach(item => {
+                item.el.style.transform = `translateY(${item.baseY + curY}px)`;
+            });
             return;
         }
 
@@ -718,12 +720,6 @@ window.unregisterEscapeKey = function () {
                     });
             }
 
-            // ── FIX: notifie Blazor IMMÉDIATEMENT — plus de setTimeout 420ms.
-            //    Blazor (FinishHorizontalSwipe) change currentIndex sans délai
-            //    et appelle StateHasChanged() → le nouvel anime est rendu dans
-            //    le DOM PENDANT que le fly-off JS se joue encore.
-            //    Le MutationObserver détecte la nouvelle .active card et appelle
-            //    runEntrance() qui la cache puis l'anime proprement.
             _pendingEntrance = true;
             if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
             return;
@@ -734,13 +730,11 @@ window.unregisterEscapeKey = function () {
     }
 
     // ── MutationObserver: watch for the new .active card after Blazor re-render
-    //    This is the only reliable hook — no setTimeout guessing.
     const _observer = new MutationObserver(() => {
         if (!_pendingEntrance) return;
         const c = activeCard();
         if (!c) return;
         _pendingEntrance = false;
-        // Give Blazor one more microtask to finish patching the DOM
         Promise.resolve().then(() => runEntrance());
     });
 
@@ -759,6 +753,14 @@ window.unregisterEscapeKey = function () {
         startX = x; startY = y;
         curX = 0; curY = 0;
         axis = 'none'; hasMoved = false;
+
+        // Snapshot current translateY of every rendered card so vertical drag
+        // can offset them all simultaneously — neighbour peeks in while dragging.
+        _cardBaseTransforms = [];
+        document.querySelectorAll('.anime-card').forEach(card => {
+            const m = card.style.transform.match(/translateY\(([-\d.]+)px\)/);
+            _cardBaseTransforms.push({ el: card, baseY: m ? parseFloat(m[1]) : 0 });
+        });
     };
 
     window.animateCardEntrance = function () {
