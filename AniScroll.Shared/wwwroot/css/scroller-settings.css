@@ -10,13 +10,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: swsetIn 0.20s ease-out both;
+    animation: swsetIn 0.18s ease-out both;
 }
 
 @keyframes swsetIn {
     from {
         opacity: 0;
-        transform: scale(0.97);
+        transform: scale(0.98);
     }
 
     to {
@@ -25,7 +25,7 @@
     }
 }
 
-/* ── Top bar ───────────────────────────────────────────── */
+/* ── Topbar ─────────────────────────────────────────── */
 .swset-topbar {
     flex-shrink: 0;
     display: flex;
@@ -71,19 +71,20 @@
     letter-spacing: -0.01em;
 }
 
-/* ── Section block — 55% ───────────────────────────────── */
+/* ── Preview section — 55% of remaining height ──────── */
 .swset-section-block {
     flex: 0 0 55%;
     min-height: 0;
     position: relative;
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    animation: swsetFadeUp 0.22s ease-out 0.05s both;
+    overflow: hidden;
+    animation: swsetUp 0.22s ease-out 0.05s both;
 }
 
-@keyframes swsetFadeUp {
+@keyframes swsetUp {
     from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(8px);
     }
 
     to {
@@ -92,84 +93,86 @@
     }
 }
 
-/* ── Preview card — fills section completely ───────────── */
-.swset-preview-card {
+/* ── Card — fills section absolutely ───────────────── */
+.swset-card {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-}
-
-/* mirrors .bg-image */
-.swset-sk-bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    background: radial-gradient(ellipse at 30% 30%, rgba(80,70,150,0.45) 0%, transparent 55%), radial-gradient(ellipse at 72% 60%, rgba(30,60,120,0.35) 0%, transparent 55%), #0c0c18;
-}
-
-/* mirrors .gradient-overlay */
-.swset-sk-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0.78) 100%);
-}
-
-/* mirrors .content-wrapper */
-.swset-sk-content {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
     display: flex;
     flex-direction: column;
-}
-
-/* ══════════════════════════════════════════════
-   IMAGE SECTION — ~55% height, full width.
-   Feathers + hints + Edit buttons live INSIDE.
-   ══════════════════════════════════════════════ */
-.swset-sk-image-section {
-    flex: 0 0 54%;
-    min-height: 0;
-    position: relative; /* anchor for absolute children */
+    background: #0c0c18;
     overflow: hidden;
 }
 
-/* the anime image bg placeholder */
-.swset-sk-image-bg {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 40%, rgba(90,80,160,0.30) 0%, transparent 60%), rgba(255,255,255,0.02);
+/* ══════════════════════════════════════════════════════
+   IMAGE AREA — full width, ~57% of card height
+   Mirrors how the real card shows the anime cover image
+   ══════════════════════════════════════════════════════ */
+.swset-img-area {
+    flex: 0 0 57%;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
 }
 
-/* ── Left / Right side overlays — absolute INSIDE image section ── */
-.swset-side {
+/* blurred bg (like the .bg-image div behind the centered cover) */
+.swset-img-blur-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(80,60,160,0.50) 0%, transparent 65%), radial-gradient(ellipse at 20% 70%, rgba(30,40,120,0.40) 0%, transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(60,20,100,0.35) 0%, transparent 55%), #0e0e1e;
+}
+
+/* centered cover card (the actual anime image area) */
+.swset-img-cover {
+    position: absolute;
+    top: 6%;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42%;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    z-index: 2;
+}
+
+/* bottom fade into info section */
+.swset-img-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    z-index: 3;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent 0%, #0c0c18 100%);
+}
+
+/* ── Left / Right overlays — INSIDE .swset-img-area ── */
+.swset-ol {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 45%;
+    width: 44%;
     pointer-events: none;
     z-index: 10;
 }
 
-.swset-side-left {
+.swset-ol-left {
     left: 0;
 }
 
-.swset-side-right {
+.swset-ol-right {
     right: 0;
 }
 
-/* single feather gradient */
-.swset-side-feather {
+.swset-ol-feather {
     position: absolute;
     inset: 0;
     pointer-events: none;
 }
 
-/* hint + button column, centred vertically in the image section */
-.swset-side-ui {
+/* hint + Edit column, centred vertically */
+.swset-ol-ui {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -183,14 +186,14 @@
     pointer-events: all;
 }
 
-.swset-side-ui-right {
+.swset-ol-ui-r {
     left: auto;
     right: 0;
     align-items: flex-end;
 }
 
 /* hint pill */
-.swset-hint {
+.swset-ol-hint {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -201,19 +204,19 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    background: rgba(0,0,0,0.52);
+    background: rgba(0,0,0,0.55);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     white-space: nowrap;
-    animation: swHintL 0.32s ease-out 0.12s both;
+    animation: olInL 0.30s ease-out 0.10s both;
 }
 
-.swset-hint-r {
+.swset-ol-hint-r {
     flex-direction: row-reverse;
-    animation-name: swHintR;
+    animation-name: olInR;
 }
 
-@keyframes swHintL {
+@keyframes olInL {
     from {
         opacity: 0;
         transform: translateX(-10px);
@@ -225,7 +228,7 @@
     }
 }
 
-@keyframes swHintR {
+@keyframes olInR {
     from {
         opacity: 0;
         transform: translateX(10px);
@@ -238,7 +241,7 @@
 }
 
 /* Edit button */
-.swset-edit-btn {
+.swset-ol-edit {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -255,41 +258,44 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     transition: background 0.14s, transform 0.11s;
-    animation: swHintL 0.32s ease-out 0.20s both;
+    animation: olInL 0.30s ease-out 0.18s both;
 }
 
-.swset-side-right .swset-edit-btn {
-    animation-name: swHintR;
+.swset-ol-right .swset-ol-edit {
+    animation-name: olInR;
 }
 
-.swset-edit-btn:active {
+.swset-ol-edit:active {
     transform: scale(0.88);
 }
 
-.swset-edit-btn:hover {
-    background: color-mix(in srgb, var(--zc) 30%, rgba(0,0,0,0.45));
+.swset-ol-edit:hover {
+    background: color-mix(in srgb, var(--zc) 28%, rgba(0,0,0,0.45));
 }
 
-/* ══════════════════════════════════════════════
-   INFO SECTION — mirrors .info-section exactly
-   ══════════════════════════════════════════════ */
-.swset-sk-info-section {
+/* ══════════════════════════════════════════════════════
+   INFO AREA — mirrors .info-section pixel-perfectly
+   ══════════════════════════════════════════════════════ */
+.swset-info-area {
     flex: 1;
     min-height: 0;
-    padding: 12px 16px 8px;
+    padding: 10px 16px 8px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: #0c0c18;
 }
 
-.swset-sk-line {
+/* shared skeleton block */
+.swset-sk-block {
+    display: block;
+    background: rgba(255,255,255,0.10);
     border-radius: 4px;
-    background: rgba(255,255,255,0.11);
     flex-shrink: 0;
-    animation: skLineIn 0.28s ease-out both;
+    animation: skIn 0.26s ease-out both;
 }
 
-@keyframes skLineIn {
+@keyframes skIn {
     from {
         opacity: 0;
         transform: scaleX(0.75);
@@ -302,53 +308,77 @@
     }
 }
 
-/* h1.title */
+/* title (h1) — big and bold */
 .swset-sk-title {
-    height: 15px;
+    height: 18px;
     border-radius: 5px;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
+    opacity: 0.88;
 }
-/* .season-info */
+
+/* season-info — small grey line */
 .swset-sk-season {
     height: 7px;
     border-radius: 3px;
-    margin-bottom: 7px;
-    opacity: 0.48;
-}
-/* .genres */
-.swset-sk-genres {
-    height: 6px;
-    border-radius: 3px;
-    margin-bottom: 9px;
-    background: rgba(180,130,255,0.22); /* evokes colored genre text */
+    margin-bottom: 8px;
+    opacity: 0.42;
 }
 
-/* .stats */
-.swset-sk-stats {
+/* genres — horizontal row of colored pill shapes */
+.swset-sk-genres {
     display: flex;
     gap: 6px;
-    margin-bottom: 10px;
+    align-items: center;
+    margin-bottom: 9px;
     flex-shrink: 0;
-    animation: skLineIn 0.28s ease-out both;
+    animation: skIn 0.26s ease-out both;
 }
 
-.swset-sk-badge {
+.swset-sk-genre-pill {
+    height: 7px;
+    border-radius: 10px;
+    background: rgba(180,120,255,0.35); /* evokes colored genre text */
+    flex-shrink: 0;
+}
+
+/* stats row — ★ score badge + EP badge */
+.swset-sk-stats {
+    display: flex;
+    gap: 7px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    animation: skIn 0.26s ease-out both;
+}
+
+.swset-sk-badge-score,
+.swset-sk-badge-ep {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 9px;
     height: 22px;
     border-radius: 7px;
-    background: rgba(255,255,255,0.09);
-    border: 1px solid rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .swset-sk-badge-score {
-    width: 52px;
+    background: rgba(234,179,8,0.15);
+    color: rgba(234,179,8,0.60);
 }
 
 .swset-sk-badge-ep {
-    width: 58px;
+    background: rgba(100,130,200,0.12);
+    color: rgba(150,180,255,0.45);
 }
 
-/* .description-container */
-.swset-sk-desc-block {
+.swset-sk-star {
+    font-size: 11px;
+}
+
+/* description lines */
+.swset-sk-desc-wrap {
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -359,20 +389,20 @@
 .swset-sk-desc {
     height: 5px;
     border-radius: 3px;
-    opacity: 0.32;
+    opacity: 0.30;
 }
 
-/* Read More link */
+/* Read More — blue link text exactly like the real card */
 .swset-sk-read-more {
     align-self: flex-start;
     font-size: 12px;
     font-weight: 700;
-    color: rgba(96,165,250,0.55); /* matches the blue "Read More" in real card */
+    color: rgba(96,165,250,0.60);
     flex-shrink: 0;
-    animation: skLineIn 0.28s ease-out both;
+    animation: skIn 0.26s ease-out both;
 }
 
-/* ── Future settings (45%) ─────────────────────────────── */
+/* ── Future settings (45%) ─────────────────────────── */
 .swset-future-sections {
     flex: 1;
     min-height: 0;
@@ -380,7 +410,7 @@
     -webkit-overflow-scrolling: touch;
 }
 
-/* ── Picker screen ─────────────────────────────────────── */
+/* ── Picker screen ─────────────────────────────────── */
 .swset-picker-screen {
     z-index: 3100;
 }
@@ -488,7 +518,7 @@
     margin-left: auto;
 }
 
-/* ── Settings open button ──────────────────────────────── */
+/* ── Settings open button ──────────────────────────── */
 .swset-open-btn {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);

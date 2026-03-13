@@ -27,6 +27,7 @@
             <div style="width:38px;"></div>
         </div>
 
+        <!-- ── Preview section — 55% ── -->
         <div class="swset-section-block">
             @{
                 var lc = GetEffectiveColor(false);
@@ -35,85 +36,101 @@
                 var rightLabel = GetEffectiveLabel(true);
             }
 
-            <div class="swset-preview-card">
+            <div class="swset-card">
 
-                <!-- full card bg + overlay -->
-                <div class="swset-sk-bg"></div>
-                <div class="swset-sk-overlay"></div>
+                <!-- ══ IMAGE AREA — full width, ~57% height ══ -->
+                <div class="swset-img-area">
+                    <!-- blurred bg placeholder (mimics the blurred background) -->
+                    <div class="swset-img-blur-bg"></div>
+                    <!-- centered cover image placeholder -->
+                    <div class="swset-img-cover"></div>
+                    <!-- bottom fade so info section flows naturally below -->
+                    <div class="swset-img-fade"></div>
 
-                <!-- content mirrors .content-wrapper -->
-                <div class="swset-sk-content">
-
-                    <!--
-                        IMAGE SECTION — full width, ~55% height.
-                        Feathers, hints and Edit buttons live INSIDE here
-                        so they're correctly anchored to the image area only.
-                    -->
-                    <div class="swset-sk-image-section">
-
-                        <!-- the image bg placeholder -->
-                        <div class="swset-sk-image-bg"></div>
-
-                        <!-- LEFT feather + hint + Edit — absolute inside image section -->
-                        <div class="swset-side swset-side-left" style="--zc:@lc;">
-                            <div class="swset-side-feather"
-                                 style="background:linear-gradient(to right,color-mix(in srgb,@lc 60%,transparent) 0%,transparent 100%);"></div>
-                            <div class="swset-side-ui">
-                                <div class="swset-hint" style="color:@lc;border-color:@(lc)80;box-shadow:0 0 16px @(lc)40;">
-                                    @((MarkupString)GetSvgIcon(_leftStatus))
-                                    <span>@leftLabel</span>
-                                </div>
-                                <button class="swset-edit-btn" style="--zc:@lc;" @onclick="() => OpenPicker(false)">
-                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Edit
-                                </button>
+                    <!-- LEFT: feather + hint + Edit — absolute in image area -->
+                    <div class="swset-ol swset-ol-left" style="--zc:@lc;">
+                        <div class="swset-ol-feather"
+                             style="background:linear-gradient(to right,color-mix(in srgb,@lc 65%,transparent) 0%,transparent 100%);"></div>
+                        <div class="swset-ol-ui">
+                            <div class="swset-ol-hint" style="color:@lc;border-color:@(lc)80;box-shadow:0 0 14px @(lc)40;">
+                                @((MarkupString)GetSvgIcon(_leftStatus))
+                                <span>@leftLabel</span>
                             </div>
+                            <button class="swset-ol-edit" @onclick="() => OpenPicker(false)">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit
+                            </button>
                         </div>
-
-                        <!-- RIGHT feather + hint + Edit — absolute inside image section -->
-                        <div class="swset-side swset-side-right" style="--zc:@rc;">
-                            <div class="swset-side-feather"
-                                 style="background:linear-gradient(to left,color-mix(in srgb,@rc 60%,transparent) 0%,transparent 100%);"></div>
-                            <div class="swset-side-ui swset-side-ui-right">
-                                <div class="swset-hint swset-hint-r" style="color:@rc;border-color:@(rc)80;box-shadow:0 0 16px @(rc)40;">
-                                    <span>@rightLabel</span>
-                                    @((MarkupString)GetSvgIcon(_rightStatus))
-                                </div>
-                                <button class="swset-edit-btn" style="--zc:@rc;" @onclick="() => OpenPicker(true)">
-                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                    Edit
-                                </button>
-                            </div>
-                        </div>
-
-                    </div><!-- /image-section -->
-                    <!-- INFO SECTION — mirrors .info-section -->
-                    <div class="swset-sk-info-section">
-                        <div class="swset-sk-line swset-sk-title" style="width:74%;animation-delay:.06s;"></div>
-                        <div class="swset-sk-line swset-sk-season" style="width:36%;animation-delay:.10s;"></div>
-                        <div class="swset-sk-line swset-sk-genres" style="width:80%;animation-delay:.14s;"></div>
-                        <div class="swset-sk-stats" style="animation-delay:.18s;">
-                            <div class="swset-sk-badge swset-sk-badge-score"></div>
-                            <div class="swset-sk-badge swset-sk-badge-ep"></div>
-                        </div>
-                        <div class="swset-sk-desc-block">
-                            <div class="swset-sk-line swset-sk-desc" style="width:100%;animation-delay:.22s;"></div>
-                            <div class="swset-sk-line swset-sk-desc" style="width:90%;animation-delay:.26s;"></div>
-                            <div class="swset-sk-line swset-sk-desc" style="width:78%;animation-delay:.30s;"></div>
-                        </div>
-                        <div class="swset-sk-read-more" style="animation-delay:.34s;">Read More</div>
                     </div>
 
+                    <!-- RIGHT: feather + hint + Edit — absolute in image area -->
+                    <div class="swset-ol swset-ol-right" style="--zc:@rc;">
+                        <div class="swset-ol-feather"
+                             style="background:linear-gradient(to left,color-mix(in srgb,@rc 65%,transparent) 0%,transparent 100%);"></div>
+                        <div class="swset-ol-ui swset-ol-ui-r">
+                            <div class="swset-ol-hint swset-ol-hint-r" style="color:@rc;border-color:@(rc)80;box-shadow:0 0 14px @(rc)40;">
+                                <span>@rightLabel</span>
+                                @((MarkupString)GetSvgIcon(_rightStatus))
+                            </div>
+                            <button class="swset-ol-edit" @onclick="() => OpenPicker(true)">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- ══ INFO AREA — exact mirror of .info-section ══ -->
+                <div class="swset-info-area">
+
+                    <!-- h1.title -->
+                    <div class="swset-sk-block swset-sk-title" style="width:68%;animation-delay:.05s;"></div>
+
+                    <!-- .season-info -->
+                    <div class="swset-sk-block swset-sk-season" style="width:30%;animation-delay:.09s;"></div>
+
+                    <!-- .genres  (colored to evoke the real genre pills) -->
+                    <div class="swset-sk-genres" style="animation-delay:.13s;">
+                        <div class="swset-sk-genre-pill" style="width:52px;"></div>
+                        <div class="swset-sk-genre-pill" style="width:44px;"></div>
+                        <div class="swset-sk-genre-pill" style="width:38px;"></div>
+                        <div class="swset-sk-genre-pill" style="width:48px;"></div>
+                    </div>
+
+                    <!-- .stats (★ score + episode badges) -->
+                    <div class="swset-sk-stats" style="animation-delay:.17s;">
+                        <div class="swset-sk-badge-score">
+                            <span class="swset-sk-star">★</span>
+                            <div class="swset-sk-block" style="width:22px;height:9px;border-radius:3px;display:inline-block;vertical-align:middle;"></div>
+                        </div>
+                        <div class="swset-sk-badge-ep">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"><rect x="2" y="7" width="20" height="15" rx="2" /><path d="M16 3l-4 4-4-4" /></svg>
+                            <div class="swset-sk-block" style="width:26px;height:9px;border-radius:3px;display:inline-block;vertical-align:middle;"></div>
+                        </div>
+                    </div>
+
+                    <!-- .description lines -->
+                    <div class="swset-sk-desc-wrap">
+                        <div class="swset-sk-block swset-sk-desc" style="width:100%;animation-delay:.21s;"></div>
+                        <div class="swset-sk-block swset-sk-desc" style="width:94%;animation-delay:.25s;"></div>
+                        <div class="swset-sk-block swset-sk-desc" style="width:82%;animation-delay:.29s;"></div>
+                    </div>
+
+                    <!-- Read More -->
+                    <div class="swset-sk-read-more" style="animation-delay:.33s;">Read More</div>
+
+                </div>
+
             </div>
         </div>
 
+        <!-- Future settings (45%) -->
         <div class="swset-future-sections"></div>
 
     </div>
@@ -164,13 +181,13 @@
                     }
                 </div>
                 @{
-                    var statusCustomLists = UserListService.GetStatusTypeLists(); var regularCustomLists = UserListService.GetRegularCustomLists();
+                    var sc = UserListService.GetStatusTypeLists(); var rc2 = UserListService.GetRegularCustomLists();
                 }
-                @if (statusCustomLists.Any())
+                @if (sc.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
                     <div class="swset-picker-grid">
-                        @foreach (var cl in statusCustomLists)
+                        @foreach (var cl in sc)
                         {
                             var cll = cl; bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
                             <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
@@ -186,11 +203,11 @@
                         }
                     </div>
                 }
-                @if (regularCustomLists.Any())
+                @if (rc2.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
                     <div class="swset-picker-grid">
-                        @foreach (var cl in regularCustomLists)
+                        @foreach (var cl in rc2)
                         {
                             var cll = cl; bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
                             <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
