@@ -267,11 +267,11 @@
                   OnClose="@(() => _showProfilePanel = false)"
                   @ref="_profilePanel" />
 
-    @* ── Swipe Settings Popup ── *@
-    <SwipeSettingsPopup IsVisible="_showSwipeSettings"
-                        Current="_swipeSettings"
-                        OnChanged="OnSwipeSettingsChanged"
-                        OnClose="@(() => _showSwipeSettings = false)" />
+    @* ── Scroller Settings ── *@
+    <ScrollerSettingsPanel IsVisible="_showSwipeSettings"
+                           Current="_swipeSettings"
+                           OnChanged="OnSwipeSettingsChanged"
+                           OnClose="@(() => _showSwipeSettings = false)" />
 </div>
 
 @code {
