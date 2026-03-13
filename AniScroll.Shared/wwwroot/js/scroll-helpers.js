@@ -575,12 +575,24 @@ window.unregisterEscapeKey = function () {
     // ── Hard-reset an image: disable transition first so there's no animation
     function resetImage(img) {
         if (!img) return;
-        img.style.transition = 'none';  // kill any CSS transition immediately
+        img.style.transition = 'none';
         img.style.opacity = '';
         img.style.transform = '';
-        // Force reflow so the browser applies the reset before re-enabling transitions
-        void img.offsetWidth;
+        void img.offsetWidth; // force reflow
         img.style.transition = '';
+    }
+
+    // ── Snap all cards back to their pre-drag baseline (no animation) ─────────
+    // Used before calling OnDragEnd so Blazor always finds cards at the correct
+    // starting position — fixes the "card stays mid-screen on failed swipe" bug.
+    function snapCardsToBaseline() {
+        _cardBaseTransforms.forEach(item => {
+            item.el.style.transition = 'none';
+            item.el.style.transform = `translateY(${item.baseY}px)`;
+        });
+        // One reflow to commit the instant reset before transitions re-enable
+        if (_cardBaseTransforms.length) document.body.offsetHeight;
+        _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
     }
 
     // ── Entrance animation for the new card after a horizontal swipe ──────────
@@ -588,7 +600,6 @@ window.unregisterEscapeKey = function () {
         const c = activeCard();
         if (!c) return;
 
-        // Masque brièvement la carte pour éviter le flash
         c.style.opacity = '0';
         c.style.transform = 'translateY(0px)';
 
@@ -602,7 +613,7 @@ window.unregisterEscapeKey = function () {
                 c.classList.add('card-entering');
                 setTimeout(() => c.classList.remove('card-entering'), 500);
 
-                // Image : simple reset, no entrance animation
+                // Image: simple reset, no entrance animation
                 resetImage(c.querySelector('.anime-image'));
             });
         });
@@ -727,6 +738,13 @@ window.unregisterEscapeKey = function () {
         }
 
         // ── VERTICAL + fallback ───────────────────────────────────────────────
+        // Reset all card positions to their pre-drag baseline BEFORE notifying
+        // Blazor. This is critical: if Blazor decides the index hasn't changed,
+        // it won't touch the DOM — leaving cards stranded mid-screen. By
+        // snapping back to baseY here, we guarantee correct positioning in all
+        // cases. If Blazor DOES change the index, it will then override these
+        // values with the new positions + with-transition, which is correct.
+        snapCardsToBaseline();
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
@@ -734,7 +752,7 @@ window.unregisterEscapeKey = function () {
     //    We only act when the *active card itself* has changed.
     const _observer = new MutationObserver(() => {
         const c = activeCard();
-        if (!c || c === _lastActiveCard) return;  // same card → nothing to do
+        if (!c || c === _lastActiveCard) return;
         _lastActiveCard = c;
 
         if (_pendingEntrance) {
@@ -743,8 +761,7 @@ window.unregisterEscapeKey = function () {
             return;
         }
 
-        // Vertical nav (or any other cause): hard-reset the image immediately
-        // with transition:none so there's zero animated slide-in from the edge.
+        // Vertical nav: hard-reset the image (no animated slide from edge)
         resetImage(c.querySelector('.anime-image'));
     });
 
