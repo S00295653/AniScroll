@@ -30,10 +30,6 @@
 
         <!-- ── Swipe Action section — 55% ── -->
         <div class="swset-section-block">
-            <div class="swset-section-header">
-                <span class="swset-section-label">Swipe Actions</span>
-                <span class="swset-section-hint">Tap <strong>Edit</strong> to change what a swipe does</span>
-            </div>
 
             @{
                 var lc = GetEffectiveColor(false);
@@ -42,15 +38,28 @@
                 var rightLabel = GetEffectiveLabel(true);
             }
 
-            <!-- Preview: zones + card side by side -->
-            <div class="swset-preview-wrap">
+            <!--
+                One single card taking 100% width.
+                Left/right overlays (feather + hint + edit) are position:absolute on top.
+            -->
+            <div class="swset-preview-card">
 
-                <!-- LEFT edit zone -->
-                <div class="swset-zone swset-zone-left" style="--zc:@lc;">
-                    <div class="swset-zone-gradient"
-                         style="background:linear-gradient(to right,color-mix(in srgb,@lc 30%,transparent),transparent);"></div>
-                    <div class="swset-zone-inner">
-                        <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(false)">
+                <!-- ── Background placeholder (mirrors .bg-image) ── -->
+                <div class="swset-sk-bg"></div>
+
+                <!-- ── Dark gradient (mirrors .gradient-overlay) ── -->
+                <div class="swset-sk-overlay"></div>
+
+                <!-- ── LEFT overlay: feather + hint + Edit ── -->
+                <div class="swset-side swset-side-left" style="--zc:@lc;">
+                    <div class="swset-side-feather"
+                         style="background:linear-gradient(to right,color-mix(in srgb,@lc 55%,transparent) 0%,transparent 100%);"></div>
+                    <div class="swset-side-ui">
+                        <div class="swset-hint" style="color:@lc;border-color:@(lc)80;box-shadow:0 0 16px @(lc)35;">
+                            @((MarkupString)GetSvgIcon(_leftStatus))
+                            <span>@leftLabel</span>
+                        </div>
+                        <button class="swset-edit-btn" @onclick="() => OpenPicker(false)">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -61,74 +70,16 @@
                     </div>
                 </div>
 
-                <!-- ── SKELETON CARD — exact same structure as .anime-card ── -->
-                <div class="swset-skeleton-card">
-
-                    <!-- bg-image equivalent -->
-                    <div class="swset-sk-bg-image"></div>
-                    <!-- gradient-overlay equivalent -->
-                    <div class="swset-sk-gradient-overlay"></div>
-
-                    <!-- swipe feather overlays — one per side -->
-                    <div class="swset-sk-feather swset-sk-feather-right"
-                         style="background:linear-gradient(to left,@(rc)55 0%,@(rc)22 18%,transparent 55%);"></div>
-                    <div class="swset-sk-feather swset-sk-feather-left"
-                         style="background:linear-gradient(to right,@(lc)55 0%,@(lc)22 18%,transparent 55%);"></div>
-
-                    <!-- content-wrapper equivalent -->
-                    <div class="swset-sk-content-wrapper">
-
-                        <!-- image-section equivalent -->
-                        <div class="swset-sk-image-section">
-                            <!-- swipe hint left -->
-                            <div class="swset-sk-swipe-hint swset-sk-hint-left"
-                                 style="color:@lc;border-color:@(lc)80;box-shadow:0 0 14px @(lc)30;">
-                                @((MarkupString)GetSvgIcon(_leftStatus))
-                                <span>@leftLabel</span>
-                            </div>
-                            <!-- swipe hint right -->
-                            <div class="swset-sk-swipe-hint swset-sk-hint-right"
-                                 style="color:@rc;border-color:@(rc)80;box-shadow:0 0 14px @(rc)30;">
-                                <span>@rightLabel</span>
-                                @((MarkupString)GetSvgIcon(_rightStatus))
-                            </div>
-                            <!-- anime-image equivalent -->
-                            <div class="swset-sk-anime-image"></div>
+                <!-- ── RIGHT overlay: feather + hint + Edit ── -->
+                <div class="swset-side swset-side-right" style="--zc:@rc;">
+                    <div class="swset-side-feather"
+                         style="background:linear-gradient(to left,color-mix(in srgb,@rc 55%,transparent) 0%,transparent 100%);"></div>
+                    <div class="swset-side-ui">
+                        <div class="swset-hint swset-hint-right" style="color:@rc;border-color:@(rc)80;box-shadow:0 0 16px @(rc)35;">
+                            <span>@rightLabel</span>
+                            @((MarkupString)GetSvgIcon(_rightStatus))
                         </div>
-
-                        <!-- info-section equivalent -->
-                        <div class="swset-sk-info-section">
-                            <!-- title -->
-                            <div class="swset-sk-line swset-sk-title" style="width:72%;"></div>
-                            <!-- season-info -->
-                            <div class="swset-sk-line swset-sk-season" style="width:38%;"></div>
-                            <!-- genres -->
-                            <div class="swset-sk-line swset-sk-genres" style="width:82%;"></div>
-                            <!-- stats badges -->
-                            <div class="swset-sk-stats">
-                                <div class="swset-sk-badge"></div>
-                                <div class="swset-sk-badge"></div>
-                            </div>
-                            <!-- description lines -->
-                            <div class="swset-sk-desc-block">
-                                <div class="swset-sk-line swset-sk-desc" style="width:100%;"></div>
-                                <div class="swset-sk-line swset-sk-desc" style="width:93%;"></div>
-                                <div class="swset-sk-line swset-sk-desc" style="width:85%;"></div>
-                                <div class="swset-sk-line swset-sk-desc" style="width:70%;"></div>
-                            </div>
-                            <!-- read-more button -->
-                            <div class="swset-sk-read-more">Read More</div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- RIGHT edit zone -->
-                <div class="swset-zone swset-zone-right" style="--zc:@rc;">
-                    <div class="swset-zone-gradient"
-                         style="background:linear-gradient(to left,color-mix(in srgb,@rc 30%,transparent),transparent);"></div>
-                    <div class="swset-zone-inner">
-                        <button class="swset-zone-edit-btn" @onclick="() => OpenPicker(true)">
+                        <button class="swset-edit-btn" @onclick="() => OpenPicker(true)">
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -137,6 +88,40 @@
                             Edit
                         </button>
                     </div>
+                </div>
+
+                <!-- ── Content (mirrors .content-wrapper) ── -->
+                <div class="swset-sk-content">
+
+                    <!-- image-section: poster centred -->
+                    <div class="swset-sk-image-section">
+                        <div class="swset-sk-poster"></div>
+                    </div>
+
+                    <!-- info-section: all real card elements -->
+                    <div class="swset-sk-info-section">
+                        <!-- title -->
+                        <div class="swset-sk-line swset-sk-title" style="width:72%;animation-delay:.06s;"></div>
+                        <!-- season -->
+                        <div class="swset-sk-line swset-sk-season" style="width:38%;animation-delay:.10s;"></div>
+                        <!-- genres -->
+                        <div class="swset-sk-line swset-sk-genres" style="width:84%;animation-delay:.14s;"></div>
+                        <!-- stats badges -->
+                        <div class="swset-sk-stats" style="animation-delay:.17s;">
+                            <div class="swset-sk-badge"></div>
+                            <div class="swset-sk-badge"></div>
+                        </div>
+                        <!-- description -->
+                        <div class="swset-sk-desc-block">
+                            <div class="swset-sk-line swset-sk-desc" style="width:100%;animation-delay:.21s;"></div>
+                            <div class="swset-sk-line swset-sk-desc" style="width:92%;animation-delay:.25s;"></div>
+                            <div class="swset-sk-line swset-sk-desc" style="width:82%;animation-delay:.29s;"></div>
+                            <div class="swset-sk-line swset-sk-desc" style="width:68%;animation-delay:.33s;"></div>
+                        </div>
+                        <!-- read more -->
+                        <div class="swset-sk-read-more" style="animation-delay:.37s;">Read More</div>
+                    </div>
+
                 </div>
 
             </div>
@@ -195,11 +180,9 @@
                         </button>
                     }
                 </div>
-
                 @{
                     var statusCustomLists = UserListService.GetStatusTypeLists(); var regularCustomLists = UserListService.GetRegularCustomLists();
                 }
-
                 @if (statusCustomLists.Any())
                 {
                     <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
