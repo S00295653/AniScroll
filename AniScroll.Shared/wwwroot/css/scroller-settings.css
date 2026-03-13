@@ -264,7 +264,7 @@
 
 /* mirrors .image-section */
 .swset-sk-image-section {
-    flex: 0 0 48%;
+    flex: 0 0 30%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,7 +273,7 @@
 
 /* mirrors .anime-image (the poster) */
 .swset-sk-poster {
-    width: 48%;
+    width: 28%;
     aspect-ratio: 2/3;
     border-radius: 8px;
     background: rgba(255,255,255,0.07);
