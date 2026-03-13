@@ -1,0 +1,258 @@
+/* ======================================================
+   SWIPE SETTINGS POPUP
+   Add to: AniScroll.Shared/wwwroot/css/swipe-settings.css
+   (and import it in your main CSS bundle / index.html)
+   ====================================================== */
+
+.swset-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 3000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: swsetFadeIn 0.18s ease;
+}
+
+@keyframes swsetFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.swset-panel {
+    background: #0e0e16;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: none;
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 20px 36px;
+    animation: swsetSlideUp 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+@media (min-width: 540px) {
+    .swset-overlay {
+        align-items: center;
+    }
+
+    .swset-panel {
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 16px;
+        max-height: 88dvh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.15) transparent;
+        margin-bottom: 0;
+    }
+}
+
+@keyframes swsetSlideUp {
+    from {
+        transform: translateY(40px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.swset-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.swset-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.01em;
+}
+
+.swset-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.13s;
+}
+
+    .swset-close:active {
+        transform: scale(0.88);
+    }
+
+.swset-subtitle {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.38);
+    margin-top: -10px;
+    line-height: 1.5;
+}
+
+/* Section */
+.swset-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.swset-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.swset-direction-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.swset-right-badge {
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.30);
+    color: #4ade80;
+}
+
+.swset-left-badge {
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.30);
+    color: #818cf8;
+}
+
+/* Options grid */
+.swset-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.swset-option {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+    font-family: inherit;
+    text-align: left;
+    white-space: nowrap;
+}
+
+    .swset-option:active {
+        transform: scale(0.94);
+    }
+
+    .swset-option:hover:not(.swset-option-selected) {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.80);
+    }
+
+.swset-option-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.swset-option-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.swset-option-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.swset-check {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Preview bar */
+.swset-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+}
+
+.swset-preview-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    border: 1px solid;
+    font-size: 12px;
+    font-weight: 700;
+    background: transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.swset-preview-left {
+    justify-content: flex-start;
+    flex-direction: row-reverse;
+}
+
+.swset-preview-right {
+    justify-content: flex-start;
+}
+
+.swset-preview-icon {
+    font-size: 14px;
+}
+
+.swset-preview-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.swset-preview-card {
+    flex-shrink: 0;
+    width: 36px;
+    height: 50px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

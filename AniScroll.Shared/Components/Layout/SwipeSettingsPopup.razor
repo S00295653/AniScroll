@@ -1,0 +1,168 @@
+﻿@* AniScroll.Shared/Components/Layout/SwipeSettingsPopup.razor *@
+@using AniScroll.Shared.Models
+@using AniScroll.Shared.Services
+@using AniScroll.Shared.Helpers
+@inject UserListService UserListService
+
+@if (IsVisible)
+{
+    <div class="swset-overlay" @onclick="Close">
+        <div class="swset-panel" @onclick:stopPropagation="true">
+
+            <div class="swset-header">
+                <span class="swset-title">Swipe Settings</span>
+                <button class="swset-close" @onclick="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+
+            <p class="swset-subtitle">Choose which list status is assigned when you swipe</p>
+
+            <!-- ── RIGHT swipe ─────────────────────────────────── -->
+            <div class="swset-section">
+                <div class="swset-section-label">
+                    <div class="swset-direction-badge swset-right-badge">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Swipe Right
+                    </div>
+                </div>
+                <div class="swset-options">
+                    @foreach (var status in AllStatuses)
+                    {
+                        var s = status;
+                        var color = GetColor(s);
+                        bool selected = Current.RightStatus == s;
+                        <button class="swset-option @(selected ? "swset-option-selected" : "")"
+                                style="@(selected ? $"border-color:{color}55;background:color-mix(in srgb,{color} 13%,transparent);color:{color};" : "")"
+                                @onclick="() => SelectRight(s)">
+                            <span class="swset-option-dot" style="background:@color;box-shadow:0 0 6px @(color)99;"></span>
+                            <span class="swset-option-icon">@GetIcon(s)</span>
+                            <span class="swset-option-label">@GetLabel(s)</span>
+                            @if (selected)
+                            {
+                                <svg class="swset-check" width="11" height="11" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="3"
+                                     stroke-linecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- ── LEFT swipe ──────────────────────────────────── -->
+            <div class="swset-section">
+                <div class="swset-section-label">
+                    <div class="swset-direction-badge swset-left-badge">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                        </svg>
+                        Swipe Left
+                    </div>
+                </div>
+                <div class="swset-options">
+                    @foreach (var status in AllStatuses)
+                    {
+                        var s = status;
+                        var color = GetColor(s);
+                        bool selected = Current.LeftStatus == s;
+                        <button class="swset-option @(selected ? "swset-option-selected" : "")"
+                                style="@(selected ? $"border-color:{color}55;background:color-mix(in srgb,{color} 13%,transparent);color:{color};" : "")"
+                                @onclick="() => SelectLeft(s)">
+                            <span class="swset-option-dot" style="background:@color;box-shadow:0 0 6px @(color)99;"></span>
+                            <span class="swset-option-icon">@GetIcon(s)</span>
+                            <span class="swset-option-label">@GetLabel(s)</span>
+                            @if (selected)
+                            {
+                                <svg class="swset-check" width="11" height="11" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="3"
+                                     stroke-linecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- ── Preview ─────────────────────────────────────── -->
+            <div class="swset-preview">
+                <div class="swset-preview-side swset-preview-left"
+                     style="border-color:color-mix(in srgb,@(GetColor(Current.LeftStatus)) 45%,transparent);
+                                color:@GetColor(Current.LeftStatus);">
+                    <span class="swset-preview-icon">@GetIcon(Current.LeftStatus)</span>
+                    <span class="swset-preview-text">@GetLabel(Current.LeftStatus)</span>
+                </div>
+                <div class="swset-preview-card">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                         stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round">
+                        <rect x="3" y="3" width="12" height="16" rx="2" />
+                    </svg>
+                </div>
+                <div class="swset-preview-side swset-preview-right"
+                     style="border-color:color-mix(in srgb,@(GetColor(Current.RightStatus)) 45%,transparent);
+                                color:@GetColor(Current.RightStatus);">
+                    <span class="swset-preview-text">@GetLabel(Current.RightStatus)</span>
+                    <span class="swset-preview-icon">@GetIcon(Current.RightStatus)</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public SwipeSettings Current { get; set; } = new();
+    [Parameter] public EventCallback<SwipeSettings> OnChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private static readonly ListStatus[] AllStatuses =
+    {
+        ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
+        ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
+    };
+
+    private string GetColor(ListStatus s)
+        => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
+
+    private string GetLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
+
+    private string GetIcon(ListStatus s) => s switch
+    {
+        ListStatus.Watching => "▶",
+        ListStatus.Rewatching => "↻",
+        ListStatus.Completed => "✓",
+        ListStatus.Planning => "☆",
+        ListStatus.Paused => "⏸",
+        ListStatus.Dropped => "✕",
+        _ => ""
+    };
+
+    private async Task SelectRight(ListStatus s)
+    {
+        Current.RightStatus = s;
+        await OnChanged.InvokeAsync(Current);
+        StateHasChanged();
+    }
+
+    private async Task SelectLeft(ListStatus s)
+    {
+        Current.LeftStatus = s;
+        await OnChanged.InvokeAsync(Current);
+        StateHasChanged();
+    }
+
+    private void Close() => OnClose.InvokeAsync();
+}
