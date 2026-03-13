@@ -297,74 +297,9 @@
     }
 }
 
-/* ── Picker overlay ──────────────────────────────────── */
-.swset-picker-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 3100;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    animation: swsetFadeIn 0.15s ease;
-}
-
-@keyframes swsetFadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-@media (min-width: 540px) {
-    .swset-picker-overlay {
-        align-items: center;
-    }
-
-    .swset-picker-panel {
-        border-radius: 16px !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-    }
-}
-
-/* ── Picker panel ────────────────────────────────────── */
-.swset-picker-panel {
-    background: #0e0e16;
-    border: 1px solid rgba(255,255,255,0.09);
-    border-bottom: none;
-    border-radius: 18px 18px 0 0;
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    flex-direction: column;
-    max-height: 80dvh;
-    animation: swsetSlideUp 0.22s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-
-@keyframes swsetSlideUp {
-    from {
-        transform: translateY(28px);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.swset-picker-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 16px 13px;
-    flex-shrink: 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+/* ── Picker : full-screen page (slide in from right, on top) ─── */
+.swset-picker-screen {
+    z-index: 3100; /* above the settings screen (3000) */
 }
 
 .swset-picker-direction-badge {
@@ -390,24 +325,7 @@
     color: #818cf8;
 }
 
-.swset-close {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.10);
-    color: rgba(255,255,255,0.50);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.14s, transform 0.11s;
-    flex-shrink: 0;
-}
-
-    .swset-close:active {
-        transform: scale(0.88);
-    }
+/* (close button removed — back button used instead) */
 
 .swset-picker-scroll {
     overflow-y: auto;

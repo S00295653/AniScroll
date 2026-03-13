@@ -120,65 +120,102 @@
     </div>
 
     <!-- /screen -->
-    <!-- ── Picker popup ───────────────────────────────────────────────── -->
+    <!-- ── Picker : full-screen page ────────────────────────────────── -->
     @if (_pickerOpen)
     {
-        <div class="swset-picker-overlay" @onclick="ClosePicker">
-            <div class="swset-picker-panel" @onclick:stopPropagation="true">
+        <div class="swset-screen swset-picker-screen">
 
-                <div class="swset-picker-header">
+            <div class="swset-topbar">
+                <button class="swset-back-btn" @onclick="ClosePicker">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                         stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <div class="swset-topbar-center">
                     <div class="swset-picker-direction-badge @(_pickingRight ? "swset-picker-badge-right" : "swset-picker-badge-left")">
                         @if (_pickingRight)
                         {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
                                  stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
+                                <polyline points="9 18 15 12 9 6" />
                             </svg>
                             <span>Swipe Right</span>
                         }
                         else
                         {
-                            <svg width="10" height="10" viewBox="0 0 512 512" fill="none"
-                                 stroke="currentColor" stroke-width="32" stroke-linecap="round"
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.8" stroke-linecap="round"
                                  stroke-linejoin="round">
-                                <path d="M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z" />
+                                <polyline points="15 18 9 12 15 6" />
                             </svg>
                             <span>Swipe Left</span>
                         }
                     </div>
-                    <button class="swset-close" @onclick="ClosePicker">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                    </button>
+                </div>
+                <div style="width:38px;"></div>
+            </div>
+
+            <div class="swset-picker-scroll">
+
+                <!-- Built-in status lists -->
+                <div class="swset-picker-section-label">Status Lists</div>
+                <div class="swset-picker-grid">
+                    @foreach (var setting in UserListService.GetStatusSettings())
+                    {
+                        if (!Enum.TryParse<ListStatus>(setting.Key, out var ls)) continue;
+                        var s = ls;
+                        var col = setting.Color;
+                        bool isSel = _pickingRight
+                        ? (_rightStatus == s && _rightCustomId == null)
+                        : (_leftStatus == s && _leftCustomId == null);
+
+                        <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
+                                style="@(isSel ? $"border-color:{col}55;background:color-mix(in srgb,{col} 14%,transparent);color:{col};" : "")"
+                                @onclick="() => PickStatus(s, null)">
+                            <span class="swset-picker-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
+                            <!-- SVG icon rendered directly so colour inherits -->
+                            <span class="swset-picker-icon" style="color:@(isSel? col : "rgba(255,255,255,0.55)");">
+                                @((MarkupString)GetSvgIcon(s))
+                            </span>
+                            <span class="swset-picker-name">@setting.DisplayName</span>
+                            @if (isSel)
+                            {
+                                <svg class="swset-picker-check" width="10" height="10"
+                                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="3" stroke-linecap="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            }
+                        </button>
+                    }
                 </div>
 
-                <div class="swset-picker-scroll">
-
-                    <!-- Built-in status lists -->
-                    <div class="swset-picker-section-label">Status Lists</div>
+                <!-- Custom status-type lists -->
+                @{
+                    var statusCustomLists = UserListService.GetStatusTypeLists();
+                    var regularCustomLists = UserListService.GetRegularCustomLists();
+                }
+                @if (statusCustomLists.Any())
+                {
+                    <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
                     <div class="swset-picker-grid">
-                        @foreach (var setting in UserListService.GetStatusSettings())
+                        @foreach (var cl in statusCustomLists)
                         {
-                            if (!Enum.TryParse<ListStatus>(setting.Key, out var ls)) continue;
-                            var s = ls;
-                            var col = setting.Color;
-                            bool isSel = _pickingRight
-                            ? (_rightStatus == s && _rightCustomId == null)
-                            : (_leftStatus == s && _leftCustomId == null);
-
+                            var cll = cl;
+                            bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
                             <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
-                                    style="@(isSel ? $"border-color:{col}55;background:color-mix(in srgb,{col} 14%,transparent);color:{col};" : "")"
-                                    @onclick="() => PickStatus(s, null)">
-                                <span class="swset-picker-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
-                                <!-- SVG icon rendered directly so colour inherits -->
-                                <span class="swset-picker-icon" style="color:@(isSel? col : "rgba(255,255,255,0.55)");">
-                                    @((MarkupString)GetSvgIcon(s))
+                                    style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
+                                    @onclick="() => PickStatus(null, cll.Id)">
+                                <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
+                                <!-- coloured dot acts as icon for custom lists -->
+                                <span class="swset-picker-icon">
+                                    <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
+                                                                     background:@cll.Color;box-shadow:0 0 7px @(cll.Color)99;"></span>
                                 </span>
-                                <span class="swset-picker-name">@setting.DisplayName</span>
+                                <span class="swset-picker-name">@cll.Name</span>
                                 @if (isSel)
                                 {
                                     <svg class="swset-picker-check" width="10" height="10"
@@ -190,79 +227,43 @@
                             </button>
                         }
                     </div>
+                }
 
-                    <!-- Custom status-type lists -->
-                    @{
-                        var statusCustomLists = UserListService.GetStatusTypeLists();
-                        var regularCustomLists = UserListService.GetRegularCustomLists();
-                    }
-                    @if (statusCustomLists.Any())
-                    {
-                        <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
-                        <div class="swset-picker-grid">
-                            @foreach (var cl in statusCustomLists)
-                            {
-                                var cll = cl;
-                                bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
-                                <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
-                                        style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
-                                        @onclick="() => PickStatus(null, cll.Id)">
-                                    <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                    <!-- coloured dot acts as icon for custom lists -->
-                                    <span class="swset-picker-icon">
-                                        <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
+                <!-- Regular custom lists -->
+                @if (regularCustomLists.Any())
+                {
+                    <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
+                    <div class="swset-picker-grid">
+                        @foreach (var cl in regularCustomLists)
+                        {
+                            var cll = cl;
+                            bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
+                            <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
+                                    style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
+                                    @onclick="() => PickStatus(null, cll.Id)">
+                                <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
+                                <span class="swset-picker-icon">
+                                    <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
                                                                      background:@cll.Color;box-shadow:0 0 7px @(cll.Color)99;"></span>
-                                    </span>
-                                    <span class="swset-picker-name">@cll.Name</span>
-                                    @if (isSel)
-                                    {
-                                        <svg class="swset-picker-check" width="10" height="10"
-                                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="3" stroke-linecap="round">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    }
-                                </button>
-                            }
-                        </div>
-                    }
+                                </span>
+                                <span class="swset-picker-name">@cll.Name</span>
+                                @if (isSel)
+                                {
+                                    <svg class="swset-picker-check" width="10" height="10"
+                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                         stroke-width="3" stroke-linecap="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                }
+                            </button>
+                        }
+                    </div>
+                }
 
-                    <!-- Regular custom lists -->
-                    @if (regularCustomLists.Any())
-                    {
-                        <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
-                        <div class="swset-picker-grid">
-                            @foreach (var cl in regularCustomLists)
-                            {
-                                var cll = cl;
-                                bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
-                                <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
-                                        style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
-                                        @onclick="() => PickStatus(null, cll.Id)">
-                                    <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                    <span class="swset-picker-icon">
-                                        <span style="display:inline-block;width:13px;height:13px;border-radius:50%;
-                                                                     background:@cll.Color;box-shadow:0 0 7px @(cll.Color)99;"></span>
-                                    </span>
-                                    <span class="swset-picker-name">@cll.Name</span>
-                                    @if (isSel)
-                                    {
-                                        <svg class="swset-picker-check" width="10" height="10"
-                                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="3" stroke-linecap="round">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    }
-                                </button>
-                            }
-                        </div>
-                    }
-
-                </div><!-- /picker-scroll -->
-            </div><!-- /picker-panel -->
+            </div><!-- /picker-scroll -->
         </div>
 
-        <!-- /picker-overlay -->
+        <!-- /picker-screen -->
     }
 }
 
