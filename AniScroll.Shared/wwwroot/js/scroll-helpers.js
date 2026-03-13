@@ -657,6 +657,19 @@ window.unregisterEscapeKey = function () {
         }
 
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
+
+        // If swipe was validated, schedule the entrance animation after the fly-off
+        // delay (300ms) + a frame for Blazor to re-render the new active card.
+        if (axis === 'horizontal' && Math.abs(curX) >= HORIZ_THRESHOLD) {
+            setTimeout(() => {
+                const c = card();
+                if (!c) return;
+                c.classList.remove('card-entering');
+                void c.offsetWidth;
+                c.classList.add('card-entering');
+                setTimeout(() => c.classList.remove('card-entering'), 420);
+            }, 360);
+        }
     }
 
     // ── Public API ────────────────────────────────────────────────────────────

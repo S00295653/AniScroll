@@ -582,7 +582,6 @@
             isTransitioning = false; currentDragXOffset = 0;
             currentDragOffset = 0; _swipeAxis = SwipeAxis.None; hasMoved = false;
             StateHasChanged();
-            try { await JS.InvokeVoidAsync("animateCardEntrance"); } catch { }
         }
         else
         {
