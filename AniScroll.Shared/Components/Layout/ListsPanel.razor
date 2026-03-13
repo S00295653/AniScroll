@@ -92,7 +92,7 @@
                         <div class="lf-dd-menu" @onclick:stopPropagation="true">
                             <button class="lf-dd-option @(!statusActive ? "lf-dd-selected" : "")"
                                     @onclick="() => SelectStatus(null, null)">
-                                <span class="lf-dd-dot" style="background:rgba(255,255,255,0.3);"></span>
+                                <span class="lf-dd-dot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,0.35);box-shadow:0 0 5px rgba(255,255,255,0.5);"></span>
                                 <span class="lf-dd-option-label">All</span>
                                 @if (!statusActive)
                                 {
@@ -417,11 +417,11 @@
             "<svg width=\"11\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-miterlimit=\"10\" stroke-width=\"32\" style=\"flex-shrink:0;\">" +
             "<path d=\"M112 111v290c0 17.44 17 28.52 31 20.16l247.9-148.37c12.12-7.25 12.12-26.33 0-33.58L143 90.84c-14-8.36-31 2.72-31 20.16z\"/></svg>"),
 
-        // Circular arrow ~330° clockwise, arrowhead at upper-left pointing left — matches reference
+        // Rotate CCW — Feather icons style, matches reference image
         ListStatus.Rewatching => new MarkupString(
             "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
-            "<path d=\"M19 9A9 9 0 1 1 7 4.5\"/>" +
-            "<polyline points=\"9.5 2 7 4.5 9.5 7\"/></svg>"),
+            "<polyline points=\"1 4 1 10 7 10\"/>" +
+            "<path d=\"M3.51 15a9 9 0 1 0 .49-3.32\"/></svg>"),
 
         // Checkmark — heavier stroke so the rounded knee is clearly visible
         ListStatus.Completed => new MarkupString(
@@ -436,8 +436,7 @@
         // Pause bars — rx rounded rects
         ListStatus.Paused => new MarkupString(
             "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
-            "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" +
-            "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
+            "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" + "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
 
         // X mark — bigger + round caps
         ListStatus.Dropped => new MarkupString(
