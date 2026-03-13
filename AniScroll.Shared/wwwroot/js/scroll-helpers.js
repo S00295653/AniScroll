@@ -705,28 +705,46 @@ window.unregisterEscapeKey = function () {
                 const flyY = -90;
                 const rot = isRight ? 38 : -38;
 
+                // ── Image flies off ───────────────────────────────────────────
                 const img = c.querySelector('.anime-image');
                 if (img) {
                     img.style.transition =
-                        'transform 0.44s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
-                        'opacity   0.36s ease-in 0.06s';
+                        'transform 0.38s cubic-bezier(0.4, 0, 0.8, 0.6), ' +
+                        'opacity   0.28s ease-in 0.04s';
                     img.style.transform =
                         `translateX(${flyX}px) translateY(${flyY}px) rotate(${rot}deg)`;
                     img.style.opacity = '0';
                 }
 
+                // ── Everything else (text, bg, feathers) fades out fast ───────
+                const content = c.querySelector('.content-wrapper');
+                if (content) {
+                    content.style.transition = 'opacity 0.18s ease-in 0.10s';
+                    content.style.opacity = '0';
+                }
+                const bg = c.querySelector('.bg-image');
+                if (bg) {
+                    bg.style.transition = 'opacity 0.20s ease-in 0.08s';
+                    bg.style.opacity = '0';
+                }
+                const overlay = c.querySelector('.gradient-overlay');
+                if (overlay) {
+                    overlay.style.transition = 'opacity 0.20s ease-in 0.08s';
+                    overlay.style.opacity = '0';
+                }
+
                 ['.swipe-feather-right', '.swipe-feather-left',
                     '.swipe-hint-right', '.swipe-hint-left'].forEach(sel => {
                         const el = c.querySelector(sel);
-                        if (el) { el.style.transition = 'opacity 0.12s'; el.style.opacity = 0; }
+                        if (el) { el.style.transition = 'opacity 0.10s'; el.style.opacity = 0; }
                     });
             }
 
-            // Tell Blazor after the fly-off; it will re-render with the new active card
+            // Notify Blazor after the fly-off — total budget 380ms
             setTimeout(() => {
                 _pendingEntrance = true;
                 if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
-            }, 420);
+            }, 380);
             return;
         }
 
