@@ -583,12 +583,20 @@ window.unregisterEscapeKey = function () {
 
         const transition = `transform ${SNAPBACK_MS}ms ${SNAPBACK_EASING}`;
 
+        // 1. Appliquer la transition sur toutes les cartes
         _cardBaseTransforms.forEach(item => {
             item.el.style.transition = transition;
+        });
+
+        // 2. Forcer un reflow AVANT de changer le transform
+        //    Sans ça, browser traite transition + transform comme un changement instantané
+        document.body.offsetHeight;
+
+        // 3. Maintenant appliquer le transform cible → animation se déclenche
+        _cardBaseTransforms.forEach(item => {
             item.el.style.transform = `translateY(${item.baseY}px)`;
         });
 
-        // After the animation completes, strip the inline transition and call back
         setTimeout(() => {
             _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
             callback();
