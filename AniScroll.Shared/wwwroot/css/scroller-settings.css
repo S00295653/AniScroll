@@ -110,14 +110,6 @@
     background: #14141f;
 }
 
-.swset-zone-left {
-    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 32%, #0a0a14) 0%, color-mix(in srgb, var(--zc) 8%, #0e0e1a) 100%);
-}
-
-.swset-zone-right {
-    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 32%, #0a0a14) 0%, color-mix(in srgb, var(--zc) 8%, #0e0e1a) 100%);
-}
-
 /* gradient overlay — position:absolute on .swset-row, bleeds over skeleton */
 .swset-zone-grad {
     position: absolute;
@@ -252,21 +244,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 30px;
 }
 
 .swset-sk-poster {
-    width: 120px;
-    height: 180px;
+    width: 130px;
+    height: 200px;
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: 7px;
+    margin-top: 40px;
 }
 
 /* info area */
 .swset-sk-info {
     flex: 1;
     min-height: 0;
-    padding: 10px 14px 8px;
+    padding: 12px 18px 8px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
