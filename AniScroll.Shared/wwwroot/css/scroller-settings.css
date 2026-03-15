@@ -561,3 +561,16 @@
     background: unset; /* let inline style win */
     width: 280px !important;
 }
+
+/* ── HARD EDGE FIX ───────────────────────────────────────
+   Skeleton + image area + info area all use the same base
+   color as the screen so zones bleed seamlessly into it.
+   ──────────────────────────────────────────────────────── */
+.swset-skeleton,
+.swset-sk-info {
+    background: #14141f !important;
+}
+
+.swset-sk-img {
+    background: #1a1a2a !important;
+}
