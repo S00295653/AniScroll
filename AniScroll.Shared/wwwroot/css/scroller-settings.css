@@ -116,14 +116,14 @@
     background: color-mix(in srgb, var(--zc) 12%, #08080f);
 }
 
-/* gradient extends 70px into the skeleton on the inner side */
+/* gradient: starts from zone edge, fades 160px into skeleton */
 .swset-zone-grad {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 150px;
+    width: 240px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 3;
 }
 
 .swset-zone-left .swset-zone-grad {
@@ -239,14 +239,41 @@
     overflow: hidden;
     background: #0d0d1a;
     z-index: 1;
+    /* no border — gradient handles the transition */
 }
 
-/* image area — simple dark rectangle, no poster */
+/* image area */
 .swset-sk-img {
     flex: 0 0 52%;
     min-height: 0;
     background: #111120;
+    position: relative;
+    overflow: hidden;
 }
+    /* skeleton poster — centred rectangle */
+    .swset-sk-img::after {
+        content: '';
+        position: absolute;
+        top: 8%;
+        bottom: 8%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 38%;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 8px;
+    }
+    /* fade bottom of image into info */
+    .swset-sk-img::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 45%;
+        background: linear-gradient(to bottom, transparent, #0d0d1a);
+        z-index: 1;
+    }
 
 /* info area */
 .swset-sk-info {
@@ -346,12 +373,15 @@
 }
 
 .swset-sk-readmore {
-    align-self: flex-start;
-    font-size: 11px;
-    font-weight: 700;
-    color: rgba(96,165,250,0.50);
+    align-self: center;
+    width: 55px;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(96,165,250,0.20);
     flex-shrink: 0;
+    margin-top: 2px;
     animation: skIn 0.24s ease-out both;
+    font-size: 0; /* hide text */
 }
 
 /* ── Future settings ─────────────────────────────────── */
