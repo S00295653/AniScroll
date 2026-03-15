@@ -374,6 +374,7 @@
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
 }
 
 /* ── Picker screen ───────────────────────────────────── */
@@ -638,7 +639,7 @@
 
     /* On desktop, topbar padding doesn't need safe-area */
     .swset-topbar {
-        padding-top: 12px;
+        padding-top: 20px;
         border-radius: 18px 18px 0 0;
     }
 
