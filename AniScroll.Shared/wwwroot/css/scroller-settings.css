@@ -587,3 +587,30 @@
 .swset-zone-right .swset-zone-grad {
     width: 200px;
 }
+
+/* ── Readmore centered ───────────────────────────────── */
+.swset-sk-readmore {
+    align-self: center !important;
+    margin-top: 2px;
+}
+
+/* ── Smoother, darker zone edges ─────────────────────── */
+.swset-zone-left {
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 28%, #04040c) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
+}
+
+.swset-zone-right {
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 28%, #04040c) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
+}
+/* extend gradient further into skeleton */
+.swset-zone-grad {
+    width: 200px !important;
+}
+
+.swset-zone-left .swset-zone-grad {
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 22%, transparent) 0%, transparent 100%) !important;
+}
+
+.swset-zone-right .swset-zone-grad {
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 22%, transparent) 0%, transparent 100%) !important;
+}
