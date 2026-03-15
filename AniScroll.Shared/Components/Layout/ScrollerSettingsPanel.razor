@@ -114,9 +114,9 @@
             <!-- ══ PICKER — bottom sheet inside .swset-screen ══════ -->
             @if (_pickerOpen)
             {
-                @{
-                    var badgeColor = GetEffectiveColor(_pickingRight);
-                }
+              
+                var badgeColor = GetEffectiveColor(_pickingRight);
+            
 
                 <!-- dim backdrop covering the settings screen -->
                 <div class="swset-picker-backdrop" @onclick="ClosePicker"></div>
