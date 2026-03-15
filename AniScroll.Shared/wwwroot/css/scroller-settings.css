@@ -205,7 +205,7 @@
     padding: 5px 10px;
     border-radius: 8px;
     border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
-    background: rgba(0,0,0,0.55);
+    background: color-mix(in srgb, var(--zc) 16%, rgba(0,0,0,0.5));
     color: var(--zc);
     font-size: 10px;
     font-weight: 700;
@@ -247,6 +247,7 @@
 .swset-sk-img {
     flex: 0 0 52%;
     min-height: 0;
+    background: #111120;
     position: relative;
     display: flex;
     align-items: center;
@@ -573,4 +574,96 @@
 
 .swset-sk-img {
     background: #1a1a2a !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — popup mode on desktop
+   ══════════════════════════════════════════════════════ */
+
+/* Overlay backdrop (mobile: invisible, desktop: dimmed) */
+.swset-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* Mobile default — full screen, no overlay bg */
+@media (max-width: 639px) {
+    .swset-overlay {
+        background: transparent;
+        pointer-events: none; /* let clicks through on overlay itself */
+    }
+
+    .swset-screen {
+        pointer-events: all;
+        border-radius: 0;
+        position: relative;
+        inset: auto;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+    }
+}
+
+/* Desktop — centered popup like anime detail */
+@media (min-width: 640px) {
+    .swset-overlay {
+        background: rgba(0,0,0,0.65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        align-items: center;
+        animation: swsetOverlayIn 0.20s ease-out both;
+    }
+
+    @keyframes swsetOverlayIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .swset-screen {
+        position: relative;
+        inset: auto;
+        width: min(560px, 92vw);
+        height: min(640px, 88vh);
+        max-width: 560px;
+        max-height: 88vh;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04);
+        animation: swsetPopupIn 0.22s cubic-bezier(0.34,1.26,0.64,1) both;
+    }
+
+    @keyframes swsetPopupIn {
+        from {
+            opacity: 0;
+            transform: scale(0.92) translateY(16px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    /* On desktop, topbar padding doesn't need safe-area */
+    .swset-topbar {
+        padding-top: 12px;
+        border-radius: 18px 18px 0 0;
+    }
+
+    /* Picker screen also gets rounded corners on desktop */
+    .swset-picker-screen {
+        border-radius: 18px;
+        position: absolute;
+        inset: 0;
+    }
 }

@@ -6,116 +6,119 @@
 
 @if (IsVisible)
 {
-    <div class="swset-screen">
+    <div class="swset-overlay" @onclick="Close">
+        <div class="swset-screen" @onclick:stopPropagation="true">
 
-        <div class="swset-topbar">
-            <button class="swset-back-btn" @onclick="Close">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                </svg>
-            </button>
-            <div class="swset-topbar-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     style="color:rgba(255,255,255,0.4);flex-shrink:0;">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-                <span class="swset-title">Swipe Settings</span>
+            <div class="swset-topbar">
+                <button class="swset-back-btn" @onclick="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <div class="swset-topbar-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         style="color:rgba(255,255,255,0.4);flex-shrink:0;">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span class="swset-title">Swipe Settings</span>
+                </div>
+                <div style="width:38px;"></div>
             </div>
-            <div style="width:38px;"></div>
-        </div>
 
-        <!-- ── Preview section ── -->
-        <div class="swset-section-block">
-            @{
-                var lc = GetEffectiveColor(false);
-                var rc = GetEffectiveColor(true);
-                var leftLabel = GetEffectiveLabel(false);
-                var rightLabel = GetEffectiveLabel(true);
-            }
+            <!-- ── Preview section ── -->
+            <div class="swset-section-block">
+                @{
+                    var lc = GetEffectiveColor(false);
+                    var rc = GetEffectiveColor(true);
+                    var leftLabel = GetEffectiveLabel(false);
+                    var rightLabel = GetEffectiveLabel(true);
+                }
 
-            <!-- 3 colonnes : zone-left | skeleton | zone-right -->
-            <div class="swset-row">
+                <!-- 3 colonnes : zone-left | skeleton | zone-right -->
+                <div class="swset-row">
 
-                <!-- ── ZONE GAUCHE ── -->
-                <!-- gradient overlay — position:absolute over the whole row -->
-                <div class="swset-grad-overlay swset-grad-left"
-                     style="background:linear-gradient(to right,color-mix(in srgb,@lc 42%,#08080f) 0%,color-mix(in srgb,@lc 22%,transparent) 38%,color-mix(in srgb,@lc 8%,transparent) 65%,transparent 100%);"></div>
+                    <!-- ── ZONE GAUCHE ── -->
+                    <!-- gradient overlay — position:absolute over the whole row -->
+                    <div class="swset-grad-overlay swset-grad-left"
+                         style="background:linear-gradient(to right,color-mix(in srgb,@lc 42%,#08080f) 0%,color-mix(in srgb,@lc 22%,transparent) 38%,color-mix(in srgb,@lc 8%,transparent) 65%,transparent 100%);"></div>
 
-                <div class="swset-zone swset-zone-left" style="--zc:@lc;">
-                    <div class="swset-zone-content">
-                        <div class="swset-zone-hint" style="color:@lc; border-color:@(lc)80; box-shadow:0 0 14px @(lc)40;">
-                            @((MarkupString)GetSvgIcon(_leftStatus))
-                            <span>@leftLabel</span>
+                    <div class="swset-zone swset-zone-left" style="--zc:@lc;">
+                        <div class="swset-zone-content">
+                            <div class="swset-zone-hint" style="color:@lc; border-color:@(lc)80; box-shadow:0 0 14px @(lc)40;">
+                                @((MarkupString)GetSvgIcon(_leftStatus))
+                                <span>@leftLabel</span>
+                            </div>
+                            <button class="swset-zone-edit" @onclick="() => OpenPicker(false)">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit
+                            </button>
                         </div>
-                        <button class="swset-zone-edit" @onclick="() => OpenPicker(false)">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                            Edit
-                        </button>
                     </div>
+
+                    <!-- ── SKELETON CARD ── -->
+                    <div class="swset-skeleton">
+                        <div class="swset-sk-img">
+                            <div class="swset-sk-poster"></div>
+                        </div>
+                        <!-- info area -->
+                        <div class="swset-sk-info">
+                            <div class="swset-sk-line swset-sk-title" style="width:72%;animation-delay:.05s;"></div>
+                            <div class="swset-sk-line swset-sk-season" style="width:34%;animation-delay:.09s;"></div>
+                            <div class="swset-sk-genres" style="animation-delay:.13s;">
+                                <div class="swset-sk-genre" style="width:46px;"></div>
+                                <div class="swset-sk-genre" style="width:38px;"></div>
+                                <div class="swset-sk-genre" style="width:52px;"></div>
+                            </div>
+                            <div class="swset-sk-stats" style="animation-delay:.17s;">
+                                <div class="swset-sk-badge-score"></div>
+                                <div class="swset-sk-badge-ep"></div>
+                            </div>
+                            <div class="swset-sk-desc-wrap">
+                                <div class="swset-sk-line swset-sk-desc" style="width:100%;animation-delay:.21s;"></div>
+                                <div class="swset-sk-line swset-sk-desc" style="width:92%;animation-delay:.24s;"></div>
+                                <div class="swset-sk-line swset-sk-desc" style="width:80%;animation-delay:.27s;"></div>
+                            </div>
+                            <div class="swset-sk-readmore" style="animation-delay:.31s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- ── ZONE DROITE ── -->
+                    <!-- gradient overlay right -->
+                    <div class="swset-grad-overlay swset-grad-right"
+                         style="background:linear-gradient(to left,color-mix(in srgb,@rc 42%,#08080f) 0%,color-mix(in srgb,@rc 22%,transparent) 38%,color-mix(in srgb,@rc 8%,transparent) 65%,transparent 100%);"></div>
+
+                    <div class="swset-zone swset-zone-right" style="--zc:@rc;">
+                        <div class="swset-zone-content swset-zone-content-r">
+                            <div class="swset-zone-hint swset-zone-hint-r" style="color:@rc; border-color:@(rc)80; box-shadow:0 0 14px @(rc)40;">
+                                <span>@rightLabel</span>
+                                @((MarkupString)GetSvgIcon(_rightStatus))
+                            </div>
+                            <button class="swset-zone-edit" @onclick="() => OpenPicker(true)">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
-
-                <!-- ── SKELETON CARD ── -->
-                <div class="swset-skeleton">
-                    <div class="swset-sk-img">
-                        <div class="swset-sk-poster"></div>
-                    </div>
-                    <!-- info area -->
-                    <div class="swset-sk-info">
-                        <div class="swset-sk-line swset-sk-title" style="width:72%;animation-delay:.05s;"></div>
-                        <div class="swset-sk-line swset-sk-season" style="width:34%;animation-delay:.09s;"></div>
-                        <div class="swset-sk-genres" style="animation-delay:.13s;">
-                            <div class="swset-sk-genre" style="width:46px;"></div>
-                            <div class="swset-sk-genre" style="width:38px;"></div>
-                            <div class="swset-sk-genre" style="width:52px;"></div>
-                        </div>
-                        <div class="swset-sk-stats" style="animation-delay:.17s;">
-                            <div class="swset-sk-badge-score"></div>
-                            <div class="swset-sk-badge-ep"></div>
-                        </div>
-                        <div class="swset-sk-desc-wrap">
-                            <div class="swset-sk-line swset-sk-desc" style="width:100%;animation-delay:.21s;"></div>
-                            <div class="swset-sk-line swset-sk-desc" style="width:92%;animation-delay:.24s;"></div>
-                            <div class="swset-sk-line swset-sk-desc" style="width:80%;animation-delay:.27s;"></div>
-                        </div>
-                        <div class="swset-sk-readmore" style="animation-delay:.31s;"></div>
-                    </div>
-                </div>
-
-                <!-- ── ZONE DROITE ── -->
-                <!-- gradient overlay right -->
-                <div class="swset-grad-overlay swset-grad-right"
-                     style="background:linear-gradient(to left,color-mix(in srgb,@rc 42%,#08080f) 0%,color-mix(in srgb,@rc 22%,transparent) 38%,color-mix(in srgb,@rc 8%,transparent) 65%,transparent 100%);"></div>
-
-                <div class="swset-zone swset-zone-right" style="--zc:@rc;">
-                    <div class="swset-zone-content swset-zone-content-r">
-                        <div class="swset-zone-hint swset-zone-hint-r" style="color:@rc; border-color:@(rc)80; box-shadow:0 0 14px @(rc)40;">
-                            <span>@rightLabel</span>
-                            @((MarkupString)GetSvgIcon(_rightStatus))
-                        </div>
-                        <button class="swset-zone-edit" @onclick="() => OpenPicker(true)">
-                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                            Edit
-                        </button>
-                    </div>
-                </div>
-
             </div>
+
+            <!-- Future settings -->
+            <div class="swset-future-sections"></div>
+
         </div>
-
-        <!-- Future settings -->
-        <div class="swset-future-sections"></div>
-
     </div>
 
+    <!-- /overlay -->
     @if (_pickerOpen)
     {
         <div class="swset-screen swset-picker-screen">
