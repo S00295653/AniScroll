@@ -25,7 +25,6 @@
     }
 }
 
-/* ── Topbar ─────────────────────────────────────────── */
 .swset-topbar {
     flex-shrink: 0;
     display: flex;
@@ -91,47 +90,53 @@
     }
 }
 
-/* ══════════════════════════════════════════════════════
-   THE 3-COLUMN ROW
-   [zone-left] [skeleton] [zone-right]
-   ══════════════════════════════════════════════════════ */
+/* ── 3-column row ────────────────────────────────────── */
 .swset-row {
     display: flex;
     height: 100%;
     align-items: stretch;
 }
 
-/* ── Side zones ─────────────────────────────────────── */
+/* ── Side zones — overflow visible so gradient bleeds over skeleton ── */
 .swset-zone {
     flex: 0 0 80px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
-    z-index: 2; /* above the skeleton */
+    overflow: visible;
+    z-index: 2;
 }
 
-/* colored bg tint */
 .swset-zone-left {
-    background: color-mix(in srgb, var(--zc) 10%, #08080f);
+    background: color-mix(in srgb, var(--zc) 12%, #08080f);
 }
 
 .swset-zone-right {
-    background: color-mix(in srgb, var(--zc) 10%, #08080f);
+    background: color-mix(in srgb, var(--zc) 12%, #08080f);
 }
 
-/* gradient overlay */
+/* gradient extends 70px into the skeleton on the inner side */
 .swset-zone-grad {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    width: 150px;
     pointer-events: none;
+    z-index: 1;
 }
 
-/* hint + edit column */
+.swset-zone-left .swset-zone-grad {
+    left: 0;
+}
+
+.swset-zone-right .swset-zone-grad {
+    right: 0;
+}
+
 .swset-zone-content {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -144,7 +149,6 @@
     align-items: center;
 }
 
-/* hint pill */
 .swset-zone-hint {
     display: flex;
     align-items: center;
@@ -156,7 +160,7 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    background: rgba(0,0,0,0.50);
+    background: rgba(0,0,0,0.55);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     white-space: nowrap;
@@ -192,7 +196,6 @@
     }
 }
 
-/* edit button */
 .swset-zone-edit {
     display: flex;
     align-items: center;
@@ -226,7 +229,7 @@
 }
 
 /* ══════════════════════════════════════════════════════
-   SKELETON CARD — fills remaining width
+   SKELETON — simple dark card, just flat bars
    ══════════════════════════════════════════════════════ */
 .swset-skeleton {
     flex: 1;
@@ -234,53 +237,18 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #0c0c18;
-    border-left: 1px solid rgba(255,255,255,0.05);
-    border-right: 1px solid rgba(255,255,255,0.05);
+    background: #0d0d1a;
+    z-index: 1;
 }
 
-/* ── Image area — full width, ~55% height ── */
+/* image area — simple dark rectangle, no poster */
 .swset-sk-img {
     flex: 0 0 52%;
     min-height: 0;
-    position: relative;
-    overflow: hidden;
+    background: #111120;
 }
 
-/* blurred bg — flat, no glow */
-.swset-sk-img-bg {
-    position: absolute;
-    inset: 0;
-    background: #0e0e1e;
-}
-
-/* centered cover (the anime poster rectangle) */
-.swset-sk-img-cover {
-    position: absolute;
-    top: 8%;
-    bottom: 8%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40%;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 8px;
-    z-index: 2;
-}
-
-/* bottom fade */
-.swset-sk-img-fade {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    z-index: 3;
-    pointer-events: none;
-    background: linear-gradient(to bottom, transparent 0%, #0c0c18 100%);
-}
-
-/* ── Info area — mirrors .info-section ── */
+/* info area */
 .swset-sk-info {
     flex: 1;
     min-height: 0;
@@ -288,14 +256,14 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #0c0c18;
+    background: #0d0d1a;
 }
 
-/* shared line */
+/* shared skeleton bar */
 .swset-sk-line {
     display: block;
     border-radius: 4px;
-    background: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.09);
     flex-shrink: 0;
     animation: skIn 0.24s ease-out both;
 }
@@ -313,22 +281,19 @@
     }
 }
 
-/* title */
 .swset-sk-title {
-    height: 16px;
+    height: 14px;
     border-radius: 5px;
-    margin-bottom: 7px;
-    opacity: 0.88;
+    margin-bottom: 8px;
 }
-/* season */
+
 .swset-sk-season {
     height: 6px;
     border-radius: 3px;
     margin-bottom: 7px;
-    opacity: 0.40;
+    opacity: 0.45;
 }
 
-/* genres row — simple bars */
 .swset-sk-genres {
     display: flex;
     gap: 5px;
@@ -340,11 +305,10 @@
 .swset-sk-genre {
     height: 6px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.09);
+    background: rgba(255,255,255,0.08);
     flex-shrink: 0;
 }
 
-/* stats badges — simple rounded bars */
 .swset-sk-stats {
     display: flex;
     gap: 6px;
@@ -353,27 +317,24 @@
     animation: skIn 0.24s ease-out both;
 }
 
-.swset-sk-badge-score,
-.swset-sk-badge-ep {
-    height: 20px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.08);
-}
-
 .swset-sk-badge-score {
-    width: 48px;
+    width: 44px;
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.07);
 }
 
 .swset-sk-badge-ep {
-    width: 56px;
+    width: 52px;
+    height: 18px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.07);
 }
 
-/* description */
 .swset-sk-desc-wrap {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     margin-bottom: 7px;
     flex-shrink: 0;
 }
@@ -384,12 +345,11 @@
     opacity: 0.28;
 }
 
-/* Read More */
 .swset-sk-readmore {
     align-self: flex-start;
     font-size: 11px;
     font-weight: 700;
-    color: rgba(96,165,250,0.55);
+    color: rgba(96,165,250,0.50);
     flex-shrink: 0;
     animation: skIn 0.24s ease-out both;
 }
@@ -510,7 +470,6 @@
     margin-left: auto;
 }
 
-/* ── Settings open button ───────────────────────────── */
 .swset-open-btn {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
