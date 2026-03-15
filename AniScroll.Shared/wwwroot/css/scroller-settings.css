@@ -38,21 +38,23 @@
     -webkit-backdrop-filter: blur(10px);
 }
 
-.swset-back-btn {
+/* ── X Close button (replaces back arrow everywhere) ── */
+.swset-close-btn {
     width: 38px;
     height: 38px;
-    border-radius: 10px;
+    border-radius: 50%;
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.10);
-    color: rgba(255,255,255,0.70);
+    color: rgba(255,255,255,0.60);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    flex-shrink: 0;
     transition: background 0.15s, transform 0.12s;
 }
 
-    .swset-back-btn:active {
+    .swset-close-btn:active {
         transform: scale(0.88);
         background: rgba(255,255,255,0.12);
     }
@@ -106,11 +108,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: visible; /* badges allowed to overflow toward skeleton */
+    overflow: visible;
     background: #14141f;
 }
 
-/* gradient overlay */
 .swset-zone-grad {
     position: absolute;
     top: 0;
@@ -128,8 +129,7 @@
     right: 0;
 }
 
-/* ── Zone content — anchored to the INNER edge of each zone
-     so badges always extend toward the skeleton, never off-screen ── */
+/* Left zone anchors to right (inner) edge */
 .swset-zone-content {
     position: relative;
     z-index: 4;
@@ -137,11 +137,10 @@
     flex-direction: column;
     gap: 10px;
     padding: 8px 6px;
-    /* left zone: push content toward right (inner) edge */
     align-items: flex-end;
 }
 
-/* right zone: push content toward left (inner) edge */
+/* Right zone anchors to left (inner) edge */
 .swset-zone-content-r {
     align-items: flex-start;
 }
@@ -162,12 +161,11 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     white-space: nowrap;
-    /* cap total badge width — text will truncate before this */
     max-width: 155px;
     animation: zoneInL 0.28s ease-out 0.10s both;
 }
 
-    /* truncate long list names with ellipsis */
+    /* Truncate long list names */
     .swset-zone-hint span {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -241,9 +239,6 @@
    SKELETON
    ══════════════════════════════════════════════════════ */
 
-/* ── Shimmer keyframe — sweeps a highlight left→right ── */
-/* Uses two background-layers: sweep gradient + solid base.
-   background-position animates only the sweep layer (first value). */
 @keyframes skShimmer {
     0% {
         background-position: 130% 0, 0 0;
@@ -254,7 +249,6 @@
     }
 }
 
-/* ── Appear keyframe ─────────────────────────────────── */
 @keyframes skIn {
     from {
         opacity: 0;
@@ -277,7 +271,6 @@
     z-index: 1;
 }
 
-/* image area */
 .swset-sk-img {
     flex: 0 0 52%;
     min-height: 0;
@@ -288,14 +281,13 @@
     margin-bottom: 30px;
 }
 
-/* ── Poster — own shimmer with slight scale-in ──────── */
 .swset-sk-poster {
     width: 130px;
     height: 200px;
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: 7px;
     margin-top: 40px;
-    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.07);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.00) 65%), rgba(255,255,255,0.07);
     background-size: 300% 100%, 100% 100%;
     animation: skPosterIn 0.28s ease-out 0.04s both, skShimmer 2.4s 0.6s infinite;
 }
@@ -312,7 +304,6 @@
     }
 }
 
-/* info area */
 .swset-sk-info {
     flex: 1;
     min-height: 0;
@@ -322,14 +313,12 @@
     overflow: hidden;
 }
 
-/* ── Base skeleton line ──────────────────────────────── */
 .swset-sk-line {
     display: block;
     border-radius: 4px;
     flex-shrink: 0;
-    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.09);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.00) 65%), rgba(255,255,255,0.09);
     background-size: 300% 100%, 100% 100%;
-    /* skIn: appear; skShimmer: sweep — different props, no conflict */
     animation: skIn 0.24s ease-out both, skShimmer 2s 0.4s infinite;
 }
 
@@ -346,7 +335,6 @@
     opacity: 0.45;
 }
 
-/* ── Genre pills ─────────────────────────────────────── */
 .swset-sk-genres {
     display: flex;
     gap: 5px;
@@ -359,12 +347,11 @@
     height: 6px;
     border-radius: 10px;
     flex-shrink: 0;
-    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.08);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65%), rgba(255,255,255,0.08);
     background-size: 300% 100%, 100% 100%;
     animation: skShimmer 2s 0.55s infinite;
 }
 
-/* ── Stat badges ─────────────────────────────────────── */
 .swset-sk-stats {
     display: flex;
     gap: 6px;
@@ -377,7 +364,7 @@
 .swset-sk-badge-ep {
     height: 18px;
     border-radius: 6px;
-    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.07);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65%), rgba(255,255,255,0.07);
     background-size: 300% 100%, 100% 100%;
     animation: skShimmer 2s 0.7s infinite;
 }
@@ -390,7 +377,6 @@
     width: 52px;
 }
 
-/* ── Description lines ───────────────────────────────── */
 .swset-sk-desc-wrap {
     display: flex;
     flex-direction: column;
@@ -403,15 +389,13 @@
     height: 5px;
     border-radius: 3px;
     opacity: 0.28;
-    /* desc lines share the skShimmer via .swset-sk-line */
 }
 
-/* ── Read more stub ──────────────────────────────────── */
 .swset-sk-readmore {
     width: 60px;
     height: 8px;
     border-radius: 4px;
-    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.09);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.00) 65%), rgba(255,255,255,0.09);
     background-size: 300% 100%, 100% 100%;
     align-self: center;
     flex-shrink: 0;
@@ -427,9 +411,21 @@
     padding-bottom: env(safe-area-inset-bottom, 16px);
 }
 
-/* ── Picker screen ───────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   PICKER SCREEN
+   Always position:absolute so it stays inside .swset-screen
+   (on both mobile full-screen and desktop popup).
+   ══════════════════════════════════════════════════════ */
 .swset-picker-screen {
-    z-index: 3100;
+    position: absolute;
+    inset: 0;
+    z-index: 10; /* above everything inside .swset-screen */
+    background: #14141f;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: swsetIn 0.16s ease-out both;
+    /* inherits border-radius from parent on desktop via overflow:hidden */
 }
 
 .swset-picker-direction-badge {
@@ -504,6 +500,8 @@
     font-family: inherit;
     text-align: left;
     transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.10s;
+    /* prevent the row itself from overflowing */
+    min-width: 0;
 }
 
     .swset-picker-item:active {
@@ -526,37 +524,19 @@
     flex-shrink: 0;
 }
 
+/* Truncate long names with ellipsis */
 .swset-picker-name {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .swset-picker-check {
     flex-shrink: 0;
     margin-left: auto;
 }
-
-.swset-open-btn {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    color: rgba(255,255,255,0.50);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, transform 0.12s;
-}
-
-    .swset-open-btn:hover {
-        background: rgba(255,255,255,0.14);
-        color: rgba(255,255,255,0.9);
-    }
-
-    .swset-open-btn:active {
-        transform: scale(0.88);
-    }
 
 /* ── Gradient overlays — background owned by Razor inline style ── */
 .swset-grad-overlay {
@@ -580,7 +560,6 @@
 .swset-grad-right {
     background: unset;
 }
-/* inline style from Razor wins */
 
 /* ── HARD EDGE FIX ───────────────────────────────────── */
 .swset-skeleton,
@@ -666,12 +645,12 @@
 
     .swset-topbar {
         padding-top: 20px;
+        /* rounded top corners match the screen */
         border-radius: 18px 18px 0 0;
     }
 
+    /* Picker: already absolute, just needs rounded corners to match parent */
     .swset-picker-screen {
         border-radius: 18px;
-        position: absolute;
-        inset: 0;
     }
 }

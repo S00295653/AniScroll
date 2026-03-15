@@ -9,13 +9,9 @@
     <div class="swset-overlay" @onclick="Close">
         <div class="swset-screen" @onclick:stopPropagation="true">
 
+            <!-- ══ MAIN SETTINGS ══════════════════════════════════ -->
             <div class="swset-topbar">
-                <button class="swset-back-btn" @onclick="Close">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                </button>
+                <div style="width:38px;"></div>
                 <div class="swset-topbar-center">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -25,7 +21,14 @@
                     </svg>
                     <span class="swset-title">Swipe Settings</span>
                 </div>
-                <div style="width:38px;"></div>
+                <!-- X close button -->
+                <button class="swset-close-btn" @onclick="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
             </div>
 
             <!-- ── Preview section ── -->
@@ -37,11 +40,9 @@
                     var rightLabel = GetEffectiveLabel(true);
                 }
 
-                <!-- 3 colonnes : zone-left | skeleton | zone-right -->
                 <div class="swset-row">
 
-                    <!-- ── ZONE GAUCHE ── -->
-                    <!-- gradient overlay — position:absolute over the whole row -->
+                    <!-- ZONE GAUCHE -->
                     <div class="swset-grad-overlay swset-grad-left"
                          style="background:linear-gradient(to right,color-mix(in srgb,@lc 42%,#08080f) 0%,color-mix(in srgb,@lc 22%,transparent) 38%,color-mix(in srgb,@lc 8%,transparent) 65%,transparent 100%);"></div>
 
@@ -61,12 +62,11 @@
                         </div>
                     </div>
 
-                    <!-- ── SKELETON CARD ── -->
+                    <!-- SKELETON CARD -->
                     <div class="swset-skeleton">
                         <div class="swset-sk-img">
                             <div class="swset-sk-poster"></div>
                         </div>
-                        <!-- info area -->
                         <div class="swset-sk-info">
                             <div class="swset-sk-line swset-sk-title" style="width:72%;animation-delay:.05s;"></div>
                             <div class="swset-sk-line swset-sk-season" style="width:34%;animation-delay:.09s;"></div>
@@ -88,8 +88,7 @@
                         </div>
                     </div>
 
-                    <!-- ── ZONE DROITE ── -->
-                    <!-- gradient overlay right -->
+                    <!-- ZONE DROITE -->
                     <div class="swset-grad-overlay swset-grad-right"
                          style="background:linear-gradient(to left,color-mix(in srgb,@rc 42%,#08080f) 0%,color-mix(in srgb,@rc 22%,transparent) 38%,color-mix(in srgb,@rc 8%,transparent) 65%,transparent 100%);"></div>
 
@@ -115,97 +114,130 @@
             <!-- Future settings -->
             <div class="swset-future-sections"></div>
 
+            <!-- ══ PICKER — inside .swset-screen so it stays in the popup on desktop ══ -->
+            @if (_pickerOpen)
+            {
+                <div class="swset-picker-screen" @onclick:stopPropagation="true">
+                    <div class="swset-topbar">
+                        <div style="width:38px;"></div>
+                        <div class="swset-topbar-center">
+                            <div class="swset-picker-direction-badge @(_pickingRight ? "swset-picker-badge-right" : "swset-picker-badge-left")">
+                                @if (_pickingRight)
+                                {
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6" />
+                                    </svg>
+                                    <span>Swipe Right</span>
+                                }
+                                else
+                                {
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6" />
+                                    </svg>
+                                    <span>Swipe Left</span>
+                                }
+                            </div>
+                        </div>
+                        <!-- X close button -->
+                        <button class="swset-close-btn" @onclick="ClosePicker">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="swset-picker-scroll">
+
+                        <!-- ── All status items merged + sorted (same order as My Lists) ── -->
+                        <div class="swset-picker-section-label">Status Lists</div>
+                        <div class="swset-picker-grid">
+                            @{
+                                var allStatusItems = UserListService.GetStatusSettings()
+                                .Select(s => (isBuiltIn: true, setting: s, custom: (UserCustomList?)null))
+                                .Concat(UserListService.GetStatusTypeLists()
+                                .Select(c => (isBuiltIn: false, setting: (StatusListSetting?)null, custom: (UserCustomList?)c)))
+                                .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order)
+                                .ToList();
+                            }
+                            @foreach (var item in allStatusItems)
+                            {
+                                @if (item.isBuiltIn)
+                                {
+                                    var s = item.setting!;
+                                    if (!Enum.TryParse<ListStatus>(s.Key, out var ls)) { continue; }
+                                    var lsCapture = ls;
+                                    bool isSel = _pickingRight
+                                    ? (_rightStatus == lsCapture && _rightCustomId == null)
+                                    : (_leftStatus == lsCapture && _leftCustomId == null);
+                                    <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
+                                            style="@(isSel ? $"border-color:{s.Color}55;background:color-mix(in srgb,{s.Color} 14%,transparent);color:{s.Color};" : "")"
+                                            @onclick="() => PickStatus(lsCapture, null)">
+                                        <span class="swset-picker-dot" style="background:@s.Color;box-shadow:0 0 5px @(s.Color)88;"></span>
+                                        <span class="swset-picker-name">@s.DisplayName</span>
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        }
+                                    </button>
+                                }
+                                else
+                                {
+                                    var cll = item.custom!;
+                                    bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
+                                    <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
+                                            style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
+                                            @onclick="() => PickStatus(null, cll.Id)">
+                                        <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
+                                        <span class="swset-picker-name">@cll.Name</span>
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        }
+                                    </button>
+                                }
+                            }
+                        </div>
+
+                        <!-- ── Regular custom lists ── -->
+                        @{
+                            var rcl = UserListService.GetRegularCustomLists();
+                        }
+                        @if (rcl.Any())
+                        {
+                            <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
+                            <div class="swset-picker-grid">
+                                @foreach (var cl in rcl)
+                                {
+                                    var cll = cl;
+                                    bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
+                                    <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
+                                            style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")"
+                                            @onclick="() => PickStatus(null, cll.Id)">
+                                        <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
+                                        <span class="swset-picker-name">@cll.Name</span>
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
         </div>
     </div>
-
-    <!-- /overlay -->
-    @if (_pickerOpen)
-    {
-        <div class="swset-screen swset-picker-screen">
-            <div class="swset-topbar">
-                <button class="swset-back-btn" @onclick="ClosePicker">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                </button>
-                <div class="swset-topbar-center">
-                    <div class="swset-picker-direction-badge @(_pickingRight ? "swset-picker-badge-right" : "swset-picker-badge-left")">
-                        @if (_pickingRight)
-                        {
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                            <span>Swipe Right</span>
-                        }
-                        else
-                        {
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                            <span>Swipe Left</span>
-                        }
-                    </div>
-                </div>
-                <div style="width:38px;"></div>
-            </div>
-            <div class="swset-picker-scroll">
-                <div class="swset-picker-section-label">Status Lists</div>
-                <div class="swset-picker-grid">
-                    @foreach (var setting in UserListService.GetStatusSettings())
-                    {
-                        if (!Enum.TryParse<ListStatus>(setting.Key, out var ls)) continue;
-                        var s = ls; var col = setting.Color;
-                        bool isSel = _pickingRight ? (_rightStatus == s && _rightCustomId == null) : (_leftStatus == s && _leftCustomId == null);
-                        <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
-                                style="@(isSel ? $"border-color:{col}55;background:color-mix(in srgb,{col} 14%,transparent);color:{col};" : "")"
-                                @onclick="() => PickStatus(s, null)">
-                            <span class="swset-picker-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
-                            <span class="swset-picker-name">@setting.DisplayName</span>
-                            @if (isSel)
-                            {
-                                <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                            }
-                        </button>
-                    }
-                </div>
-                @{
-                    var sc = UserListService.GetStatusTypeLists(); var rcl = UserListService.GetRegularCustomLists();
-                }
-                @if (sc.Any())
-                {
-                    <div class="swset-picker-section-label" style="margin-top:18px;">Custom Status Lists</div>
-                    <div class="swset-picker-grid">
-                        @foreach (var cl in sc)
-                        {
-                            var cll = cl; bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
-                            <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")" style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")" @onclick="() => PickStatus(null, cll.Id)">
-                                <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                <span class="swset-picker-name">@cll.Name</span>
-                                @if (isSel)
-                                {
-                                    <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                }
-                            </button>
-                        }
-                    </div>
-                }
-                @if (rcl.Any())
-                {
-                    <div class="swset-picker-section-label" style="margin-top:18px;">Custom Lists</div>
-                    <div class="swset-picker-grid">
-                        @foreach (var cl in rcl)
-                        {
-                            var cll = cl; bool isSel = _pickingRight ? _rightCustomId == cll.Id : _leftCustomId == cll.Id;
-                            <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")" style="@(isSel ? $"border-color:{cll.Color}55;background:color-mix(in srgb,{cll.Color} 14%,transparent);color:{cll.Color};" : "")" @onclick="() => PickStatus(null, cll.Id)">
-                                <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
-                                <span class="swset-picker-name">@cll.Name</span>
-                                @if (isSel)
-                                {
-                                    <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                }
-                            </button>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    }
 }
 
 @code {
