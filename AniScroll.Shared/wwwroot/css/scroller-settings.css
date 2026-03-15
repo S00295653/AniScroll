@@ -5,7 +5,7 @@
 .swset-screen {
     position: fixed;
     inset: 0;
-    background: #08080f;
+    background: #14141f;
     z-index: 3000;
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@
     padding: 12px 16px 8px;
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
     border-bottom: 1px solid rgba(255,255,255,0.06);
-    background: rgba(8,8,15,0.92);
+    background: rgba(20,20,31,0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
@@ -90,40 +90,41 @@
     }
 }
 
-/* ── 3-column row ────────────────────────────────────── */
+/* ── 3-column row — position:relative so gradients overlay ── */
 .swset-row {
     display: flex;
     height: 100%;
     align-items: stretch;
+    position: relative; /* anchor for absolute gradient overlays */
 }
 
-/* ── Side zones — overflow visible so gradient bleeds over skeleton ── */
+/* ── Side zones ─────────────────────────────────────── */
 .swset-zone {
-    flex: 0 0 80px;
+    flex: 0 0 100px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: visible;
     z-index: 2;
+    overflow: hidden;
 }
 
 .swset-zone-left {
-    background: color-mix(in srgb, var(--zc) 12%, #08080f);
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 32%, #0a0a14) 0%, color-mix(in srgb, var(--zc) 8%, #0e0e1a) 100%);
 }
 
 .swset-zone-right {
-    background: color-mix(in srgb, var(--zc) 12%, #08080f);
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 32%, #0a0a14) 0%, color-mix(in srgb, var(--zc) 8%, #0e0e1a) 100%);
 }
 
-/* gradient: starts from zone edge, fades 160px into skeleton */
+/* gradient overlay — position:absolute on .swset-row, bleeds over skeleton */
 .swset-zone-grad {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 240px;
+    width: 180px;
     pointer-events: none;
-    z-index: 3;
+    z-index: 3; /* above skeleton (z-index:1), below zone-content (z-index:4) */
 }
 
 .swset-zone-left .swset-zone-grad {
@@ -136,7 +137,7 @@
 
 .swset-zone-content {
     position: relative;
-    z-index: 2;
+    z-index: 4;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -229,7 +230,7 @@
 }
 
 /* ══════════════════════════════════════════════════════
-   SKELETON — simple dark card, just flat bars
+   SKELETON
    ══════════════════════════════════════════════════════ */
 .swset-skeleton {
     flex: 1;
@@ -239,7 +240,6 @@
     overflow: hidden;
     background: #0d0d1a;
     z-index: 1;
-    /* no border — gradient handles the transition */
 }
 
 /* image area */
@@ -248,32 +248,18 @@
     min-height: 0;
     background: #111120;
     position: relative;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-    /* skeleton poster — centred rectangle */
-    .swset-sk-img::after {
-        content: '';
-        position: absolute;
-        top: 8%;
-        bottom: 8%;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 38%;
-        background: rgba(255,255,255,0.07);
-        border: 1px solid rgba(255,255,255,0.10);
-        border-radius: 8px;
-    }
-    /* fade bottom of image into info */
-    .swset-sk-img::before {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 45%;
-        background: linear-gradient(to bottom, transparent, #0d0d1a);
-        z-index: 1;
-    }
+
+.swset-sk-poster {
+    width: 38%;
+    aspect-ratio: 2/3;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 7px;
+}
 
 /* info area */
 .swset-sk-info {
@@ -286,7 +272,6 @@
     background: #0d0d1a;
 }
 
-/* shared skeleton bar */
 .swset-sk-line {
     display: block;
     border-radius: 4px;
@@ -362,7 +347,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    margin-bottom: 7px;
+    margin-bottom: 9px;
     flex-shrink: 0;
 }
 
@@ -373,15 +358,13 @@
 }
 
 .swset-sk-readmore {
-    align-self: center;
-    width: 55px;
+    width: 60px;
     height: 8px;
     border-radius: 4px;
-    background: rgba(96,165,250,0.20);
+    background: rgba(255,255,255,0.09);
+    align-self: center;
     flex-shrink: 0;
-    margin-top: 2px;
     animation: skIn 0.24s ease-out both;
-    font-size: 0; /* hide text */
 }
 
 /* ── Future settings ─────────────────────────────────── */
@@ -523,94 +506,20 @@
         transform: scale(0.88);
     }
 
-/* ── Poster in image area ─────────────────────────────── */
-.swset-sk-img {
-    flex: 0 0 52%;
-    min-height: 0;
-    background: #111120;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* ── True overlay gradients — position:absolute on .swset-row ── */
+.swset-grad-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 220px;
+    pointer-events: none;
+    z-index: 3; /* above skeleton z-index:1, below zone-content z-index:4 */
 }
 
-.swset-sk-poster {
-    width: 38%;
-    aspect-ratio: 2/3;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 7px;
+.swset-grad-left {
+    left: 0;
 }
 
-/* ── Read More as skeleton bar ────────────────────────── */
-.swset-sk-readmore {
-    width: 60px;
-    height: 8px;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.09);
-    align-self: flex-start;
-    flex-shrink: 0;
-    animation: skIn 0.24s ease-out both;
-    /* override any color/font from before */
-    color: transparent;
-    font-size: 0;
-}
-
-/* ── Smooth zone edges — zone bg fades toward skeleton ── */
-.swset-zone-left {
-    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 18%, #08080f) 0%, color-mix(in srgb, var(--zc) 6%, #08080f) 100%);
-}
-
-.swset-zone-right {
-    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 18%, #08080f) 0%, color-mix(in srgb, var(--zc) 6%, #08080f) 100%);
-}
-
-/* ── Read More centered ───────────────────────────────── */
-.swset-sk-readmore {
-    align-self: center !important;
-}
-
-/* ── Zone bg darker + gradient bleeds further ─────────── */
-.swset-zone-left {
-    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 22%, #050508) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
-}
-
-.swset-zone-right {
-    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 22%, #050508) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
-}
-
-/* gradient that bleeds into skeleton — wider and darker */
-.swset-zone-left .swset-zone-grad {
-    width: 200px;
-}
-
-.swset-zone-right .swset-zone-grad {
-    width: 200px;
-}
-
-/* ── Readmore centered ───────────────────────────────── */
-.swset-sk-readmore {
-    align-self: center !important;
-    margin-top: 2px;
-}
-
-/* ── Smoother, darker zone edges ─────────────────────── */
-.swset-zone-left {
-    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 28%, #04040c) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
-}
-
-.swset-zone-right {
-    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 28%, #04040c) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
-}
-/* extend gradient further into skeleton */
-.swset-zone-grad {
-    width: 200px !important;
-}
-
-.swset-zone-left .swset-zone-grad {
-    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 22%, transparent) 0%, transparent 100%) !important;
-}
-
-.swset-zone-right .swset-zone-grad {
-    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 22%, transparent) 0%, transparent 100%) !important;
+.swset-grad-right {
+    right: 0;
 }
