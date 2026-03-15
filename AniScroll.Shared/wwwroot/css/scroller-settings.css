@@ -95,7 +95,7 @@
     display: flex;
     height: 100%;
     align-items: stretch;
-    position: relative; /* anchor for absolute gradient overlays */
+    position: relative;
     background-color: #0d0d1a;
 }
 
