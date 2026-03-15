@@ -108,6 +108,7 @@
     justify-content: center;
     z-index: 2;
     overflow: hidden;
+    background: #14141f;
 }
 
 .swset-zone-left {
@@ -247,7 +248,7 @@
 .swset-sk-img {
     flex: 0 0 52%;
     min-height: 0;
-    background: #111120;
+    background: #14141f;
     position: relative;
     display: flex;
     align-items: center;
@@ -547,11 +548,6 @@
     background: linear-gradient(to left, color-mix(in srgb, var(--zc-r, #3b82f6) 45%, #0a0a14) 0%, color-mix(in srgb, var(--zc-r, #3b82f6) 18%, transparent) 45%, transparent 100%) !important;
 }
 
-/* Pass colors to the overlays via the row */
-.swset-row {
-    position: relative;
-}
-
 /* ── SMOOTH GRADIENT FIX v2 ──────────────────────────────
    Do NOT override background on .swset-grad-left/right
    (inline style already has the correct color via @lc/@rc).
@@ -570,10 +566,6 @@
 .swset-skeleton,
 .swset-sk-info {
     background: #14141f !important;
-}
-
-.swset-sk-img {
-    background: #1a1a2a !important;
 }
 
 /* ══════════════════════════════════════════════════════
