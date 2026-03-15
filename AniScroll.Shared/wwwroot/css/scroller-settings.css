@@ -523,3 +523,41 @@
 .swset-grad-right {
     right: 0;
 }
+
+/* ── SMOOTH GRADIENT FIX ─────────────────────────────────
+   Zones have no solid bg — only the absolute overlay gradient
+   gives color, so there's zero hard edge.
+   ──────────────────────────────────────────────────────── */
+.swset-zone-left,
+.swset-zone-right {
+    background: transparent !important;
+}
+
+/* Wider, softer gradient — 280px, slow falloff */
+.swset-grad-overlay {
+    width: 280px !important;
+}
+
+.swset-grad-left {
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc-l, #a855f7) 45%, #0a0a14) 0%, color-mix(in srgb, var(--zc-l, #a855f7) 18%, transparent) 45%, transparent 100%) !important;
+}
+
+.swset-grad-right {
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc-r, #3b82f6) 45%, #0a0a14) 0%, color-mix(in srgb, var(--zc-r, #3b82f6) 18%, transparent) 45%, transparent 100%) !important;
+}
+
+/* Pass colors to the overlays via the row */
+.swset-row {
+    position: relative;
+}
+
+/* ── SMOOTH GRADIENT FIX v2 ──────────────────────────────
+   Do NOT override background on .swset-grad-left/right
+   (inline style already has the correct color via @lc/@rc).
+   Only set width and remove zone solid bg.
+   ──────────────────────────────────────────────────────── */
+.swset-grad-left,
+.swset-grad-right {
+    background: unset; /* let inline style win */
+    width: 280px !important;
+}
