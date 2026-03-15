@@ -70,7 +70,7 @@
     letter-spacing: -0.01em;
 }
 
-/* ── Section block — 55% ────────────────────────────── */
+/* ── Section block ───────────────────────────────────── */
 .swset-section-block {
     flex: 0 0 60%;
     min-height: 0;
@@ -90,7 +90,7 @@
     }
 }
 
-/* ── 3-column row — position:relative so gradients overlay ── */
+/* ── 3-column row ────────────────────────────────────── */
 .swset-row {
     display: flex;
     height: 100%;
@@ -99,25 +99,25 @@
     background-color: #0d0d1a;
 }
 
-/* ── Side zones ─────────────────────────────────────── */
+/* ── Side zones — overflow visible so badges bleed inward ── */
 .swset-zone {
     flex: 0 0 110px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: visible; /* badges allowed to overflow toward skeleton */
     background: #14141f;
 }
 
-/* gradient overlay — position:absolute on .swset-row, bleeds over skeleton */
+/* gradient overlay */
 .swset-zone-grad {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 180px;
     pointer-events: none;
-    z-index: 3; /* above skeleton (z-index:1), below zone-content (z-index:4) */
+    z-index: 3;
 }
 
 .swset-zone-left .swset-zone-grad {
@@ -128,22 +128,25 @@
     right: 0;
 }
 
+/* ── Zone content — anchored to the INNER edge of each zone
+     so badges always extend toward the skeleton, never off-screen ── */
 .swset-zone-content {
     position: relative;
     z-index: 4;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 10px;
     padding: 8px 6px;
+    /* left zone: push content toward right (inner) edge */
+    align-items: flex-end;
 }
 
+/* right zone: push content toward left (inner) edge */
 .swset-zone-content-r {
-    align-items: center;
+    align-items: flex-start;
 }
 
-/* ── Zone hint badge (list name) — enlarged ─────────── */
+/* ── Zone hint badge ─────────────────────────────────── */
 .swset-zone-hint {
     display: flex;
     align-items: center;
@@ -159,8 +162,18 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     white-space: nowrap;
+    /* cap total badge width — text will truncate before this */
+    max-width: 155px;
     animation: zoneInL 0.28s ease-out 0.10s both;
 }
+
+    /* truncate long list names with ellipsis */
+    .swset-zone-hint span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100px;
+    }
 
 .swset-zone-hint-r {
     flex-direction: row-reverse;
@@ -191,7 +204,7 @@
     }
 }
 
-/* ── Zone edit button — proportionally enlarged ─────── */
+/* ── Zone edit button ────────────────────────────────── */
 .swset-zone-edit {
     display: flex;
     align-items: center;
@@ -227,56 +240,21 @@
 /* ══════════════════════════════════════════════════════
    SKELETON
    ══════════════════════════════════════════════════════ */
-.swset-skeleton {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #0d0d1a;
-    z-index: 1;
+
+/* ── Shimmer keyframe — sweeps a highlight left→right ── */
+/* Uses two background-layers: sweep gradient + solid base.
+   background-position animates only the sweep layer (first value). */
+@keyframes skShimmer {
+    0% {
+        background-position: 130% 0, 0 0;
+    }
+
+    100% {
+        background-position: -30% 0, 0 0;
+    }
 }
 
-/* image area */
-.swset-sk-img {
-    flex: 0 0 52%;
-    min-height: 0;
-    background: #14141f;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 30px;
-}
-
-.swset-sk-poster {
-    width: 130px;
-    height: 200px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 7px;
-    margin-top: 40px;
-}
-
-/* info area */
-.swset-sk-info {
-    flex: 1;
-    min-height: 0;
-    padding: 12px 18px 8px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #0d0d1a;
-}
-
-.swset-sk-line {
-    display: block;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.09);
-    flex-shrink: 0;
-    animation: skIn 0.24s ease-out both;
-}
-
+/* ── Appear keyframe ─────────────────────────────────── */
 @keyframes skIn {
     from {
         opacity: 0;
@@ -288,6 +266,71 @@
         opacity: 1;
         transform: scaleX(1);
     }
+}
+
+.swset-skeleton {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* image area */
+.swset-sk-img {
+    flex: 0 0 52%;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+/* ── Poster — own shimmer with slight scale-in ──────── */
+.swset-sk-poster {
+    width: 130px;
+    height: 200px;
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 7px;
+    margin-top: 40px;
+    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.07);
+    background-size: 300% 100%, 100% 100%;
+    animation: skPosterIn 0.28s ease-out 0.04s both, skShimmer 2.4s 0.6s infinite;
+}
+
+@keyframes skPosterIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* info area */
+.swset-sk-info {
+    flex: 1;
+    min-height: 0;
+    padding: 12px 18px 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Base skeleton line ──────────────────────────────── */
+.swset-sk-line {
+    display: block;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.09);
+    background-size: 300% 100%, 100% 100%;
+    /* skIn: appear; skShimmer: sweep — different props, no conflict */
+    animation: skIn 0.24s ease-out both, skShimmer 2s 0.4s infinite;
 }
 
 .swset-sk-title {
@@ -303,6 +346,7 @@
     opacity: 0.45;
 }
 
+/* ── Genre pills ─────────────────────────────────────── */
 .swset-sk-genres {
     display: flex;
     gap: 5px;
@@ -314,10 +358,13 @@
 .swset-sk-genre {
     height: 6px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.08);
     flex-shrink: 0;
+    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.08);
+    background-size: 300% 100%, 100% 100%;
+    animation: skShimmer 2s 0.55s infinite;
 }
 
+/* ── Stat badges ─────────────────────────────────────── */
 .swset-sk-stats {
     display: flex;
     gap: 6px;
@@ -326,20 +373,24 @@
     animation: skIn 0.24s ease-out both;
 }
 
-.swset-sk-badge-score {
-    width: 44px;
+.swset-sk-badge-score,
+.swset-sk-badge-ep {
     height: 18px;
     border-radius: 6px;
-    background: rgba(255,255,255,0.07);
+    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.07);
+    background-size: 300% 100%, 100% 100%;
+    animation: skShimmer 2s 0.7s infinite;
+}
+
+.swset-sk-badge-score {
+    width: 44px;
 }
 
 .swset-sk-badge-ep {
     width: 52px;
-    height: 18px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.07);
 }
 
+/* ── Description lines ───────────────────────────────── */
 .swset-sk-desc-wrap {
     display: flex;
     flex-direction: column;
@@ -352,16 +403,19 @@
     height: 5px;
     border-radius: 3px;
     opacity: 0.28;
+    /* desc lines share the skShimmer via .swset-sk-line */
 }
 
+/* ── Read more stub ──────────────────────────────────── */
 .swset-sk-readmore {
     width: 60px;
     height: 8px;
     border-radius: 4px;
-    background: rgba(255,255,255,0.09);
+    background: linear-gradient( 105deg, rgba(255,255,255,0.00) 35%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.00) 65% ), rgba(255,255,255,0.09);
+    background-size: 300% 100%, 100% 100%;
     align-self: center;
     flex-shrink: 0;
-    animation: skIn 0.24s ease-out both;
+    animation: skIn 0.24s ease-out both, skShimmer 2s 0.85s infinite;
 }
 
 /* ── Future settings ─────────────────────────────────── */
@@ -504,14 +558,14 @@
         transform: scale(0.88);
     }
 
-/* ── True overlay gradients — position:absolute on .swset-row ── */
+/* ── Gradient overlays — background owned by Razor inline style ── */
 .swset-grad-overlay {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 280px;
     pointer-events: none;
-    z-index: 3; /* above skeleton z-index:1, below zone-content z-index:4 */
+    z-index: 3;
 }
 
 .swset-grad-left {
@@ -522,20 +576,15 @@
     right: 0;
 }
 
-/* ── GRADIENT FIX ────────────────────────────────────────
-   background comes entirely from Razor inline style.
-   No !important here — inline style always wins.
-   ──────────────────────────────────────────────────────── */
 .swset-grad-left,
 .swset-grad-right {
-    background: unset; /* inline style from Razor owns the gradient */
+    background: unset;
 }
+/* inline style from Razor wins */
 
-/* ── HARD EDGE FIX ───────────────────────────────────────
-   Skeleton + image area + info area all use the same base
-   color as the screen so zones bleed seamlessly into it.
-   ──────────────────────────────────────────────────────── */
+/* ── HARD EDGE FIX ───────────────────────────────────── */
 .swset-skeleton,
+.swset-sk-img,
 .swset-sk-info {
     background: #14141f !important;
 }
@@ -544,7 +593,6 @@
    RESPONSIVE — popup mode on desktop
    ══════════════════════════════════════════════════════ */
 
-/* Overlay backdrop (mobile: invisible, desktop: dimmed) */
 .swset-overlay {
     position: fixed;
     inset: 0;
@@ -554,11 +602,10 @@
     justify-content: center;
 }
 
-/* Mobile default — full screen, no overlay bg */
 @media (max-width: 639px) {
     .swset-overlay {
         background: transparent;
-        pointer-events: none; /* let clicks through on overlay itself */
+        pointer-events: none;
     }
 
     .swset-screen {
@@ -573,7 +620,6 @@
     }
 }
 
-/* Desktop — centered popup like anime detail */
 @media (min-width: 640px) {
     .swset-overlay {
         background: rgba(0,0,0,0.65);
@@ -618,13 +664,11 @@
         }
     }
 
-    /* On desktop, topbar padding doesn't need safe-area */
     .swset-topbar {
         padding-top: 20px;
         border-radius: 18px 18px 0 0;
     }
 
-    /* Picker screen also gets rounded corners on desktop */
     .swset-picker-screen {
         border-radius: 18px;
         position: absolute;
