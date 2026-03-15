@@ -522,3 +522,45 @@
     .swset-open-btn:active {
         transform: scale(0.88);
     }
+
+/* ── Poster in image area ─────────────────────────────── */
+.swset-sk-img {
+    flex: 0 0 52%;
+    min-height: 0;
+    background: #111120;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swset-sk-poster {
+    width: 38%;
+    aspect-ratio: 2/3;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 7px;
+}
+
+/* ── Read More as skeleton bar ────────────────────────── */
+.swset-sk-readmore {
+    width: 60px;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.09);
+    align-self: flex-start;
+    flex-shrink: 0;
+    animation: skIn 0.24s ease-out both;
+    /* override any color/font from before */
+    color: transparent;
+    font-size: 0;
+}
+
+/* ── Smooth zone edges — zone bg fades toward skeleton ── */
+.swset-zone-left {
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 18%, #08080f) 0%, color-mix(in srgb, var(--zc) 6%, #08080f) 100%);
+}
+
+.swset-zone-right {
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 18%, #08080f) 0%, color-mix(in srgb, var(--zc) 6%, #08080f) 100%);
+}
