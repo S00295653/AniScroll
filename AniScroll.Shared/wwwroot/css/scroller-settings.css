@@ -106,7 +106,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2;
     overflow: hidden;
     background: #14141f;
 }
@@ -206,7 +205,7 @@
     padding: 5px 10px;
     border-radius: 8px;
     border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
-    background: color-mix(in srgb, var(--zc) 16%, rgba(0,0,0,0.5));
+    background: rgba(0,0,0,0.55);
     color: var(--zc);
     font-size: 10px;
     font-weight: 700;
@@ -256,8 +255,8 @@
 }
 
 .swset-sk-poster {
-    width: 38%;
-    aspect-ratio: 2/3;
+    width: 120px;
+    height: 180px;
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: 7px;
@@ -524,15 +523,6 @@
 
 .swset-grad-right {
     right: 0;
-}
-
-/* ── SMOOTH GRADIENT FIX ─────────────────────────────────
-   Zones have no solid bg — only the absolute overlay gradient
-   gives color, so there's zero hard edge.
-   ──────────────────────────────────────────────────────── */
-.swset-zone-left,
-.swset-zone-right {
-    background: transparent !important;
 }
 
 /* Wider, softer gradient — 280px, slow falloff */
