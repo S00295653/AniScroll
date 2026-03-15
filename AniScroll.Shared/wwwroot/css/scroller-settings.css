@@ -564,3 +564,26 @@
 .swset-zone-right {
     background: linear-gradient(to left, color-mix(in srgb, var(--zc) 18%, #08080f) 0%, color-mix(in srgb, var(--zc) 6%, #08080f) 100%);
 }
+
+/* ── Read More centered ───────────────────────────────── */
+.swset-sk-readmore {
+    align-self: center !important;
+}
+
+/* ── Zone bg darker + gradient bleeds further ─────────── */
+.swset-zone-left {
+    background: linear-gradient(to right, color-mix(in srgb, var(--zc) 22%, #050508) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
+}
+
+.swset-zone-right {
+    background: linear-gradient(to left, color-mix(in srgb, var(--zc) 22%, #050508) 0%, color-mix(in srgb, var(--zc) 4%, #08080f) 100%) !important;
+}
+
+/* gradient that bleeds into skeleton — wider and darker */
+.swset-zone-left .swset-zone-grad {
+    width: 200px;
+}
+
+.swset-zone-right .swset-zone-grad {
+    width: 200px;
+}
