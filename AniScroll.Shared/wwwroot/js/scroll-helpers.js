@@ -552,6 +552,9 @@ window.unregisterEscapeKey = function () {
     let hasMoved = false;
     let suppressNextClick = false;
 
+    let _canGoBack = true;
+    let _canGoForward = true;
+
     // RAF throttle
     let _rafId = 0;
 
@@ -725,6 +728,27 @@ window.unregisterEscapeKey = function () {
             return;
         }
 
+        if (axis === 'vertical') {
+            const h = document.querySelector('.main-scroll')?.clientHeight || window.innerHeight;
+            const threshold = h * 0.06;
+            const goForward = curY < 0 && _canGoForward;
+            const goBack = curY > 0 && _canGoBack;
+
+            if (Math.abs(curY) >= threshold && (goForward || goBack)) {
+                const target = goForward ? -h : h;
+                _cardBaseTransforms.forEach(({ el, baseY }) => {
+                    el.style.transition = 'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)';
+                    el.style.transform = `translateY(${baseY + target}px)`;
+                });
+                // Clear inline transition once animation completes
+                setTimeout(() => {
+                    _cardBaseTransforms.forEach(({ el }) => { el.style.transition = 'none'; });
+                }, 320);
+            } else {
+                window.snapCardsBack();
+            }
+        }
+
         // ── VERTICAL + fallback ───────────────────────────────────────────────
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
@@ -767,20 +791,21 @@ window.unregisterEscapeKey = function () {
 
     window.initCardDrag = function (dotNetRef) { _dotNet = dotNetRef; };
 
-    window.startCardDrag = function (x, y) {
+    window.startCardDrag = function (x, y, canGoBack, canGoForward) {
+        _canGoBack = canGoBack ?? true;
+        _canGoForward = canGoForward ?? true;
+
         isDragging = true;
         startX = x; startY = y;
         curX = 0; curY = 0;
         axis = 'none'; hasMoved = false;
 
-        // Snapshot every card's current translateY for vertical neighbour-peek
         _cardBaseTransforms = [];
         document.querySelectorAll('.anime-card').forEach(card => {
             const m = card.style.transform.match(/translateY\(([-\d.]+)px\)/);
             _cardBaseTransforms.push({ el: card, baseY: m ? parseFloat(m[1]) : 0 });
         });
 
-        // Cache active card children once — paint() never querySelector mid-drag
         _cached = { fr: null, fl: null, hr: null, hl: null, img: null };
         const c = activeCard();
         if (c) {
@@ -789,10 +814,6 @@ window.unregisterEscapeKey = function () {
             _cached.hr = c.querySelector('.swipe-hint-right');
             _cached.hl = c.querySelector('.swipe-hint-left');
             _cached.img = c.querySelector('.anime-image');
-
-            // Disable box-shadow + backdrop-filter for the duration of the drag.
-            // These are the two most expensive GPU ops on mobile — removing them
-            // during motion cuts rasterisation cost to near zero.
             c.classList.add('dragging');
         }
     };
@@ -803,11 +824,11 @@ window.unregisterEscapeKey = function () {
 
     window.snapCardsBack = function () {
         _cardBaseTransforms.forEach(item => {
-            item.el.style.transition = 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            item.el.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
             item.el.style.transform = `translateY(${item.baseY}px)`;
         });
         setTimeout(() => {
-            _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
+            _cardBaseTransforms.forEach(item => { item.el.style.transition = 'none'; });
         }, 340);
     };
 

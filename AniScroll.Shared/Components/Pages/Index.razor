@@ -626,7 +626,8 @@
         if (index != currentIndex) return;
         isDraggingCard = true;
         isTransitioning = false;
-        _ = JS.InvokeVoidAsync("startCardDrag", e.ClientX, e.ClientY);
+        _ = JS.InvokeVoidAsync("startCardDrag", e.ClientX, e.ClientY,
+            currentIndex > 0, currentIndex < animes.Count - 1);
     }
 
     private Task HandleCardTouchStart(TouchEventArgs e, int index)
@@ -634,7 +635,9 @@
         if (index != currentIndex || e.Touches.Length == 0) return Task.CompletedTask;
         isDraggingCard = true;
         isTransitioning = false;
-        _ = JS.InvokeVoidAsync("startCardDrag", e.Touches[0].ClientX, e.Touches[0].ClientY);
+        _ = JS.InvokeVoidAsync("startCardDrag",
+            e.Touches[0].ClientX, e.Touches[0].ClientY,
+            currentIndex > 0, currentIndex < animes.Count - 1);
         return Task.CompletedTask;
     }
 
@@ -659,6 +662,7 @@
     private async Task FinishSwipe()
     {
         double threshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
+        bool indexChanged = false;
 
         if (Math.Abs(currentDragOffset) >= threshold)
         {
@@ -668,14 +672,17 @@
                 {
                     UpdateWindowEntered(currentIndex + 1);
                     currentIndex++;
+                    indexChanged = true;
                 }
                 else if (!AniListService.IsRateLimited())
                 {
+                    // Last card: load more (JS already snapped back via _canGoForward=false)
                     await LoadAnimes(60, isBackgroundLoad: false);
                     if (animes.Count > currentIndex + 1)
                     {
                         UpdateWindowEntered(currentIndex + 1);
                         currentIndex++;
+                        indexChanged = true;
                     }
                 }
             }
@@ -683,25 +690,22 @@
             {
                 UpdateWindowEntered(currentIndex - 1);
                 currentIndex--;
+                indexChanged = true;
             }
-            else if (currentDragOffset > 0 && currentIndex == 0)
-            {
-                _ = JS.InvokeVoidAsync("snapCardsBack");
-            }
-        }
-        else
-        {
-            _ = JS.InvokeVoidAsync("snapCardsBack");
+            // currentIndex == 0 + swipe down → JS already snapped back
         }
 
-        isTransitioning = true; currentDragOffset = 0; currentDragXOffset = 0;
+        currentDragOffset = 0; currentDragXOffset = 0;
         _swipeAxis = SwipeAxis.None;
-        StateHasChanged();
 
-        await Task.Delay(250);
+        // Let JS animation finish (240 ms) before Blazor patches the DOM.
+        // Without this delay, the re-render would override the in-flight CSS transition.
+        if (indexChanged) await Task.Delay(220);
+
         isTransitioning = false;
         hasMoved = false;
         _windowEnteredIndices.Clear();
+        StateHasChanged();
     }
 
     private async Task FinishHorizontalSwipe()
