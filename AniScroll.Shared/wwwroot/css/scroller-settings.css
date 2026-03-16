@@ -656,7 +656,7 @@
 
     /* ── Zones plus étroites sur mobile ── */
     .swset-zone {
-        flex: 0 0 60px; /* était 110px */
+        flex: 0 0 60px;
     }
 
     .swset-zone-content {
