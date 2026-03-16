@@ -635,12 +635,12 @@
 @media (max-width: 639px) {
 
     .swset-section-block {
-        flex: 0 0 40%;
+        flex: 0 0 50%;
     }
 
-    .swset-overlay {
-        background: transparent;
-        pointer-events: none;
+    .swset-sk-poster {
+        width: 120px;
+        height: 180px;
     }
 
     .swset-screen {
@@ -656,7 +656,7 @@
 
     /* ── Zones plus étroites sur mobile ── */
     .swset-zone {
-        flex: 0 0 70px; /* était 110px */
+        flex: 0 0 60px; /* était 110px */
     }
 
     .swset-zone-content {
