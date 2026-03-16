@@ -634,6 +634,14 @@
 
 @media (max-width: 639px) {
 
+    .swset-row {
+        overflow: hidden;
+    }
+
+    .swset-skeleton {
+        min-width: 0;
+    }
+
     .swset-section-block {
         flex: 0 0 50%;
     }
