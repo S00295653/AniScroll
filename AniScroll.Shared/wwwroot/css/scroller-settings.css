@@ -643,6 +643,14 @@
     }
 
     .swset-section-block {
+        overflow: hidden; /* filet de sécurité */
+    }
+
+    .swset-zone-content-r {
+        align-items: flex-end; /* ancre à droite → déborde vers la gauche */
+    }
+
+    .swset-section-block {
         flex: 0 0 50%;
     }
 
