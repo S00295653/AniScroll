@@ -34,7 +34,7 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(6px);
+    /*filter: blur(6px);*/
     opacity: 0.4;
     overflow: hidden;
     will-change: transform;
