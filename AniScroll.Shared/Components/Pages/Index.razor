@@ -590,7 +590,7 @@
         if (newlyCreatedCards.Contains(index)) return "no-transition";
         if (_windowEnteredIndices.Contains(index)) return "no-transition";
         if (isDraggingCard) return "no-transition";
-        if (isTransitioning) return "with-transition"; // horizontal snap-back only
+        if (isTransitioning && _swipeAxis != SwipeAxis.Horizontal) return "with-transition";
         return "no-transition";
     }
 
@@ -649,84 +649,33 @@
 
     private async Task FinishSwipe()
     {
-        const int ANIM_MS = 260;   // must match animateCardsVertical call below
-        const int ANIM_WAIT = 295;   // ANIM_MS + small buffer
-
         double threshold = CARD_HEIGHT * SWIPE_VALIDATION_PERCENT;
 
         if (Math.Abs(currentDragOffset) >= threshold)
         {
-            // ── Swipe UP → next card ─────────────────────────────────────────
             if (currentDragOffset < 0)
             {
                 if (currentIndex < animes.Count - 1)
                 {
-                    // Fire JS animation immediately — no Blazor overhead in the hot path
-                    _ = JS.InvokeVoidAsync("animateCardsVertical", 1, CARD_HEIGHT, ANIM_MS);
-
                     UpdateWindowEntered(currentIndex + 1);
                     currentIndex++;
-
-                    currentDragOffset = 0; currentDragXOffset = 0;
-                    _swipeAxis = SwipeAxis.None;
-
-                    await Task.Delay(ANIM_WAIT);     // JS animation running during this wait
-
-                    isTransitioning = false;
-                    hasMoved = false;
-                    StateHasChanged();               // silent DOM sync — cards already at destination
-                    _windowEnteredIndices.Clear();
-                    return;
                 }
                 else if (!AniListService.IsRateLimited())
                 {
-                    // ── Load-more path (rare) — snap back, load, then CSS transition ──
-                    _ = JS.InvokeVoidAsync("snapCardsBack");
-                    currentDragOffset = 0; currentDragXOffset = 0;
-                    _swipeAxis = SwipeAxis.None; isTransitioning = false;
-                    StateHasChanged();
-
                     await LoadAnimes(60, isBackgroundLoad: false);
-
                     if (animes.Count > currentIndex + 1)
                     {
                         UpdateWindowEntered(currentIndex + 1);
                         currentIndex++;
-                        isTransitioning = true;
-                        StateHasChanged();
-                        await Task.Delay(250);
-                        isTransitioning = false;
                     }
-
-                    hasMoved = false;
-                    _windowEnteredIndices.Clear();
-                    return;
-                }
-                else
-                {
-                    _ = JS.InvokeVoidAsync("snapCardsBack");
                 }
             }
-            // ── Swipe DOWN → prev card ───────────────────────────────────────
             else if (currentDragOffset > 0 && currentIndex > 0)
             {
-                _ = JS.InvokeVoidAsync("animateCardsVertical", -1, CARD_HEIGHT, ANIM_MS);
-
                 UpdateWindowEntered(currentIndex - 1);
                 currentIndex--;
-
-                currentDragOffset = 0; currentDragXOffset = 0;
-                _swipeAxis = SwipeAxis.None;
-
-                await Task.Delay(ANIM_WAIT);
-
-                isTransitioning = false;
-                hasMoved = false;
-                StateHasChanged();
-                _windowEnteredIndices.Clear();
-                return;
             }
-            else
+            else if (currentDragOffset > 0 && currentIndex == 0)
             {
                 _ = JS.InvokeVoidAsync("snapCardsBack");
             }
@@ -736,13 +685,14 @@
             _ = JS.InvokeVoidAsync("snapCardsBack");
         }
 
-        // ── Snap-back / no-move fallthrough ───────────────────────────────────
-        isTransitioning = false;
-        currentDragOffset = 0; currentDragXOffset = 0;
+        isTransitioning = true; currentDragOffset = 0; currentDragXOffset = 0;
         _swipeAxis = SwipeAxis.None;
-        hasMoved = false;
-        _windowEnteredIndices.Clear();
         StateHasChanged();
+
+        await Task.Delay(250);
+        isTransitioning = false;
+        hasMoved = false;
+        _windowEnteredIndices.Clear();   // ← safe to clear; transition is done
     }
 
     private async Task FinishHorizontalSwipe()

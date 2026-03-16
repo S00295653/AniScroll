@@ -26,13 +26,6 @@
     }
 
 /* ========== BACKGROUND IMAGE ========== */
-/*
- * GPU-isolated blur: the element is promoted to its own compositor layer via
- * will-change + translateZ(0). The blur texture is rasterised ONCE by the GPU
- * and composited cheaply on every subsequent frame — no per-frame repaint.
- * contain:paint prevents the blur from triggering repaints in sibling elements.
- * scale(1.13) hides the soft blur edges (blur(5px) ≈ 10-12px soft fringe).
- */
 .bg-image {
     position: absolute;
     inset: 0;
@@ -41,11 +34,11 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(5px);
+    /*filter: blur(6px);*/
     opacity: 0.4;
     overflow: hidden;
     will-change: transform;
-    transform: translateZ(0) scale(1.13);
+    transform: translateZ(0) scale(1.1);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     isolation: isolate;
@@ -282,8 +275,8 @@
     border-radius: 16px;
     pointer-events: none;
     white-space: nowrap;
-    background: transparent;
-    backdrop-filter: blur(8px);
+    background: transparent; /* ← supprime le fond sombre */
+    backdrop-filter: blur(8px); /* ← juste le blur */
     -webkit-backdrop-filter: blur(8px);
 }
 
