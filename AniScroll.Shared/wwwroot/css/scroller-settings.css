@@ -649,6 +649,46 @@
         max-width: none;
         max-height: none;
     }
+
+    /* ── Zones plus étroites sur mobile ── */
+    .swset-zone {
+        flex: 0 0 80px; /* était 110px */
+    }
+
+    .swset-zone-content {
+        gap: 7px;
+        padding: 6px 4px;
+    }
+
+    .swset-zone-hint {
+        padding: 6px 9px;
+        font-size: 10px;
+        gap: 4px;
+        border-radius: 9px;
+        max-width: 110px;
+    }
+
+        .swset-zone-hint svg {
+            width: 11px;
+            height: 11px;
+            flex-shrink: 0;
+        }
+
+        .swset-zone-hint span {
+            max-width: 68px;
+        }
+
+    .swset-zone-edit {
+        padding: 5px 9px;
+        font-size: 10px;
+        gap: 4px;
+        border-radius: 8px;
+    }
+
+        .swset-zone-edit svg {
+            width: 9px;
+            height: 9px;
+        }
 }
 
 @media (min-width: 640px) {
