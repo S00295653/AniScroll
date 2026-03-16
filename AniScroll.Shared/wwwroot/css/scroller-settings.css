@@ -279,7 +279,7 @@
 
 .swset-skeleton {
     flex: 1;
-    min-width: 180px;
+    min-width: 160px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
