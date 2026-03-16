@@ -182,7 +182,6 @@
     font-size: 12px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
     background: rgba(0,0,0,0.55);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -657,7 +656,7 @@
 
     /* ── Zones plus étroites sur mobile ── */
     .swset-zone {
-        flex: 0 0 80px; /* était 110px */
+        flex: 0 0 70px; /* était 110px */
     }
 
     .swset-zone-content {
