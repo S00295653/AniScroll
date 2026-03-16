@@ -100,7 +100,7 @@
 /* ── Section block ───────────────────────────────────── */
 .swset-section-block {
     flex: 0 0 60%;
-    min-height: 0;
+    min-height: 200px; /* ← never shrink the preview section below 200px */
     border-bottom: 1px solid rgba(255,255,255,0.06);
     animation: swsetUp 0.22s ease-out 0.05s both;
 }
@@ -128,14 +128,15 @@
 
 /* ── Side zones ─────────────────────────────────────── */
 .swset-zone {
-    flex: 0 1 110px;
-    min-width: 60px;
+    flex: 0 0 110px;
     position: relative;
     display: flex;
-    align-items: center; /* vertically centre content */
+    align-items: center;
     justify-content: center;
     overflow: visible;
     background: #14141f;
+    /* Enable container queries so inner elements can react to the zone's size */
+    container-type: size;
 }
 
 .swset-zone-grad {
@@ -161,15 +162,15 @@
     z-index: 4;
     display: flex;
     flex-direction: column;
-    align-items: flex-end; /* left zone: towards skeleton */
-    justify-content: center; /* vertical centre within zone */
+    align-items: flex-end;
+    justify-content: center;
     gap: 10px;
     padding: 8px 6px;
-    height: 100%; /* fill zone height so justify-content works */
+    height: 100%;
 }
 
 .swset-zone-content-r {
-    align-items: flex-start; /* right zone: towards skeleton */
+    align-items: flex-start;
 }
 
 /* ── Zone hint badge ─────────────────────────────────── */
@@ -190,6 +191,7 @@
     white-space: nowrap;
     max-width: 155px;
     animation: zoneInL 0.28s ease-out 0.10s both;
+    transition: font-size 0.15s, padding 0.15s, gap 0.15s;
 }
 
     .swset-zone-hint span {
@@ -246,7 +248,7 @@
     white-space: nowrap;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    transition: background 0.14s, transform 0.11s;
+    transition: background 0.14s, transform 0.11s, font-size 0.15s, padding 0.15s, gap 0.15s;
     animation: zoneInL 0.28s ease-out 0.18s both;
 }
 
@@ -260,6 +262,86 @@
 
 .swset-zone-edit:hover {
     background: color-mix(in srgb, var(--zc) 28%, rgba(0,0,0,0.45));
+}
+
+/* ══════════════════════════════════════════════════════
+   ZONE CONTAINER QUERIES — scale elements when box shrinks
+   ══════════════════════════════════════════════════════ */
+
+/* Medium compression — zone height < 220px */
+@container (max-height: 220px) {
+    .swset-zone-content {
+        gap: 7px;
+        padding: 6px 5px;
+    }
+
+    .swset-zone-hint {
+        font-size: 10px;
+        padding: 7px 10px;
+        gap: 5px;
+        border-radius: 9px;
+    }
+
+    .swset-zone-edit {
+        font-size: 10px;
+        padding: 5px 10px;
+        gap: 4px;
+        border-radius: 8px;
+    }
+}
+
+/* Strong compression — zone height < 170px */
+@container (max-height: 170px) {
+    .swset-zone-content {
+        gap: 5px;
+        padding: 4px 4px;
+    }
+
+    .swset-zone-hint {
+        font-size: 9px;
+        padding: 5px 8px;
+        gap: 4px;
+        border-radius: 7px;
+        max-width: 120px;
+    }
+
+        .swset-zone-hint span {
+            max-width: 70px;
+        }
+
+    .swset-zone-edit {
+        font-size: 9px;
+        padding: 4px 8px;
+        gap: 3px;
+        border-radius: 7px;
+    }
+}
+
+/* Extreme compression — zone height < 130px — hide label text, keep icons only */
+@container (max-height: 130px) {
+    .swset-zone-content {
+        gap: 4px;
+        padding: 3px;
+    }
+
+    .swset-zone-hint {
+        font-size: 8px;
+        padding: 4px 7px;
+        gap: 3px;
+        border-radius: 6px;
+        max-width: 100px;
+    }
+
+        .swset-zone-hint span {
+            max-width: 55px;
+        }
+
+    .swset-zone-edit {
+        font-size: 8px;
+        padding: 3px 7px;
+        gap: 2px;
+        border-radius: 6px;
+    }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -280,7 +362,7 @@
 }
 
 .swset-skeleton {
-    flex: 1 0 0;
+    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
