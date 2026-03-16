@@ -214,5 +214,28 @@ namespace AniScroll.Shared.Services
             if (e.CustomListIds.Remove(customListId))
                 OnChanged?.Invoke();
         }
+
+        public void AddOrUpdateToCustomList(AnimeCard anime, string customListId)
+        {
+            if (!_entries.TryGetValue(anime.Id, out var entry))
+            {
+                entry = new UserListEntry
+                {
+                    Anime = anime,
+                    AddedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _entries[anime.Id] = entry;
+            }
+            else
+            {
+                entry.UpdatedAt = DateTime.UtcNow;
+            }
+
+            if (!entry.CustomListIds.Contains(customListId))
+                entry.CustomListIds.Add(customListId);
+
+            OnChanged?.Invoke();
+        }
     }
 }
