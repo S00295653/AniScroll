@@ -639,8 +639,8 @@
     }
 
     .swset-sk-poster {
-        width: 120px;
-        height: 180px;
+        width: 120px !important;
+        height: 180px !important;
     }
 
     .swset-screen {
@@ -656,7 +656,7 @@
 
     /* ── Zones plus étroites sur mobile ── */
     .swset-zone {
-        flex: 0 0 60px;
+        flex: 0 0 60px !important;
     }
 
     .swset-zone-content {
