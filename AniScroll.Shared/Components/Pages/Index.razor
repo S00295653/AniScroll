@@ -42,24 +42,28 @@
                     @* ── Swipe feather overlays (active card only) ── *@
                     @if (isVisible)
                     {
-                        @* Dynamic colours that follow the chosen swipe statuses *@
-                        <div class="swipe-feather swipe-feather-right" style="@GetFeatherStyle(_swipeSettings.RightStatus, true)"></div>
-                        <div class="swipe-feather swipe-feather-left" style="@GetFeatherStyle(_swipeSettings.LeftStatus, false)"></div>
+                        <div class="swipe-feather swipe-feather-right" style="@GetFeatherStyle(true)"></div>
+                        <div class="swipe-feather swipe-feather-left" style="@GetFeatherStyle(false)"></div>
                     }
 
                     <div class="content-wrapper">
                         <div class="image-section">
                             @if (isVisible)
                             {
-                                @* Hints — label & icon driven by swipe settings *@
                                 <div class="swipe-hint swipe-hint-right" style="opacity:0">
-                                    @((MarkupString)GetSwipeHintIcon(_swipeSettings.RightStatus))
-                                    <span>@UiHelpers.GetStatusLabel(_swipeSettings.RightStatus)</span>
+                                    @if (_swipeSettings.RightCustomId == null)
+                                    {
+                                        @((MarkupString)GetSwipeHintIcon(_swipeSettings.RightStatus))
+                                    }
+                                    <span>@GetSwipeLabel(true)</span>
                                 </div>
 
                                 <div class="swipe-hint swipe-hint-left" style="opacity:0">
-                                    @((MarkupString)GetSwipeHintIcon(_swipeSettings.LeftStatus))
-                                    <span>@UiHelpers.GetStatusLabel(_swipeSettings.LeftStatus)</span>
+                                    @if (_swipeSettings.LeftCustomId == null)
+                                    {
+                                        @((MarkupString)GetSwipeHintIcon(_swipeSettings.LeftStatus))
+                                    }
+                                    <span>@GetSwipeLabel(false)</span>
                                 </div>
                             }
 
@@ -349,14 +353,34 @@
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Builds the inline style for a swipe feather overlay.
-    /// The gradient colour is derived from the chosen list status.
-    /// </summary>
-    private string GetFeatherStyle(ListStatus status, bool isRight)
+    // ─── Swipe colour/label helpers ───────────────────────────────────────────
+
+    private string GetSwipeColor(bool isRight)
     {
-        var c = UiHelpers.GetStatusColor(status, UserListService.GetStatusSettings());
-        // Strip leading '#' so we can append alpha hex digits
+        var customId = isRight ? _swipeSettings.RightCustomId : _swipeSettings.LeftCustomId;
+        if (customId != null)
+        {
+            var cl = UserListService.GetCustomLists().FirstOrDefault(l => l.Id == customId);
+            if (cl != null) return cl.Color;
+        }
+        var status = isRight ? _swipeSettings.RightStatus : _swipeSettings.LeftStatus;
+        return UiHelpers.GetStatusColor(status, UserListService.GetStatusSettings());
+    }
+
+    private string GetSwipeLabel(bool isRight)
+    {
+        var customId = isRight ? _swipeSettings.RightCustomId : _swipeSettings.LeftCustomId;
+        if (customId != null)
+        {
+            var cl = UserListService.GetCustomLists().FirstOrDefault(l => l.Id == customId);
+            if (cl != null) return cl.Name;
+        }
+        return UiHelpers.GetStatusLabel(isRight ? _swipeSettings.RightStatus : _swipeSettings.LeftStatus);
+    }
+
+    private string GetFeatherStyle(bool isRight)
+    {
+        var c = GetSwipeColor(isRight);
         var hex = c.TrimStart('#');
         var direction = isRight ? "to left" : "to right";
         return $"opacity:0;position:absolute;inset:0;pointer-events:none;z-index:5;" +
@@ -364,7 +388,7 @@
                $"#{hex}61 0%,#{hex}38 14%,#{hex}1a 36%,#{hex}07 62%,transparent 100%);";
     }
 
-    /// <summary>Returns a tiny SVG string matching the given list status.</summary>
+    /// <summary>Returns a tiny SVG string matching the given list status (built-in only).</summary>
     private static string GetSwipeHintIcon(ListStatus s) => s switch
     {
         ListStatus.Watching =>
@@ -643,7 +667,7 @@
         if (Math.Abs(currentDragXOffset) >= HORIZ_SWIPE_THRESHOLD)
         {
             bool isRight = currentDragXOffset > 0;
-            await HandleListAction(animes[currentIndex], isRight ? "RIGHT" : "LEFT");
+            await HandleListAction(animes[currentIndex], isRight);
 
             if (currentIndex < animes.Count - 1) currentIndex++;
 
@@ -667,18 +691,16 @@
         }
     }
 
-    /// <summary>
-    /// Applies the user-configured swipe status.
-    /// direction: "RIGHT" or "LEFT"
-    /// </summary>
-    private async Task HandleListAction(AnimeCard anime, string direction)
+    private async Task HandleListAction(AnimeCard anime, bool isRight)
     {
-        var listStatus = direction == "RIGHT"
-            ? _swipeSettings.RightStatus
-            : _swipeSettings.LeftStatus;
+        var customId = isRight ? _swipeSettings.RightCustomId : _swipeSettings.LeftCustomId;
+        var listStatus = isRight ? _swipeSettings.RightStatus : _swipeSettings.LeftStatus;
 
-        UserListService.AddOrUpdate(anime, listStatus);
-        System.Diagnostics.Debug.WriteLine($"[Swipe {direction}] \"{anime.Title}\" → {listStatus}");
+        if (customId != null)
+            UserListService.AddOrUpdateToCustomList(anime, customId);
+        else
+            UserListService.AddOrUpdate(anime, listStatus);
+
         await Task.CompletedTask;
     }
 

@@ -265,17 +265,6 @@
    SKELETON — subtle shimmer
    ══════════════════════════════════════════════════════ */
 
-/* Very gentle sweep — low opacity, slow */
-@keyframes skPulse {
-    0%, 100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.78;
-    }
-}
-
 @keyframes skIn {
     from {
         opacity: 0;
@@ -317,7 +306,6 @@
     background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.04) 50%, /* very subtle */
     rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.07);
     background-size: 350% 100%, 100% 100%;
-    animation: skPulse 8s ease-in-out infinite;
 }
 
 @keyframes skPosterIn {
