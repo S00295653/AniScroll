@@ -50,7 +50,7 @@
                         <div class="image-section">
                             @if (isVisible)
                             {
-                                <div class="swipe-hint swipe-hint-right" style="opacity:0">
+                                <div class="swipe-hint swipe-hint-right" style="opacity:0;color:@GetSwipeColor(true);border-color:@(GetSwipeColor(true))80;">
                                     @if (_swipeSettings.RightCustomId == null)
                                     {
                                         @((MarkupString)GetSwipeHintIcon(_swipeSettings.RightStatus))
@@ -58,7 +58,7 @@
                                     <span>@GetSwipeLabel(true)</span>
                                 </div>
 
-                                <div class="swipe-hint swipe-hint-left" style="opacity:0">
+                                <div class="swipe-hint swipe-hint-left" style="opacity:0;color:@GetSwipeColor(false);border-color:@(GetSwipeColor(false))80;">
                                     @if (_swipeSettings.LeftCustomId == null)
                                     {
                                         @((MarkupString)GetSwipeHintIcon(_swipeSettings.LeftStatus))
