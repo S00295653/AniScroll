@@ -128,7 +128,8 @@
 
 /* ── Side zones ─────────────────────────────────────── */
 .swset-zone {
-    flex: 0 0 110px;
+    flex: 0 1 110px;
+    min-width: 60px;
     position: relative;
     display: flex;
     align-items: center; /* vertically centre content */
@@ -279,7 +280,7 @@
 }
 
 .swset-skeleton {
-    flex: 1;
+    flex: 1 0 0;
     min-width: 0;
     display: flex;
     flex-direction: column;
