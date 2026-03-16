@@ -280,7 +280,7 @@
 
 .swset-skeleton {
     flex: 1;
-    min-width: 200px;
+    min-width: 180px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -634,6 +634,11 @@
 }
 
 @media (max-width: 639px) {
+
+    .swset-section-block {
+        flex: 0 0 40%;
+    }
+
     .swset-overlay {
         background: transparent;
         pointer-events: none;
