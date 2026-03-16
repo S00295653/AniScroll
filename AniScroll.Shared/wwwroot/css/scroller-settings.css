@@ -665,9 +665,9 @@
     }
 
     .swset-zone-hint {
-        padding: 6px 9px;
+        padding: 6px 9px !important;
         font-size: 10px;
-        gap: 4px;
+        gap: 4px !important;
         border-radius: 9px;
         max-width: 110px;
     }
