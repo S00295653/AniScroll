@@ -565,6 +565,7 @@ window.unregisterEscapeKey = function () {
     let _lastActiveCard = null;
 
     // Snapshot of every card's baseY at drag-start
+    // IMPORTANT: these are the exact "clean" Blazor positions — used by animateCardsVertical
     let _cardBaseTransforms = [];
 
     const AXIS_LOCK = 8;
@@ -726,6 +727,9 @@ window.unregisterEscapeKey = function () {
         }
 
         // ── VERTICAL + fallback ───────────────────────────────────────────────
+        // Pass raw offsets to Blazor — Blazor decides whether to navigate,
+        // but the actual animation is driven by animateCardsVertical (called
+        // from Blazor via fire-and-forget BEFORE the await delay).
         if (_dotNet) _dotNet.invokeMethodAsync('OnDragEnd', curX, curY, axis, hasMoved);
     }
 
@@ -760,7 +764,9 @@ window.unregisterEscapeKey = function () {
         curX = 0; curY = 0;
         axis = 'none'; hasMoved = false;
 
-        // Snapshot every card's current translateY for vertical neighbour-peek
+        // Snapshot every card's current translateY for vertical neighbour-peek.
+        // These "baseY" values are the exact clean Blazor positions — animateCardsVertical
+        // uses them directly to compute final positions that match what Blazor will render.
         _cardBaseTransforms = [];
         document.querySelectorAll('.anime-card').forEach(card => {
             const m = card.style.transform.match(/translateY\(([-\d.]+)px\)/);
@@ -778,8 +784,6 @@ window.unregisterEscapeKey = function () {
             _cached.img = c.querySelector('.anime-image');
 
             // Disable box-shadow + backdrop-filter for the duration of the drag.
-            // These are the two most expensive GPU ops on mobile — removing them
-            // during motion cuts rasterisation cost to near zero.
             c.classList.add('dragging');
         }
     };
@@ -796,6 +800,44 @@ window.unregisterEscapeKey = function () {
         setTimeout(() => {
             _cardBaseTransforms.forEach(item => { item.el.style.transition = ''; });
         }, 340);
+    };
+
+    // ── animateCardsVertical ──────────────────────────────────────────────────
+    // Called by Blazor BEFORE awaiting the delay (fire-and-forget).
+    // Uses _cardBaseTransforms (exact Blazor positions) so the final resting place
+    // matches what Blazor will silently render after the delay — zero visual jump.
+    //
+    //   delta  : +1 = go to next card (swipe up), -1 = go to prev (swipe down)
+    //   cardH  : CARD_HEIGHT passed from Blazor
+    //   durationMs : animation duration in milliseconds
+    window.animateCardsVertical = function (delta, cardH, durationMs) {
+        if (!_cardBaseTransforms.length) return;
+
+        const easing = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+        // 1. Set transitions on all cards
+        _cardBaseTransforms.forEach(function (item) {
+            item.el.style.transition = 'transform ' + durationMs + 'ms ' + easing;
+        });
+
+        // 2. One forced reflow so the browser registers the current position
+        //    as the START of the transition (not the end).
+        _cardBaseTransforms[0].el.getBoundingClientRect();
+
+        // 3. Apply final positions.
+        //    target = baseY - delta * cardH  →  exactly matches Blazor's
+        //    GetCardTranslateY after currentIndex is updated.
+        _cardBaseTransforms.forEach(function (item) {
+            item.el.style.transform = 'translateY(' + (item.baseY - delta * cardH) + 'px)';
+        });
+
+        // 4. Remove inline transitions after animation completes so Blazor's
+        //    own class-based transitions (no-transition / with-transition) take over.
+        setTimeout(function () {
+            _cardBaseTransforms.forEach(function (item) {
+                item.el.style.transition = '';
+            });
+        }, durationMs + 40);
     };
 
     // ── Native listeners ──────────────────────────────────────────────────────
