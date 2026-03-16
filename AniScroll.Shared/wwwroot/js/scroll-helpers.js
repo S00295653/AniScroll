@@ -730,6 +730,9 @@ window.unregisterEscapeKey = function () {
     }
 
     // ── MutationObserver ──────────────────────────────────────────────────────
+    // Observe only .main-scroll, not document.body.
+    // Blazor re-renders fire dozens of class mutations across the whole page;
+    // subtree:true on body calls this on every single one of them.
     const _observer = new MutationObserver(() => {
         const c = activeCard();
         if (!c || c === _lastActiveCard) return;
@@ -744,11 +747,21 @@ window.unregisterEscapeKey = function () {
         resetImage(c.querySelector('.anime-image'));
     });
 
-    _observer.observe(document.body, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class'],
-    });
+    function _attachObserver() {
+        const target = document.querySelector('.main-scroll') || document.body;
+        _observer.observe(target, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
+
+    // .main-scroll may not exist on first script evaluation (before Blazor renders).
+    if (document.querySelector('.main-scroll')) {
+        _attachObserver();
+    } else {
+        requestAnimationFrame(_attachObserver);
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 

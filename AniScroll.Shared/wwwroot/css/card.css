@@ -34,15 +34,23 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(6px);
     opacity: 0.4;
-    overflow: hidden;
-    will-change: transform;
-    transform: translateZ(0) scale(1.1);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    isolation: isolate;
     contain: paint;
+    /* No will-change, no filter, no transform on non-active cards.
+       Child of an already-composited .anime-card — adding its own GPU
+       layer would create one nested composited layer per visible card. */
+}
+
+/* Blur only the card the user is actually looking at */
+.anime-card.active .bg-image {
+    filter: blur(6px);
+    transform: scale(1.1); /* keeps blurred edges hidden */
+}
+
+/* Zero cost during drag — most critical moment for frame budget */
+.anime-card.dragging .bg-image {
+    filter: none !important;
+    transform: none !important;
 }
 
 .gradient-overlay {
@@ -234,7 +242,7 @@
 
 
 /* ======================================================
-   SWIPE INDICATORS — Feather doux
+   SWIPE INDICATORS
    ====================================================== */
 
 .swipe-feather {
@@ -275,9 +283,9 @@
     border-radius: 16px;
     pointer-events: none;
     white-space: nowrap;
-    background: transparent; /* ← supprime le fond sombre */
-    backdrop-filter: blur(8px); /* ← juste le blur */
-    -webkit-backdrop-filter: blur(8px);
+    /* backdrop-filter removed — composites the entire viewport for a tiny pill.
+       Simple dark tint gives the same visual weight at zero GPU cost. */
+    background: rgba(0, 0, 0, 0.35);
 }
 
     .swipe-hint span {

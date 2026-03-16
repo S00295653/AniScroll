@@ -334,6 +334,7 @@
 
     // ─── Preload ──────────────────────────────────────────────────────────────
     private HashSet<int> preloadedIndices = new();
+    private int _lastPreloadIndex = -1;
 
     // ─── Profile ──────────────────────────────────────────────────────────────
     private bool _showProfilePanel = false;
@@ -342,6 +343,9 @@
 
     // ─── ESC ──────────────────────────────────────────────────────────────────
     private DotNetObjectReference<Index>? _dotNetRef;
+
+    // ─── Virtual window ───────────────────────────────────────────────────────
+    private HashSet<int> _windowEnteredIndices = new();
 
     // ─── Swipe Settings ───────────────────────────────────────────────────────
     private bool _showSwipeSettings = false;
@@ -389,26 +393,6 @@
                $"#{hex}61 0%,#{hex}38 14%,#{hex}1a 36%,#{hex}07 62%,transparent 100%);";
     }
 
-    // ─── Virtual window tracking ──────────────────────────────────────────────
-    private HashSet<int> _windowEnteredIndices = new();
-
-    /// <summary>
-    /// Call BEFORE changing currentIndex.
-    /// Marks every index that will be freshly mounted in the new window so
-    /// GetCardTransitionClass() suppresses their CSS transition on first paint.
-    /// </summary>
-    private void UpdateWindowEntered(int newIndex)
-    {
-        _windowEnteredIndices.Clear();
-        for (int i = newIndex - RENDER_WINDOW; i <= newIndex + RENDER_WINDOW; i++)
-        {
-            if (i < 0 || i >= animes.Count) continue;
-            // Only mark if outside the current (old) window
-            if (Math.Abs(i - currentIndex) > RENDER_WINDOW)
-                _windowEnteredIndices.Add(i);
-        }
-    }
-
     /// <summary>Returns a tiny SVG string matching the given list status (built-in only).</summary>
     private static string GetSwipeHintIcon(ListStatus s) => s switch
     {
@@ -440,6 +424,26 @@
     };
 
     // ═══════════════════════════════════════════════════════════════════════════
+    //  VIRTUAL WINDOW
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Call BEFORE changing currentIndex.
+    /// Marks every index that will be freshly mounted in the new window so
+    /// GetCardTransitionClass() suppresses their CSS transition on first paint.
+    /// </summary>
+    private void UpdateWindowEntered(int newIndex)
+    {
+        _windowEnteredIndices.Clear();
+        for (int i = newIndex - RENDER_WINDOW; i <= newIndex + RENDER_WINDOW; i++)
+        {
+            if (i < 0 || i >= animes.Count) continue;
+            if (Math.Abs(i - currentIndex) > RENDER_WINDOW)
+                _windowEnteredIndices.Add(i);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     //  LIFECYCLE
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -462,7 +466,12 @@
             try { await JS.InvokeVoidAsync("initCardDrag", _dotNetRef); } catch { }
         }
 
-        _ = PreloadNearbyImages();
+        // Only preload when the visible card has actually changed — not on every render
+        if (currentIndex != _lastPreloadIndex)
+        {
+            _lastPreloadIndex = currentIndex;
+            _ = PreloadNearbyImages();
+        }
 
         if (previousIndex != currentIndex && previousIndex >= 0 &&
             animes.Count > 0 &&
@@ -692,7 +701,7 @@
         await Task.Delay(250);
         isTransitioning = false;
         hasMoved = false;
-        _windowEnteredIndices.Clear();   // ← safe to clear; transition is done
+        _windowEnteredIndices.Clear();
     }
 
     private async Task FinishHorizontalSwipe()
