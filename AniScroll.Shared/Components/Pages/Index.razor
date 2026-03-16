@@ -29,13 +29,13 @@
             var isVisible = index == currentIndex;
             var distance = Math.Abs(index - currentIndex);
 
-            <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
-                 style="transform: translateY(@GetCardTranslateY(index)px); height: @(CARD_HEIGHT)px;"
-                 @onmousedown="(e) => HandleCardMouseDown(e, index)"
-                 @ontouchstart="(e) => HandleCardTouchStart(e, index)">
+            @if (distance <= RENDER_WINDOW)
+            {
+                <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
+                     style="transform: translateY(@GetCardTranslateY(index)px); height: @(CARD_HEIGHT)px;"
+                     @onmousedown="(e) => HandleCardMouseDown(e, index)"
+                     @ontouchstart="(e) => HandleCardTouchStart(e, index)">
 
-                @if (distance <= RENDER_WINDOW)
-                {
                     <div class="bg-image" style="background-image: url('@anime.ImageUrl');"></div>
                     <div class="gradient-overlay"></div>
 
@@ -114,9 +114,9 @@
                             }
                         </div>
                     </div>
-                }
 
-            </div>
+                </div>
+            }
         }
 
         @if (isLoading && !isInitialLoadComplete)
@@ -388,6 +388,26 @@
                $"#{hex}61 0%,#{hex}38 14%,#{hex}1a 36%,#{hex}07 62%,transparent 100%);";
     }
 
+    // ─── Virtual window tracking ──────────────────────────────────────────────
+    private HashSet<int> _windowEnteredIndices = new();
+
+    /// <summary>
+    /// Call BEFORE changing currentIndex.
+    /// Marks every index that will be freshly mounted in the new window so
+    /// GetCardTransitionClass() suppresses their CSS transition on first paint.
+    /// </summary>
+    private void UpdateWindowEntered(int newIndex)
+    {
+        _windowEnteredIndices.Clear();
+        for (int i = newIndex - RENDER_WINDOW; i <= newIndex + RENDER_WINDOW; i++)
+        {
+            if (i < 0 || i >= animes.Count) continue;
+            // Only mark if outside the current (old) window
+            if (Math.Abs(i - currentIndex) > RENDER_WINDOW)
+                _windowEnteredIndices.Add(i);
+        }
+    }
+
     /// <summary>Returns a tiny SVG string matching the given list status (built-in only).</summary>
     private static string GetSwipeHintIcon(ListStatus s) => s switch
     {
@@ -567,6 +587,7 @@
     private string GetCardTransitionClass(int index)
     {
         if (newlyCreatedCards.Contains(index)) return "no-transition";
+        if (_windowEnteredIndices.Contains(index)) return "no-transition";
         if (isDraggingCard) return "no-transition";
         if (isTransitioning && _swipeAxis != SwipeAxis.Horizontal) return "with-transition";
         return "no-transition";
@@ -633,15 +654,24 @@
         {
             if (currentDragOffset < 0)
             {
-                if (currentIndex < animes.Count - 1) currentIndex++;
+                if (currentIndex < animes.Count - 1)
+                {
+                    UpdateWindowEntered(currentIndex + 1);
+                    currentIndex++;
+                }
                 else if (!AniListService.IsRateLimited())
                 {
                     await LoadAnimes(60, isBackgroundLoad: false);
-                    if (animes.Count > currentIndex + 1) currentIndex++;
+                    if (animes.Count > currentIndex + 1)
+                    {
+                        UpdateWindowEntered(currentIndex + 1);
+                        currentIndex++;
+                    }
                 }
             }
             else if (currentDragOffset > 0 && currentIndex > 0)
             {
+                UpdateWindowEntered(currentIndex - 1);
                 currentIndex--;
             }
             else if (currentDragOffset > 0 && currentIndex == 0)
@@ -659,7 +689,9 @@
         StateHasChanged();
 
         await Task.Delay(250);
-        isTransitioning = false; hasMoved = false;
+        isTransitioning = false;
+        hasMoved = false;
+        _windowEnteredIndices.Clear();   // ← safe to clear; transition is done
     }
 
     private async Task FinishHorizontalSwipe()
@@ -669,13 +701,18 @@
             bool isRight = currentDragXOffset > 0;
             await HandleListAction(animes[currentIndex], isRight);
 
-            if (currentIndex < animes.Count - 1) currentIndex++;
+            if (currentIndex < animes.Count - 1)
+            {
+                UpdateWindowEntered(currentIndex + 1);
+                currentIndex++;
+            }
 
             isTransitioning = false;
             currentDragXOffset = 0;
             currentDragOffset = 0;
             _swipeAxis = SwipeAxis.None;
             hasMoved = false;
+            _windowEnteredIndices.Clear();
 
             StateHasChanged();
         }
