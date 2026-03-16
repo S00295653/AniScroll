@@ -755,10 +755,10 @@
         }
     }
 
-    /*.swset-topbar {
+    .swset-topbar {
         padding-top: 20px;
         border-radius: 18px 18px 0 0;
-    }*/
+    }
 
     /* sheet on desktop — rounded top corners only (bottom clips via overflow:hidden) */
     .swset-picker-screen {
