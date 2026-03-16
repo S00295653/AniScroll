@@ -279,7 +279,7 @@
 
 .swset-skeleton {
     flex: 1;
-    min-width: 120px;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -739,10 +739,10 @@
         }
     }
 
-    .swset-topbar {
+    /*.swset-topbar {
         padding-top: 20px;
         border-radius: 18px 18px 0 0;
-    }
+    }*/
 
     /* sheet on desktop — rounded top corners only (bottom clips via overflow:hidden) */
     .swset-picker-screen {
