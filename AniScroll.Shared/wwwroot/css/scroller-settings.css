@@ -131,7 +131,7 @@
     flex: 0 0 110px;
     position: relative;
     display: flex;
-    align-items: stretch;
+    align-items: center; /* vertically centre content */
     justify-content: center;
     overflow: visible;
     background: #14141f;
@@ -154,21 +154,21 @@
     right: 0;
 }
 
-/* Zone content — absolute fill so justify-content truly centers in zone */
+/* Zone content — centred both axes, inner-edge aligned */
 .swset-zone-content {
-    position: absolute;
-    inset: 0;
+    position: relative;
     z-index: 4;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
+    align-items: flex-end; /* left zone: towards skeleton */
+    justify-content: center; /* vertical centre within zone */
     gap: 10px;
     padding: 8px 6px;
+    height: 100%; /* fill zone height so justify-content works */
 }
 
 .swset-zone-content-r {
-    align-items: flex-start;
+    align-items: flex-start; /* right zone: towards skeleton */
 }
 
 /* ── Zone hint badge ─────────────────────────────────── */
@@ -234,6 +234,7 @@
     gap: 6px;
     padding: 7px 14px;
     border-radius: 10px;
+    align-self: center;
     border: 1px solid color-mix(in srgb, var(--zc) 50%, transparent);
     background: rgba(0,0,0,0.55);
     color: var(--zc);
@@ -261,10 +262,10 @@
 }
 
 /* ══════════════════════════════════════════════════════
-   SKELETON — très discret, pulse doux
+   SKELETON — subtle shimmer
    ══════════════════════════════════════════════════════ */
 
-/* Pulse ultra-discret — légère montée d'opacité, aucun balayage */
+/* Very gentle sweep — low opacity, slow */
 @keyframes skPulse {
     0%, 100% {
         opacity: 1;
@@ -310,11 +311,13 @@
 .swset-sk-poster {
     width: 130px;
     height: 200px;
-    border: 1px solid rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 7px;
     margin-top: 40px;
-    background: rgba(255,255,255,0.06);
-    animation: skPosterIn 0.28s ease-out 0.04s both, skPulse 4.5s 1s ease-in-out infinite;
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.04) 50%, /* very subtle */
+    rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.07);
+    background-size: 350% 100%, 100% 100%;
+    animation: skPosterIn 0.28s ease-out 0.04s both, skPulse 3.5s 0.8s infinite;
 }
 
 @keyframes skPosterIn {
@@ -338,13 +341,15 @@
     overflow: hidden;
 }
 
-/* Base line — flat color, pulse très lent */
+/* Base line — very subtle shimmer */
 .swset-sk-line {
     display: block;
     border-radius: 4px;
     flex-shrink: 0;
-    background: rgba(255,255,255,0.07);
-    animation: skIn 0.24s ease-out both, skPulse 4.5s 0.8s ease-in-out infinite;
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.06) 50%, /* subtle */
+    rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.09);
+    background-size: 350% 100%, 100% 100%;
+    animation: skIn 0.24s ease-out both, skPulse3s 0.5s infinite;
 }
 
 .swset-sk-title {
@@ -357,7 +362,7 @@
     height: 6px;
     border-radius: 3px;
     margin-bottom: 7px;
-    opacity: 0.35;
+    opacity: 0.45;
 }
 
 .swset-sk-genres {
@@ -372,8 +377,9 @@
     height: 6px;
     border-radius: 10px;
     flex-shrink: 0;
-    background: rgba(255,255,255,0.06);
-    animation: skPulse 4.5s 0.9s ease-in-out infinite;
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.08);
+    background-size: 350% 100%, 100% 100%;
+    animation: skPulse3s 0.7s infinite;
 }
 
 .swset-sk-stats {
@@ -388,8 +394,9 @@
 .swset-sk-badge-ep {
     height: 18px;
     border-radius: 6px;
-    background: rgba(255,255,255,0.05);
-    animation: skPulse 4.5s 1.1s ease-in-out infinite;
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.07);
+    background-size: 350% 100%, 100% 100%;
+    animation: skPulse3s 0.9s infinite;
 }
 
 .swset-sk-badge-score {
@@ -411,17 +418,18 @@
 .swset-sk-desc {
     height: 5px;
     border-radius: 3px;
-    opacity: 0.22;
+    opacity: 0.28;
 }
 
 .swset-sk-readmore {
     width: 60px;
     height: 8px;
     border-radius: 4px;
-    background: rgba(255,255,255,0.07);
+    background: linear-gradient(105deg, rgba(255,255,255,0.00) 38%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.00) 62%), rgba(255,255,255,0.09);
+    background-size: 350% 100%, 100% 100%;
     align-self: center;
     flex-shrink: 0;
-    animation: skIn 0.24s ease-out both, skPulse 4.5s 1.2s ease-in-out infinite;
+    animation: skIn 0.24s ease-out both, skPulse3s 1.1s infinite;
 }
 
 /* ── Future settings ─────────────────────────────────── */
