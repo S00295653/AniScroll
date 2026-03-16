@@ -31,7 +31,8 @@
 
             @if (distance <= RENDER_WINDOW)
             {
-                <div class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
+                <div @key="index"
+                     class="anime-card @(isVisible ? "active" : "") @GetCardTransitionClass(index)"
                      style="transform: translateY(@GetCardTranslateY(index)px); height: @(CARD_HEIGHT)px;"
                      @onmousedown="(e) => HandleCardMouseDown(e, index)"
                      @ontouchstart="(e) => HandleCardTouchStart(e, index)">
