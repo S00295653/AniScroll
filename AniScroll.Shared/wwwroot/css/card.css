@@ -25,23 +25,34 @@
         z-index: 10;
     }
 
-/* ========== BACKGROUND IMAGE ========== */
-.bg-image {
+/* ========== BACKGROUND — blur layer (statique, propre compositing layer) ========== */
+.bg-blur {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    inset: -14px; /* compense le clipping des bords floutés */
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    /*filter: blur(6px);*/
-    opacity: 0.4;
-    overflow: hidden;
-    will-change: transform;
-    transform: translateZ(0) scale(1.1);
+    opacity: 0.55;
+    filter: blur(14px);
+    will-change: filter; /* layer dédié → le blur ne retouche jamais les cartes */
+    contain: strict; /* isole le repaint : rien ne déborde hors de cet élément */
+    transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    isolation: isolate;
+}
+
+/* ========== BACKGROUND — image nette (transform layer, zéro filter) ========== */
+.bg-image {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    opacity: 0.18; /* discret : le bg-blur porte l'essentiel du visuel */
+    will-change: transform;
+    transform: translateZ(0) scale(1.05);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     contain: paint;
 }
 
