@@ -47,7 +47,10 @@
                     <div class="swset-zone swset-zone-left" style="--zc:@lc;">
                         <div class="swset-zone-content">
                             <div class="swset-zone-hint" style="color:@lc;border-color:@(lc)80;">
-                                @((MarkupString)GetSvgIcon(_leftStatus))
+                                @if (_leftCustomId == null)
+                                {
+                                    @((MarkupString)GetSvgIcon(_leftStatus))
+                                }
                                 <span>@leftLabel</span>
                             </div>
                             <button class="swset-zone-edit" @onclick="() => OpenPicker(false)">
@@ -93,7 +96,10 @@
                         <div class="swset-zone-content swset-zone-content-r">
                             <div class="swset-zone-hint swset-zone-hint-r" style="color:@rc;border-color:@(rc)80;">
                                 <span>@rightLabel</span>
-                                @((MarkupString)GetSvgIcon(_rightStatus))
+                                @if (_rightCustomId == null)
+                                {
+                                    @((MarkupString)GetSvgIcon(_rightStatus))
+                                }
                             </div>
                             <button class="swset-zone-edit" @onclick="() => OpenPicker(true)">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -156,11 +162,11 @@
                         <div class="swset-picker-grid">
                             @{
                                 var allStatusItems = UserListService.GetStatusSettings()
-                                    .Select(s => (isBuiltIn: true, setting: s, custom: (UserCustomList?)null))
-                                    .Concat(UserListService.GetStatusTypeLists()
-                                        .Select(c => (isBuiltIn: false, setting: (StatusListSetting?)null, custom: (UserCustomList?)c)))
-                                    .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order)
-                                    .ToList();
+                                .Select(s => (isBuiltIn: true, setting: (StatusListSetting?)s, custom: (UserCustomList?)null))
+                                .Concat(UserListService.GetStatusTypeLists()
+                                .Select(c => (isBuiltIn: false, setting: (StatusListSetting?)null, custom: (UserCustomList?)c)))
+                                .OrderBy(x => x.isBuiltIn ? x.setting!.Order : x.custom!.Order)
+                                .ToList();
                             }
                             @foreach (var item in allStatusItems)
                             {
