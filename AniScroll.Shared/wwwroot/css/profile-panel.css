@@ -1,7 +1,8 @@
 ﻿/* ============================================================
-   profile-panel.css  —  Account + Stats tabs
+   profile-panel.css  — Account + Stats tabs
    ============================================================ */
 
+/* ── Panel shell — fixed height, header sticky, body scrolls ── */
 .pp-overlay {
     position: fixed;
     inset: 0;
@@ -31,23 +32,14 @@
     background: #16181e;
     border-radius: 20px 20px 0 0;
     border-top: 1px solid rgba(255,255,255,0.07);
-    padding-bottom: env(safe-area-inset-bottom, 16px);
     animation: pp-slide-up 0.3s cubic-bezier(0.34,1.35,0.64,1);
+    /* FIX: panel is a column, header sticky, body scrolls */
+    display: flex;
+    flex-direction: column;
     max-height: 92dvh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    overflow: hidden; /* prevents panel from scrolling */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-    .pp-panel::-webkit-scrollbar {
-        width: 3px;
-    }
-
-    .pp-panel::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.1);
-        border-radius: 2px;
-    }
 
 @keyframes pp-slide-up {
     from {
@@ -61,6 +53,34 @@
     }
 }
 
+/* ── Sticky header: handle + title + tabs + divider ── */
+.pp-sticky-top {
+    flex-shrink: 0; /* never shrinks */
+    background: #16181e;
+    z-index: 10;
+}
+
+/* ── Scrollable body ── */
+.pp-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 20px max(16px, env(safe-area-inset-bottom, 16px));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+    .pp-body::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .pp-body::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+        border-radius: 2px;
+    }
+
+/* ── Handle / header / tabs ── */
 .pp-handle-zone {
     display: flex;
     justify-content: center;
@@ -107,7 +127,6 @@
         color: rgba(255,255,255,0.85);
     }
 
-/* ── Tabs ── */
 .pp-tabs {
     display: flex;
     gap: 4px;
@@ -153,11 +172,7 @@
     margin: 14px 0 0;
 }
 
-.pp-body {
-    padding: 20px 20px 16px;
-}
-
-/* ── Account tab base styles ── */
+/* ── Account UI ── */
 .pp-connect-section {
     display: flex;
     flex-direction: column;
@@ -240,12 +255,6 @@
     letter-spacing: -0.1px;
     font-family: inherit;
 }
-
-    .pp-anilist-btn svg {
-        border-radius: 4px;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
 
     .pp-anilist-btn:hover {
         filter: brightness(1.12);
@@ -567,12 +576,10 @@
         border-color: rgba(2,169,255,0.45);
     }
 
-
 /* ═══════════════════════════════════════════════════
    STATS TAB
    ═══════════════════════════════════════════════════ */
 
-/* Empty state */
 .st-empty {
     display: flex;
     flex-direction: column;
@@ -653,7 +660,7 @@
     align-items: baseline;
     gap: 6px;
 }
-
+/* FIX: favourites same color as other sub-nums */
 .st-hero-sub-num {
     font-size: 18px;
     font-weight: 800;
@@ -758,7 +765,7 @@
         font-weight: 800;
     }
 
-/* ── Status grid ── */
+/* ── Status ── */
 .st-status-grid {
     display: flex;
     flex-direction: column;
@@ -797,7 +804,7 @@
 .st-status-bar-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+    transition: width .6s cubic-bezier(0.22,1,0.36,1);
 }
 
 .st-status-count {
@@ -849,12 +856,11 @@
     flex-shrink: 0;
 }
 
-/* ── Score chart ── */
+/* ── Score — denser rows for half-steps ── */
 .st-score-chart {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-bottom: 12px;
+    gap: 2px;
 }
 
 .st-score-row {
@@ -869,10 +875,10 @@
 }
 
 .st-score-label {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 600;
     color: rgba(255,255,255,0.4);
-    width: 14px;
+    width: 22px;
     text-align: right;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
@@ -880,17 +886,17 @@
 
 .st-score-bar-wrap {
     flex: 1;
-    height: 7px;
+    height: 6px;
     background: rgba(255,255,255,0.06);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
 }
 
 .st-score-bar-fill {
     height: 100%;
-    border-radius: 4px;
+    border-radius: 3px;
     min-width: 2px;
-    transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+    transition: width .5s cubic-bezier(0.22,1,0.36,1);
 }
 
 .st-score-count {
@@ -902,45 +908,7 @@
     flex-shrink: 0;
 }
 
-.st-score-extremes {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    padding-top: 10px;
-}
-
-.st-score-extreme {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.st-extreme-lbl {
-    font-size: 11px;
-    color: rgba(255,255,255,0.3);
-    font-weight: 600;
-    flex-shrink: 0;
-    width: 76px;
-}
-
-.st-extreme-title {
-    flex: 1;
-    font-size: 12px;
-    color: rgba(255,255,255,0.7);
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.st-extreme-score {
-    font-size: 14px;
-    font-weight: 800;
-    flex-shrink: 0;
-}
-
-/* ── Watch time ── */
+/* ── Watch Time ── */
 .st-time-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -958,10 +926,6 @@
     gap: 2px;
 }
 
-.st-time-cell-wide {
-    grid-column: 1 / -1;
-}
-
 .st-time-val {
     font-size: 20px;
     font-weight: 800;
@@ -975,20 +939,6 @@
     color: rgba(255,255,255,0.3);
     text-transform: uppercase;
     letter-spacing: .05em;
-}
-
-.st-time-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.7);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.st-time-sub {
-    font-size: 11px;
-    color: rgba(255,255,255,0.35);
 }
 
 .st-longest-row {
@@ -1025,7 +975,7 @@
     flex-shrink: 0;
 }
 
-/* ── Bar list (genres, studios, sources, country) ── */
+/* ── Bar list (genres, studios, sources) ── */
 .st-bar-list {
     display: flex;
     flex-direction: column;
@@ -1037,7 +987,7 @@
     align-items: center;
     gap: 8px;
 }
-
+/* FIX: no st-bar-name-top — all bars same color/weight */
 .st-bar-name {
     font-size: 12px;
     font-weight: 600;
@@ -1047,11 +997,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.st-bar-name-top {
-    color: rgba(255,255,255,0.88);
-    font-weight: 700;
 }
 
 .st-bar-track {
@@ -1081,10 +1026,6 @@
     background: linear-gradient(90deg,#a855f7,#c084fc);
 }
 
-.st-bar-country {
-    background: linear-gradient(90deg,#f97316,#fb923c);
-}
-
 .st-bar-val {
     font-size: 11px;
     font-weight: 700;
@@ -1094,89 +1035,143 @@
     flex-shrink: 0;
 }
 
-/* ── Formats ── */
-.st-format-chips {
+/* ── Radar charts (Format + Source) ── */
+.st-radar-wrap {
     display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
+    justify-content: center;
+    margin-bottom: 14px;
 }
 
-.st-format-chip {
+.st-radar-svg {
+    width: 180px;
+    height: 180px;
+}
+
+.st-pie-svg {
+    width: 180px;
+    height: 180px;
+}
+
+.st-pie-wrap {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 11px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 20px;
+    justify-content: center;
+    margin-bottom: 14px;
 }
 
-.st-format-name {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.7);
-}
-
-.st-format-count {
-    font-size: 12px;
-    font-weight: 800;
-    color: rgba(255,255,255,0.5);
-}
-
-.st-format-pct {
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.28);
-}
-
-/* ── Year chart ── */
-.st-year-chart {
+.st-radar-legend {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
-.st-year-row {
+.st-radar-legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.st-year-lbl {
-    font-size: 11px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.4);
-    width: 36px;
+.st-radar-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     flex-shrink: 0;
-    font-variant-numeric: tabular-nums;
 }
 
-.st-year-bar-wrap {
+.st-radar-legend-name {
     flex: 1;
-    height: 6px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.st-radar-legend-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.55);
+}
+
+.st-radar-legend-pct {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+}
+
+/* ── Release Year — AniList style (vertical bars, chronological) ── */
+.st-year-anilist {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 100px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+
+    .st-year-anilist::-webkit-scrollbar {
+        display: none;
+    }
+
+.st-year-al-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+    width: 18px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.st-year-al-count {
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    line-height: 1;
+    min-height: 11px;
+    text-align: center;
+}
+
+.st-year-al-peak {
+    color: #ff8fa3;
+}
+
+.st-year-al-bar-wrap {
+    width: 12px;
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px 3px 0 0;
     overflow: hidden;
 }
 
-.st-year-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    min-width: 2px;
-    background: linear-gradient(90deg,#06b6d4,#67e8f9);
-    transition: width .5s cubic-bezier(0.22,1,0.36,1);
+.st-year-al-bar-fill {
+    width: 100%;
+    background: rgba(233,69,96,0.5);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height .5s cubic-bezier(0.22,1,0.36,1);
 }
 
-.st-year-count {
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(255,255,255,0.35);
-    width: 20px;
-    text-align: right;
-    flex-shrink: 0;
+.st-year-al-fill-peak {
+    background: #E94560;
 }
 
-/* ── Seasons ── */
+.st-year-al-lbl {
+    font-size: 8px;
+    color: rgba(255,255,255,0.3);
+    line-height: 1;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    height: 24px;
+    text-align: center;
+    overflow: hidden;
+}
+
+/* ── Seasons (no emoji) ── */
 .st-season-grid {
     display: grid;
     grid-template-columns: repeat(4,1fr);
@@ -1200,11 +1195,6 @@
     border-color: rgba(233,69,96,0.25);
 }
 
-.st-season-emoji {
-    font-size: 18px;
-    line-height: 1;
-}
-
 .st-season-name {
     font-size: 9px;
     font-weight: 700;
@@ -1214,7 +1204,7 @@
 }
 
 .st-season-count {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: rgba(255,255,255,0.82);
     line-height: 1;
@@ -1230,7 +1220,7 @@
     color: #ff8fa3;
 }
 
-/* ── Tags cloud ── */
+/* ── Tags cloud ── FIX: all same color, no opacity variation ── */
 .st-tags-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -1243,13 +1233,12 @@
     gap: 4px;
     padding: 4px 9px;
     background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.09);
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.65); /* FIX: uniform color */
     white-space: nowrap;
-    transition: opacity .15s;
 }
 
 .st-tag-count {
@@ -1292,79 +1281,4 @@
     text-transform: uppercase;
     letter-spacing: .05em;
     text-align: center;
-}
-
-/* ── Recent activity ── */
-.st-recent-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.st-recent-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 6px;
-    border-radius: 8px;
-    transition: background .12s;
-}
-
-    .st-recent-row:hover {
-        background: rgba(255,255,255,0.04);
-    }
-
-.st-recent-poster {
-    width: 34px;
-    height: 48px;
-    border-radius: 5px;
-    flex-shrink: 0;
-    background-size: cover;
-    background-position: center top;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-
-.st-recent-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.st-recent-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.82);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.st-recent-meta {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.st-recent-status {
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.st-recent-sep {
-    font-size: 10px;
-    color: rgba(255,255,255,0.2);
-}
-
-.st-recent-date {
-    font-size: 10px;
-    color: rgba(255,255,255,0.3);
-    font-weight: 500;
-}
-
-.st-recent-score {
-    font-size: 14px;
-    font-weight: 800;
-    flex-shrink: 0;
 }

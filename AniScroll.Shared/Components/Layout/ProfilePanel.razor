@@ -10,28 +10,38 @@
     <div class="pp-overlay" @onclick="HandleOverlayClick">
         <div class="pp-panel" @onclick:stopPropagation="true">
 
-            <div class="pp-handle-zone"><div class="pp-handle-bar"></div></div>
+            <!-- ── Sticky top (handle + header + tabs + divider) ── -->
+            <div class="pp-sticky-top">
+                <div class="pp-handle-zone"><div class="pp-handle-bar"></div></div>
 
-            <div class="pp-header">
-                <span class="pp-title">Profile</span>
-                <button class="pp-close-btn" @onclick="Close">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
+                <div class="pp-header">
+                    <span class="pp-title">Profile</span>
+                    <button class="pp-close-btn" @onclick="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <div class="pp-tabs">
+                    <button class="pp-tab @(_activeTab == "account" ? "pp-tab-active" : "")" @onclick='() => _activeTab = "account"'>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        Account
+                    </button>
+                    <button class="pp-tab @(_activeTab == "stats" ? "pp-tab-active" : "")" @onclick='() => { _activeTab = "stats"; ComputeStats(); }'>
+                        <!-- 4-bar chart icon -->
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <line x1="4" y1="20" x2="4" y2="14" />
+                            <line x1="9" y1="20" x2="9" y2="4" />
+                            <line x1="14" y1="20" x2="14" y2="10" />
+                            <line x1="19" y1="20" x2="19" y2="7" />
+                        </svg>
+                        Stats
+                    </button>
+                </div>
+
+                <div class="pp-divider"></div>
             </div>
 
-            <div class="pp-tabs">
-                <button class="pp-tab @(_activeTab == "account" ? "pp-tab-active" : "")" @onclick='() => _activeTab = "account"'>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    Account
-                </button>
-                <button class="pp-tab @(_activeTab == "stats" ? "pp-tab-active" : "")" @onclick='() => { _activeTab = "stats"; ComputeStats(); }'>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
-                    Stats
-                </button>
-            </div>
-
-            <div class="pp-divider"></div>
-
+            <!-- ── Scrollable body ── -->
             <div class="pp-body">
 
                 @if (_activeTab == "account")
@@ -160,12 +170,13 @@
                                 <div class="st-hero-sub"><span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span><span class="st-hero-sub-lbl">episodes</span></div>
                                 @if (_s.Favorited > 0)
                                 {
-                                    <div class="st-hero-sub"><span class="st-hero-sub-num" style="color:#f43f5e">@_s.Favorited</span><span class="st-hero-sub-lbl">favourites</span></div>
+                                    <!-- FIX: same color as other sub-nums -->
+                                    <div class="st-hero-sub"><span class="st-hero-sub-num">@_s.Favorited</span><span class="st-hero-sub-lbl">favourites</span></div>
                                 }
                             </div>
                         </div>
 
-                        <!-- ── Status breakdown ── -->
+                        <!-- ── Status / Lists ── -->
                         <div class="st-section">
                             <div class="st-section-title">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
@@ -186,6 +197,7 @@
                                     </div>
                                 }
                             </div>
+                            <!-- FIX: completion = Completed / (Completed + Watching + Paused + Dropped) -->
                             <div class="st-completion-row">
                                 <span class="st-completion-lbl">Completion rate</span>
                                 <div class="st-completion-bar-wrap">
@@ -204,47 +216,31 @@
                                     Scores
                                     <span class="st-section-meta">@_s.ScoredCount scored · avg <strong style="color:@GetScoreColor(_s.AvgScore)">@_s.AvgScore.ToString("F1")</strong></span>
                                 </div>
+                                <!-- FIX: show all half-steps 1..10 including .5 values, no best/worst -->
                                 <div class="st-score-chart">
                                     @{
-                                        var maxCount = _s.ScoreDist.Values.DefaultIfEmpty(1).Max();
+                                        var maxScoreCount = _s.ScoreDist.Values.DefaultIfEmpty(1).Max();
                                     }
-                                    @for (int sc = 10; sc >= 1; sc--)
+                                    @for (decimal sc = 10m; sc >= 1m; sc -= 0.5m)
                                     {
-                                        var count = _s.ScoreDist.GetValueOrDefault(sc, 0);
-                                        var barPct = maxCount > 0 ? count * 100.0 / maxCount : 0;
-                                        var color = GetScoreBarColor(sc);
-                                        var isAvg = Math.Abs(sc - _s.AvgScore) < 0.5;
+                                        var key = sc.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+                                        var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
+                                        var barPct = maxScoreCount > 0 ? count * 100.0 / maxScoreCount : 0;
+                                        var colorKey = (double)sc;
+                                        var isAvg = Math.Abs(colorKey - _s.AvgScore) < 0.26;
                                         <div class="st-score-row @(isAvg ? "st-score-row-avg" : "")">
-                                            <span class="st-score-label">@sc</span>
+                                            <span class="st-score-label">@key</span>
                                             <div class="st-score-bar-wrap">
-                                                <div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@color;"></div>
+                                                <div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(colorKey);"></div>
                                             </div>
                                             <span class="st-score-count">@(count > 0 ? count.ToString() : "")</span>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="st-score-extremes">
-                                    @if (_s.BestAnime != null)
-                                    {
-                                        <div class="st-score-extreme">
-                                            <span class="st-extreme-lbl">⭐ Best rated</span>
-                                            <span class="st-extreme-title">@TruncateTitle(_s.BestAnime.Anime.Title)</span>
-                                            <span class="st-extreme-score" style="color:#22c55e">@_s.BestAnime.Score</span>
-                                        </div>
-                                    }
-                                    @if (_s.WorstAnime != null && _s.WorstAnime.Anime.Id != _s.BestAnime?.Anime.Id)
-                                    {
-                                        <div class="st-score-extreme">
-                                            <span class="st-extreme-lbl">💀 Lowest rated</span>
-                                            <span class="st-extreme-title">@TruncateTitle(_s.WorstAnime.Anime.Title)</span>
-                                            <span class="st-extreme-score" style="color:#ef4444">@_s.WorstAnime.Score</span>
                                         </div>
                                     }
                                 </div>
                             </div>
                         }
 
-                        <!-- ── Watch time ── -->
+                        <!-- ── Watch Time ── -->
                         @if (_s.TotalMinutes > 0)
                         {
                             <div class="st-section">
@@ -261,11 +257,12 @@
                                         <span class="st-time-val">@FormatDays(_s.TotalMinutes)</span>
                                         <span class="st-time-lbl">days total</span>
                                     </div>
-                                    @if (_s.AvgEpisodeDuration > 0)
+                                    <!-- FIX: replace avg ep length with Days Planned -->
+                                    @if (_s.DaysPlanned > 0)
                                     {
                                         <div class="st-time-cell">
-                                            <span class="st-time-val">@_s.AvgEpisodeDuration min</span>
-                                            <span class="st-time-lbl">avg ep length</span>
+                                            <span class="st-time-val">@_s.DaysPlanned.ToString("F1")</span>
+                                            <span class="st-time-lbl">days planned</span>
                                         </div>
                                     }
                                     @if (_s.Rewatched > 0)
@@ -292,7 +289,15 @@
                         {
                             <div class="st-section">
                                 <div class="st-section-title">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
+                                    <!-- FIX: same dropdown icon as Sort panel genres -->
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6" />
+                                        <line x1="8" y1="12" x2="21" y2="12" />
+                                        <line x1="8" y1="18" x2="21" y2="18" />
+                                        <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none" />
+                                        <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none" />
+                                        <circle cx="3" cy="18" r="1" fill="currentColor" stroke="none" />
+                                    </svg>
                                     Genres
                                     <span class="st-section-meta">@_s.UniqueGenres unique</span>
                                 </div>
@@ -303,9 +308,9 @@
                                     @foreach (var kv in _s.TopGenres.Take(12))
                                     {
                                         var pct = maxG > 0 ? kv.Value * 100.0 / maxG : 0;
-                                        var rank = _s.TopGenres.Keys.ToList().IndexOf(kv.Key);
+                                        <!-- FIX: no st-bar-name-top class, all same color -->
                                         <div class="st-bar-row">
-                                            <span class="st-bar-name @(rank < 3 ? "st-bar-name-top" : "")">@kv.Key</span>
+                                            <span class="st-bar-name">@kv.Key</span>
                                             <div class="st-bar-track">
                                                 <div class="st-bar-fill st-bar-genre" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
                                             </div>
@@ -316,7 +321,7 @@
                             </div>
                         }
 
-                        <!-- ── Formats ── -->
+                        <!-- ── Formats — Radar chart ── -->
                         @if (_s.ByFormat.Any())
                         {
                             <div class="st-section">
@@ -324,14 +329,23 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 3H8" /></svg>
                                     Formats
                                 </div>
-                                <div class="st-format-chips">
-                                    @foreach (var kv in _s.ByFormat.OrderByDescending(x => x.Value))
+                                @{
+                                    var radarFormats = _s.ByFormat.OrderByDescending(x => x.Value).Take(7).ToList();
+                                }
+                                <div class="st-radar-wrap">
+                                    @{
+                                        var radarSvg = BuildRadarSvg(radarFormats, "#E94560", "#ff8fa3");
+                                    }
+                                    @((MarkupString)radarSvg)
+                                </div>
+                                <div class="st-radar-legend">
+                                    @foreach (var kv in radarFormats)
                                     {
-                                        var pct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
-                                        <div class="st-format-chip">
-                                            <span class="st-format-name">@kv.Key</span>
-                                            <span class="st-format-count">@kv.Value</span>
-                                            <span class="st-format-pct">@pct.ToString("F0")%</span>
+                                        var legendPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        <div class="st-radar-legend-item">
+                                            <span class="st-radar-legend-dot" style="background:#ff8fa3;"></span>
+                                            <span class="st-radar-legend-name">@kv.Key</span>
+                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@legendPct.ToString("F0")%)</span></span>
                                         </div>
                                     }
                                 </div>
@@ -366,39 +380,51 @@
                             </div>
                         }
 
-                        <!-- ── By Year ── -->
+                        <!-- ── Release Year — style AniList ── -->
                         @if (_s.ByYear.Any())
                         {
                             <div class="st-section">
                                 <div class="st-section-title">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                                    By Year
+                                    Release Year
                                     <span class="st-section-meta">@_s.ByYear.Count years</span>
                                 </div>
-                                <div class="st-year-chart">
+                                <!-- AniList-style: chronological, every year shown -->
+                                <div class="st-year-anilist">
                                     @{
-                                        var maxY = _s.ByYear.Values.DefaultIfEmpty(1).Max();
+                                        var yearsSorted = _s.ByYear.OrderBy(x => x.Key).ToList();
+                                        var maxY = yearsSorted.Max(x => x.Value);
                                     }
-                                    @foreach (var kv in _s.ByYear.OrderByDescending(x => x.Key).Take(15))
+                                    @foreach (var kv in yearsSorted)
                                     {
                                         var pct = maxY > 0 ? kv.Value * 100.0 / maxY : 0;
-                                        <div class="st-year-row">
-                                            <span class="st-year-lbl">@kv.Key</span>
-                                            <div class="st-year-bar-wrap">
-                                                <div class="st-year-bar-fill" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                                        <div class="st-year-al-col" title="@kv.Key: @kv.Value anime">
+                                            <span class="st-year-al-count @(kv.Value == maxY ? "st-year-al-peak" : "")">@(kv.Value > 0 ? kv.Value.ToString() : "")</span>
+                                            <div class="st-year-al-bar-wrap">
+                                                <div class="st-year-al-bar-fill @(kv.Value == maxY ? "st-year-al-fill-peak" : "")" style="height:@pct.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
                                             </div>
-                                            <span class="st-year-count">@kv.Value</span>
+                                            <span class="st-year-al-lbl">@(kv.Key % 5 == 0 ? kv.Key.ToString() : "·")</span>
                                         </div>
                                     }
                                 </div>
                             </div>
                         }
 
-                        <!-- ── Seasons ── -->
+                        <!-- ── Seasons (no emoji, wind-rose icon) ── -->
                         @if (_s.BySeason.Any())
                         {
                             <div class="st-section">
-                                <div class="st-section-title">🌸 Seasons</div>
+                                <div class="st-section-title">
+                                    <!-- Wind rose / compass icon for seasons -->
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="2" x2="12" y2="6" />
+                                        <line x1="12" y1="18" x2="12" y2="22" />
+                                        <line x1="2" y1="12" x2="6" y2="12" />
+                                        <line x1="18" y1="12" x2="22" y2="12" />
+                                    </svg>
+                                    Seasons
+                                </div>
                                 <div class="st-season-grid">
                                     @{
                                         var maxSeason = _s.BySeason.Values.DefaultIfEmpty(0).Max();
@@ -408,9 +434,7 @@
                                         var count = _s.BySeason.GetValueOrDefault(season, 0);
                                         var total = _s.BySeason.Values.Sum();
                                         var pct = total > 0 ? count * 100.0 / total : 0;
-                                        var emoji = season switch { "WINTER" => "❄️", "SPRING" => "🌸", "SUMMER" => "☀️", "FALL" => "🍂", _ => "🌿" };
                                         <div class="st-season-cell @(count == maxSeason && count > 0 ? "st-season-top" : "")">
-                                            <span class="st-season-emoji">@emoji</span>
                                             <span class="st-season-name">@(season[0] + season[1..].ToLower())</span>
                                             <span class="st-season-count">@count</span>
                                             <span class="st-season-pct">@pct.ToString("F0")%</span>
@@ -420,7 +444,7 @@
                             </div>
                         }
 
-                        <!-- ── Sources ── -->
+                        <!-- ── Source Material — Radar ── -->
                         @if (_s.BySource.Any())
                         {
                             <div class="st-section">
@@ -428,45 +452,61 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
                                     Source Material
                                 </div>
-                                <div class="st-bar-list">
-                                    @{
-                                        var maxSrc = _s.BySource.Values.DefaultIfEmpty(1).Max();
-                                    }
-                                    @foreach (var kv in _s.BySource.OrderByDescending(x => x.Value).Take(8))
+                                @{
+                                    var radarSources = _s.BySource.OrderByDescending(x => x.Value).Take(7).ToList();
+                                }
+                                <div class="st-radar-wrap">
+                                    @((MarkupString)BuildRadarSvg(radarSources, "#a855f7", "#d8b4fe"))
+                                </div>
+                                <div class="st-radar-legend">
+                                    @foreach (var kv in radarSources)
                                     {
-                                        var pct = maxSrc > 0 ? kv.Value * 100.0 / maxSrc : 0;
-                                        <div class="st-bar-row">
-                                            <span class="st-bar-name">@kv.Key</span>
-                                            <div class="st-bar-track">
-                                                <div class="st-bar-fill st-bar-source" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
-                                            <span class="st-bar-val">@kv.Value</span>
+                                        var legendPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        <div class="st-radar-legend-item">
+                                            <span class="st-radar-legend-dot" style="background:#d8b4fe;"></span>
+                                            <span class="st-radar-legend-name">@kv.Key</span>
+                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@legendPct.ToString("F0")%)</span></span>
                                         </div>
                                     }
                                 </div>
                             </div>
                         }
 
-                        <!-- ── Country ── -->
+                        <!-- ── Country — Pie chart (no emoji) ── -->
                         @if (_s.ByCountry.Count > 1)
                         {
                             <div class="st-section">
-                                <div class="st-section-title">🌏 Country of Origin</div>
-                                <div class="st-bar-list">
+                                <div class="st-section-title">
+                                    <!-- Globe / map pin icon -->
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="2" y1="12" x2="22" y2="12" />
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    </svg>
+                                    Country of Origin
+                                </div>
+                                @{
+                                    var countrySorted = _s.ByCountry.OrderByDescending(x => x.Value).ToList();
+                                    var pieSvg = BuildPieSvg(countrySorted);
+                                }
+                                <div class="st-pie-wrap">
+                                    @((MarkupString)pieSvg)
+                                </div>
+                                <div class="st-radar-legend">
                                     @{
-                                        var maxC = _s.ByCountry.Values.DefaultIfEmpty(1).Max();
+                                        var pieColors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
+                                        int ci = 0;
                                     }
-                                    @foreach (var kv in _s.ByCountry.OrderByDescending(x => x.Value))
+                                    @foreach (var kv in countrySorted)
                                     {
-                                        var flag = kv.Key switch { "JP" => "🇯🇵", "CN" => "🇨🇳", "KR" => "🇰🇷", "TW" => "🇹🇼", _ => "🌐" };
                                         var name = kv.Key switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => kv.Key };
-                                        var pct = maxC > 0 ? kv.Value * 100.0 / maxC : 0;
-                                        <div class="st-bar-row">
-                                            <span class="st-bar-name">@flag @name</span>
-                                            <div class="st-bar-track">
-                                                <div class="st-bar-fill st-bar-country" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
-                                            <span class="st-bar-val">@kv.Value</span>
+                                        var pctC = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        var color = pieColors[ci % pieColors.Length];
+                                        ci++;
+                                        <div class="st-radar-legend-item">
+                                            <span class="st-radar-legend-dot" style="background:@color;"></span>
+                                            <span class="st-radar-legend-name">@name</span>
+                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@pctC.ToString("F0")%)</span></span>
                                         </div>
                                     }
                                 </div>
@@ -481,15 +521,11 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
                                     Top Tags
                                 </div>
+                                <!-- FIX: all tags same color, no opacity variation on color -->
                                 <div class="st-tags-wrap">
-                                    @{
-                                        var maxTag = _s.TopTags.FirstOrDefault().Value;
-                                    }
                                     @foreach (var kv in _s.TopTags.Take(24))
                                     {
-                                        var tagPct = maxTag > 0 ? (int)(kv.Value * 100 / maxTag) : 0;
-                                        var opacity = 0.45 + tagPct * 0.0055;
-                                        <span class="st-tag" style="opacity:@opacity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)">@kv.Key<span class="st-tag-count">@kv.Value</span></span>
+                                        <span class="st-tag">@kv.Key<span class="st-tag-count">@kv.Value</span></span>
                                     }
                                 </div>
                             </div>
@@ -502,72 +538,23 @@
                                 Engagement
                             </div>
                             <div class="st-engage-grid">
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.WithNotes</span>
-                                    <span class="st-engage-lbl">with notes</span>
-                                </div>
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.Rewatched</span>
-                                    <span class="st-engage-lbl">rewatched</span>
-                                </div>
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.CompletionRate.ToString("F0")%</span>
-                                    <span class="st-engage-lbl">completion</span>
-                                </div>
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.DropRate.ToString("F0")%</span>
-                                    <span class="st-engage-lbl">drop rate</span>
-                                </div>
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.Private</span>
-                                    <span class="st-engage-lbl">private</span>
-                                </div>
-                                <div class="st-engage-cell">
-                                    <span class="st-engage-val">@_s.Favorited</span>
-                                    <span class="st-engage-lbl">favourited</span>
-                                </div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.WithNotes</span><span class="st-engage-lbl">with notes</span></div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.Rewatched</span><span class="st-engage-lbl">rewatched</span></div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.CompletionRate.ToString("F0")%</span><span class="st-engage-lbl">completion</span></div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.DropRate.ToString("F0")%</span><span class="st-engage-lbl">drop rate</span></div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.Private</span><span class="st-engage-lbl">private</span></div>
+                                <div class="st-engage-cell"><span class="st-engage-val">@_s.Favorited</span><span class="st-engage-lbl">favourited</span></div>
                             </div>
                         </div>
 
-                        <!-- ── Recent activity ── -->
-                        @if (_s.RecentlyUpdated.Any())
-                        {
-                            <div class="st-section">
-                                <div class="st-section-title">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-4.5" /></svg>
-                                    Recent Activity
-                                </div>
-                                <div class="st-recent-list">
-                                    @foreach (var e in _s.RecentlyUpdated)
-                                    {
-                                        <div class="st-recent-row">
-                                            <div class="st-recent-poster" style="background-image:url('@e.Anime.ImageUrl');@(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")"></div>
-                                            <div class="st-recent-info">
-                                                <span class="st-recent-title">@TruncateTitle(e.Anime.Title)</span>
-                                                <div class="st-recent-meta">
-                                                    @if (e.Status.HasValue)
-                                                    {
-                                                        var sc = GetStatusColor(e.Status.Value);
-                                                        <span class="st-recent-status" style="color:@sc">@GetStatusLabel(e.Status.Value)</span>
-                                                        <span class="st-recent-sep">·</span>
-                                                    }
-                                                    <span class="st-recent-date">@FormatRelativeDate(e.UpdatedAt)</span>
-                                                </div>
-                                            </div>
-                                            @if (e.Score > 0)
-                                            {
-                                                <span class="st-recent-score" style="color:@GetScoreColor(e.Score)">@e.Score.ToString("G")</span>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        }
                     }
                 }
-            </div>
-        </div>
+
+            </div><!-- /pp-body -->
+        </div><!-- /pp-panel -->
     </div>
+
+    <!-- /pp-overlay -->
 }
 
 @code {
@@ -589,7 +576,9 @@
         "#8b5cf6","#a855f7","#d946ef","#ec4899"
     };
 
-    // ── Stats snapshot ──────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────────────
+    //  Stats snapshot
+    // ────────────────────────────────────────────────────────────────────────
     private StatsSnapshot? _s;
 
     private class StatsSnapshot
@@ -608,9 +597,12 @@
         public double DropRate { get; set; }
         public int UniqueGenres { get; set; }
         public int UniqueStudios { get; set; }
-        public int AvgEpisodeDuration { get; set; }
+        public double DaysPlanned { get; set; }  // NEW: days in planning list
 
         public Dictionary<ListStatus, int> ByStatus { get; set; } = new();
+        // FIX: use string key "7.5" etc. for half-step scores
+        public Dictionary<string, int> ScoreDist2 { get; set; } = new();
+        // Legacy int dict kept for backward compat (not used in display anymore)
         public Dictionary<int, int> ScoreDist { get; set; } = new();
         public Dictionary<string, int> TopGenres { get; set; } = new();
         public Dictionary<string, int> ByFormat { get; set; } = new();
@@ -621,10 +613,7 @@
         public Dictionary<string, int> ByCountry { get; set; } = new();
         public Dictionary<string, int> TopTags { get; set; } = new();
 
-        public UserListEntry? BestAnime { get; set; }
-        public UserListEntry? WorstAnime { get; set; }
         public UserListEntry? LongestAnime { get; set; }
-        public List<UserListEntry> RecentlyUpdated { get; set; } = new();
     }
 
     private void ComputeStats()
@@ -635,46 +624,91 @@
 
         s.Favorited = UserListService.GetFavoriteIds().Count;
 
+        // FIX: deduplicate anime ID for tags/country/studios/genres
+        // Each field should count ONE per anime (not per tag instance)
+        var seenGenres = new HashSet<(int, string)>();
+        var seenStudios = new HashSet<(int, string)>();
+        var seenTags = new HashSet<(int, string)>();
+        var seenCountry = new HashSet<int>();
+        var seenFormat = new HashSet<int>();
+        var seenSource = new HashSet<int>();
+        var seenYear = new HashSet<int>();
+        var seenSeason = new HashSet<int>();
+
         foreach (var e in all)
         {
+            var id = e.Anime.Id;
+
+            // Status
             if (e.Status.HasValue)
                 s.ByStatus[e.Status.Value] = s.ByStatus.GetValueOrDefault(e.Status.Value) + 1;
 
+            // Episodes: use EpisodesWatched directly — that's what the user input
             s.TotalEpisodes += e.EpisodesWatched;
-            var dur = e.Anime.Duration ?? 24;
-            s.TotalMinutes += (long)e.EpisodesWatched * dur;
 
+            // Watch time: only for non-planning
+            if (e.Status != ListStatus.Planning)
+            {
+                var dur = e.Anime.Duration ?? 24;
+                s.TotalMinutes += (long)e.EpisodesWatched * dur;
+            }
+
+            // Days Planned: sum total episode time for planning entries
+            if (e.Status == ListStatus.Planning)
+            {
+                var planDur = e.Anime.Duration ?? 24;
+                var planEps = GetTotalEpsFromString(e.Anime.Episodes);
+                s.DaysPlanned += planEps * planDur / 1440.0;
+            }
+
+            // Score: one score per unique anime entry — no dedup needed (1:1 with entry)
             if (e.Score > 0)
             {
                 s.ScoredCount++;
                 s.AvgScore += e.Score;
+                // half-step bucket: round to nearest 0.5
+                double rounded = Math.Round(e.Score * 2) / 2.0;
+                rounded = Math.Clamp(rounded, 0.5, 10.0);
+                string key = rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+                s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
                 int bucket = Math.Clamp((int)Math.Round(e.Score), 1, 10);
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
 
+            // Genres: 1 per (anime, genre)
             foreach (var g in e.Anime.Genres ?? new())
-                s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
+                if (seenGenres.Add((id, g)))
+                    s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
 
-            if (!string.IsNullOrEmpty(e.Anime.Format))
+            // Format: 1 per anime
+            if (!string.IsNullOrEmpty(e.Anime.Format) && seenFormat.Add(id))
                 s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
 
+            // Studios: 1 per (anime, studio)
             foreach (var st in e.Anime.Studios ?? new())
-                s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
+                if (!string.IsNullOrEmpty(st.Name) && seenStudios.Add((id, st.Name)))
+                    s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
 
-            if (e.Anime.Year.HasValue)
+            // Year: 1 per anime
+            if (e.Anime.Year.HasValue && seenYear.Add(id))
                 s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
 
-            if (!string.IsNullOrEmpty(e.Anime.Season))
+            // Season: 1 per anime
+            if (!string.IsNullOrEmpty(e.Anime.Season) && seenSeason.Add(id))
                 s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
 
-            if (!string.IsNullOrEmpty(e.Anime.Source))
+            // Source: 1 per anime
+            if (!string.IsNullOrEmpty(e.Anime.Source) && seenSource.Add(id))
                 s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
 
-            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
+            // Country: 1 per anime
+            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin) && seenCountry.Add(id))
                 s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
 
+            // Tags: 1 per (anime, tag) — count #animes that have each tag
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
-                s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
+                if (seenTags.Add((id, t.Name)))
+                    s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
 
             if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
             if (e.TotalRewatches > 0) s.Rewatched++;
@@ -685,9 +719,14 @@
 
         s.Completed = s.ByStatus.GetValueOrDefault(ListStatus.Completed);
         int dropped = s.ByStatus.GetValueOrDefault(ListStatus.Dropped);
-        int finished = s.Completed + dropped;
-        s.CompletionRate = finished > 0 ? s.Completed * 100.0 / finished : 0;
+        int watching = s.ByStatus.GetValueOrDefault(ListStatus.Watching)
+                      + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
+        int paused = s.ByStatus.GetValueOrDefault(ListStatus.Paused);
+        // FIX: completion = Completed / (Completed + Watching + Paused + Dropped)
+        int denominator = s.Completed + watching + paused + dropped;
+        s.CompletionRate = denominator > 0 ? s.Completed * 100.0 / denominator : 0;
         s.DropRate = s.Total > 0 ? dropped * 100.0 / s.Total : 0;
+
         s.UniqueGenres = s.TopGenres.Count;
         s.UniqueStudios = s.TopStudios.Count;
 
@@ -695,23 +734,142 @@
         s.TopStudios = s.TopStudios.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
         s.TopTags = s.TopTags.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-        var scored = all.Where(e => e.Score > 0).ToList();
-        s.BestAnime = scored.OrderByDescending(e => e.Score).FirstOrDefault();
-        s.WorstAnime = scored.OrderBy(e => e.Score).FirstOrDefault();
-
         s.LongestAnime = all
-            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0)
+            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0 && e.Status != ListStatus.Planning)
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
-        var withDur = all.Where(e => e.Anime.Duration.HasValue).ToList();
-        if (withDur.Any()) s.AvgEpisodeDuration = (int)Math.Round(withDur.Average(e => e.Anime.Duration!.Value));
-
-        s.RecentlyUpdated = all.OrderByDescending(e => e.UpdatedAt).Take(5).ToList();
         _s = s;
     }
 
-    // ── Format helpers ───────────────────────────────────────────────────
+    // ── SVG chart builders ───────────────────────────────────────────────────
+
+    /// <summary>Builds a radar/spider SVG for the given data items.</summary>
+    private static string BuildRadarSvg(List<KeyValuePair<string, int>> items, string strokeColor, string fillColor)
+    {
+        if (items.Count < 2) return "";
+        int n = items.Count;
+        double maxVal = items.Max(x => x.Value);
+        if (maxVal == 0) return "";
+
+        const double cx = 100, cy = 100, r = 75;
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-radar-svg\">");
+
+        // Grid circles
+        for (int ring = 1; ring <= 4; ring++)
+        {
+            double rr = r * ring / 4.0;
+            sb.Append($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{rr.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" fill=\"none\" stroke=\"rgba(255,255,255,0.08)\" stroke-width=\"0.5\"/>");
+        }
+
+        // Axes
+        for (int i = 0; i < n; i++)
+        {
+            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
+            double ax = cx + r * Math.Cos(angle);
+            double ay = cy + r * Math.Sin(angle);
+            sb.Append($"<line x1=\"{cx}\" y1=\"{cy}\" x2=\"{ax.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" y2=\"{ay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"0.5\"/>");
+        }
+
+        // Data polygon
+        var pts = new List<(double x, double y)>();
+        for (int i = 0; i < n; i++)
+        {
+            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
+            double val = items[i].Value / maxVal;
+            double px = cx + r * val * Math.Cos(angle);
+            double py = cy + r * val * Math.Sin(angle);
+            pts.Add((px, py));
+        }
+
+        string polyPts = string.Join(" ", pts.Select(p =>
+            $"{p.x.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)},{p.y.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}"));
+
+        sb.Append($"<polygon points=\"{polyPts}\" fill=\"{fillColor}\" fill-opacity=\"0.15\" stroke=\"{strokeColor}\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/>");
+
+        // Dots
+        foreach (var (px, py) in pts)
+            sb.Append($"<circle cx=\"{px.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" cy=\"{py.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" r=\"2.5\" fill=\"{strokeColor}\"/>");
+
+        // Labels
+        for (int i = 0; i < n; i++)
+        {
+            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
+            double lx = cx + (r + 14) * Math.Cos(angle);
+            double ly = cy + (r + 14) * Math.Sin(angle);
+            string anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
+            string label = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
+            sb.Append($"<text x=\"{lx.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" y=\"{ly.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" fill=\"rgba(255,255,255,0.5)\">{System.Net.WebUtility.HtmlEncode(label)}</text>");
+        }
+
+        sb.Append("</svg>");
+        return sb.ToString();
+    }
+
+    /// <summary>Builds a pie chart SVG for country data.</summary>
+    private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
+    {
+        if (!items.Any()) return "";
+        var colors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
+        double total = items.Sum(x => x.Value);
+        if (total == 0) return "";
+
+        const double cx = 100, cy = 100, r = 75, hole = 38;
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
+
+        double startAngle = -Math.PI / 2;
+        int ci = 0;
+        foreach (var kv in items)
+        {
+            double sweep = 2 * Math.PI * kv.Value / total;
+            double endAngle = startAngle + sweep;
+
+            double x1 = cx + r * Math.Cos(startAngle);
+            double y1 = cy + r * Math.Sin(startAngle);
+            double x2 = cx + r * Math.Cos(endAngle);
+            double y2 = cy + r * Math.Sin(endAngle);
+            double xi1 = cx + hole * Math.Cos(startAngle);
+            double yi1 = cy + hole * Math.Sin(startAngle);
+            double xi2 = cx + hole * Math.Cos(endAngle);
+            double yi2 = cy + hole * Math.Sin(endAngle);
+            int large = sweep > Math.PI ? 1 : 0;
+            string color = colors[ci % colors.Length];
+
+            string ic = System.Globalization.CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator == "." ? "" : "";
+            string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+            sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(r)} {F(r)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(hole)} {F(hole)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{color}\" fill-opacity=\"0.85\" stroke=\"#16181e\" stroke-width=\"1.5\"/>");
+
+            // Percentage label if big enough
+            double pct = kv.Value / total;
+            if (pct > 0.06)
+            {
+                double midAngle = startAngle + sweep / 2;
+                double lr = (r + hole) / 2;
+                double lx = cx + lr * Math.Cos(midAngle);
+                double ly = cy + lr * Math.Sin(midAngle);
+                sb.Append($"<text x=\"{F(lx)}\" y=\"{F(ly)}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"7.5\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>");
+            }
+
+            startAngle = endAngle;
+            ci++;
+        }
+
+        sb.Append("</svg>");
+        return sb.ToString();
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static int GetTotalEpsFromString(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 13; // default
+        var part = s.Split('/').Last().Trim().TrimEnd('+', '?');
+        return int.TryParse(part, out int v) && v > 0 ? v : 13;
+    }
+
     private static string FormatDays(long min) { double d = min / 1440.0; return d >= 1 ? d.ToString("F1") : (min / 60.0).ToString("F1"); }
     private static string FormatHours(long min) => (min / 60.0).ToString("F0");
     private static string FormatMinutes(long min) { if (min >= 1440) return (min / 1440.0).ToString("F1") + " days"; if (min >= 60) return (min / 60.0).ToString("F0") + " hrs"; return min + " min"; }
@@ -722,16 +880,6 @@
         if (!string.IsNullOrEmpty(a.Episodes) && a.Episodes != "N/A")
         { var part = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?'); if (int.TryParse(part, out int p) && p > 0) eps = p; }
         return eps * (long)(a.Duration ?? 24);
-    }
-
-    private static string FormatRelativeDate(DateTime dt)
-    {
-        var d = DateTime.Now - dt;
-        if (d.TotalMinutes < 60) return $"{(int)d.TotalMinutes}m ago";
-        if (d.TotalHours < 24) return $"{(int)d.TotalHours}h ago";
-        if (d.TotalDays < 30) return $"{(int)d.TotalDays}d ago";
-        if (d.TotalDays < 365) return $"{(int)(d.TotalDays / 30)}mo ago";
-        return $"{(int)(d.TotalDays / 365)}y ago";
     }
 
     private static string TruncateTitle(string t) => t.Length > 28 ? t[..26] + "…" : t;
@@ -767,7 +915,7 @@
         _ => "#ef4444"
     };
 
-    private static string GetScoreBarColor(int score) => score switch
+    private static string GetScoreBarColorDouble(double score) => score switch
     {
         >= 9 => "#22c55e",
         >= 7 => "#84cc16",
@@ -776,7 +924,7 @@
         _ => "#ef4444"
     };
 
-    // ── Lifecycle ────────────────────────────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
     private bool _prevVisible = false;
     protected override void OnParametersSet()
     {
@@ -790,7 +938,7 @@
         }
     }
 
-    // ── OAuth ────────────────────────────────────────────────────────────
+    // ── OAuth ──────────────────────────────────────────────────────────────────
     private async Task SubmitToken()
     {
         if (string.IsNullOrWhiteSpace(_pastedToken)) return;
@@ -846,7 +994,6 @@
         UserListService.NotifyChanged();
 
         try { var favIds = await AniListAuth.FetchFavouriteIdsAsync(); if (favIds.Count > 0) { UserListService.ImportFavorites(favIds); UserListService.NotifyChanged(); } } catch { }
-
         if (showUI) { _state = PanelState.Done; StateHasChanged(); }
     }
 
