@@ -1160,13 +1160,13 @@
 }
 
 .st-year-al-lbl {
-    font-size: 8px;
+    font-size: 7px; /* réduit de 8px → 7px pour tenir */
     color: rgba(255,255,255,0.3);
     line-height: 1;
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    height: 24px;
+    height: 28px; /* légèrement plus haut */
     text-align: center;
     overflow: hidden;
 }
