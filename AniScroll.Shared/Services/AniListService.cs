@@ -48,47 +48,53 @@ namespace AniScroll.Shared.Services
 
         public string LastError { get; private set; } = string.Empty;
 
-        public RateLimitInfo AniListRateLimit { get; } = new() { Limit = 30 };  // AniList: 30 req/min
-        public RateLimitInfo JikanRateLimit { get; } = new() { Limit = 60 };  // Jikan:   60 req/min
+        public RateLimitInfo AniListRateLimit { get; } = new() { Limit = 30 };
+        public RateLimitInfo JikanRateLimit { get; } = new() { Limit = 60 };
 
-        // Legacy compat
         public int RequestCount => AniListRateLimit.RequestsSent;
-        public const int RequestLimit = 30; // AniList: 30 req/min
+        public const int RequestLimit = 30;
 
         private const string ANILIST_ENDPOINT = "https://graphql.anilist.co";
         private const int RATE_LIMIT_FALLBACK_SECONDS = 60;
 
-        // ─── Static metadata caches (survive across popup open/close) ─────────────
+        // ─── Static metadata caches ───────────────────────────────────────────────
         private static List<string>? _cachedGenres;
         private static List<string>? _cachedTags;
         private static List<string>? _cachedStudios;
         private static bool _studiosLoading;
 
-        // ─── Seen-IDs deduplication ───────────────────────────────────────────────
-        // Static so it persists for the entire browser session.
-        // The server-side filter is capped at MAX_FILTER_IDS to keep the GraphQL
-        // query size reasonable; the HashSet itself keeps growing to prevent local
-        // duplicate detection beyond that cap.
+        // ─── Deduplication — two-layer strategy ───────────────────────────────────
+        //
+        // Layer 1 — Page rotation (_batchPage):
+        //   Each call increments the page number sent to AniList.
+        //     batch 1 → page 1 (ranks  1– 50 of each pool)
+        //     batch 2 → page 2 (ranks 51–100)  … etc.
+        //   AniList handles freshness server-side; no query-size growth at all.
+        //   popular/topScore have 240+ pages (~12 000 anime) before exhaustion.
+        //
+        // Layer 2 — id_not_in + client-side check (_seenIds):
+        //   Catches the rare edge case where an anime moves across pages between
+        //   two fetches (e.g. its popularity rank changed).
+        //   All seen IDs are always included — no cap. The filter grows with usage
+        //   but stays well within HTTP limits (~5 chars/ID, AniList limit ~100 KB).
+        //   Also enforced client-side in ExtractPool as a final guard.
+
         private static readonly HashSet<int> _seenIds = new();
-        private const int MAX_FILTER_IDS = 500;
+        private static int _batchPage = 1;
 
-        /// <summary>Clears the seen-IDs pool (e.g. on manual feed refresh).</summary>
-        public void ClearSeenIds() => _seenIds.Clear();
+        /// <summary>Resets feed to page 1 (e.g. on manual refresh).</summary>
+        public void ClearSeenIds()
+        {
+            _seenIds.Clear();
+            _batchPage = 1;
+        }
 
-        /// <summary>
-        /// Builds an AniList <c>id_not_in: [...]</c> filter fragment from the current
-        /// seen pool, or returns an empty string if nothing has been seen yet.
-        /// </summary>
         private string BuildIdNotInFilter()
         {
             if (_seenIds.Count == 0) return "";
-            var ids = _seenIds.Count <= MAX_FILTER_IDS
-                ? (IEnumerable<int>)_seenIds
-                : _seenIds.Take(MAX_FILTER_IDS);
-            return $", id_not_in: [{string.Join(",", ids)}]";
+            return $", id_not_in: [{string.Join(",", _seenIds)}]";
         }
 
-        /// <summary>Adds every card's ID to the seen pool after a successful fetch.</summary>
         private void RegisterSeen(IEnumerable<AnimeCard> cards)
         {
             foreach (var a in cards)
@@ -131,13 +137,8 @@ namespace AniScroll.Shared.Services
 
         // ─── Metadata fetchers ────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Fetches the full AniList genre collection and tag collection (one request each).
-        /// Results are cached statically — subsequent calls are instant.
-        /// </summary>
         public async Task FetchGenresAndTagsAsync()
         {
-            // Genres — uses the built-in GenreCollection query
             if (_cachedGenres == null)
             {
                 var resp = await PostGraphQL("query { GenreCollection }");
@@ -154,7 +155,6 @@ namespace AniScroll.Shared.Services
                 _cachedGenres ??= _genresFallback;
             }
 
-            // Tags — uses MediaTagCollection
             if (_cachedTags == null)
             {
                 var resp = await PostGraphQL("query { MediaTagCollection { name } }");
@@ -172,20 +172,13 @@ namespace AniScroll.Shared.Services
             }
         }
 
-        /// <summary>
-        /// Fetches all AniList studios using batched multi-page GraphQL aliases.
-        /// Each request fetches <c>BATCH_SIZE</c> pages at once, reducing total
-        /// API calls by ~8× compared to one-page-per-request.
-        /// Budget: ~1 request / 4 s  =  15 req/min, leaving 15/min for user actions.
-        /// Terminates naturally when every page in a batch reports hasNextPage=false.
-        /// </summary>
         public async Task FetchAllStudiosAsync(Func<Task>? onBatch = null)
         {
             if (_cachedStudios != null || _studiosLoading) return;
             _studiosLoading = true;
 
-            const int BATCH_SIZE = 8;   // pages per GraphQL request
-            const int BATCH_DELAY = 4000; // ms between requests ≈ 15 req/min
+            const int BATCH_SIZE = 8;
+            const int BATCH_DELAY = 4000;
 
             var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int batchStart = 1;
@@ -194,10 +187,8 @@ namespace AniScroll.Shared.Services
             {
                 while (true)
                 {
-                    // Yield until rate-limit window resets
                     while (IsRateLimited()) await Task.Delay(2000);
 
-                    // Build one query with BATCH_SIZE page aliases
                     var sb = new System.Text.StringBuilder("query {");
                     for (int i = 0; i < BATCH_SIZE; i++)
                     {
@@ -212,15 +203,13 @@ namespace AniScroll.Shared.Services
                     string? resp = null;
                     try { resp = await PostGraphQL(sb.ToString()); }
                     catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync batch {batchStart} error: {ex.Message}");
-                    }
+                    { System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync batch {batchStart} error: {ex.Message}"); }
 
                     if (resp == null) break;
 
                     JObject? data = null;
                     try { data = JObject.Parse(resp)?["data"] as JObject; }
-                    catch { /* malformed JSON – stop */ break; }
+                    catch { break; }
                     if (data == null) break;
 
                     bool anyHasNext = false;
@@ -243,20 +232,17 @@ namespace AniScroll.Shared.Services
                             anyHasNext = true;
                     }
 
-                    // Progressive UI update after every batch
                     _cachedStudios = all.OrderBy(x => x).ToList();
                     if (onBatch != null) await onBatch();
 
-                    if (!anyHasNext) break; // all pages exhausted
+                    if (!anyHasNext) break;
 
                     batchStart += BATCH_SIZE;
                     await Task.Delay(BATCH_DELAY);
                 }
             }
             catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync fatal: {ex.Message}");
-            }
+            { System.Diagnostics.Debug.WriteLine($"FetchAllStudiosAsync fatal: {ex.Message}"); }
             finally
             {
                 _cachedStudios = all.OrderBy(x => x).ToList();
@@ -296,14 +282,11 @@ namespace AniScroll.Shared.Services
                     if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
                         JikanRateLimit.IsLimited = true;
-                        System.Diagnostics.Debug.WriteLine("Jikan down after all retries, switching to AniList fallback");
                         return await SearchAniListAsync(query);
                     }
 
-                    // 5xx → retry
                     if ((int)response.StatusCode >= 500)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Jikan {(int)response.StatusCode}, attempt {attempt}/{maxRetries}");
                         if (attempt < maxRetries) await Task.Delay(retryDelayMs * attempt);
                         continue;
                     }
@@ -332,7 +315,7 @@ namespace AniScroll.Shared.Services
                             MalId = item["mal_id"]?.Value<int>() ?? 0,
                             Title = titleRaw,
                             ImageUrl = item["images"]?["jpg"]?["large_image_url"]?.ToString()
-                                        ?? item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
+                                          ?? item["images"]?["jpg"]?["image_url"]?.ToString() ?? "",
                             Score = numScore > 0 ? numScore.ToString() : "N/A",
                             Type = item["type"]?.ToString() ?? "",
                             Episodes = item["episodes"]?.Value<int?>(),
@@ -345,7 +328,6 @@ namespace AniScroll.Shared.Services
                 }
                 catch (OperationCanceledException)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Jikan timeout, attempt {attempt}/{maxRetries}");
                     if (attempt < maxRetries) await Task.Delay(retryDelayMs * attempt);
                 }
                 catch (Exception ex)
@@ -355,7 +337,6 @@ namespace AniScroll.Shared.Services
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine("Jikan down after all retries, switching to AniList fallback");
             return await SearchAniListAsync(query);
         }
 
@@ -476,16 +457,21 @@ namespace AniScroll.Shared.Services
             try
             {
                 var fields = GetAnimeFieldsWithRelations();
-                var idNotIn = BuildIdNotInFilter();          // e.g. ", id_not_in: [1,2,3]"
+                var idNotIn = BuildIdNotInFilter(); // layer-2 safety net
 
-                // Single GraphQL request — AniList excludes seen IDs server-side,
-                // so every pool still returns up to 50 *fresh* results.
+                // Layer 1: page rotation.
+                // popular/topScore/hiddenGems: increment freely (240+ pages of fresh results).
+                // ongoing: cycles over 20 pages (trending changes daily anyway).
+                // upcoming: always page 1 (tiny pool, refreshes naturally).
+                int mainPage = _batchPage;
+                int ongoingPage = ((_batchPage - 1) % 20) + 1;
+
                 var query = $@"query {{
-                    popular:    Page(page: 1, perPage: 50) {{ media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: POPULARITY_DESC) {{ {fields} }} }}
-                    topScore:   Page(page: 1, perPage: 50) {{ media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 0, episodes_greater: 0, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: SCORE_DESC)      {{ {fields} }} }}
-                    hiddenGems: Page(page: 1, perPage: 50) {{ media(type: ANIME, status: FINISHED, isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: SCORE_DESC) {{ {fields} }} }}
-                    ongoing:    Page(page: 1, perPage: 50) {{ media(type: ANIME, status: RELEASING,        isAdult: false, averageScore_greater: 0, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: TRENDING_DESC) {{ {fields} }} }}
-                    upcoming:   Page(page: 1, perPage: 10) {{ media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: POPULARITY_DESC) {{ {fields} }} }}
+                    popular:    Page(page: {mainPage},    perPage: 50) {{ media(type: ANIME, status: FINISHED,         isAdult: false, averageScore_greater: 0,  episodes_greater: 0, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: POPULARITY_DESC) {{ {fields} }} }}
+                    topScore:   Page(page: {mainPage},    perPage: 50) {{ media(type: ANIME, status: FINISHED,         isAdult: false, averageScore_greater: 0,  episodes_greater: 0, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: SCORE_DESC)      {{ {fields} }} }}
+                    hiddenGems: Page(page: {mainPage},    perPage: 50) {{ media(type: ANIME, status: FINISHED,         isAdult: false, averageScore_greater: 70, episodes_greater: 0, popularity_lesser: 20000, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: SCORE_DESC) {{ {fields} }} }}
+                    ongoing:    Page(page: {ongoingPage}, perPage: 50) {{ media(type: ANIME, status: RELEASING,        isAdult: false, averageScore_greater: 0,  genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: TRENDING_DESC)  {{ {fields} }} }}
+                    upcoming:   Page(page: 1,             perPage: 10) {{ media(type: ANIME, status: NOT_YET_RELEASED, isAdult: false, genre_not_in: [""Hentai"",""Ecchi""]{idNotIn}, sort: POPULARITY_DESC)  {{ {fields} }} }}
                 }}";
 
                 var response = await PostGraphQL(query);
@@ -494,16 +480,27 @@ namespace AniScroll.Shared.Services
 
                 var data = JObject.Parse(response);
 
-                // Extract each pool
+                // ExtractPool also applies _seenIds client-side + deduplicates within pool
                 var popularPool = ExtractPool(data["data"]?["popular"]?["media"], true);
                 var topScorePool = ExtractPool(data["data"]?["topScore"]?["media"], true);
                 var hiddenGemsPool = ExtractPool(data["data"]?["hiddenGems"]?["media"], true);
                 var ongoingPool = ExtractPool(data["data"]?["ongoing"]?["media"], true);
                 var upcomingPool = ExtractPool(data["data"]?["upcoming"]?["media"], true);
 
-                // Pick with cross-pool deduplication:
-                // the same anime can appear in multiple pools (e.g. popular & topScore),
-                // so we track used IDs and skip duplicates while preserving category weights.
+                // Detect page exhaustion: both main pools empty → we've passed the last page.
+                // Reset and recurse once so the user never gets an empty feed.
+                if (popularPool.Count == 0 && topScorePool.Count == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Bulk] Page {_batchPage} exhausted — resetting");
+                    _batchPage = 1;
+                    _seenIds.Clear();
+                    return await GetBulkAnimesAsync();
+                }
+
+                // Advance page counter for the next batch
+                _batchPage++;
+
+                // Cross-pool deduplication — usedIds is shared across all PickInto calls
                 var usedIds = new HashSet<int>();
                 var result = new List<AnimeCard>(60);
 
@@ -523,7 +520,7 @@ namespace AniScroll.Shared.Services
                 PickInto(ongoingPool, 9);
                 PickInto(upcomingPool, 1);
 
-                // Fill to 60 in case some pools overlapped heavily
+                // Fill to 60 if pools overlapped (rare with page rotation)
                 int deficit = 60 - result.Count;
                 if (deficit > 0)
                 {
@@ -540,14 +537,11 @@ namespace AniScroll.Shared.Services
                     }
                 }
 
-                // Shuffle for variety
                 result = result.OrderBy(_ => _random.Next()).ToList();
-
-                // Register every returned ID so future requests exclude them
                 RegisterSeen(result);
 
                 System.Diagnostics.Debug.WriteLine(
-                    $"Bulk loaded {result.Count} anime (seen pool: {_seenIds.Count})");
+                    $"[Bulk] page={mainPage} → {result.Count} anime (total seen={_seenIds.Count})");
 
                 return new AnimeLoadResult { Animes = result, IsRateLimited = false };
             }
@@ -725,17 +719,27 @@ namespace AniScroll.Shared.Services
 
         // ─── Helpers ──────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Parses a JSON pool into AnimeCards with two deduplication guards baked in:
+        ///   • Skips IDs already in _seenIds (inter-batch, client-side layer-2 check).
+        ///   • Skips duplicate IDs within the same pool (AniList edge case).
+        /// </summary>
         private List<AnimeCard> ExtractPool(JToken? arr, bool includeRelations)
         {
             var pool = new List<AnimeCard>();
+            var seenInPool = new HashSet<int>(); // intra-pool dedup
             if (arr == null || !arr.HasValues) return pool;
+
             foreach (var m in arr)
             {
                 if (m == null || m.Type == JTokenType.Null) continue;
                 try
                 {
                     var a = ParseAnimeCard(m, includeRelations);
-                    if (a != null) pool.Add(a);
+                    if (a == null || a.Id == 0) continue;
+                    if (_seenIds.Contains(a.Id)) continue; // already shown
+                    if (!seenInPool.Add(a.Id)) continue; // duplicate in this pool
+                    pool.Add(a);
                 }
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Parse error: " + ex.Message); }
             }
@@ -797,8 +801,7 @@ namespace AniScroll.Shared.Services
                 string nativeTitle = titleObj?["native"]?.ToString() ?? "";
 
                 var cover = m["coverImage"];
-                string imageUrl = cover?["extraLarge"]?.ToString()
-                               ?? cover?["large"]?.ToString() ?? "";
+                string imageUrl = cover?["extraLarge"]?.ToString() ?? cover?["large"]?.ToString() ?? "";
                 string coverColor = cover?["color"]?.ToString() ?? "";
 
                 string score = m["averageScore"] != null && m["averageScore"]!.Type != JTokenType.Null
@@ -853,7 +856,11 @@ namespace AniScroll.Shared.Services
                     foreach (var s in sn)
                     {
                         if (s == null || s.Type == JTokenType.Null) continue;
-                        studios.Add(new AnimeStudio { Id = s["id"]?.Value<int>() ?? 0, Name = s["name"]?.ToString() ?? "" });
+                        studios.Add(new AnimeStudio
+                        {
+                            Id = s["id"]?.Value<int>() ?? 0,
+                            Name = s["name"]?.ToString() ?? ""
+                        });
                     }
 
                 var relations = new List<AnimeRelation>();
