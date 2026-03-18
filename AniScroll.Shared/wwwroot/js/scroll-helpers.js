@@ -43,6 +43,11 @@ window.isModalScrollAtTop = function (element) {
     return element.scrollTop <= 2;
 };
 
+window.scrollElementToRight = function (el) {
+    if (!el) return;
+    requestAnimationFrame(function () { el.scrollLeft = el.scrollWidth; });
+};
+
 
 // ── Description zone helpers ─────────────────────────────────────────────────
 
