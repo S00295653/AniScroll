@@ -1,5 +1,5 @@
 ﻿/* ============================================================
-   profile-panel.css  —  AniList Profile & Import bottom sheet
+   profile-panel.css  —  AniList Profile & Algorithm tab
    ============================================================ */
 
 /* Overlay */
@@ -38,7 +38,18 @@
     max-height: 92dvh;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
+
+    .pp-panel::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .pp-panel::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+        border-radius: 2px;
+    }
 
 @keyframes pp-slide-up {
     from {
@@ -100,6 +111,46 @@
         color: rgba(255,255,255,0.85);
     }
 
+/* ── Tab bar ──────────────────────────────────────────────── */
+.pp-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 20px 0;
+}
+
+.pp-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.38);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+    .pp-tab:hover {
+        background: rgba(255,255,255,0.07);
+        color: rgba(255,255,255,0.65);
+    }
+
+.pp-tab-active {
+    background: rgba(233,69,96,0.12);
+    border-color: rgba(233,69,96,0.35);
+    color: #ff8fa3;
+}
+
+    .pp-tab-active svg {
+        stroke: #ff8fa3;
+    }
+
 .pp-divider {
     height: 1px;
     background: rgba(255,255,255,0.06);
@@ -108,7 +159,7 @@
 
 /* Body */
 .pp-body {
-    padding: 24px 20px 20px;
+    padding: 20px 20px 16px;
 }
 
 /* ── Not Connected ──────────────────────────────────────── */
@@ -121,7 +172,6 @@
     padding: 8px 0 4px;
 }
 
-/* Icon wrap with glow */
 .pp-connect-icon-wrap {
     width: 68px;
     height: 68px;
@@ -155,7 +205,6 @@
     max-width: 300px;
 }
 
-/* Feature checklist */
 .pp-connect-features {
     display: flex;
     flex-direction: column;
@@ -178,7 +227,6 @@
     font-weight: 500;
 }
 
-/* Connect button — full width */
 .pp-anilist-btn {
     display: flex;
     align-items: center;
@@ -195,6 +243,7 @@
     cursor: pointer;
     transition: filter 0.15s, transform 0.1s;
     letter-spacing: -0.1px;
+    font-family: inherit;
 }
 
     .pp-anilist-btn svg {
@@ -347,6 +396,7 @@
     cursor: pointer;
     transition: background 0.15s, transform 0.1s;
     margin-bottom: 10px;
+    font-family: inherit;
 }
 
     .pp-import-btn:hover {
@@ -367,6 +417,7 @@
     font-size: 13.5px;
     cursor: pointer;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
 }
 
     .pp-disconnect-btn:hover {
@@ -464,6 +515,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: filter 0.15s, transform 0.1s;
+    font-family: inherit;
 }
 
     .pp-done-close-btn:hover {
@@ -524,4 +576,408 @@
 
     .pp-token-input:focus {
         border-color: rgba(2,169,255,0.45);
+    }
+
+/* ═══════════════════════════════════════════════════════
+   ALGORITHM TAB
+   ═══════════════════════════════════════════════════════ */
+
+.pp-algo-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.pp-algo-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0 12px;
+    text-align: center;
+}
+
+.pp-algo-empty-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-algo-empty-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+}
+
+.pp-algo-empty-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.32);
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0;
+}
+
+.pp-algo-progress-bar-wrap {
+    width: 100%;
+    max-width: 200px;
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.pp-algo-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #E94560, #ff8fa3);
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pp-algo-progress-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* ── Stats row ──────────────────────────────────────── */
+.pp-algo-stats-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.pp-algo-stat-chip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 10px 6px 8px;
+}
+
+.pp-algo-stat-val {
+    font-size: 20px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.88);
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+.pp-algo-stat-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Section ────────────────────────────────────────── */
+.pp-algo-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: pp-section-in 0.25s ease-out both;
+}
+
+@keyframes pp-section-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pp-algo-section:nth-child(2) {
+    animation-delay: 0.04s;
+}
+
+.pp-algo-section:nth-child(3) {
+    animation-delay: 0.08s;
+}
+
+.pp-algo-section:nth-child(4) {
+    animation-delay: 0.12s;
+}
+
+.pp-algo-section:nth-child(5) {
+    animation-delay: 0.16s;
+}
+
+.pp-algo-section:nth-child(6) {
+    animation-delay: 0.20s;
+}
+
+.pp-algo-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pp-algo-section-title-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.pp-algo-section-icon {
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.pp-algo-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.82);
+    letter-spacing: 0.01em;
+}
+
+.pp-algo-section-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.28);
+    padding-left: 21px;
+}
+
+/* Badges */
+.pp-algo-section-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.pp-badge-pink {
+    background: rgba(233,69,96,0.18);
+    color: #ff8fa3;
+    border: 1px solid rgba(233,69,96,0.3);
+}
+
+.pp-badge-blue {
+    background: rgba(59,130,246,0.18);
+    color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.3);
+}
+
+.pp-badge-purple {
+    background: rgba(168,85,247,0.18);
+    color: #d8b4fe;
+    border: 1px solid rgba(168,85,247,0.3);
+}
+
+.pp-badge-red {
+    background: rgba(239,68,68,0.18);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.3);
+}
+
+.pp-badge-teal {
+    background: rgba(20,184,166,0.18);
+    color: #5eead4;
+    border: 1px solid rgba(20,184,166,0.3);
+}
+
+/* ── Pills ──────────────────────────────────────────── */
+.pp-algo-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.pp-algo-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* Favourite pills — ranked gradient */
+.pp-pill-fav {
+    background: rgba(233,69,96,0.1);
+    border-color: rgba(233,69,96,0.35);
+    color: #ff8fa3;
+}
+
+    .pp-pill-fav:hover {
+        background: rgba(233,69,96,0.2);
+        border-color: rgba(233,69,96,0.6);
+    }
+
+/* Crown for rank 0 */
+.pp-pill-crown {
+    font-size: 11px;
+    line-height: 1;
+}
+
+/* Secondary pills */
+.pp-pill-secondary {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.28);
+    color: #93c5fd;
+}
+
+    .pp-pill-secondary:hover {
+        background: rgba(59,130,246,0.18);
+        border-color: rgba(59,130,246,0.5);
+    }
+
+/* Discovery pills (non-removable) */
+.pp-pill-discovery {
+    background: rgba(168,85,247,0.08);
+    border-color: rgba(168,85,247,0.25);
+    color: #d8b4fe;
+    cursor: default;
+}
+
+/* Disliked pills */
+.pp-pill-disliked {
+    background: rgba(239,68,68,0.06);
+    border-color: rgba(239,68,68,0.22);
+    color: rgba(252,165,165,0.65);
+}
+
+    .pp-pill-disliked:hover {
+        background: rgba(239,68,68,0.14);
+        border-color: rgba(239,68,68,0.45);
+        color: #fca5a5;
+    }
+
+/* Tag pills */
+.pp-pill-tag {
+    background: rgba(20,184,166,0.07);
+    border-color: rgba(20,184,166,0.22);
+    color: #5eead4;
+    cursor: default;
+}
+
+/* Removed state (greyed out, strikethrough feel) */
+.pp-pill-removed {
+    opacity: 0.4;
+    text-decoration: line-through;
+    border-style: dashed;
+}
+
+/* Restored state (green tint for disliked when restored) */
+.pp-pill-restored {
+    opacity: 1 !important;
+    text-decoration: none !important;
+    background: rgba(34,197,94,0.1) !important;
+    border-color: rgba(34,197,94,0.35) !important;
+    color: #86efac !important;
+}
+
+/* Remove icon inside pill */
+.pp-pill-remove-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    margin-left: 1px;
+    opacity: 0.7;
+    transition: opacity 0.12s, background 0.12s;
+}
+
+.pp-algo-pill:hover .pp-pill-remove-icon {
+    opacity: 1;
+    background: rgba(0,0,0,0.35);
+}
+
+/* ── Calibration grid ────────────────────────────────── */
+.pp-algo-prefs-summary {
+    border-color: rgba(255,255,255,0.05);
+}
+
+.pp-algo-calibration-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pp-algo-cal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.pp-algo-cal-lbl {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 500;
+}
+
+.pp-algo-cal-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.82);
+}
+
+/* ── Reset button ────────────────────────────────────── */
+.pp-algo-reset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.09);
+    color: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
+    margin-top: 4px;
+}
+
+    .pp-algo-reset-btn:hover {
+        background: rgba(233,69,96,0.07);
+        border-color: rgba(233,69,96,0.25);
+        color: rgba(255,143,163,0.75);
     }

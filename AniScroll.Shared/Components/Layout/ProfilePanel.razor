@@ -27,190 +27,448 @@
                 </button>
             </div>
 
+            <!-- ── Tab nav ───────────────────────────────────────── -->
+            <div class="pp-tabs">
+                <button class="pp-tab @(_activeTab == "account" ? "pp-tab-active" : "")"
+                        @onclick='() => _activeTab = "account"'>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Account
+                </button>
+                <button class="pp-tab @(_activeTab == "algorithm" ? "pp-tab-active" : "")"
+                        @onclick='() => { _activeTab = "algorithm"; BuildPrefs(); }'>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Algorithm
+                </button>
+            </div>
+
             <div class="pp-divider"></div>
 
             <!-- ── Body ─────────────────────────────────────────── -->
             <div class="pp-body">
 
-                @if (_state == PanelState.NotConnected)
+                @if (_activeTab == "account")
                 {
-                    <!-- Not connected -->
-                    <div class="pp-connect-section">
-                        <div class="pp-connect-icon-wrap">
-                            <svg width="36" height="36" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0 0h512v512H0" fill="#1e2630" />
-                                <path d="M321.92 323.27V136.6c0-10.698-5.887-16.602-16.558-16.602h-36.433c-10.672 0-16.561 5.904-16.561 16.602v88.651c0 2.497 23.996 14.089 24.623 16.541 18.282 71.61 3.972 128.92-13.359 131.6 28.337 1.405 31.455 15.064 10.348 5.731 3.229-38.209 15.828-38.134 52.049-1.406.31.317 7.427 15.282 7.87 15.282h85.545c10.672 0 16.558-5.9 16.558-16.6v-36.524c0-10.698-5.886-16.602-16.558-16.602z" fill="#02a9ff" />
-                                <path d="M170.68 120 74.999 393h74.338l16.192-47.222h80.96L262.315 393h73.968l-95.314-273zm11.776 165.28 23.183-75.629 25.393 75.629z" fill="#fefefe" />
-                            </svg>
+                    <!-- ═══════════════════ ACCOUNT TAB ═══════════════════ -->
+                    @if (_state == PanelState.NotConnected)
+                    {
+                        <div class="pp-connect-section">
+                            <div class="pp-connect-icon-wrap">
+                                <svg width="36" height="36" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 0h512v512H0" fill="#1e2630" />
+                                    <path d="M321.92 323.27V136.6c0-10.698-5.887-16.602-16.558-16.602h-36.433c-10.672 0-16.561 5.904-16.561 16.602v88.651c0 2.497 23.996 14.089 24.623 16.541 18.282 71.61 3.972 128.92-13.359 131.6 28.337 1.405 31.455 15.064 10.348 5.731 3.229-38.209 15.828-38.134 52.049-1.406.31.317 7.427 15.282 7.87 15.282h85.545c10.672 0 16.558-5.9 16.558-16.6v-36.524c0-10.698-5.886-16.602-16.558-16.602z" fill="#02a9ff" />
+                                    <path d="M170.68 120 74.999 393h74.338l16.192-47.222h80.96L262.315 393h73.968l-95.314-273zm11.776 165.28 23.183-75.629 25.393 75.629z" fill="#fefefe" />
+                                </svg>
+                            </div>
+
+                            <p class="pp-connect-title">Connect with AniList</p>
+                            <p class="pp-connect-sub">
+                                Sign in to sync your anime list, custom lists, scores, episodes, and notes.
+                            </p>
+
+                            <div class="pp-connect-features">
+                                <div class="pp-connect-feature">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Import your anime &amp; manga list
+                                </div>
+                                <div class="pp-connect-feature">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Sync scores, episodes &amp; notes
+                                </div>
+                                <div class="pp-connect-feature">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    Custom lists &amp; watch status
+                                </div>
+                            </div>
+
+                            <button class="pp-anilist-btn" @onclick="StartOAuth">
+                                <svg width="16" height="16" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 0h512v512H0" fill="#1e2630" />
+                                    <path d="M321.92 323.27V136.6c0-10.698-5.887-16.602-16.558-16.602h-36.433c-10.672 0-16.561 5.904-16.561 16.602v88.651c0 2.497 23.996 14.089 24.623 16.541 18.282 71.61 3.972 128.92-13.359 131.6 28.337 1.405 31.455 15.064 10.348 5.731 3.229-38.209 15.828-38.134 52.049-1.406.31.317 7.427 15.282 7.87 15.282h85.545c10.672 0 16.558-5.9 16.558-16.6v-36.524c0-10.698-5.886-16.602-16.558-16.602z" fill="#02a9ff" />
+                                    <path d="M170.68 120 74.999 393h74.338l16.192-47.222h80.96L262.315 393h73.968l-95.314-273zm11.776 165.28 23.183-75.629 25.393 75.629z" fill="#fefefe" />
+                                </svg>
+                                Connect with AniList
+                            </button>
+                        </div>
+                    }
+                    else if (_state == PanelState.Loading)
+                    {
+                        <div class="pp-loading-section">
+                            <div class="pp-spinner"></div>
+                            <p class="pp-loading-text">@_loadingText</p>
+                        </div>
+                    }
+                    else if (_state == PanelState.Connected)
+                    {
+                        <div class="pp-user-card">
+                            @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.AvatarUrl))
+                            {
+                                <div class="pp-avatar"
+                                     style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
+                            }
+                            else
+                            {
+                                <div class="pp-avatar pp-avatar-placeholder">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                         stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                            }
+                            <div class="pp-user-info">
+                                <span class="pp-username">@(AniListAuth.CurrentUser?.Name ?? "AniList User")</span>
+                                <a class="pp-anilist-link"
+                                   href="https://anilist.co/user/@(AniListAuth.CurrentUser?.Name)"
+                                   target="_blank">
+                                    <span class="pp-al-dot"></span>AniList profile
+                                </a>
+                            </div>
                         </div>
 
-                        <p class="pp-connect-title">Connect with AniList</p>
-                        <p class="pp-connect-sub">
-                            Sign in to sync your anime list, custom lists, scores, episodes, and notes.
-                        </p>
-
-                        <div class="pp-connect-features">
-                            <div class="pp-connect-feature">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                    <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                Import your anime &amp; manga list
-                            </div>
-                            <div class="pp-connect-feature">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                    <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                Sync scores, episodes &amp; notes
-                            </div>
-                            <div class="pp-connect-feature">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                    <polyline points="20,6 9,17 4,12" stroke="#02a9ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                Custom lists &amp; watch status
-                            </div>
-                        </div>
-
-                        <button class="pp-anilist-btn" @onclick="StartOAuth">
-                            <svg width="16" height="16" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0 0h512v512H0" fill="#1e2630" />
-                                <path d="M321.92 323.27V136.6c0-10.698-5.887-16.602-16.558-16.602h-36.433c-10.672 0-16.561 5.904-16.561 16.602v88.651c0 2.497 23.996 14.089 24.623 16.541 18.282 71.61 3.972 128.92-13.359 131.6 28.337 1.405 31.455 15.064 10.348 5.731 3.229-38.209 15.828-38.134 52.049-1.406.31.317 7.427 15.282 7.87 15.282h85.545c10.672 0 16.558-5.9 16.558-16.6v-36.524c0-10.698-5.886-16.602-16.558-16.602z" fill="#02a9ff" />
-                                <path d="M170.68 120 74.999 393h74.338l16.192-47.222h80.96L262.315 393h73.968l-95.314-273zm11.776 165.28 23.183-75.629 25.393 75.629z" fill="#fefefe" />
+                        <button class="pp-import-btn" @onclick="StartImport">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <path d="M12 2v13M7 10l5 5 5-5" />
+                                <rect x="3" y="16" width="18" height="5" rx="1" />
                             </svg>
-                            Connect with AniList
+                            Import My List
                         </button>
-                    </div>
+
+                        <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">
+                            Disconnect
+                        </button>
+                    }
+                    else if (_state == PanelState.Importing)
+                    {
+                        <div class="pp-import-progress">
+                            <div class="pp-spinner"></div>
+                            <p class="pp-loading-text">@_loadingText</p>
+                            @if (_importTotal > 0)
+                            {
+                                <div class="pp-progress-bar-wrap">
+                                    <div class="pp-progress-bar"
+                                         style="width:@((_importDone * 100.0 / _importTotal).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                    </div>
+                                </div>
+                                <p class="pp-progress-count">@_importDone / @_importTotal</p>
+                            }
+                        </div>
+                    }
+                    else if (_state == PanelState.Done)
+                    {
+                        <div class="pp-done-section">
+                            <div class="pp-done-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                     stroke="#22c55e" stroke-width="2.5" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="9 12 11.5 14.5 15.5 9.5" />
+                                </svg>
+                            </div>
+                            <p class="pp-done-title">Import Complete!</p>
+                            <div class="pp-done-stats">
+                                <div class="pp-stat">
+                                    <span class="pp-stat-num">@_importDone</span>
+                                    <span class="pp-stat-lbl">anime imported</span>
+                                </div>
+                                <div class="pp-stat">
+                                    <span class="pp-stat-num">@_listsCreated</span>
+                                    <span class="pp-stat-lbl">lists created</span>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.Name))
+                            {
+                                <div class="pp-user-mini">
+                                    @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser.AvatarUrl))
+                                    {
+                                        <div class="pp-avatar-mini"
+                                             style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
+                                    }
+                                    <span class="pp-username-mini">@AniListAuth.CurrentUser.Name</span>
+                                </div>
+                            }
+
+                            <button class="pp-done-close-btn" @onclick="Close">Done</button>
+                            <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">Disconnect</button>
+                        </div>
+                    }
+                    else if (_state == PanelState.Error)
+                    {
+                        <div class="pp-error-section">
+                            <div class="pp-error-icon">⚠️</div>
+                            <p class="pp-error-title">Something went wrong</p>
+                            <p class="pp-error-sub">@_errorMessage</p>
+                            <button class="pp-anilist-btn" @onclick="() => _state = PanelState.NotConnected">
+                                Try Again
+                            </button>
+                        </div>
+                    }
+                    else if (_state == PanelState.WaitingForPin)
+                    {
+                        <div class="pp-connect-section">
+                            <p class="pp-connect-title">Paste your token</p>
+                            <p class="pp-connect-sub">
+                                AniList has opened in a new tab. After authorizing,
+                                copy the token shown and paste it below.
+                            </p>
+                            <input class="pp-token-input"
+                                   placeholder="Paste token here..."
+                                   @bind="_pastedToken" />
+                            <button class="pp-anilist-btn" @onclick="SubmitToken">
+                                Connect
+                            </button>
+                        </div>
+                    }
                 }
-                else if (_state == PanelState.Loading)
+                else if (_activeTab == "algorithm")
                 {
-                    <!-- Loading -->
-                    <div class="pp-loading-section">
-                        <div class="pp-spinner"></div>
-                        <p class="pp-loading-text">@_loadingText</p>
-                    </div>
-                }
-                else if (_state == PanelState.Connected)
-                {
-                    <!-- Connected: user card + import -->
-                    <div class="pp-user-card">
-                        @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.AvatarUrl))
+                    <!-- ═══════════════════ ALGORITHM TAB ═══════════════════ -->
+                    <div class="pp-algo-tab">
+
+                        @if (!_prefs.HasData)
                         {
-                            <div class="pp-avatar"
-                                 style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
+                            <!-- Empty state -->
+                            <div class="pp-algo-empty">
+                                <div class="pp-algo-empty-icon">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                </div>
+                                <p class="pp-algo-empty-title">No data yet</p>
+                                <p class="pp-algo-empty-sub">
+                                    Add at least 5 anime to your list (Completed, Watching, or scored ≥ 7) and the algorithm will start personalising your feed.
+                                </p>
+                                <div class="pp-algo-progress-bar-wrap">
+                                    @{
+                                        var engagedCount = GetEngagedCount();
+                                        var progressPct = Math.Min(100, engagedCount * 20);
+                                    }
+                                    <div class="pp-algo-progress-bar" style="width:@progressPct%"></div>
+                                </div>
+                                <p class="pp-algo-progress-label">@engagedCount / 5 anime tracked</p>
+                            </div>
                         }
                         else
                         {
-                            <div class="pp-avatar pp-avatar-placeholder">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                     stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </div>
-                        }
-                        <div class="pp-user-info">
-                            <span class="pp-username">@(AniListAuth.CurrentUser?.Name ?? "AniList User")</span>
-                            <a class="pp-anilist-link"
-                               href="https://anilist.co/user/@(AniListAuth.CurrentUser?.Name)"
-                               target="_blank">
-                                <span class="pp-al-dot"></span>AniList profile
-                            </a>
-                        </div>
-                    </div>
-
-                    <button class="pp-import-btn" @onclick="StartImport">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <path d="M12 2v13M7 10l5 5 5-5" />
-                            <rect x="3" y="16" width="18" height="5" rx="1" />
-                        </svg>
-                        Import My List
-                    </button>
-
-                    <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">
-                        Disconnect
-                    </button>
-                }
-                else if (_state == PanelState.Importing)
-                {
-                    <!-- Import progress -->
-                    <div class="pp-import-progress">
-                        <div class="pp-spinner"></div>
-                        <p class="pp-loading-text">@_loadingText</p>
-                        @if (_importTotal > 0)
-                        {
-                            <div class="pp-progress-bar-wrap">
-                                <div class="pp-progress-bar"
-                                     style="width:@((_importDone * 100.0 / _importTotal).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;">
+                            <!-- Stats summary -->
+                            <div class="pp-algo-stats-row">
+                                <div class="pp-algo-stat-chip">
+                                    <span class="pp-algo-stat-val">@UserListService.CountTracked()</span>
+                                    <span class="pp-algo-stat-lbl">tracked</span>
+                                </div>
+                                @if (_prefs.AvgPersonalScore > 0)
+                                {
+                                    <div class="pp-algo-stat-chip">
+                                        <span class="pp-algo-stat-val" style="color:@GetScoreColor(_prefs.AvgPersonalScore)">@_prefs.AvgPersonalScore.ToString("F1")</span>
+                                        <span class="pp-algo-stat-lbl">avg score</span>
+                                    </div>
+                                }
+                                <div class="pp-algo-stat-chip">
+                                    <span class="pp-algo-stat-val" style="color:#22c55e">Live</span>
+                                    <span class="pp-algo-stat-lbl">algo active</span>
                                 </div>
                             </div>
-                            <p class="pp-progress-count">@_importDone / @_importTotal</p>
-                        }
-                    </div>
-                }
-                else if (_state == PanelState.Done)
-                {
-                    <!-- Import complete -->
-                    <div class="pp-done-section">
-                        <div class="pp-done-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                                 stroke="#22c55e" stroke-width="2.5" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="9 12 11.5 14.5 15.5 9.5" />
-                            </svg>
-                        </div>
-                        <p class="pp-done-title">Import Complete!</p>
-                        <div class="pp-done-stats">
-                            <div class="pp-stat">
-                                <span class="pp-stat-num">@_importDone</span>
-                                <span class="pp-stat-lbl">anime imported</span>
-                            </div>
-                            <div class="pp-stat">
-                                <span class="pp-stat-num">@_listsCreated</span>
-                                <span class="pp-stat-lbl">lists created</span>
-                            </div>
-                        </div>
 
-                        @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser?.Name))
-                        {
-                            <div class="pp-user-mini">
-                                @if (!string.IsNullOrEmpty(AniListAuth.CurrentUser.AvatarUrl))
-                                {
-                                    <div class="pp-avatar-mini"
-                                         style="background-image:url('@AniListAuth.CurrentUser.AvatarUrl');"></div>
-                                }
-                                <span class="pp-username-mini">@AniListAuth.CurrentUser.Name</span>
-                            </div>
-                        }
+                            <!-- Favourite Genres -->
+                            @if (_prefs.FavoriteGenres.Any())
+                            {
+                                <div class="pp-algo-section">
+                                    <div class="pp-algo-section-header">
+                                        <div class="pp-algo-section-title-row">
+                                            <span class="pp-algo-section-icon">❤️</span>
+                                            <span class="pp-algo-section-title">Favourite Genres</span>
+                                            <span class="pp-algo-section-badge pp-badge-pink">@_prefs.FavoriteGenres.Count</span>
+                                        </div>
+                                        <span class="pp-algo-section-hint">Primary recommendation signal</span>
+                                    </div>
+                                    <div class="pp-algo-pills">
+                                        @for (int i = 0; i < _prefs.FavoriteGenres.Count; i++)
+                                        {
+                                            var genre = _prefs.FavoriteGenres[i];
+                                            var rank = i;
+                                            <button class="pp-algo-pill pp-pill-fav @(_removedFavGenres.Contains(genre) ? "pp-pill-removed" : "")"
+                                                    style="--rank: @rank"
+                                                    @onclick="() => ToggleRemoveFavGenre(genre)">
+                                                @if (rank == 0)
+                                                {
+                                                    <span class="pp-pill-crown">👑</span>
+                                                }
+                                                @genre
+                                                <span class="pp-pill-remove-icon">
+                                                    @if (_removedFavGenres.Contains(genre))
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-4.5" /></svg>
+                                                    }
+                                                    else
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                    }
+                                                </span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
 
-                        <button class="pp-done-close-btn" @onclick="Close">Done</button>
-                        <button class="pp-disconnect-btn" @onclick="() => _ = Disconnect()">Disconnect</button>
-                    </div>
-                }
-                else if (_state == PanelState.Error)
-                {
-                    <div class="pp-error-section">
-                        <div class="pp-error-icon">⚠️</div>
-                        <p class="pp-error-title">Something went wrong</p>
-                        <p class="pp-error-sub">@_errorMessage</p>
-                        <button class="pp-anilist-btn" @onclick="() => _state = PanelState.NotConnected">
-                            Try Again
-                        </button>
-                    </div>
-                }
-                else if (_state == PanelState.WaitingForPin)
-                {
-                    <div class="pp-connect-section">
-                        <p class="pp-connect-title">Paste your token</p>
-                        <p class="pp-connect-sub">
-                            AniList has opened in a new tab. After authorizing,
-                            copy the token shown and paste it below.
-                        </p>
-                        <input class="pp-token-input"
-                               placeholder="Paste token here..."
-                               @bind="_pastedToken" />
-                        <button class="pp-anilist-btn" @onclick="SubmitToken">
-                            Connect
-                        </button>
+                            <!-- Secondary Genres -->
+                            @if (_prefs.SecondaryGenres.Any())
+                            {
+                                <div class="pp-algo-section">
+                                    <div class="pp-algo-section-header">
+                                        <div class="pp-algo-section-title-row">
+                                            <span class="pp-algo-section-icon">✨</span>
+                                            <span class="pp-algo-section-title">Secondary Genres</span>
+                                            <span class="pp-algo-section-badge pp-badge-blue">@_prefs.SecondaryGenres.Count</span>
+                                        </div>
+                                        <span class="pp-algo-section-hint">Widens your niche discovery pool</span>
+                                    </div>
+                                    <div class="pp-algo-pills">
+                                        @foreach (var genre in _prefs.SecondaryGenres)
+                                        {
+                                            var g = genre;
+                                            <button class="pp-algo-pill pp-pill-secondary @(_removedSecGenres.Contains(g) ? "pp-pill-removed" : "")"
+                                                    @onclick="() => ToggleRemoveSecGenre(g)">
+                                                @g
+                                                <span class="pp-pill-remove-icon">
+                                                    @if (_removedSecGenres.Contains(g))
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-4.5" /></svg>
+                                                    }
+                                                    else
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                    }
+                                                </span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Discovery Genres -->
+                            @if (_prefs.DiscoveryGenres.Any())
+                            {
+                                <div class="pp-algo-section">
+                                    <div class="pp-algo-section-header">
+                                        <div class="pp-algo-section-title-row">
+                                            <span class="pp-algo-section-icon">🔭</span>
+                                            <span class="pp-algo-section-title">Discovery Genres</span>
+                                            <span class="pp-algo-section-badge pp-badge-purple">@_prefs.DiscoveryGenres.Count</span>
+                                        </div>
+                                        <span class="pp-algo-section-hint">Adjacent genres — keeps feed surprising</span>
+                                    </div>
+                                    <div class="pp-algo-pills">
+                                        @foreach (var genre in _prefs.DiscoveryGenres)
+                                        {
+                                            <button class="pp-algo-pill pp-pill-discovery">
+                                                @genre
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Disliked Genres -->
+                            @if (_prefs.DislikedGenres.Any())
+                            {
+                                <div class="pp-algo-section">
+                                    <div class="pp-algo-section-header">
+                                        <div class="pp-algo-section-title-row">
+                                            <span class="pp-algo-section-icon">🚫</span>
+                                            <span class="pp-algo-section-title">Filtered Out</span>
+                                            <span class="pp-algo-section-badge pp-badge-red">@_prefs.DislikedGenres.Count</span>
+                                        </div>
+                                        <span class="pp-algo-section-hint">Based on low scores & dropped anime</span>
+                                    </div>
+                                    <div class="pp-algo-pills">
+                                        @foreach (var genre in _prefs.DislikedGenres)
+                                        {
+                                            var g = genre;
+                                            <button class="pp-algo-pill pp-pill-disliked @(_restoredDislikedGenres.Contains(g) ? "pp-pill-restored" : "")"
+                                                    @onclick="() => ToggleRestoreDisliked(g)">
+                                                @g
+                                                <span class="pp-pill-remove-icon">
+                                                    @if (_restoredDislikedGenres.Contains(g))
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                    }
+                                                    else
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-4.5" /></svg>
+                                                    }
+                                                </span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Favourite Tags -->
+                            @if (_prefs.FavoriteTags.Any())
+                            {
+                                <div class="pp-algo-section">
+                                    <div class="pp-algo-section-header">
+                                        <div class="pp-algo-section-title-row">
+                                            <span class="pp-algo-section-icon">🏷️</span>
+                                            <span class="pp-algo-section-title">Top Tags</span>
+                                            <span class="pp-algo-section-badge pp-badge-teal">@_prefs.FavoriteTags.Count</span>
+                                        </div>
+                                        <span class="pp-algo-section-hint">High-confidence content tags from your list</span>
+                                    </div>
+                                    <div class="pp-algo-pills">
+                                        @foreach (var tag in _prefs.FavoriteTags)
+                                        {
+                                            <button class="pp-algo-pill pp-pill-tag">@tag</button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Preferences summary -->
+                            <div class="pp-algo-section pp-algo-prefs-summary">
+                                <div class="pp-algo-section-title-row" style="margin-bottom:10px;">
+                                    <span class="pp-algo-section-icon">⚙️</span>
+                                    <span class="pp-algo-section-title">Feed Calibration</span>
+                                </div>
+                                <div class="pp-algo-calibration-grid">
+                                    <div class="pp-algo-cal-row">
+                                        <span class="pp-algo-cal-lbl">Min AniList score shown</span>
+                                        <span class="pp-algo-cal-val">@_prefs.MinScoreThreshold / 100</span>
+                                    </div>
+                                    <div class="pp-algo-cal-row">
+                                        <span class="pp-algo-cal-lbl">Preferred format</span>
+                                        <span class="pp-algo-cal-val">@(_prefs.PrefersTV ? "TV Series" : "Mixed")</span>
+                                    </div>
+                                    @if (_prefs.AvgPersonalScore > 0)
+                                    {
+                                        <div class="pp-algo-cal-row">
+                                            <span class="pp-algo-cal-lbl">Your average rating</span>
+                                            <span class="pp-algo-cal-val" style="color:@GetScoreColor(_prefs.AvgPersonalScore)">@_prefs.AvgPersonalScore.ToString("F1") / 10</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Reset button -->
+                            <button class="pp-algo-reset-btn" @onclick="ResetAlgoOverrides">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="1 4 1 10 7 10" />
+                                    <path d="M3.51 15a9 9 0 1 0 .49-4.5" />
+                                </svg>
+                                Reset my overrides
+                            </button>
+                        }
                     </div>
                 }
 
@@ -224,6 +482,8 @@
     [Parameter] public EventCallback OnClose { get; set; }
 
     private string _pastedToken = "";
+    private string _activeTab = "account";
+
     private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
     private PanelState _state = PanelState.NotConnected;
     private string _loadingText = "Loading…";
@@ -232,27 +492,12 @@
     private int _importDone = 0;
     private int _listsCreated = 0;
 
-    private async Task SubmitToken()
-    {
-        if (string.IsNullOrWhiteSpace(_pastedToken)) return;
-        AniListAuth.SetToken(_pastedToken.Trim());
-        _state = PanelState.Loading;
-        _loadingText = "Fetching your profile…";
-        StateHasChanged();
-        var user = await AniListAuth.FetchCurrentUserAsync();
-        if (user == null)
-        {
-            _state = PanelState.Error;
-            _errorMessage = "Invalid token or could not fetch profile.";
-        }
-        else
-        {
-            _state = PanelState.Connected;
-        }
-        StateHasChanged();
-    }
+    // Algorithm tab state
+    private UserPreferences _prefs = new();
+    private HashSet<string> _removedFavGenres = new();
+    private HashSet<string> _removedSecGenres = new();
+    private HashSet<string> _restoredDislikedGenres = new();
 
-    // cp-swatches vibrant palette (matches ColorPickerPopup._presets)
     private static readonly string[] _swatches =
     {
         "#ef4444","#f97316","#f59e0b","#eab308",
@@ -268,11 +513,63 @@
         bool justOpened = IsVisible && !_prevVisible;
         _prevVisible = IsVisible;
 
-        if (justOpened && AniListAuth.IsAuthenticated && _state == PanelState.NotConnected)
-            _state = PanelState.Connected;
+        if (justOpened)
+        {
+            _activeTab = "account";
+            if (AniListAuth.IsAuthenticated && _state == PanelState.NotConnected)
+                _state = PanelState.Connected;
+        }
     }
 
-    // ── Called from Index.razor after fresh OAuth redirect ───────────────
+    private void BuildPrefs()
+    {
+        _prefs = UserPreferences.BuildFrom(UserListService.GetAll());
+    }
+
+    private int GetEngagedCount()
+    {
+        return UserListService.GetAll().Count(e =>
+            e.Status == ListStatus.Completed ||
+            e.Status == ListStatus.Watching ||
+            e.Status == ListStatus.Rewatching ||
+            e.Score >= 7);
+    }
+
+    private string GetScoreColor(double score) => score switch
+    {
+        >= 8 => "#22c55e",
+        >= 6 => "#eab308",
+        >= 4 => "#f97316",
+        _ => "#ef4444"
+    };
+
+    // Algorithm overrides
+    private void ToggleRemoveFavGenre(string g) { if (!_removedFavGenres.Remove(g)) _removedFavGenres.Add(g); }
+    private void ToggleRemoveSecGenre(string g) { if (!_removedSecGenres.Remove(g)) _removedSecGenres.Add(g); }
+    private void ToggleRestoreDisliked(string g) { if (!_restoredDislikedGenres.Remove(g)) _restoredDislikedGenres.Add(g); }
+
+    private void ResetAlgoOverrides()
+    {
+        _removedFavGenres.Clear();
+        _removedSecGenres.Clear();
+        _restoredDislikedGenres.Clear();
+        BuildPrefs();
+    }
+
+    // ── Token / OAuth ────────────────────────────────────────────────────────
+    private async Task SubmitToken()
+    {
+        if (string.IsNullOrWhiteSpace(_pastedToken)) return;
+        AniListAuth.SetToken(_pastedToken.Trim());
+        _state = PanelState.Loading;
+        _loadingText = "Fetching your profile…";
+        StateHasChanged();
+        var user = await AniListAuth.FetchCurrentUserAsync();
+        _state = user == null ? PanelState.Error : PanelState.Connected;
+        if (user == null) _errorMessage = "Invalid token or could not fetch profile.";
+        StateHasChanged();
+    }
+
     public async Task OnTokenReceived()
     {
         _state = PanelState.Loading;
@@ -280,37 +577,18 @@
         StateHasChanged();
 
         var user = await AniListAuth.FetchCurrentUserAsync();
-        if (user == null)
-        {
-            _state = PanelState.Error;
-            _errorMessage = "Could not fetch your AniList profile. Please try again.";
-            StateHasChanged();
-            return;
-        }
-
-        _state = PanelState.Connected;
+        if (user == null) { _state = PanelState.Error; _errorMessage = "Could not fetch your AniList profile. Please try again."; }
+        else _state = PanelState.Connected;
         StateHasChanged();
     }
 
-    /// <summary>
-    /// Silent background import — called on startup when a saved token exists.
-    /// The panel stays hidden; no UI state is shown to the user.
-    /// </summary>
     public async Task TryAutoImportAsync()
     {
         if (!AniListAuth.IsAuthenticated) return;
-
-        // Ensure we have a user profile
-        if (AniListAuth.CurrentUser == null)
-        {
-            var user = await AniListAuth.FetchCurrentUserAsync();
-            if (user == null) return;
-        }
-
+        if (AniListAuth.CurrentUser == null) { var user = await AniListAuth.FetchCurrentUserAsync(); if (user == null) return; }
         await DoImportAsync(showUI: false);
     }
 
-    // ── OAuth redirect ────────────────────────────────────────────────────
     private async Task StartOAuth()
     {
         try
@@ -328,109 +606,52 @@
         }
     }
 
-    // ── Import ────────────────────────────────────────────────────────────
     private async Task StartImport()
     {
         if (AniListAuth.CurrentUser == null) return;
-
         _state = PanelState.Importing;
         _loadingText = "Fetching your anime list…";
-        _importDone = 0;
-        _importTotal = 0;
-        _listsCreated = 0;
+        _importDone = 0; _importTotal = 0; _listsCreated = 0;
         StateHasChanged();
-
         await DoImportAsync(showUI: true);
     }
 
-    /// <summary>
-    /// Core import logic shared by StartImport (with UI) and TryAutoImportAsync (silent).
-    /// </summary>
     private async Task DoImportAsync(bool showUI)
     {
         if (AniListAuth.CurrentUser == null) return;
-
-        // 1. Fetch all entries
         var entries = await AniListAuth.FetchAnimeListAsync(AniListAuth.CurrentUser.Id);
-        if (entries.Count == 0)
-        {
-            if (showUI)
-            {
-                _state = PanelState.Error;
-                _errorMessage = "Your AniList is empty or could not be fetched.";
-                StateHasChanged();
-            }
-            return;
-        }
+        if (entries.Count == 0) { if (showUI) { _state = PanelState.Error; _errorMessage = "Your AniList is empty or could not be fetched."; StateHasChanged(); } return; }
 
-        // 2. Collect all unique custom-list names
-        var allCustomNames = entries
-            .SelectMany(e => e.CustomListNames)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        // 3. Create custom lists, tracking how many are brand-new
+        var allCustomNames = entries.SelectMany(e => e.CustomListNames).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var (customListMap, newListsCount) = BuildCustomListMap(allCustomNames);
         _listsCreated = newListsCount;
-
-        // 4. Import anime entries
         _importTotal = entries.Count;
-        if (showUI)
-        {
-            _loadingText = "Importing anime…";
-            StateHasChanged();
-        }
+        if (showUI) { _loadingText = "Importing anime…"; StateHasChanged(); }
 
         foreach (var importEntry in entries)
         {
             ApplyEntry(importEntry, customListMap);
             _importDone++;
-
-            if (showUI && _importDone % 20 == 0)
-            {
-                StateHasChanged();
-                await Task.Yield();
-            }
+            if (showUI && _importDone % 20 == 0) { StateHasChanged(); await Task.Yield(); }
         }
-
-        // Single notification after the full batch — preserves ordering and avoids
-        // redundant UI re-renders on every SaveEntry call.
         UserListService.NotifyChanged();
 
-        // ── Import AniList favourites ─────────────────────────────
         try
         {
             var favIds = await AniListAuth.FetchFavouriteIdsAsync();
-            if (favIds.Count > 0)
-            {
-                UserListService.ImportFavorites(favIds);
-                UserListService.NotifyChanged();
-            }
+            if (favIds.Count > 0) { UserListService.ImportFavorites(favIds); UserListService.NotifyChanged(); }
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine("[Import] Favourites fetch failed: " + ex.Message);
-        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[Import] Favourites fetch failed: " + ex.Message); }
 
-        if (showUI)
-        {
-            _state = PanelState.Done;
-            StateHasChanged();
-        }
+        if (showUI) { _state = PanelState.Done; StateHasChanged(); }
     }
 
-    /// <summary>
-    /// Ensures all custom lists exist in UserListService and returns (name→id map, newListsCount).
-    /// newListsCount is computed BEFORE saving so it accurately reflects what was created.
-    /// </summary>
     private (Dictionary<string, string> map, int newCount) BuildCustomListMap(List<string> names)
     {
         if (names.Count == 0) return (new(), 0);
-
         var existingLists = UserListService.GetCustomLists();
         var usedColors = existingLists.Select(l => l.Color).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var availColors = _swatches.Where(c => !usedColors.Contains(c)).ToList();
-
         if (availColors.Count == 0) availColors = _swatches.ToList();
 
         var rng = new Random();
@@ -439,61 +660,26 @@
 
         foreach (var name in names)
         {
-            var existing = existingLists.FirstOrDefault(c =>
-                string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+            var existing = existingLists.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (existing != null) { map[name] = existing.Id; continue; }
 
-            if (existing != null)
-            {
-                map[name] = existing.Id;
-                continue;
-            }
-
-            // Pick a random unused color
             string color;
-            if (availColors.Count > 0)
-            {
-                int idx = rng.Next(availColors.Count);
-                color = availColors[idx];
-                availColors.RemoveAt(idx);
-            }
-            else
-            {
-                color = _swatches[rng.Next(_swatches.Length)];
-            }
+            if (availColors.Count > 0) { int idx = rng.Next(availColors.Count); color = availColors[idx]; availColors.RemoveAt(idx); }
+            else color = _swatches[rng.Next(_swatches.Length)];
 
-            var newList = new UserCustomList
-            {
-                Id = Guid.NewGuid().ToString(),
-                Name = name,
-                Color = color,
-                IsStatusList = false,
-                Order = existingLists.Count + toAdd.Count
-            };
-
+            var newList = new UserCustomList { Id = Guid.NewGuid().ToString(), Name = name, Color = color, IsStatusList = false, Order = existingLists.Count + toAdd.Count };
             toAdd.Add(newList);
             map[name] = newList.Id;
         }
 
-        // newCount is captured before saving — accurately reflects newly created lists
         int newCount = toAdd.Count;
-
-        if (toAdd.Count > 0)
-        {
-            var allLists = existingLists.Concat(toAdd).ToList();
-            UserListService.SaveCustomLists(allLists);
-        }
-
+        if (toAdd.Count > 0) { var allLists = existingLists.Concat(toAdd).ToList(); UserListService.SaveCustomLists(allLists); }
         return (map, newCount);
     }
 
-    /// <summary>
-    /// Converts an AniList entry into a UserListEntry and queues it for import.
-    /// Uses ImportEntry (not SaveEntry) to preserve the original AniList timestamps.
-    /// </summary>
     private void ApplyEntry(AniListImportEntry src, Dictionary<string, string> customListMap)
     {
         if (src.AnimeCard.Id == 0 && src.MediaId == 0) return;
-
         if (src.AnimeCard.Id == 0) src.AnimeCard.Id = src.MediaId;
 
         var listEntry = new UserListEntry
@@ -508,15 +694,11 @@
             HideFromStatusLists = src.HideFromStatusLists,
             StartDate = src.StartedAt,
             FinishDate = src.CompletedAt,
-            AddedAt = src.CreatedAt,   // ← timestamp AniList original
-            UpdatedAt = src.UpdatedAt,   // ← timestamp AniList original ✓
-            CustomListIds = src.CustomListNames
-                                     .Where(n => customListMap.ContainsKey(n))
-                                     .Select(n => customListMap[n])
-                                     .ToList(),
+            AddedAt = src.CreatedAt,
+            UpdatedAt = src.UpdatedAt,
+            CustomListIds = src.CustomListNames.Where(n => customListMap.ContainsKey(n)).Select(n => customListMap[n]).ToList(),
         };
-
-        UserListService.ImportEntry(listEntry); // ← pas SaveEntry !
+        UserListService.ImportEntry(listEntry);
     }
 
     private static ListStatus? MapStatus(string s) => s switch
@@ -530,16 +712,12 @@
         _ => null
     };
 
-    // ── Misc ──────────────────────────────────────────────────────────────
-
     private async Task Disconnect()
     {
         try { await JS.InvokeVoidAsync("aniListRemoveToken"); } catch { }
         AniListAuth.ClearToken();
         _state = PanelState.NotConnected;
-        _importDone = 0;
-        _importTotal = 0;
-        _listsCreated = 0;
+        _importDone = 0; _importTotal = 0; _listsCreated = 0;
         StateHasChanged();
     }
 
