@@ -611,11 +611,14 @@
 
     private void ComputeStats()
     {
-        // FIX #1 — même filtre que CountTracked() pour éviter le surcomptage.
-        // GetAll() retourne TOUTES les entrées (y compris les swipes non confirmés
-        // qui n'ont ni statut ni liste custom). On aligne sur CountTracked().
+        // ── Deduplicate by anime ID ───────────────────────────────────────────────
+        // Anime can be stored under multiple IDs (e.g. swiped via MAL ID then
+        // imported under AniList ID). GroupBy ensures each logical anime is
+        // counted exactly once, fixing inflated tags / seasons / countries / scores.
         var all = UserListService.GetAll()
             .Where(e => e.Status.HasValue || e.CustomListIds.Any())
+            .GroupBy(e => e.Anime.Id)
+            .Select(g => g.OrderByDescending(e => e.UpdatedAt).First())
             .ToList();
 
         var s = new StatsSnapshot { Total = all.Count };
@@ -623,50 +626,50 @@
 
         s.Favorited = UserListService.GetFavoriteIds().Count;
 
-        // Ensembles de déduplication — 1 comptage par (anime, valeur)
+        // After GroupBy each anime appears exactly once, so scalar fields need no
+        // per-ID guard. Keep (id, value) sets only for ARRAY fields whose source
+        // data may contain duplicates within a single anime (genres, studios, tags).
         var seenGenres = new HashSet<(int, string)>();
         var seenStudios = new HashSet<(int, string)>();
         var seenTags = new HashSet<(int, string)>();
-        var seenCountry = new HashSet<int>();
-        var seenFormat = new HashSet<int>();
-        var seenSource = new HashSet<int>();
-        var seenYear = new HashSet<int>();
-        var seenSeason = new HashSet<int>();
 
         foreach (var e in all)
         {
             var id = e.Anime.Id;
 
-            // Status
+            // ── Status ────────────────────────────────────────────────────────────
             if (e.Status.HasValue)
                 s.ByStatus[e.Status.Value] = s.ByStatus.GetValueOrDefault(e.Status.Value) + 1;
 
-            // FIX #2 — épisodes = progress + (rewatches × total_eps pour coller à AniList)
+            // ── Episodes ──────────────────────────────────────────────────────────
+            // Only count rewatch episodes when the total is known (avoids using
+            // current-progress as a fallback, which skews the number).
             int totalEpForEntry = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
-            int rwEp = (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
-                ? e.TotalRewatches * (totalEpForEntry > 0 ? totalEpForEntry : baseEp)
+            bool hasTotal = totalEpForEntry > 0;
+            int rwEp = (e.TotalRewatches > 0 && e.Status != ListStatus.Planning && hasTotal)
+                ? e.TotalRewatches * totalEpForEntry
                 : 0;
             s.TotalEpisodes += baseEp + rwEp;
 
-            // FIX #3 — watch time inclut les rewatches
+            // ── Watch time ────────────────────────────────────────────────────────
             if (e.Status != ListStatus.Planning)
             {
                 var dur = e.Anime.Duration ?? 24;
                 s.TotalMinutes += (long)baseEp * dur;
-                if (e.TotalRewatches > 0)
-                    s.TotalMinutes += (long)e.TotalRewatches * (totalEpForEntry > 0 ? totalEpForEntry : baseEp) * dur;
+                // Only add rewatch time when total is known (same rule as episodes)
+                if (e.TotalRewatches > 0 && hasTotal)
+                    s.TotalMinutes += (long)e.TotalRewatches * totalEpForEntry * dur;
             }
 
-            // FIX #4 — Days Planned sans valeur par défaut à 13
-            // On skip les anime dont le total d'épisodes est inconnu (retourne 0)
-            if (e.Status == ListStatus.Planning && totalEpForEntry > 0)
+            // ── Days planned ──────────────────────────────────────────────────────
+            if (e.Status == ListStatus.Planning && hasTotal)
             {
                 var planDur = e.Anime.Duration ?? 24;
                 s.DaysPlanned += totalEpForEntry * planDur / 1440.0;
             }
 
-            // Score — un score par entrée
+            // ── Score ─────────────────────────────────────────────────────────────
             if (e.Score > 0)
             {
                 s.ScoredCount++;
@@ -679,37 +682,38 @@
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
 
-            // Genres: 1 par (anime, genre)
+            // ── Genres ────────────────────────────────────────────────────────────
             foreach (var g in e.Anime.Genres ?? new())
                 if (seenGenres.Add((id, g)))
                     s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
 
-            // Format: 1 par anime
-            if (!string.IsNullOrEmpty(e.Anime.Format) && seenFormat.Add(id))
+            // ── Format (scalar — one value per anime) ─────────────────────────────
+            if (!string.IsNullOrEmpty(e.Anime.Format))
                 s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
 
-            // Studios: 1 par (anime, studio)
+            // ── Studios ───────────────────────────────────────────────────────────
             foreach (var st in e.Anime.Studios ?? new())
                 if (!string.IsNullOrEmpty(st.Name) && seenStudios.Add((id, st.Name)))
                     s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
 
-            // Year: 1 par anime
-            if (e.Anime.Year.HasValue && seenYear.Add(id))
+            // ── Year (scalar) ─────────────────────────────────────────────────────
+            if (e.Anime.Year.HasValue)
                 s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
 
-            // Season: 1 par anime
-            if (!string.IsNullOrEmpty(e.Anime.Season) && seenSeason.Add(id))
+            // ── Season (scalar) ───────────────────────────────────────────────────
+            if (!string.IsNullOrEmpty(e.Anime.Season))
                 s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
 
-            // Source: 1 par anime
-            if (!string.IsNullOrEmpty(e.Anime.Source) && seenSource.Add(id))
+            // ── Source (scalar) ───────────────────────────────────────────────────
+            if (!string.IsNullOrEmpty(e.Anime.Source))
                 s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
 
-            // Country: 1 par anime
-            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin) && seenCountry.Add(id))
-                s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
+            // ── Country (scalar) ──────────────────────────────────────────────────
+            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
+                s.ByCountry[e.Anime.CountryOfOrigin] =
+                    s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
 
-            // Tags: 1 par (anime, tag) — non-spoiler uniquement
+            // ── Tags (non-spoiler, array) ─────────────────────────────────────────
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
                 if (seenTags.Add((id, t.Name)))
                     s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
@@ -724,7 +728,7 @@
         s.Completed = s.ByStatus.GetValueOrDefault(ListStatus.Completed);
         int dropped = s.ByStatus.GetValueOrDefault(ListStatus.Dropped);
         int watching = s.ByStatus.GetValueOrDefault(ListStatus.Watching)
-                      + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
+                     + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
         int paused = s.ByStatus.GetValueOrDefault(ListStatus.Paused);
         int denominator = s.Completed + watching + paused + dropped;
         s.CompletionRate = denominator > 0 ? s.Completed * 100.0 / denominator : 0;
@@ -742,7 +746,6 @@
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
-        // FIX #5 — déclenche le scroll automatique du graphe années
         _scrollYearToRight = s.ByYear.Any();
         _s = s;
     }
