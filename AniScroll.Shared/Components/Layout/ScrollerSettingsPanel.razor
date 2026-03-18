@@ -114,8 +114,206 @@
                 </div>
             </div>
 
-            <!-- Future settings -->
-            <div class="swset-future-sections"></div>
+            <!-- ── Algorithm Info Section ──────────────────────────────────── -->
+            <div class="swset-future-sections">
+                @{
+                    var _algoPrefs = UserPreferences.BuildFrom(UserListService.GetAll());
+                }
+
+                <!-- ── Feed Engine section ── -->
+                <div class="swset-algo-section">
+
+                    <div class="swset-algo-header">
+                        <div class="swset-algo-header-left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <span class="swset-algo-title">Feed Engine</span>
+                        </div>
+                        @if (_algoPrefs.HasData)
+                        {
+                            <span class="swset-algo-live-badge">● LIVE</span>
+                        }
+                        else
+                        {
+                            <span class="swset-algo-cold-badge">COLD START</span>
+                        }
+                    </div>
+
+                    @if (!_algoPrefs.HasData)
+                    {
+                        <div class="swset-algo-cold-info">
+                            <p class="swset-algo-cold-text">
+                                The feed uses global popularity &amp; ratings until you track 5+ anime (Completed, Watching, or scored ≥ 7). Once enough data is collected, recommendations will adapt to your taste.
+                            </p>
+                            @{
+                                int engCount = UserListService.GetAll().Count(e =>
+                                e.Status == ListStatus.Completed ||
+                                e.Status == ListStatus.Watching ||
+                                e.Status == ListStatus.Rewatching ||
+                                e.Score >= 7);
+                                int engPct = Math.Min(100, engCount * 20);
+                            }
+                            <div class="swset-algo-cold-progress">
+                                <div class="swset-algo-cold-bar" style="width:@engPct%"></div>
+                            </div>
+                            <span class="swset-algo-cold-label">@engCount / 5 engaged anime</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Personalised feed stats -->
+                        <div class="swset-algo-rows">
+
+                            <!-- Score threshold -->
+                            <div class="swset-algo-row">
+                                <div class="swset-algo-row-left">
+                                    <span class="swset-algo-row-icon">🎯</span>
+                                    <div>
+                                        <span class="swset-algo-row-label">Min AniList score shown</span>
+                                        <span class="swset-algo-row-hint">Raised from your @(_algoPrefs.AvgPersonalScore > 0 ? _algoPrefs.AvgPersonalScore.ToString("F1") : "—") avg rating</span>
+                                    </div>
+                                </div>
+                                <span class="swset-algo-row-value">@_algoPrefs.MinScoreThreshold / 100</span>
+                            </div>
+
+                            <!-- Format preference -->
+                            <div class="swset-algo-row">
+                                <div class="swset-algo-row-left">
+                                    <span class="swset-algo-row-icon">📺</span>
+                                    <div>
+                                        <span class="swset-algo-row-label">Preferred format</span>
+                                        <span class="swset-algo-row-hint">Dominant format in your completed list</span>
+                                    </div>
+                                </div>
+                                <span class="swset-algo-row-value">@(_algoPrefs.PrefersTV ? "TV Series" : "Mixed")</span>
+                            </div>
+
+                            <!-- Pool weights summary -->
+                            <div class="swset-algo-row swset-algo-row-full">
+                                <span class="swset-algo-row-icon">⚖️</span>
+                                <span class="swset-algo-row-label">Feed pool weights (per 60 cards)</span>
+                            </div>
+                            <div class="swset-algo-pools">
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Taste · popular</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-taste" style="width:33%"></div></div>
+                                    <span class="swset-algo-pool-count">20</span>
+                                </div>
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Taste · acclaimed</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-rated" style="width:17%"></div></div>
+                                    <span class="swset-algo-pool-count">10</span>
+                                </div>
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Niche gems</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-niche" style="width:13%"></div></div>
+                                    <span class="swset-algo-pool-count">8</span>
+                                </div>
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Discovery</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-disc" style="width:17%"></div></div>
+                                    <span class="swset-algo-pool-count">10</span>
+                                </div>
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Airing</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-airing" style="width:17%"></div></div>
+                                    <span class="swset-algo-pool-count">10</span>
+                                </div>
+                                <div class="swset-algo-pool">
+                                    <span class="swset-algo-pool-name">Upcoming</span>
+                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-upcoming" style="width:2%"></div></div>
+                                    <span class="swset-algo-pool-count">1</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Favourite genres -->
+                        @if (_algoPrefs.FavoriteGenres.Any())
+                        {
+                            <div class="swset-algo-subsection">
+                                <span class="swset-algo-sub-title">❤️ Favourite Genres</span>
+                                <span class="swset-algo-sub-hint">Primary signal for pools 1 &amp; 2</span>
+                                <div class="swset-algo-tags">
+                                    @for (int i = 0; i < _algoPrefs.FavoriteGenres.Count; i++)
+                                    {
+                                        var isTop = i == 0;
+                                        <span class="swset-algo-tag swset-tag-fav @(isTop ? "swset-tag-top" : "")">
+                                            @if (isTop)
+                                            {
+                                                <span>👑</span>
+                                            }
+                                            @_algoPrefs.FavoriteGenres[i]
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Secondary genres -->
+                        @if (_algoPrefs.SecondaryGenres.Any())
+                        {
+                            <div class="swset-algo-subsection">
+                                <span class="swset-algo-sub-title">✨ Secondary Genres</span>
+                                <span class="swset-algo-sub-hint">Widens niche discovery pool</span>
+                                <div class="swset-algo-tags">
+                                    @foreach (var g in _algoPrefs.SecondaryGenres)
+                                    {
+                                        <span class="swset-algo-tag swset-tag-sec">@g</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Discovery genres -->
+                        @if (_algoPrefs.DiscoveryGenres.Any())
+                        {
+                            <div class="swset-algo-subsection">
+                                <span class="swset-algo-sub-title">🔭 Discovery Genres</span>
+                                <span class="swset-algo-sub-hint">Adjacent genres you haven't explored much</span>
+                                <div class="swset-algo-tags">
+                                    @foreach (var g in _algoPrefs.DiscoveryGenres)
+                                    {
+                                        <span class="swset-algo-tag swset-tag-disc">@g</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Disliked genres -->
+                        @if (_algoPrefs.DislikedGenres.Any())
+                        {
+                            <div class="swset-algo-subsection">
+                                <span class="swset-algo-sub-title">🚫 Filtered Out</span>
+                                <span class="swset-algo-sub-hint">Based on low scores &amp; dropped anime</span>
+                                <div class="swset-algo-tags">
+                                    @foreach (var g in _algoPrefs.DislikedGenres)
+                                    {
+                                        <span class="swset-algo-tag swset-tag-dis">@g</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Top tags -->
+                        @if (_algoPrefs.FavoriteTags.Any())
+                        {
+                            <div class="swset-algo-subsection">
+                                <span class="swset-algo-sub-title">🏷️ Top Tags</span>
+                                <span class="swset-algo-sub-hint">High-confidence content tags (rank ≥ 60%)</span>
+                                <div class="swset-algo-tags">
+                                    @foreach (var t in _algoPrefs.FavoriteTags)
+                                    {
+                                        <span class="swset-algo-tag swset-tag-tag">@t</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
 
             <!-- ══ PICKER — bottom sheet inside .swset-screen ══════ -->
             @if (_pickerOpen)

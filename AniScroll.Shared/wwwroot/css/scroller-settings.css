@@ -766,3 +766,331 @@
         border-radius: 18px 18px 0 0;
     }
 }
+
+/* ═══════════════════════════════════════════════════════
+   SCROLLER SETTINGS — Algorithm info section
+   Add this to scroller-settings.css
+   ═══════════════════════════════════════════════════════ */
+
+.swset-future-sections {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+    .swset-future-sections::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .swset-future-sections::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+        border-radius: 2px;
+    }
+
+/* ── Section wrapper ── */
+.swset-algo-section {
+    margin: 16px 16px 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ── Header ── */
+.swset-algo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.swset-algo-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.55);
+}
+
+.swset-algo-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.01em;
+}
+
+.swset-algo-live-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    color: #22c55e;
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.28);
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+.swset-algo-cold-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+/* ── Cold start state ── */
+.swset-algo-cold-info {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.swset-algo-cold-text {
+    font-size: 12px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.38);
+    text-align: center;
+    margin: 0;
+}
+
+.swset-algo-cold-progress {
+    width: 100%;
+    max-width: 200px;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.swset-algo-cold-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #E94560, #ff8fa3);
+    border-radius: 99px;
+    transition: width .6s cubic-bezier(0.22,1,0.36,1);
+}
+
+.swset-algo-cold-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+/* ── Personalised rows ── */
+.swset-algo-rows {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.swset-algo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.swset-algo-row-full {
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.swset-algo-row-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    flex: 1;
+    min-width: 0;
+}
+
+.swset-algo-row-icon {
+    font-size: 14px;
+    line-height: 1.3;
+    flex-shrink: 0;
+}
+
+.swset-algo-row-left > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.swset-algo-row-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.3;
+}
+
+.swset-algo-row-hint {
+    font-size: 10px;
+    color: rgba(255,255,255,0.28);
+    font-weight: 500;
+}
+
+.swset-algo-row-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255,255,255,0.75);
+    flex-shrink: 0;
+    letter-spacing: -0.2px;
+}
+
+/* ── Pool weights ── */
+.swset-algo-pools {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px 0 2px 23px;
+}
+
+.swset-algo-pool {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.swset-algo-pool-name {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 500;
+    width: 108px;
+    flex-shrink: 0;
+}
+
+.swset-algo-pool-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.swset-algo-pool-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .5s cubic-bezier(0.22,1,0.36,1);
+}
+
+.swset-pool-taste {
+    background: #E94560;
+}
+
+.swset-pool-rated {
+    background: #f97316;
+}
+
+.swset-pool-niche {
+    background: #a855f7;
+}
+
+.swset-pool-disc {
+    background: #06b6d4;
+}
+
+.swset-pool-airing {
+    background: #22c55e;
+}
+
+.swset-pool-upcoming {
+    background: #6b7280;
+}
+
+.swset-algo-pool-count {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    width: 16px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Subsections ── */
+.swset-algo-subsection {
+    padding: 10px 16px 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.swset-algo-sub-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: .04em;
+}
+
+.swset-algo-sub-hint {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.swset-algo-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.swset-algo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1.5px solid;
+    white-space: nowrap;
+}
+
+.swset-tag-fav {
+    background: rgba(233,69,96,0.1);
+    border-color: rgba(233,69,96,0.3);
+    color: #ff8fa3;
+}
+
+.swset-tag-top {
+    background: rgba(233,69,96,0.18);
+    border-color: rgba(233,69,96,0.45);
+    color: #ffc3cf;
+    font-weight: 700;
+}
+
+.swset-tag-sec {
+    background: rgba(59,130,246,0.08);
+    border-color: rgba(59,130,246,0.25);
+    color: #93c5fd;
+}
+
+.swset-tag-disc {
+    background: rgba(168,85,247,0.08);
+    border-color: rgba(168,85,247,0.25);
+    color: #d8b4fe;
+}
+
+.swset-tag-dis {
+    background: rgba(239,68,68,0.06);
+    border-color: rgba(239,68,68,0.2);
+    color: rgba(252,165,165,0.6);
+}
+
+.swset-tag-tag {
+    background: rgba(20,184,166,0.07);
+    border-color: rgba(20,184,166,0.2);
+    color: #5eead4;
+}
