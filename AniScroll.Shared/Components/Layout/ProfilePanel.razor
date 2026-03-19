@@ -611,10 +611,9 @@
 
     private void ComputeStats()
     {
-        // ── Deduplicate by anime ID ───────────────────────────────────────────────
-        // Anime can be stored under multiple IDs (e.g. swiped via MAL ID then
-        // imported under AniList ID). GroupBy ensures each logical anime is
-        // counted exactly once, fixing inflated tags / seasons / countries / scores.
+        // Deduplicate by anime ID upfront.
+        // GroupBy ensures each anime is counted exactly once regardless of how
+        // `_entries` ended up with duplicate or zero-ID entries.
         var all = UserListService.GetAll()
             .Where(e => e.Status.HasValue || e.CustomListIds.Any())
             .GroupBy(e => e.Anime.Id)
@@ -626,44 +625,34 @@
 
         s.Favorited = UserListService.GetFavoriteIds().Count;
 
-        // After GroupBy each anime appears exactly once, so scalar fields need no
-        // per-ID guard. Keep (id, value) sets only for ARRAY fields whose source
-        // data may contain duplicates within a single anime (genres, studios, tags).
-        var seenGenres = new HashSet<(int, string)>();
-        var seenStudios = new HashSet<(int, string)>();
-        var seenTags = new HashSet<(int, string)>();
-
         foreach (var e in all)
         {
-            var id = e.Anime.Id;
-
-            // ── Status ────────────────────────────────────────────────────────────
+            // ── Status ──────────────────────────────────────────────────────────
             if (e.Status.HasValue)
                 s.ByStatus[e.Status.Value] = s.ByStatus.GetValueOrDefault(e.Status.Value) + 1;
 
-            // ── Episodes ──────────────────────────────────────────────────────────
-            // Only count rewatch episodes when the total is known (avoids using
-            // current-progress as a fallback, which skews the number).
+            // ── Episodes ────────────────────────────────────────────────────────
+            // progress + rewatches × total (matches AniList's own counter)
             int totalEpForEntry = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
-            bool hasTotal = totalEpForEntry > 0;
-            int rwEp = (e.TotalRewatches > 0 && e.Status != ListStatus.Planning && hasTotal)
-                ? e.TotalRewatches * totalEpForEntry
+            int rwEp = (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
+                ? e.TotalRewatches * (totalEpForEntry > 0 ? totalEpForEntry : baseEp)
                 : 0;
             s.TotalEpisodes += baseEp + rwEp;
 
-            // ── Watch time ────────────────────────────────────────────────────────
+            // ── Watch time (Planning excluded) ───────────────────────────────────
             if (e.Status != ListStatus.Planning)
             {
                 var dur = e.Anime.Duration ?? 24;
                 s.TotalMinutes += (long)baseEp * dur;
-                // Only add rewatch time when total is known (same rule as episodes)
-                if (e.TotalRewatches > 0 && hasTotal)
-                    s.TotalMinutes += (long)e.TotalRewatches * totalEpForEntry * dur;
+                if (e.TotalRewatches > 0)
+                    s.TotalMinutes += (long)e.TotalRewatches
+                        * (totalEpForEntry > 0 ? totalEpForEntry : baseEp)
+                        * dur;
             }
 
-            // ── Days planned ──────────────────────────────────────────────────────
-            if (e.Status == ListStatus.Planning && hasTotal)
+            // ── Days planned (only when total episodes is known) ─────────────────
+            if (e.Status == ListStatus.Planning && totalEpForEntry > 0)
             {
                 var planDur = e.Anime.Duration ?? 24;
                 s.DaysPlanned += totalEpForEntry * planDur / 1440.0;
@@ -683,39 +672,42 @@
             }
 
             // ── Genres ────────────────────────────────────────────────────────────
+            // Local set: guards against an anime's own genre list having duplicates.
+            var localGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var g in e.Anime.Genres ?? new())
-                if (seenGenres.Add((id, g)))
+                if (localGenres.Add(g))
                     s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
 
-            // ── Format (scalar — one value per anime) ─────────────────────────────
+            // ── Format (1 value per anime) ────────────────────────────────────────
             if (!string.IsNullOrEmpty(e.Anime.Format))
                 s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
 
             // ── Studios ───────────────────────────────────────────────────────────
+            // Local set: guards against an anime listing the same studio twice.
+            var localStudios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var st in e.Anime.Studios ?? new())
-                if (!string.IsNullOrEmpty(st.Name) && seenStudios.Add((id, st.Name)))
+                if (!string.IsNullOrEmpty(st.Name) && localStudios.Add(st.Name))
                     s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
 
-            // ── Year (scalar) ─────────────────────────────────────────────────────
+            // ── Year, Season, Source, Country (1 value per anime) ─────────────────
             if (e.Anime.Year.HasValue)
                 s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
 
-            // ── Season (scalar) ───────────────────────────────────────────────────
             if (!string.IsNullOrEmpty(e.Anime.Season))
                 s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
 
-            // ── Source (scalar) ───────────────────────────────────────────────────
             if (!string.IsNullOrEmpty(e.Anime.Source))
                 s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
 
-            // ── Country (scalar) ──────────────────────────────────────────────────
             if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
-                s.ByCountry[e.Anime.CountryOfOrigin] =
-                    s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
+                s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
 
-            // ── Tags (non-spoiler, array) ─────────────────────────────────────────
+            // ── Tags ──────────────────────────────────────────────────────────────
+            // Non-spoiler only; local set guards against duplicate tag names on
+            // the same anime.
+            var localTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
-                if (seenTags.Add((id, t.Name)))
+                if (localTags.Add(t.Name))
                     s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
 
             if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
@@ -742,7 +734,8 @@
         s.TopTags = s.TopTags.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
         s.LongestAnime = all
-            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0 && e.Status != ListStatus.Planning)
+            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0
+                        && e.Status != ListStatus.Planning)
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
