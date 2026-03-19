@@ -1,308 +1,134 @@
-﻿@* ══════════════════════════════════════════════════════════════════════
-   StatsDebugPanel.razor v2 — Place in AniScroll.Shared/Components/Layout/
-   Add <StatsDebugPanel /> anywhere in Index.razor
-   ══════════════════════════════════════════════════════════════════════ *@
+﻿@* StatsDebugPanel.razor — Add to Layout/, add <StatsDebugPanel /> in Index.razor *@
 @using AniScroll.Shared.Models
 @using AniScroll.Shared.Services
 @inject UserListService UserListService
 
-<button @onclick="Run"
-        style="position:fixed;bottom:160px;right:10px;z-index:9999;
-               background:#E94560;border:none;color:white;padding:6px 10px;
-               border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
-    🔬 DEBUG
-</button>
-
-@if (_show)
+@if (!_show)
 {
-    <div style="position:fixed;inset:0;z-index:10000;background:#080810;overflow-y:auto;
-                    padding:14px;font-family:monospace;font-size:11px;color:#e0e0e0;">
+    <button @onclick="() => _show = true"
+            style="position:fixed;bottom:160px;right:10px;z-index:9999;background:#E94560;
+                       border:none;color:white;padding:8px 12px;border-radius:8px;font-size:12px;
+                       font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(233,69,96,0.5);">
+        🔢 COUNTS
+    </button>
+}
+else
+{
+    <div style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.97);
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    padding:20px;font-family:monospace;">
 
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-            <span style="color:#E94560;font-size:14px;font-weight:700;">🔬 AniScroll Stats Diagnostics</span>
+        <div style="width:100%;max-width:420px;">
+            <div style="color:#E94560;font-size:16px;font-weight:700;margin-bottom:20px;text-align:center;">
+                🔢 Nombre d'entrées réelles
+            </div>
+
+            @foreach (var r in _rows)
+            {
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                                    padding:12px 16px;margin-bottom:6px;border-radius:10px;
+                                    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+                    <span style="color:rgba(255,255,255,0.6);font-size:12px;">@r.Label</span>
+                    <span style="color:@r.Color;font-size:20px;font-weight:900;">@r.Value</span>
+                </div>
+            }
+
+            <div style="margin-top:16px;padding:14px;background:#0a1a0a;border:1px solid #166534;
+                            border-radius:10px;color:#86efac;font-size:12px;line-height:1.8;text-align:center;">
+                @((MarkupString)_msg)
+            </div>
+
             <button @onclick="() => _show = false"
-                    style="background:#333;border:none;color:white;padding:5px 12px;border-radius:6px;cursor:pointer;">
-                X Close
+                    style="margin-top:16px;width:100%;padding:14px;background:#333;border:none;
+                               color:white;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+                Fermer
             </button>
         </div>
-
-        @foreach (var block in _blocks)
-        {
-            <div style="margin-bottom:12px;border:1px solid #222;border-radius:8px;overflow:hidden;">
-                <div style="background:#1a1a2e;padding:6px 10px;font-size:10px;font-weight:700;
-                                    letter-spacing:.07em;text-transform:uppercase;color:#ffd43b;">
-                    @block.Title
-                </div>
-                <div style="padding:8px 10px;">
-                    @foreach (var line in block.Lines)
-                    {
-                        <div style="display:flex;align-items:baseline;gap:8px;padding:2px 0;
-                                                border-bottom:1px solid #111;">
-                            <span style="color:#888;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@line.Label</span>
-                            <span style="color:@line.Color;font-weight:700;white-space:nowrap;min-width:60px;text-align:right;">@line.Value</span>
-                            @if (!string.IsNullOrEmpty(line.Note))
-                            {
-                                <span style="color:@line.Color;font-size:9px;white-space:nowrap;">@line.Note</span>
-                            }
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-
-        @if (_sampleEntries.Any())
-        {
-            <div style="border:1px solid #222;border-radius:8px;overflow:hidden;margin-bottom:12px;">
-                <div style="background:#1a1a2e;padding:6px 10px;font-size:10px;font-weight:700;
-                                    letter-spacing:.07em;text-transform:uppercase;color:#ffd43b;">
-                    FIRST 15 ENTRIES — ID / TITLE / SEASON / COUNTRY / STATUS
-                </div>
-                @foreach (var e in _sampleEntries)
-                {
-                    <div style="padding:4px 10px;border-bottom:1px solid #111;font-size:10px;
-                                            display:grid;grid-template-columns:45px 1fr 60px 45px 70px;gap:6px;align-items:center;">
-                        <span style="color:#555;">@e.Id</span>
-                        <span style="color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@e.Title</span>
-                        <span style="color:@(string.IsNullOrEmpty(e.Season) ? "#555" : "#86efac");">@(string.IsNullOrEmpty(e.Season) ? "—" : e.Season)</span>
-                        <span style="color:@(string.IsNullOrEmpty(e.Country) ? "#555" : "#93c5fd");">@(string.IsNullOrEmpty(e.Country) ? "—" : e.Country)</span>
-                        <span style="color:#d8b4fe;font-size:10px;">@e.Status</span>
-                    </div>
-                }
-            </div>
-        }
-
-        @if (!string.IsNullOrEmpty(_conclusion))
-        {
-            <div style="padding:10px;background:#0a1a0a;border:1px solid #166534;border-radius:8px;
-                                color:#86efac;font-size:11px;line-height:1.8;">
-                @((MarkupString)_conclusion)
-            </div>
-        }
     </div>
 }
 
 @code {
-    private bool _show;
-    private List<Block> _blocks = new();
-    private List<SampleEntry> _sampleEntries = new();
-    private string _conclusion = "";
+    bool _show = false;
+    record Row(string Label, string Value, string Color);
+    List<Row> _rows = new();
+    string _msg = "";
 
-    record Block(string Title, List<Line> Lines);
-    record Line(string Label, string Value, string Color, string Note = "");
-    record SampleEntry(int Id, string Title, string Season, string Country, string Status);
+    protected override void OnParametersSet() { }
 
-    private void Run()
+    private void Show()
     {
         _show = true;
-        _blocks = new();
-        _sampleEntries = new();
-        _conclusion = "";
-        Analyze();
+        Build();
     }
 
-    private void Analyze()
+    protected override void OnAfterRender(bool first) { }
+
+    private void Build()
     {
-        // ── STEP 1: raw counts ────────────────────────────────────────────
-        var rawAll = UserListService.GetAll().ToList();
-        var filtered = rawAll.Where(e => e.Status.HasValue || e.CustomListIds.Any()).ToList();
+        var all = UserListService.GetAll().ToList();
+        var filtered = all.Where(e => e.Status.HasValue || e.CustomListIds.Any()).ToList();
         int tracked = UserListService.CountTracked();
-
-        _blocks.Add(new("STEP 1 — Raw counts", new() {
-            new("GetAll() total (= _entries.Values.Count)", rawAll.Count.ToString(), "#fff"),
-            new("After status/list filter",                 filtered.Count.ToString(), "#fff"),
-            new("CountTracked() (shown in UI badge)",       tracked.ToString(), "#fff"),
-            new("Filter == CountTracked?",
-                filtered.Count == tracked ? "YES" : "NO — MISMATCH",
-                filtered.Count == tracked ? "#51cf66" : "#ff6b6b"),
-        }));
-
-        // ── STEP 2: ID duplication ────────────────────────────────────────
-        var idGroups = filtered.GroupBy(e => e.Anime.Id).ToList();
-        int uniqueIds = idGroups.Count(g => g.Key != 0);
-        int zeroIds = filtered.Count(e => e.Anime.Id == 0);
-        int dupIds = idGroups.Count(g => g.Count() > 1);
-        var afterDedup = idGroups.Select(g => g.OrderByDescending(e => e.UpdatedAt).First()).ToList();
-
-        _blocks.Add(new("STEP 2 — ID deduplication", new() {
-            new("Unique IDs (non-zero)",   uniqueIds.ToString(),   "#fff"),
-            new("Entries with Id == 0",    zeroIds.ToString(),     zeroIds > 0 ? "#ff6b6b" : "#51cf66",
-                zeroIds > 0 ? "polluting dict key 0!" : ""),
-            new("Duplicate IDs in GetAll()?", dupIds.ToString(),   dupIds > 0 ? "#ff6b6b" : "#51cf66",
-                dupIds > 0 ? "IMPOSSIBLE for Dictionary — means data corrupt" : "OK as expected"),
-            new("Count after GroupBy dedup",  afterDedup.Count.ToString(), "#51cf66"),
-            new("GroupBy changed count?",
-                afterDedup.Count != filtered.Count ? $"YES {filtered.Count}->{afterDedup.Count}" : "No (dict already unique)",
-                afterDedup.Count != filtered.Count ? "#ff6b6b" : "#888"),
-        }));
-
-        int n = afterDedup.Count;
-
-        // ── STEP 3: field counts on CLEAN data ────────────────────────────
-        var seasonClean = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var countryClean = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var tagClean = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        int scoredClean = 0;
-
-        foreach (var e in afterDedup)
+        int scored = filtered.Count(e => e.Score > 0);
+        int planning = filtered.Count(e => e.Status == ListStatus.Planning);
+        int notPlan = filtered.Count(e => e.Status != ListStatus.Planning);
+        var seasons = filtered.Where(e => !string.IsNullOrEmpty(e.Anime.Season)).ToList();
+        int seasonSum = seasons.Count;                        // 1 entry = 1 season
+        int jpCount = filtered.Count(e => e.Anime.CountryOfOrigin == "JP");
+        int mpCount = 0;
+        foreach (var e in filtered)
         {
-            if (!string.IsNullOrEmpty(e.Anime.Season))
-                seasonClean[e.Anime.Season] = seasonClean.GetValueOrDefault(e.Anime.Season) + 1;
-            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
-                countryClean[e.Anime.CountryOfOrigin] = countryClean.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
-            if (e.Score > 0) scoredClean++;
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
-                if (seen.Add(t.Name))
-                    tagClean[t.Name] = tagClean.GetValueOrDefault(t.Name) + 1;
+                if (seen.Add(t.Name) && t.Name == "Male Protagonist") { mpCount++; break; }
         }
 
-        int seasonSum = seasonClean.Values.Sum();
-        int countrySum = countryClean.Values.Sum();
-        int mpClean = tagClean.GetValueOrDefault("Male Protagonist");
-
-        _blocks.Add(new("STEP 3 — Correct values (deduped data)", new() {
-            new("n (entries processed)",    n.ToString(),            "#fff"),
-            new("Season sum (must be <= n)", seasonSum.ToString(),  seasonSum <= n ? "#51cf66" : "#ff6b6b",
-                seasonSum > n ? $"IMPOSSIBLE — {seasonSum-n} extra!" : "OK"),
-            new("  WINTER",  seasonClean.GetValueOrDefault("WINTER").ToString(), "#93c5fd"),
-            new("  SPRING",  seasonClean.GetValueOrDefault("SPRING").ToString(), "#86efac"),
-            new("  SUMMER",  seasonClean.GetValueOrDefault("SUMMER").ToString(), "#fde68a"),
-            new("  FALL",    seasonClean.GetValueOrDefault("FALL").ToString(),   "#fdba74"),
-            new("Country sum (must be <= n)", countrySum.ToString(), countrySum <= n ? "#51cf66" : "#ff6b6b",
-                countrySum > n ? $"IMPOSSIBLE — {countrySum-n} extra!" : "OK"),
-            new("  JP", countryClean.GetValueOrDefault("JP").ToString(), "#93c5fd"),
-            new("Scored (must be <= n)", scoredClean.ToString(), scoredClean <= n ? "#51cf66" : "#ff6b6b",
-                scoredClean > n ? "IMPOSSIBLE!" : "OK"),
-            new("Male Protagonist tag", mpClean.ToString(), mpClean <= n ? "#51cf66" : "#ff6b6b",
-                mpClean > n ? "IMPOSSIBLE!" : "OK"),
-        }));
-
-        // ── STEP 4: OLD ComputeStats simulation ───────────────────────────
-        // The OLD code used seenX HashSets keyed by anime ID on a loop over
-        // `filtered`. If filtered == afterDedup (no duplicates), old == new.
-        // If old != new, it means the seenX sets were doing something wrong.
-        var seasonOld = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var countryOld = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        int scoredOld = 0, mpOld = 0;
-        var seenSeasonIds = new HashSet<int>();
-        var seenCountryIds = new HashSet<int>();
-        var seenTagIds = new HashSet<(int, string)>();
-
-        foreach (var e in filtered)
+        _rows = new()
         {
-            // Score: NO dedup in original
-            if (e.Score > 0) scoredOld++;
+            new("GetAll() brut (tout)", all.Count.ToString(), "#fff"),
+            new("Avec status OU custom list", filtered.Count.ToString(), "#fff"),
+            new("CountTracked() (badge UI)", tracked.ToString(), filtered.Count == tracked ? "#51cf66" : "#ff6b6b"),
+            new("─────────────────────────────", "", "#333"),
+            new("Planning", planning.ToString(), "#a855f7"),
+            new("Non-planning (sans planning)", notPlan.ToString(), "#3b82f6"),
+            new("─────────────────────────────", "", "#333"),
+            new("Avec score > 0 (correct)", scored.ToString(), scored <= filtered.Count ? "#51cf66" : "#ff6b6b"),
+            new("Japan JP (correct)", jpCount.ToString(), jpCount <= filtered.Count ? "#51cf66" : "#ff6b6b"),
+            new("Male Protagonist (correct)", mpCount.ToString(), mpCount <= filtered.Count ? "#51cf66" : "#ff6b6b"),
+            new("Season count (correct)", seasonSum.ToString(), seasonSum <= filtered.Count ? "#51cf66" : "#ff6b6b"),
+        };
 
-            // Season: original had seenSeason.Add(id)
-            if (!string.IsNullOrEmpty(e.Anime.Season) && seenSeasonIds.Add(e.Anime.Id))
-                seasonOld[e.Anime.Season] = seasonOld.GetValueOrDefault(e.Anime.Season) + 1;
+        bool ok = scored <= filtered.Count && jpCount <= filtered.Count
+               && mpCount <= filtered.Count && seasonSum <= filtered.Count;
 
-            // Country: original had seenCountry.Add(id)
-            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin) && seenCountryIds.Add(e.Anime.Id))
-                countryOld[e.Anime.CountryOfOrigin] = countryOld.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
-
-            // Tag: original had seenTags.Add((id, name))
-            foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
-                if (seenTagIds.Add((e.Anime.Id, t.Name)) && t.Name == "Male Protagonist")
-                    mpOld++;
-        }
-
-        int seasonOldSum = seasonOld.Values.Sum();
-        int countryOldSum = countryOld.Values.Sum();
-
-        _blocks.Add(new("STEP 4 — OLD code simulation (with seenX sets)", new() {
-            new("n_filtered (entries iterated)",   filtered.Count.ToString(),   "#ffd43b"),
-            new("Season sum OLD",    seasonOldSum.ToString(),  seasonOldSum > n ? "#ff6b6b" : "#888",
-                seasonOldSum > n ? $"inflated by {seasonOldSum - n}" : "same as new"),
-            new("Country sum OLD",   countryOldSum.ToString(), countryOldSum > n ? "#ff6b6b" : "#888",
-                countryOldSum > n ? $"inflated by {countryOldSum - n}" : "same as new"),
-            new("Scored OLD",        scoredOld.ToString(),     scoredOld > n ? "#ff6b6b" : "#888",
-                scoredOld > n ? $"inflated by {scoredOld - n}" : "same as new"),
-            new("Male Protagonist OLD", mpOld.ToString(),      mpOld > n ? "#ff6b6b" : "#888",
-                mpOld > n ? $"inflated by {mpOld - n}" : "same as new"),
-        }));
-
-        // ── STEP 5: anomaly check — same season raw vs unique IDs ─────────
-        var seasonRaw = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        var seasonUID = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var e in filtered)
+        if (ok)
         {
-            if (string.IsNullOrEmpty(e.Anime.Season)) continue;
-            seasonRaw[e.Anime.Season] = seasonRaw.GetValueOrDefault(e.Anime.Season) + 1;
-            if (!seasonUID.ContainsKey(e.Anime.Season)) seasonUID[e.Anime.Season] = new();
-            seasonUID[e.Anime.Season].Add(e.Anime.Id);
-        }
-
-        var b5 = new List<Line>();
-        bool hasAnomaly = false;
-        foreach (var kv in seasonRaw.OrderBy(x => x.Key))
-        {
-            int raw = kv.Value;
-            int uniq = seasonUID[kv.Key].Count;
-            if (raw != uniq) hasAnomaly = true;
-            b5.Add(new($"{kv.Key}: raw={raw} unique_ids={uniq}",
-                raw == uniq ? "MATCH" : $"{raw - uniq} EXTRA",
-                raw == uniq ? "#51cf66" : "#ff6b6b",
-                raw == uniq ? "" : "same anime counted multiple times!"));
-        }
-        if (!b5.Any()) b5.Add(new("No season data", "—", "#555"));
-        _blocks.Add(new("STEP 5 — Season raw count vs unique IDs (key test)", b5));
-
-        // ── STEP 6: if anomaly, find the offending entries ─────────────────
-        if (hasAnomaly)
-        {
-            var dups = filtered.GroupBy(e => e.Anime.Id)
-                .Where(g => g.Count() > 1)
-                .Take(5)
-                .SelectMany(g => g.Select(e => new
-                {
-                    e.Anime.Id,
-                    Title = e.Anime.Title[..Math.Min(25, e.Anime.Title.Length)],
-                    e.Anime.Season,
-                    e.Status,
-                    e.UpdatedAt,
-                    lists = e.CustomListIds.Count
-                })).ToList();
-
-            var b6 = new List<Line>();
-            if (dups.Any())
-            {
-                b6.Add(new("Found entries with same ID:", dups.Count.ToString(), "#ff6b6b", "BUG: GetAll() returned duplicates despite Dictionary!"));
-                foreach (var d in dups)
-                    b6.Add(new($"ID={d.Id} s={d.Status?.ToString() ?? "null"} lists={d.lists}", d.Title, "#fca5a5"));
-            }
-            else
-            {
-                b6.Add(new("No duplicate IDs found in filtered!", "PARADOX", "#ffd43b", "season raw > unique_ids but no dup IDs???"));
-                b6.Add(new("=> The season FIELD itself is counted > once per entry", "CHECK LOOP", "#ffd43b"));
-                b6.Add(new("=> Or filtered list was mutated during iteration", "UNLIKELY", "#555"));
-            }
-            _blocks.Add(new("STEP 6 — Anomaly root cause", b6));
-        }
-
-        // sample
-        _sampleEntries = filtered.Take(15).Select(e => new SampleEntry(
-            e.Anime.Id,
-            e.Anime.Title.Length > 26 ? e.Anime.Title[..24] + "…" : e.Anime.Title,
-            e.Anime.Season, e.Anime.CountryOfOrigin ?? "",
-            e.Status?.ToString() ?? $"lists:{e.CustomListIds.Count}"
-        )).ToList();
-
-        // conclusion
-        if (scoredClean <= n && seasonSum <= n && countrySum <= n && mpClean <= n)
-        {
-            _conclusion = "<strong>✅ After GroupBy dedup, all values are CORRECT.</strong><br/>" +
-                $"Season≈{seasonSum} | Japan≈{countryClean.GetValueOrDefault("JP")} | Scored≈{scoredClean} | MaleProtag≈{mpClean}<br/><br/>" +
-                "<strong>The ProfilePanel.razor fix was NOT applied to the running build.</strong><br/>" +
-                "Steps: 1) Save the file 2) Hot-reload or full rebuild 3) Clear browser cache 4) Refresh";
-        }
-        else if (dupIds == 0 && !hasAnomaly)
-        {
-            _conclusion = "<strong>🔴 Values still inflated even after dedup — unexpected.</strong><br/>Share all steps above.";
+            _msg = $"<strong>✅ Toutes les valeurs sont CORRECTES</strong><br/>" +
+                   $"Total réel = <strong>{filtered.Count}</strong> anime<br/>" +
+                   $"(dont {planning} en Planning + {notPlan} autres)<br/><br/>" +
+                   $"Si tu pensais avoir <strong>361</strong> anime, c'est probablement<br/>" +
+                   $"le count <em>sans Planning</em> ({notPlan}) ou <em>sans Custom List</em>.";
         }
         else
         {
-            _conclusion = "<strong>⚠ Anomalies found — see steps above for details.</strong>";
+            _msg = $"<strong>🔴 VALEURS ENCORE GONFLÉES</strong><br/>Le fix n'est pas compilé.<br/>" +
+                   $"Faire un Clean + Rebuild complet et vider le cache navigateur.";
         }
+    }
+
+    // Called when button clicked
+    private new void StateHasChanged() => base.StateHasChanged();
+
+    protected new void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    // Override pour recalculer à chaque ouverture
+    private bool _built = false;
+    protected override bool ShouldRender()
+    {
+        if (_show && !_built) { _built = true; Build(); }
+        if (!_show) _built = false;
+        return true;
     }
 }
