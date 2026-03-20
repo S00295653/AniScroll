@@ -1113,6 +1113,27 @@
         display: none;
     }
 
+@media (min-width: 768px) {
+    .st-year-anilist {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.18) transparent;
+    }
+
+        .st-year-anilist::-webkit-scrollbar {
+            display: block;
+            height: 4px;
+        }
+
+        .st-year-anilist::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .st-year-anilist::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+}
+
 .st-year-al-col {
     display: flex;
     flex-direction: column;

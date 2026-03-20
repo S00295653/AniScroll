@@ -164,11 +164,27 @@
                                 <span class="st-hero-lbl">total anime</span>
                             </div>
                             <div class="st-hero-subs">
-                                <div class="st-hero-sub"><span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span><span class="st-hero-sub-lbl">days watched</span></div>
-                                <div class="st-hero-sub"><span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span><span class="st-hero-sub-lbl">episodes</span></div>
+                                <div class="st-hero-sub">
+                                    <span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span>
+                                    <span class="st-hero-sub-lbl">days watched</span>
+                                </div>
+                                <div class="st-hero-sub">
+                                    <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
+                                    <span class="st-hero-sub-lbl">episodes</span>
+                                </div>
+                                @if (_s.ScoredCount > 0)
+                                {
+                                    <div class="st-hero-sub">
+                                        <span class="st-hero-sub-num" style="color:@GetScoreColor(_s.AvgScore)">@_s.AvgScore.ToString("F1")</span>
+                                        <span class="st-hero-sub-lbl">mean score</span>
+                                    </div>
+                                }
                                 @if (_s.Favorited > 0)
                                 {
-                                    <div class="st-hero-sub"><span class="st-hero-sub-num">@_s.Favorited</span><span class="st-hero-sub-lbl">favourites</span></div>
+                                    <div class="st-hero-sub">
+                                        <span class="st-hero-sub-num">@_s.Favorited</span>
+                                        <span class="st-hero-sub-lbl">favourites</span>
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -437,7 +453,6 @@
                             </div>
                         }
 
-                        <!-- ── Source Material — Radar ── -->
                         @if (_s.BySource.Any())
                         {
                             <div class="st-section">
@@ -445,20 +460,20 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
                                     Source Material
                                 </div>
-                                @{
-                                    var radarSources = _s.BySource.OrderByDescending(x => x.Value).Take(7).ToList();
-                                }
-                                <div class="st-radar-wrap">
-                                    @((MarkupString)BuildRadarSvg(radarSources, "#a855f7", "#d8b4fe"))
-                                </div>
-                                <div class="st-radar-legend">
-                                    @foreach (var kv in radarSources)
+                                <div class="st-bar-list">
+                                    @{
+                                        var maxSrc = _s.BySource.Values.DefaultIfEmpty(1).Max();
+                                    }
+                                    @foreach (var kv in _s.BySource.OrderByDescending(x => x.Value))
                                     {
-                                        var legendPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
-                                        <div class="st-radar-legend-item">
-                                            <span class="st-radar-legend-dot" style="background:#d8b4fe;"></span>
-                                            <span class="st-radar-legend-name">@kv.Key</span>
-                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@legendPct.ToString("F0")%)</span></span>
+                                        var pct = maxSrc > 0 ? kv.Value * 100.0 / maxSrc : 0;
+                                        var globalPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        <div class="st-bar-row">
+                                            <span class="st-bar-name">@kv.Key</span>
+                                            <div class="st-bar-track">
+                                                <div class="st-bar-fill st-bar-source" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                                            </div>
+                                            <span class="st-bar-val">@kv.Value <span style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.28)">@globalPct.ToString("F0")%</span></span>
                                         </div>
                                     }
                                 </div>
@@ -827,41 +842,43 @@
         double total = items.Sum(x => x.Value);
         if (total == 0) return "";
 
-        const double cx = 100, cy = 100, r = 75, hole = 38;
+        const double cx = 100, cy = 100, outerR = 74, innerR = 46;
+        double gap = items.Count > 1 ? 0.025 : 0;
+        string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
 
-        double startAngle = -Math.PI / 2;
+        double angle = -Math.PI / 2;
         int ci = 0;
         foreach (var kv in items)
         {
             double sweep = 2 * Math.PI * kv.Value / total;
-            double endAngle = startAngle + sweep;
-            double x1 = cx + r * Math.Cos(startAngle);
-            double y1 = cy + r * Math.Sin(startAngle);
-            double x2 = cx + r * Math.Cos(endAngle);
-            double y2 = cy + r * Math.Sin(endAngle);
-            double xi1 = cx + hole * Math.Cos(startAngle);
-            double yi1 = cy + hole * Math.Sin(startAngle);
-            double xi2 = cx + hole * Math.Cos(endAngle);
-            double yi2 = cy + hole * Math.Sin(endAngle);
-            int large = sweep > Math.PI ? 1 : 0;
-            string color = colors[ci % colors.Length];
-            string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-            sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(r)} {F(r)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(hole)} {F(hole)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{color}\" fill-opacity=\"0.85\" stroke=\"#16181e\" stroke-width=\"1.5\"/>");
-            double pct = kv.Value / total;
-            if (pct > 0.06)
+            double sa = angle + gap;
+            double ea = angle + sweep - gap;
+            if (ea > sa)
             {
-                double midAngle = startAngle + sweep / 2;
-                double lr = (r + hole) / 2;
-                double lx = cx + lr * Math.Cos(midAngle);
-                double ly = cy + lr * Math.Sin(midAngle);
-                sb.Append($"<text x=\"{F(lx)}\" y=\"{F(ly)}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"7.5\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>");
+                double x1 = cx + outerR * Math.Cos(sa), y1 = cy + outerR * Math.Sin(sa);
+                double x2 = cx + outerR * Math.Cos(ea), y2 = cy + outerR * Math.Sin(ea);
+                double xi1 = cx + innerR * Math.Cos(sa), yi1 = cy + innerR * Math.Sin(sa);
+                double xi2 = cx + innerR * Math.Cos(ea), yi2 = cy + innerR * Math.Sin(ea);
+                int large = (sweep - gap * 2) > Math.PI ? 1 : 0;
+                string color = colors[ci % colors.Length];
+                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{color}\"/>");
+                double pct = kv.Value / total;
+                if (pct > 0.07)
+                {
+                    double mid = sa + (ea - sa) / 2;
+                    double lr = (outerR + innerR) / 2;
+                    sb.Append($"<text x=\"{F(cx + lr * Math.Cos(mid))}\" y=\"{F(cy + lr * Math.Sin(mid))}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>");
+                }
             }
-            startAngle = endAngle;
+            angle += sweep;
             ci++;
         }
-
+        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 1)}\" fill=\"#14141f\"/>");
+        sb.Append($"<text x=\"100\" y=\"96\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"18\" font-weight=\"800\" fill=\"rgba(255,255,255,0.88)\">{(int)total}</text>");
+        sb.Append($"<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"8\" fill=\"rgba(255,255,255,0.3)\">anime</text>");
         sb.Append("</svg>");
         return sb.ToString();
     }
@@ -1070,5 +1087,22 @@
 
     private void HandleOverlayClick() => Close();
     private void Close() => OnClose.InvokeAsync();
-    public void Dispose() { }
+    protected override void OnInitialized()
+    {
+        UserListService.OnChanged += HandleStatsRefresh;
+    }
+
+    public void Dispose()
+    {
+        UserListService.OnChanged -= HandleStatsRefresh;
+    }
+
+    private void HandleStatsRefresh()
+    {
+        if (_activeTab == "stats")
+        {
+            ComputeStats();
+            InvokeAsync(StateHasChanged);
+        }
+    }
 }
