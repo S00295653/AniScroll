@@ -303,7 +303,7 @@
                                     }
                                     @for (decimal sc = 10m; sc >= 1m; sc -= 0.5m)
                                     {
-                                        var key = sc.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+                                        var key = sc.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
                                         var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
                                         // Always render a tiny tick even for 0-count rows (like AniList)
                                         var barPct = maxScoreCount > 0
@@ -974,7 +974,7 @@
                 decimal scoreD = (decimal)Math.Round(e.Score, 1);
                 decimal rounded = Math.Round(scoreD * 2m, MidpointRounding.AwayFromZero) / 2m;
                 rounded = Math.Clamp(rounded, 0.5m, 10.0m);
-                string key = rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
+                string key = rounded.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
                 s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
                 int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
