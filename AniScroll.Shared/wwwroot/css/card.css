@@ -34,15 +34,15 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    /*filter: blur(6px);*/
     opacity: 0.4;
     overflow: hidden;
-    will-change: transform;
-    transform: translateZ(0) scale(1.1);
+    transform: translate3d(0, 0, 0) scale(1.12);
+    filter: blur(5px);
+    will-change: filter, transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     isolation: isolate;
-    contain: paint;
+    contain: strict;
 }
 
 .gradient-overlay {
