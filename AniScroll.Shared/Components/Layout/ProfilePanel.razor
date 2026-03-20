@@ -194,7 +194,7 @@
                                             <line x1="9" y1="18" x2="15" y2="18" />
                                         </svg>
                                         <span>Stats for</span>
-                                        <span class="st-filter-badge">@_statFilter.Count</span>
+                                        <span class="st-filter-badge">@(_statFilter.Count + _statFilterCustomListIds.Count)</span>
                                         <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
                                              width="11" height="11" viewBox="0 0 24 24" fill="none"
                                              stroke="currentColor" stroke-width="2.5">
@@ -222,9 +222,32 @@
                                                     }
                                                 </button>
                                             }
+                                            @{
+                                                var _filterCustomLists = UserListService.GetRegularCustomLists();
+                                            }
+                                            @if (_filterCustomLists.Any())
+                                            {
+                                                <div class="st-filter-separator"></div>
+                                                @foreach (var cl in _filterCustomLists)
+                                                {
+                                                    var clId = cl.Id;
+                                                    var isOnCl = _statFilterCustomListIds.Contains(clId);
+                                                    <button class="st-filter-option @(isOnCl ? "st-filter-option-on" : "")"
+                                                            style="@(isOnCl ? $"background:color-mix(in srgb,{cl.Color} 10%,transparent);border-color:color-mix(in srgb,{cl.Color} 40%,transparent);color:{cl.Color};" : "")"
+                                                            @onclick="() => ToggleStatFilterCustomList(clId)">
+                                                        <span class="st-filter-dot" style="background:@cl.Color;box-shadow:0 0 5px @(cl.Color)88;"></span>
+                                                        <span class="st-filter-name">@cl.Name</span>
+                                                        <span class="st-filter-count">@UserListService.GetCountForCustomList(clId)</span>
+                                                        @if (isOnCl)
+                                                        {
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                        }
+                                                    </button>
+                                                }
+                                            }
                                             <div class="st-filter-actions">
-                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus>(Enum.GetValues<ListStatus>()); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">All</button>
-                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus> { ListStatus.Completed, ListStatus.Watching }; ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">Reset</button>
+                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus>(Enum.GetValues<ListStatus>()); _statFilterCustomListIds = new HashSet<string>(UserListService.GetRegularCustomLists().Select(c => c.Id)); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">All</button>
+                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus> { ListStatus.Completed, ListStatus.Watching }; _statFilterCustomListIds = new HashSet<string>(); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">Reset</button>
                                             </div>
                                         </div>
                                     }
@@ -278,13 +301,14 @@
                                     {
                                         var key = sc.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
                                         var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
+                                        if (count == 0) { continue; }
                                         var barPct = maxScoreCount > 0 ? count * 100.0 / maxScoreCount : 0;
                                         var ck = (double)sc;
                                         var isAvg = Math.Abs(ck - _s.AvgScore) < 0.26;
                                         <div class="st-score-row @(isAvg ? "st-score-row-avg" : "")">
                                             <span class="st-score-label">@key</span>
                                             <div class="st-score-bar-wrap"><div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(ck);"></div></div>
-                                            <span class="st-score-count">@(count > 0 ? count.ToString() : "")</span>
+                                            <span class="st-score-count">@count</span>
                                         </div>
                                     }
                                 </div>
@@ -718,6 +742,12 @@
         color: rgba(255,255,255,0.3);
     }
 
+    .st-filter-separator {
+        height: 1px;
+        background: rgba(255,255,255,0.07);
+        margin: 4px 2px;
+    }
+
     .st-filter-actions {
         display: flex;
         gap: 5px;
@@ -755,6 +785,7 @@
 
     // ── Stats filter state ─────────────────────────────────────────────────
     private HashSet<ListStatus> _statFilter = new() { ListStatus.Completed, ListStatus.Watching };
+    private HashSet<string> _statFilterCustomListIds = new();
     private bool _filterDropdownOpen = false;
 
     private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
@@ -837,6 +868,13 @@
         StateHasChanged();
     }
 
+    private void ToggleStatFilterCustomList(string id)
+    {
+        if (!_statFilterCustomListIds.Remove(id)) _statFilterCustomListIds.Add(id);
+        ComputeStats();
+        StateHasChanged();
+    }
+
     // ── ComputeStats ──────────────────────────────────────────────────────
     private void ComputeStats()
     {
@@ -860,22 +898,30 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
 
+            // FIX: count episodes including all rewatches
             int rwEp = 0;
             if (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
             {
-                if (totalEp > 0) rwEp = e.TotalRewatches * totalEp;
-                else if (e.Status == ListStatus.Completed) rwEp = e.TotalRewatches * baseEp;
+                if (totalEp > 0)
+                    rwEp = e.TotalRewatches * totalEp;
+                else if (e.Status == ListStatus.Completed)
+                    rwEp = e.TotalRewatches * baseEp;
             }
+            // TotalEpisodes = episodes watched (first watch) + all rewatch episodes
             s.TotalEpisodes += baseEp + rwEp;
 
             if (e.Status != ListStatus.Planning)
             {
                 int dur = e.Anime.Duration ?? 24;
+                // Watch time for first watch
                 s.TotalMinutes += (long)baseEp * dur;
+                // Watch time for rewatches
                 if (e.TotalRewatches > 0)
                 {
-                    if (totalEp > 0) s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
-                    else if (e.Status == ListStatus.Completed) s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
+                    if (totalEp > 0)
+                        s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
+                    else if (e.Status == ListStatus.Completed)
+                        s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
                 }
             }
 
@@ -902,8 +948,12 @@
             .FirstOrDefault();
 
         // ── Pass 2: filtered distribution stats ───────────────────────────────
-        var filtered = _statFilter.Count > 0
-            ? all.Where(e => e.Status.HasValue && _statFilter.Contains(e.Status.Value)).ToList()
+        // Filter by status AND/OR custom list ids
+        var filtered = (_statFilter.Count > 0 || _statFilterCustomListIds.Any())
+            ? all.Where(e =>
+                (_statFilter.Count == 0 || (e.Status.HasValue && _statFilter.Contains(e.Status.Value))) &&
+                (_statFilterCustomListIds.Count == 0 || e.CustomListIds.Any(id => _statFilterCustomListIds.Contains(id)))
+              ).ToList()
             : all;
 
         s.FilteredTotal = filtered.Count;
