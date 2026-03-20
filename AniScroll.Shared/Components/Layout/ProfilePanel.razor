@@ -165,92 +165,96 @@
                             </div>
 
                             <div class="st-hero-right">
-                                <!-- global counters -->
-                                <div class="st-hero-subs">
-                                    <div class="st-hero-sub">
-                                        <span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span>
-                                        <span class="st-hero-sub-lbl">days watched</span>
-                                    </div>
-                                    <div class="st-hero-sub">
-                                        <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
-                                        <span class="st-hero-sub-lbl">episodes</span>
-                                    </div>
-                                    @if (_s.Favorited > 0)
-                                    {
+                                <!-- counters + filter dropdown side by side -->
+                                <div style="display:flex;align-items:flex-start;gap:10px;">
+                                    <div class="st-hero-subs" style="flex:1;">
                                         <div class="st-hero-sub">
-                                            <span class="st-hero-sub-num">@_s.Favorited</span>
-                                            <span class="st-hero-sub-lbl">favourites</span>
+                                            <span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span>
+                                            <span class="st-hero-sub-lbl">days watched</span>
                                         </div>
-                                    }
-                                </div>
+                                        <div class="st-hero-sub">
+                                            <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
+                                            <span class="st-hero-sub-lbl">episodes</span>
+                                        </div>
+                                        @if (_s.Favorited > 0)
+                                        {
+                                            <div class="st-hero-sub">
+                                                <span class="st-hero-sub-num">@_s.Favorited</span>
+                                                <span class="st-hero-sub-lbl">favourites</span>
+                                            </div>
+                                        }
+                                    </div>
 
-                                <!-- ── Stats filter dropdown ── -->
-                                <div class="st-filter-wrap" @onclick:stopPropagation="true">
-                                    <button class="st-filter-trigger"
-                                            @onclick="() => { _filterDropdownOpen = !_filterDropdownOpen; StateHasChanged(); }">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                            <line x1="3" y1="6" x2="21" y2="6" />
-                                            <line x1="6" y1="12" x2="18" y2="12" />
-                                            <line x1="9" y1="18" x2="15" y2="18" />
-                                        </svg>
-                                        <span>Stats for</span>
-                                        <span class="st-filter-badge">@(_statFilter.Count + _statFilterCustomListIds.Count)</span>
-                                        <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
-                                             width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2.5">
-                                            <polyline points="6 9 12 15 18 9"></polyline>
-                                        </svg>
-                                    </button>
+                                    <!-- ── Stats filter dropdown (right of subs) ── -->
+                                    <div class="st-filter-wrap" @onclick:stopPropagation="true" style="flex-shrink:0;">
+                                        <button class="st-filter-trigger"
+                                                @onclick="() => { _filterDropdownOpen = !_filterDropdownOpen; StateHasChanged(); }">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                                <line x1="3" y1="6" x2="21" y2="6" />
+                                                <line x1="6" y1="12" x2="18" y2="12" />
+                                                <line x1="9" y1="18" x2="15" y2="18" />
+                                            </svg>
+                                            <span>Stats for</span>
+                                            <span class="st-filter-badge">@(_statFilter.Count + _statFilterCustomIds.Count)</span>
+                                            <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
+                                                 width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="2.5">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </button>
 
-                                    @if (_filterDropdownOpen)
-                                    {
-                                        <div class="st-filter-menu">
-                                            @foreach (var item in GetAllStatusItems())
-                                            {
-                                                var si = item;
-                                                var isOn = _statFilter.Contains(si.Status);
-                                                var col = GetStatusColor(si.Status);
-                                                <button class="st-filter-option @(isOn ? "st-filter-option-on" : "")"
-                                                        style="@(isOn ? $"background:color-mix(in srgb,{col} 10%,transparent);border-color:color-mix(in srgb,{col} 40%,transparent);color:{col};" : "")"
-                                                        @onclick="() => ToggleStatFilter(si.Status)">
-                                                    <span class="st-filter-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
-                                                    <span class="st-filter-name">@si.Label</span>
-                                                    <span class="st-filter-count">@si.Count</span>
-                                                    @if (isOn)
-                                                    {
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                    }
-                                                </button>
-                                            }
-                                            @{
-                                                var _filterCustomLists = UserListService.GetRegularCustomLists();
-                                            }
-                                            @if (_filterCustomLists.Any())
-                                            {
-                                                <div class="st-filter-separator"></div>
-                                                @foreach (var cl in _filterCustomLists)
+                                        @if (_filterDropdownOpen)
+                                        {
+                                            <div class="st-filter-menu" style="right:0;left:auto;min-width:200px;">
+                                                <!-- Built-in status rows -->
+                                                @foreach (var item in GetAllStatusItems())
                                                 {
-                                                    var clId = cl.Id;
-                                                    var isOnCl = _statFilterCustomListIds.Contains(clId);
-                                                    <button class="st-filter-option @(isOnCl ? "st-filter-option-on" : "")"
-                                                            style="@(isOnCl ? $"background:color-mix(in srgb,{cl.Color} 10%,transparent);border-color:color-mix(in srgb,{cl.Color} 40%,transparent);color:{cl.Color};" : "")"
-                                                            @onclick="() => ToggleStatFilterCustomList(clId)">
-                                                        <span class="st-filter-dot" style="background:@cl.Color;box-shadow:0 0 5px @(cl.Color)88;"></span>
-                                                        <span class="st-filter-name">@cl.Name</span>
-                                                        <span class="st-filter-count">@UserListService.GetCountForCustomList(clId)</span>
-                                                        @if (isOnCl)
+                                                    var si = item;
+                                                    var isOn = _statFilter.Contains(si.Status);
+                                                    var col = GetStatusColor(si.Status);
+                                                    <button class="st-filter-option @(isOn ? "st-filter-option-on" : "")"
+                                                            style="@(isOn ? $"background:color-mix(in srgb,{col} 10%,transparent);border-color:color-mix(in srgb,{col} 40%,transparent);color:{col};" : "")"
+                                                            @onclick="() => ToggleStatFilter(si.Status)">
+                                                        <span class="st-filter-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
+                                                        <span class="st-filter-name">@si.Label</span>
+                                                        <span class="st-filter-count">@si.Count</span>
+                                                        @if (isOn)
                                                         {
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                                         }
                                                     </button>
                                                 }
-                                            }
-                                            <div class="st-filter-actions">
-                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus>(Enum.GetValues<ListStatus>()); _statFilterCustomListIds = new HashSet<string>(UserListService.GetRegularCustomLists().Select(c => c.Id)); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">All</button>
-                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus> { ListStatus.Completed, ListStatus.Watching }; _statFilterCustomListIds = new HashSet<string>(); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">Reset</button>
+                                                <!-- Custom status-type lists -->
+                                                @{
+                                                    var _filterCustomLists = UserListService.GetStatusTypeLists();
+                                                }
+                                                @if (_filterCustomLists.Any())
+                                                {
+                                                    <div class="st-filter-sep"></div>
+                                                    @foreach (var cl in _filterCustomLists)
+                                                    {
+                                                        var clc = cl;
+                                                        var isOnCl = _statFilterCustomIds.Contains(clc.Id);
+                                                        <button class="st-filter-option @(isOnCl ? "st-filter-option-on" : "")"
+                                                                style="@(isOnCl ? $"background:color-mix(in srgb,{clc.Color} 10%,transparent);border-color:color-mix(in srgb,{clc.Color} 40%,transparent);color:{clc.Color};" : "")"
+                                                                @onclick="() => ToggleStatFilterCustom(clc.Id)">
+                                                            <span class="st-filter-dot" style="background:@clc.Color;box-shadow:0 0 5px @(clc.Color)88;"></span>
+                                                            <span class="st-filter-name">@clc.Name</span>
+                                                            <span class="st-filter-count">@UserListService.GetCountForCustomList(clc.Id)</span>
+                                                            @if (isOnCl)
+                                                            {
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            }
+                                                        </button>
+                                                    }
+                                                }
+                                                <div class="st-filter-actions">
+                                                    <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus>(Enum.GetValues<ListStatus>()); _statFilterCustomIds = new(); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">All</button>
+                                                    <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus> { ListStatus.Completed, ListStatus.Watching }; _statFilterCustomIds = new(); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">Reset</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -301,14 +305,16 @@
                                     {
                                         var key = sc.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
                                         var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
-                                        if (count == 0) { continue; }
-                                        var barPct = maxScoreCount > 0 ? count * 100.0 / maxScoreCount : 0;
+                                        // Always render a tiny tick even for 0-count rows (like AniList)
+                                        var barPct = maxScoreCount > 0
+                                        ? (count > 0 ? Math.Max(3.0, count * 100.0 / maxScoreCount) : 0.4)
+                                        : 0;
                                         var ck = (double)sc;
                                         var isAvg = Math.Abs(ck - _s.AvgScore) < 0.26;
                                         <div class="st-score-row @(isAvg ? "st-score-row-avg" : "")">
                                             <span class="st-score-label">@key</span>
                                             <div class="st-score-bar-wrap"><div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(ck);"></div></div>
-                                            <span class="st-score-count">@count</span>
+                                            <span class="st-score-count">@(count > 0 ? count.ToString() : "")</span>
                                         </div>
                                     }
                                 </div>
@@ -613,7 +619,7 @@
         flex-direction: column;
         gap: 8px;
     }
-    /* filter dropdown */
+
     .st-filter-wrap {
         position: relative;
     }
@@ -634,6 +640,7 @@
         width: 100%;
         text-align: left;
         transition: background .15s, border-color .15s, color .15s;
+        white-space: nowrap;
     }
 
         .st-filter-trigger:hover {
@@ -670,8 +677,6 @@
     .st-filter-menu {
         position: absolute;
         top: calc(100% + 5px);
-        left: 0;
-        right: 0;
         background: #1c1c2a;
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px;
@@ -679,6 +684,7 @@
         z-index: 50;
         box-shadow: 0 8px 28px rgba(0,0,0,0.6);
         animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
+        min-width: 200px;
     }
 
     @@keyframes st-dd-open {
@@ -691,6 +697,12 @@
             opacity: 1;
             transform: translateY(0) scale(1);
         }
+    }
+
+    .st-filter-sep {
+        height: 1px;
+        background: rgba(255,255,255,0.07);
+        margin: 4px 0;
     }
 
     .st-filter-option {
@@ -742,12 +754,6 @@
         color: rgba(255,255,255,0.3);
     }
 
-    .st-filter-separator {
-        height: 1px;
-        background: rgba(255,255,255,0.07);
-        margin: 4px 2px;
-    }
-
     .st-filter-actions {
         display: flex;
         gap: 5px;
@@ -784,8 +790,9 @@
     private string _pastedToken = "";
 
     // ── Stats filter state ─────────────────────────────────────────────────
+    // FIX: added _statFilterCustomIds for custom status-type lists
     private HashSet<ListStatus> _statFilter = new() { ListStatus.Completed, ListStatus.Watching };
-    private HashSet<string> _statFilterCustomListIds = new();
+    private HashSet<string> _statFilterCustomIds = new();
     private bool _filterDropdownOpen = false;
 
     private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
@@ -808,7 +815,6 @@
 
     private class StatsSnapshot
     {
-        // ── Global (hero + lists section — always full list) ──
         public int Total { get; set; }
         public int TotalEpisodes { get; set; }
         public long TotalMinutes { get; set; }
@@ -822,7 +828,6 @@
         public Dictionary<ListStatus, int> ByStatus { get; set; } = new();
         public UserListEntry? LongestAnime { get; set; }
 
-        // ── Filtered (all distribution stats) ──
         public int FilteredTotal { get; set; }
         public int ScoredCount { get; set; }
         public double AvgScore { get; set; }
@@ -868,9 +873,10 @@
         StateHasChanged();
     }
 
-    private void ToggleStatFilterCustomList(string id)
+    // FIX: new method for custom list filter toggle
+    private void ToggleStatFilterCustom(string id)
     {
-        if (!_statFilterCustomListIds.Remove(id)) _statFilterCustomListIds.Add(id);
+        if (!_statFilterCustomIds.Remove(id)) _statFilterCustomIds.Add(id);
         ComputeStats();
         StateHasChanged();
     }
@@ -889,7 +895,7 @@
 
         s.Favorited = UserListService.GetFavoriteIds().Count;
 
-        // ── Pass 1: global counters (hero / status bars / engagement) ────────
+        // ── Pass 1: global counters ──────────────────────────────────────────
         foreach (var e in all)
         {
             if (e.Status.HasValue)
@@ -898,30 +904,23 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
 
-            // FIX: count episodes including all rewatches
+            // FIX: count rewatch episodes for any status that has watched episodes
             int rwEp = 0;
             if (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
             {
-                if (totalEp > 0)
-                    rwEp = e.TotalRewatches * totalEp;
-                else if (e.Status == ListStatus.Completed)
-                    rwEp = e.TotalRewatches * baseEp;
+                if (totalEp > 0) rwEp = e.TotalRewatches * totalEp;
+                else if (baseEp > 0) rwEp = e.TotalRewatches * baseEp;
             }
-            // TotalEpisodes = episodes watched (first watch) + all rewatch episodes
             s.TotalEpisodes += baseEp + rwEp;
 
             if (e.Status != ListStatus.Planning)
             {
                 int dur = e.Anime.Duration ?? 24;
-                // Watch time for first watch
                 s.TotalMinutes += (long)baseEp * dur;
-                // Watch time for rewatches
                 if (e.TotalRewatches > 0)
                 {
-                    if (totalEp > 0)
-                        s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
-                    else if (e.Status == ListStatus.Completed)
-                        s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
+                    if (totalEp > 0) s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
+                    else if (baseEp > 0) s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
                 }
             }
 
@@ -947,54 +946,61 @@
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
-        // ── Pass 2: filtered distribution stats ───────────────────────────────
-        // Filter by status AND/OR custom list ids
-        var filtered = (_statFilter.Count > 0 || _statFilterCustomListIds.Any())
-            ? all.Where(e =>
-                (_statFilter.Count == 0 || (e.Status.HasValue && _statFilter.Contains(e.Status.Value))) &&
-                (_statFilterCustomListIds.Count == 0 || e.CustomListIds.Any(id => _statFilterCustomListIds.Contains(id)))
-              ).ToList()
-            : all;
-
+        // ── Pass 2: filtered distribution stats ─────────────────────────────
+        // FIX: support custom list filter (OR logic when both filter sets active)
+        IEnumerable<UserListEntry> filteredQuery = all;
+        if (_statFilter.Any() || _statFilterCustomIds.Any())
+        {
+            filteredQuery = all.Where(e =>
+            {
+                bool statusMatch = _statFilter.Any() && e.Status.HasValue && _statFilter.Contains(e.Status.Value);
+                bool customMatch = _statFilterCustomIds.Any() && e.CustomListIds.Any(id => _statFilterCustomIds.Contains(id));
+                if (_statFilter.Any() && _statFilterCustomIds.Any()) return statusMatch || customMatch;
+                if (_statFilter.Any()) return statusMatch;
+                if (_statFilterCustomIds.Any()) return customMatch;
+                return true;
+            });
+        }
+        var filtered = filteredQuery.ToList();
         s.FilteredTotal = filtered.Count;
 
         foreach (var e in filtered)
         {
-            // Score
+            // FIX: use decimal arithmetic for exact half-step keys (avoids double float drift)
             if (e.Score > 0)
             {
                 s.ScoredCount++;
                 s.AvgScore += e.Score;
-                double rounded = Math.Round(e.Score * 2, MidpointRounding.AwayFromZero) / 2.0;
-                rounded = Math.Clamp(rounded, 0.5, 10.0);
+                decimal scoreD = (decimal)Math.Round(e.Score, 1);
+                decimal rounded = Math.Round(scoreD * 2m, MidpointRounding.AwayFromZero) / 2m;
+                rounded = Math.Clamp(rounded, 0.5m, 10.0m);
                 string key = rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
                 s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
                 int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
 
-            // Genres
             var seenG = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var g in e.Anime.Genres ?? new())
                 if (seenG.Add(g)) s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
 
-            // Format
             if (!string.IsNullOrEmpty(e.Anime.Format))
                 s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
 
-            // Studios
             var seenSt = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var st in e.Anime.Studios ?? new())
                 if (!string.IsNullOrEmpty(st.Name) && seenSt.Add(st.Name))
                     s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
 
-            // Year / Season / Source / Country
-            if (e.Anime.Year.HasValue) s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
-            if (!string.IsNullOrEmpty(e.Anime.Season)) s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
-            if (!string.IsNullOrEmpty(e.Anime.Source)) s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
-            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin)) s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
+            if (e.Anime.Year.HasValue)
+                s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.Season))
+                s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.Source))
+                s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
+                s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
 
-            // Tags
             var seenT = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
                 if (seenT.Add(t.Name)) s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
