@@ -196,10 +196,13 @@
                                 Lists
                             </div>
                             <div class="st-status-grid">
+                                @{
+                                    var _maxStatusCount = _s.ByStatus.Values.DefaultIfEmpty(1).Max();
+                                }
                                 @foreach (var kv in _s.ByStatus)
                                 {
                                     var color = GetStatusColor(kv.Key);
-                                    var pct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                    var pct = _maxStatusCount > 0 ? kv.Value * 100.0 / _maxStatusCount : 0;
                                     <div class="st-status-row">
                                         <span class="st-status-dot" style="background:@color;box-shadow:0 0 5px @(color)88;"></span>
                                         <span class="st-status-name">@GetStatusLabel(kv.Key)</span>
@@ -231,7 +234,7 @@
                                 </div>
                                 <div class="st-score-chart">
                                     @{
-                                        var maxScoreCount = _s.ScoreDist.Values.DefaultIfEmpty(1).Max();
+                                        var maxScoreCount = _s.ScoreDist2.Values.DefaultIfEmpty(1).Max();
                                     }
                                     @for (decimal sc = 10m; sc >= 1m; sc -= 0.5m)
                                     {
@@ -467,13 +470,12 @@
                                     @foreach (var kv in _s.BySource.OrderByDescending(x => x.Value))
                                     {
                                         var pct = maxSrc > 0 ? kv.Value * 100.0 / maxSrc : 0;
-                                        var globalPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
                                         <div class="st-bar-row">
                                             <span class="st-bar-name">@kv.Key</span>
                                             <div class="st-bar-track">
                                                 <div class="st-bar-fill st-bar-source" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
                                             </div>
-                                            <span class="st-bar-val">@kv.Value <span style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.28)">@globalPct.ToString("F0")%</span></span>
+                                            <span class="st-bar-val">@kv.Value</span>
                                         </div>
                                     }
                                 </div>
@@ -650,9 +652,14 @@
             // progress + rewatches × total (matches AniList's own counter)
             int totalEpForEntry = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
-            int rwEp = (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
-                ? e.TotalRewatches * (totalEpForEntry > 0 ? totalEpForEntry : baseEp)
-                : 0;
+            int rwEp = 0;
+            if (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
+            {
+                if (totalEpForEntry > 0)
+                    rwEp = e.TotalRewatches * totalEpForEntry;
+                else if (e.Status == ListStatus.Completed)
+                    rwEp = e.TotalRewatches * baseEp;
+            }
             s.TotalEpisodes += baseEp + rwEp;
 
             // ── Watch time (Planning excluded) ───────────────────────────────────
@@ -660,10 +667,10 @@
             {
                 var dur = e.Anime.Duration ?? 24;
                 s.TotalMinutes += (long)baseEp * dur;
-                if (e.TotalRewatches > 0)
-                    s.TotalMinutes += (long)e.TotalRewatches
-                        * (totalEpForEntry > 0 ? totalEpForEntry : baseEp)
-                        * dur;
+                if (e.TotalRewatches > 0 && totalEpForEntry > 0)
+                    s.TotalMinutes += (long)e.TotalRewatches * totalEpForEntry * dur;
+                else if (e.TotalRewatches > 0 && e.Status == ListStatus.Completed)
+                    s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
             }
 
             // ── Days planned (only when total episodes is known) ─────────────────
@@ -673,16 +680,16 @@
                 s.DaysPlanned += totalEpForEntry * planDur / 1440.0;
             }
 
-            // ── Score ─────────────────────────────────────────────────────────────
-            if (e.Score > 0)
+            // ── Score — exclude Planning, use AwayFromZero rounding ──────────────
+            if (e.Score > 0 && e.Status != ListStatus.Planning)
             {
                 s.ScoredCount++;
                 s.AvgScore += e.Score;
-                double rounded = Math.Round(e.Score * 2) / 2.0;
+                double rounded = Math.Round(e.Score * 2, MidpointRounding.AwayFromZero) / 2.0;
                 rounded = Math.Clamp(rounded, 0.5, 10.0);
                 string key = rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
                 s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
-                int bucket = Math.Clamp((int)Math.Round(e.Score), 1, 10);
+                int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
 
