@@ -672,7 +672,10 @@
             }
 
             // ── Metadata counts — excluded for Planning (mirrors AniList behaviour) ──
-            if (e.Status != ListStatus.Planning)
+            if (e.Status == ListStatus.Watching ||
+    e.Status == ListStatus.Rewatching ||
+    e.Status == ListStatus.Completed ||
+    e.Status == ListStatus.Paused)
             {
                 // ── Genres ────────────────────────────────────────────────────────
                 var localGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
