@@ -10,7 +10,7 @@
     <div class="pp-overlay" @onclick="HandleOverlayClick">
         <div class="pp-panel" @onclick:stopPropagation="true">
 
-            <!-- ── Sticky top (handle + header + tabs + divider) ── -->
+            <!-- ── Sticky top ── -->
             <div class="pp-sticky-top">
                 <div class="pp-handle-zone"><div class="pp-handle-bar"></div></div>
 
@@ -157,39 +157,82 @@
                     }
                     else
                     {
-                        <!-- ── Hero ── -->
+                        <!-- ══ HERO ══ -->
                         <div class="st-hero">
                             <div class="st-hero-main">
                                 <span class="st-hero-num">@_s.Total</span>
                                 <span class="st-hero-lbl">total anime</span>
                             </div>
-                            <div class="st-hero-subs">
-                                <div class="st-hero-sub">
-                                    <span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span>
-                                    <span class="st-hero-sub-lbl">days watched</span>
-                                </div>
-                                <div class="st-hero-sub">
-                                    <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
-                                    <span class="st-hero-sub-lbl">episodes</span>
-                                </div>
-                                @if (_s.ScoredCount > 0)
-                                {
+
+                            <div class="st-hero-right">
+                                <!-- global counters -->
+                                <div class="st-hero-subs">
                                     <div class="st-hero-sub">
-                                        <span class="st-hero-sub-num" style="color:@GetScoreColor(_s.AvgScore)">@_s.AvgScore.ToString("F1")</span>
-                                        <span class="st-hero-sub-lbl">mean score</span>
+                                        <span class="st-hero-sub-num">@FormatDays(_s.TotalMinutes)</span>
+                                        <span class="st-hero-sub-lbl">days watched</span>
                                     </div>
-                                }
-                                @if (_s.Favorited > 0)
-                                {
                                     <div class="st-hero-sub">
-                                        <span class="st-hero-sub-num">@_s.Favorited</span>
-                                        <span class="st-hero-sub-lbl">favourites</span>
+                                        <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
+                                        <span class="st-hero-sub-lbl">episodes</span>
                                     </div>
-                                }
+                                    @if (_s.Favorited > 0)
+                                    {
+                                        <div class="st-hero-sub">
+                                            <span class="st-hero-sub-num">@_s.Favorited</span>
+                                            <span class="st-hero-sub-lbl">favourites</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- ── Stats filter dropdown ── -->
+                                <div class="st-filter-wrap" @onclick:stopPropagation="true">
+                                    <button class="st-filter-trigger"
+                                            @onclick="() => { _filterDropdownOpen = !_filterDropdownOpen; StateHasChanged(); }">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                            <line x1="3" y1="6" x2="21" y2="6" />
+                                            <line x1="6" y1="12" x2="18" y2="12" />
+                                            <line x1="9" y1="18" x2="15" y2="18" />
+                                        </svg>
+                                        <span>Stats for</span>
+                                        <span class="st-filter-badge">@_statFilter.Count</span>
+                                        <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
+                                             width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+
+                                    @if (_filterDropdownOpen)
+                                    {
+                                        <div class="st-filter-menu">
+                                            @foreach (var item in GetAllStatusItems())
+                                            {
+                                                var si = item;
+                                                var isOn = _statFilter.Contains(si.Status);
+                                                var col = GetStatusColor(si.Status);
+                                                <button class="st-filter-option @(isOn ? "st-filter-option-on" : "")"
+                                                        style="@(isOn ? $"background:color-mix(in srgb,{col} 10%,transparent);border-color:color-mix(in srgb,{col} 40%,transparent);color:{col};" : "")"
+                                                        @onclick="() => ToggleStatFilter(si.Status)">
+                                                    <span class="st-filter-dot" style="background:@col;box-shadow:0 0 5px @(col)88;"></span>
+                                                    <span class="st-filter-name">@si.Label</span>
+                                                    <span class="st-filter-count">@si.Count</span>
+                                                    @if (isOn)
+                                                    {
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                    }
+                                                </button>
+                                            }
+                                            <div class="st-filter-actions">
+                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus>(Enum.GetValues<ListStatus>()); ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">All</button>
+                                                <button class="st-filter-action-btn" @onclick="() => { _statFilter = new HashSet<ListStatus> { ListStatus.Completed, ListStatus.Watching }; ComputeStats(); _filterDropdownOpen = false; StateHasChanged(); }">Reset</button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
 
-                        <!-- ── Status / Lists ── -->
+                        <!-- ══ STATUS / LISTS ══ -->
                         <div class="st-section">
                             <div class="st-section-title">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
@@ -197,7 +240,6 @@
                             </div>
                             <div class="st-status-grid">
                                 @{
-                                    // FIX: bars relative to the largest status count, not total
                                     var _maxStatusCount = _s.ByStatus.Values.DefaultIfEmpty(1).Max();
                                 }
                                 @foreach (var kv in _s.ByStatus)
@@ -207,24 +249,19 @@
                                     <div class="st-status-row">
                                         <span class="st-status-dot" style="background:@color;box-shadow:0 0 5px @(color)88;"></span>
                                         <span class="st-status-name">@GetStatusLabel(kv.Key)</span>
-                                        <div class="st-status-bar-wrap">
-                                            <div class="st-status-bar-fill" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@color;"></div>
-                                        </div>
+                                        <div class="st-status-bar-wrap"><div class="st-status-bar-fill" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@color;"></div></div>
                                         <span class="st-status-count">@kv.Value</span>
                                     </div>
                                 }
                             </div>
-                            <!-- FIX: completion rate calculated on correct base -->
                             <div class="st-completion-row">
                                 <span class="st-completion-lbl">Completion rate</span>
-                                <div class="st-completion-bar-wrap">
-                                    <div class="st-completion-bar" style="width:@_s.CompletionRate.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                </div>
+                                <div class="st-completion-bar-wrap"><div class="st-completion-bar" style="width:@_s.CompletionRate.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                                 <span class="st-completion-val">@_s.CompletionRate.ToString("F0")%</span>
                             </div>
                         </div>
 
-                        <!-- ── Score distribution ── -->
+                        <!-- ══ SCORES (filtered) ══ -->
                         @if (_s.ScoredCount > 0)
                         {
                             <div class="st-section">
@@ -235,7 +272,6 @@
                                 </div>
                                 <div class="st-score-chart">
                                     @{
-                                        // FIX: use ScoreDist2 (half-step buckets) for the max, not ScoreDist (integer buckets)
                                         var maxScoreCount = _s.ScoreDist2.Values.DefaultIfEmpty(1).Max();
                                     }
                                     @for (decimal sc = 10m; sc >= 1m; sc -= 0.5m)
@@ -243,13 +279,11 @@
                                         var key = sc.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
                                         var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
                                         var barPct = maxScoreCount > 0 ? count * 100.0 / maxScoreCount : 0;
-                                        var colorKey = (double)sc;
-                                        var isAvg = Math.Abs(colorKey - _s.AvgScore) < 0.26;
+                                        var ck = (double)sc;
+                                        var isAvg = Math.Abs(ck - _s.AvgScore) < 0.26;
                                         <div class="st-score-row @(isAvg ? "st-score-row-avg" : "")">
                                             <span class="st-score-label">@key</span>
-                                            <div class="st-score-bar-wrap">
-                                                <div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(colorKey);"></div>
-                                            </div>
+                                            <div class="st-score-bar-wrap"><div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(ck);"></div></div>
                                             <span class="st-score-count">@(count > 0 ? count.ToString() : "")</span>
                                         </div>
                                     }
@@ -257,7 +291,7 @@
                             </div>
                         }
 
-                        <!-- ── Watch Time ── -->
+                        <!-- ══ WATCH TIME ══ -->
                         @if (_s.TotalMinutes > 0)
                         {
                             <div class="st-section">
@@ -266,27 +300,15 @@
                                     Watch Time
                                 </div>
                                 <div class="st-time-grid">
-                                    <div class="st-time-cell">
-                                        <span class="st-time-val">@FormatHours(_s.TotalMinutes)</span>
-                                        <span class="st-time-lbl">hours total</span>
-                                    </div>
-                                    <div class="st-time-cell">
-                                        <span class="st-time-val">@FormatDays(_s.TotalMinutes)</span>
-                                        <span class="st-time-lbl">days total</span>
-                                    </div>
+                                    <div class="st-time-cell"><span class="st-time-val">@FormatHours(_s.TotalMinutes)</span><span class="st-time-lbl">hours total</span></div>
+                                    <div class="st-time-cell"><span class="st-time-val">@FormatDays(_s.TotalMinutes)</span><span class="st-time-lbl">days total</span></div>
                                     @if (_s.DaysPlanned > 0)
                                     {
-                                        <div class="st-time-cell">
-                                            <span class="st-time-val">@_s.DaysPlanned.ToString("F1")</span>
-                                            <span class="st-time-lbl">days planned</span>
-                                        </div>
+                                        <div class="st-time-cell"><span class="st-time-val">@_s.DaysPlanned.ToString("F1")</span><span class="st-time-lbl">days planned</span></div>
                                     }
                                     @if (_s.Rewatched > 0)
                                     {
-                                        <div class="st-time-cell">
-                                            <span class="st-time-val">@_s.Rewatched</span>
-                                            <span class="st-time-lbl">rewatched</span>
-                                        </div>
+                                        <div class="st-time-cell"><span class="st-time-val">@_s.Rewatched</span><span class="st-time-lbl">rewatched</span></div>
                                     }
                                 </div>
                                 @if (_s.LongestAnime != null)
@@ -300,7 +322,7 @@
                             </div>
                         }
 
-                        <!-- ── Genres ── -->
+                        <!-- ══ GENRES (filtered) ══ -->
                         @if (_s.TopGenres.Any())
                         {
                             <div class="st-section">
@@ -325,9 +347,7 @@
                                         var pct = maxG > 0 ? kv.Value * 100.0 / maxG : 0;
                                         <div class="st-bar-row">
                                             <span class="st-bar-name">@kv.Key</span>
-                                            <div class="st-bar-track">
-                                                <div class="st-bar-fill st-bar-genre" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
+                                            <div class="st-bar-track"><div class="st-bar-fill st-bar-genre" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                                             <span class="st-bar-val">@kv.Value</span>
                                         </div>
                                     }
@@ -335,7 +355,7 @@
                             </div>
                         }
 
-                        <!-- ── Formats — Radar chart ── -->
+                        <!-- ══ FORMATS — Radar (filtered) ══ -->
                         @if (_s.ByFormat.Any())
                         {
                             <div class="st-section">
@@ -346,27 +366,22 @@
                                 @{
                                     var radarFormats = _s.ByFormat.OrderByDescending(x => x.Value).Take(7).ToList();
                                 }
-                                <div class="st-radar-wrap">
-                                    @{
-                                        var radarSvg = BuildRadarSvg(radarFormats, "#E94560", "#ff8fa3");
-                                    }
-                                    @((MarkupString)radarSvg)
-                                </div>
+                                <div class="st-radar-wrap">@((MarkupString)BuildRadarSvg(radarFormats, "#E94560", "#ff8fa3"))</div>
                                 <div class="st-radar-legend">
                                     @foreach (var kv in radarFormats)
                                     {
-                                        var legendPct = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        var lp = _s.FilteredTotal > 0 ? kv.Value * 100.0 / _s.FilteredTotal : 0;
                                         <div class="st-radar-legend-item">
                                             <span class="st-radar-legend-dot" style="background:#ff8fa3;"></span>
                                             <span class="st-radar-legend-name">@kv.Key</span>
-                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@legendPct.ToString("F0")%)</span></span>
+                                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@lp.ToString("F0")%)</span></span>
                                         </div>
                                     }
                                 </div>
                             </div>
                         }
 
-                        <!-- ── Studios ── -->
+                        <!-- ══ STUDIOS (filtered) ══ -->
                         @if (_s.TopStudios.Any())
                         {
                             <div class="st-section">
@@ -384,9 +399,7 @@
                                         var pct = maxS > 0 ? kv.Value * 100.0 / maxS : 0;
                                         <div class="st-bar-row">
                                             <span class="st-bar-name">@kv.Key</span>
-                                            <div class="st-bar-track">
-                                                <div class="st-bar-fill st-bar-studio" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
+                                            <div class="st-bar-track"><div class="st-bar-fill st-bar-studio" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                                             <span class="st-bar-val">@kv.Value</span>
                                         </div>
                                     }
@@ -394,7 +407,7 @@
                             </div>
                         }
 
-                        <!-- ── Release Year ── -->
+                        <!-- ══ RELEASE YEAR (filtered) ══ -->
                         @if (_s.ByYear.Any())
                         {
                             <div class="st-section">
@@ -413,9 +426,7 @@
                                         var pct = maxY > 0 ? kv.Value * 100.0 / maxY : 0;
                                         <div class="st-year-al-col" title="@kv.Key: @kv.Value anime">
                                             <span class="st-year-al-count @(kv.Value == maxY ? "st-year-al-peak" : "")">@(kv.Value > 0 ? kv.Value.ToString() : "")</span>
-                                            <div class="st-year-al-bar-wrap">
-                                                <div class="st-year-al-bar-fill @(kv.Value == maxY ? "st-year-al-fill-peak" : "")" style="height:@pct.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
+                                            <div class="st-year-al-bar-wrap"><div class="st-year-al-bar-fill @(kv.Value == maxY ? "st-year-al-fill-peak" : "")" style="height:@pct.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                                             <span class="st-year-al-lbl">@kv.Key</span>
                                         </div>
                                     }
@@ -423,7 +434,7 @@
                             </div>
                         }
 
-                        <!-- ── Seasons ── -->
+                        <!-- ══ SEASONS (filtered) ══ -->
                         @if (_s.BySeason.Any())
                         {
                             <div class="st-section">
@@ -437,12 +448,12 @@
                                 <div class="st-season-grid">
                                     @{
                                         var maxSeason = _s.BySeason.Values.DefaultIfEmpty(0).Max();
-                                        var seasonTotal = _s.BySeason.Values.Sum();
+                                        var seasonTot = _s.BySeason.Values.Sum();
                                     }
                                     @foreach (var season in new[] { "WINTER", "SPRING", "SUMMER", "FALL" })
                                     {
                                         var count = _s.BySeason.GetValueOrDefault(season, 0);
-                                        var pct = seasonTotal > 0 ? count * 100.0 / seasonTotal : 0;
+                                        var pct = seasonTot > 0 ? count * 100.0 / seasonTot : 0;
                                         <div class="st-season-cell @(count == maxSeason && count > 0 ? "st-season-top" : "")">
                                             <span class="st-season-name">@(season[0] + season[1..].ToLower())</span>
                                             <span class="st-season-count">@count</span>
@@ -453,6 +464,7 @@
                             </div>
                         }
 
+                        <!-- ══ SOURCE MATERIAL (filtered) ══ -->
                         @if (_s.BySource.Any())
                         {
                             <div class="st-section">
@@ -462,7 +474,6 @@
                                 </div>
                                 <div class="st-bar-list">
                                     @{
-                                        // FIX: no nested span — uniform row heights
                                         var maxSrc = _s.BySource.Values.DefaultIfEmpty(1).Max();
                                     }
                                     @foreach (var kv in _s.BySource.OrderByDescending(x => x.Value))
@@ -470,9 +481,7 @@
                                         var pct = maxSrc > 0 ? kv.Value * 100.0 / maxSrc : 0;
                                         <div class="st-bar-row">
                                             <span class="st-bar-name">@kv.Key</span>
-                                            <div class="st-bar-track">
-                                                <div class="st-bar-fill st-bar-source" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                                            </div>
+                                            <div class="st-bar-track"><div class="st-bar-fill st-bar-source" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                                             <span class="st-bar-val">@kv.Value</span>
                                         </div>
                                     }
@@ -480,7 +489,7 @@
                             </div>
                         }
 
-                        <!-- ── Country — Pie chart ── -->
+                        <!-- ══ COUNTRY — Pie (filtered) ══ -->
                         @if (_s.ByCountry.Count > 1)
                         {
                             <div class="st-section">
@@ -496,9 +505,7 @@
                                     var countrySorted = _s.ByCountry.OrderByDescending(x => x.Value).ToList();
                                     var pieSvg = BuildPieSvg(countrySorted);
                                 }
-                                <div class="st-pie-wrap">
-                                    @((MarkupString)pieSvg)
-                                </div>
+                                <div class="st-pie-wrap">@((MarkupString)pieSvg)</div>
                                 <div class="st-radar-legend">
                                     @{
                                         var pieColors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
@@ -507,7 +514,7 @@
                                     @foreach (var kv in countrySorted)
                                     {
                                         var name = kv.Key switch { "JP" => "Japan", "CN" => "China", "KR" => "South Korea", "TW" => "Taiwan", _ => kv.Key };
-                                        var pctC = _s.Total > 0 ? kv.Value * 100.0 / _s.Total : 0;
+                                        var pctC = _s.FilteredTotal > 0 ? kv.Value * 100.0 / _s.FilteredTotal : 0;
                                         var color = pieColors[ci % pieColors.Length];
                                         ci++;
                                         <div class="st-radar-legend-item">
@@ -520,7 +527,7 @@
                             </div>
                         }
 
-                        <!-- ── Tags ── -->
+                        <!-- ══ TAGS (filtered) ══ -->
                         @if (_s.TopTags.Any())
                         {
                             <div class="st-section">
@@ -537,7 +544,7 @@
                             </div>
                         }
 
-                        <!-- ── Engagement ── -->
+                        <!-- ══ ENGAGEMENT ══ -->
                         <div class="st-section">
                             <div class="st-section-title">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
@@ -552,16 +559,192 @@
                                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Favorited</span><span class="st-engage-lbl">favourited</span></div>
                             </div>
                         </div>
-
                     }
                 }
 
             </div><!-- /pp-body -->
         </div><!-- /pp-panel -->
     </div>
-
-    <!-- /pp-overlay -->
 }
+
+<style>
+    .st-hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 4px 0 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        margin-bottom: 14px;
+    }
+
+    .st-hero-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .st-hero-subs {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    /* filter dropdown */
+    .st-filter-wrap {
+        position: relative;
+    }
+
+    .st-filter-trigger {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 11px;
+        border-radius: 9px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.55);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        width: 100%;
+        text-align: left;
+        transition: background .15s, border-color .15s, color .15s;
+    }
+
+        .st-filter-trigger:hover {
+            background: rgba(255,255,255,0.09);
+            color: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.18);
+        }
+
+    .st-filter-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: #E94560;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .st-filter-chevron {
+        margin-left: auto;
+        opacity: 0.5;
+        transition: transform .2s ease;
+    }
+
+        .st-filter-chevron.open {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+
+    .st-filter-menu {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: #1c1c2a;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 6px;
+        z-index: 50;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+        animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
+    }
+
+    @@keyframes st-dd-open {
+        from {
+            opacity: 0;
+            transform: translateY(-5px) scale(.98);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .st-filter-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: rgba(255,255,255,0.6);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        transition: background .12s, color .12s;
+        margin-bottom: 2px;
+    }
+
+        .st-filter-option:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .st-filter-option:hover:not(.st-filter-option-on) {
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.85);
+        }
+
+    .st-filter-option-on {
+        font-weight: 600;
+    }
+
+    .st-filter-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .st-filter-name {
+        flex: 1;
+    }
+
+    .st-filter-count {
+        font-size: 10px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.3);
+    }
+
+    .st-filter-actions {
+        display: flex;
+        gap: 5px;
+        padding-top: 6px;
+        margin-top: 4px;
+        border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .st-filter-action-btn {
+        flex: 1;
+        padding: 5px 0;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.45);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background .12s, color .12s;
+    }
+
+        .st-filter-action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+        }
+</style>
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
@@ -569,6 +752,10 @@
 
     private string _activeTab = "account";
     private string _pastedToken = "";
+
+    // ── Stats filter state ─────────────────────────────────────────────────
+    private HashSet<ListStatus> _statFilter = new() { ListStatus.Completed, ListStatus.Watching };
+    private bool _filterDropdownOpen = false;
 
     private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
     private PanelState _state = PanelState.NotConnected;
@@ -585,30 +772,31 @@
         "#8b5cf6","#a855f7","#d946ef","#ec4899"
     };
 
-    // ────────────────────────────────────────────────────────────────────────
-    //  Stats snapshot
-    // ────────────────────────────────────────────────────────────────────────
+    // ── Snapshot ──────────────────────────────────────────────────────────
     private StatsSnapshot? _s;
 
     private class StatsSnapshot
     {
+        // ── Global (hero + lists section — always full list) ──
         public int Total { get; set; }
         public int TotalEpisodes { get; set; }
         public long TotalMinutes { get; set; }
-        public int ScoredCount { get; set; }
-        public double AvgScore { get; set; }
         public int Favorited { get; set; }
-        public int WithNotes { get; set; }
         public int Rewatched { get; set; }
         public int Private { get; set; }
-        public int Completed { get; set; }
+        public int WithNotes { get; set; }
+        public double DaysPlanned { get; set; }
         public double CompletionRate { get; set; }
         public double DropRate { get; set; }
+        public Dictionary<ListStatus, int> ByStatus { get; set; } = new();
+        public UserListEntry? LongestAnime { get; set; }
+
+        // ── Filtered (all distribution stats) ──
+        public int FilteredTotal { get; set; }
+        public int ScoredCount { get; set; }
+        public double AvgScore { get; set; }
         public int UniqueGenres { get; set; }
         public int UniqueStudios { get; set; }
-        public double DaysPlanned { get; set; }
-
-        public Dictionary<ListStatus, int> ByStatus { get; set; } = new();
         public Dictionary<string, int> ScoreDist2 { get; set; } = new();
         public Dictionary<int, int> ScoreDist { get; set; } = new();
         public Dictionary<string, int> TopGenres { get; set; } = new();
@@ -619,10 +807,37 @@
         public Dictionary<string, int> BySource { get; set; } = new();
         public Dictionary<string, int> ByCountry { get; set; } = new();
         public Dictionary<string, int> TopTags { get; set; } = new();
-
-        public UserListEntry? LongestAnime { get; set; }
     }
 
+    // ── Filter helpers ────────────────────────────────────────────────────
+    private record StatusItem(ListStatus Status, string Label, int Count);
+
+    private List<StatusItem> GetAllStatusItems()
+    {
+        var all = UserListService.GetAll()
+            .Where(e => e.Status.HasValue || e.CustomListIds.Any())
+            .GroupBy(e => e.Anime.Id)
+            .Select(g => g.OrderByDescending(e => e.UpdatedAt).First())
+            .ToList();
+
+        return new[]
+        {
+            ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
+            ListStatus.Planning, ListStatus.Paused,     ListStatus.Dropped
+        }
+        .Select(s => new StatusItem(s, GetStatusLabel(s), all.Count(e => e.Status == s)))
+        .Where(x => x.Count > 0)
+        .ToList();
+    }
+
+    private void ToggleStatFilter(ListStatus status)
+    {
+        if (!_statFilter.Remove(status)) _statFilter.Add(status);
+        ComputeStats();
+        StateHasChanged();
+    }
+
+    // ── ComputeStats ──────────────────────────────────────────────────────
     private void ComputeStats()
     {
         var all = UserListService.GetAll()
@@ -636,56 +851,70 @@
 
         s.Favorited = UserListService.GetFavoriteIds().Count;
 
+        // ── Pass 1: global counters (hero / status bars / engagement) ────────
         foreach (var e in all)
         {
-            // ── Status ──────────────────────────────────────────────────────────
             if (e.Status.HasValue)
                 s.ByStatus[e.Status.Value] = s.ByStatus.GetValueOrDefault(e.Status.Value) + 1;
 
-            // ── Episodes ────────────────────────────────────────────────────────
-            int totalEpForEntry = GetTotalEpsFromString(e.Anime.Episodes);
+            int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp = e.EpisodesWatched;
 
-            // FIX: rewatch ep count — only use known total; for completed without
-            // total fall back to baseEp; skip when total unknown and not completed
             int rwEp = 0;
             if (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
             {
-                if (totalEpForEntry > 0)
-                    rwEp = e.TotalRewatches * totalEpForEntry;
-                else if (e.Status == ListStatus.Completed)
-                    rwEp = e.TotalRewatches * baseEp;
+                if (totalEp > 0) rwEp = e.TotalRewatches * totalEp;
+                else if (e.Status == ListStatus.Completed) rwEp = e.TotalRewatches * baseEp;
             }
             s.TotalEpisodes += baseEp + rwEp;
 
-            // ── Watch time (Planning excluded) ───────────────────────────────────
             if (e.Status != ListStatus.Planning)
             {
-                var dur = e.Anime.Duration ?? 24;
+                int dur = e.Anime.Duration ?? 24;
                 s.TotalMinutes += (long)baseEp * dur;
-                // FIX: same conservative rewatch logic for minutes
                 if (e.TotalRewatches > 0)
                 {
-                    if (totalEpForEntry > 0)
-                        s.TotalMinutes += (long)e.TotalRewatches * totalEpForEntry * dur;
-                    else if (e.Status == ListStatus.Completed)
-                        s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
+                    if (totalEp > 0) s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
+                    else if (e.Status == ListStatus.Completed) s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
                 }
             }
 
-            // ── Days planned ─────────────────────────────────────────────────────
-            if (e.Status == ListStatus.Planning && totalEpForEntry > 0)
-            {
-                var planDur = e.Anime.Duration ?? 24;
-                s.DaysPlanned += totalEpForEntry * planDur / 1440.0;
-            }
+            if (e.Status == ListStatus.Planning && totalEp > 0)
+                s.DaysPlanned += totalEp * (e.Anime.Duration ?? 24) / 1440.0;
 
-            // ── Score — exclude Planning, use AwayFromZero rounding ──────────────
-            if (e.Score > 0 && e.Status != ListStatus.Planning)
+            if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
+            if (e.TotalRewatches > 0) s.Rewatched++;
+            if (e.IsPrivate) s.Private++;
+        }
+
+        int completed = s.ByStatus.GetValueOrDefault(ListStatus.Completed);
+        int dropped = s.ByStatus.GetValueOrDefault(ListStatus.Dropped);
+        int watching = s.ByStatus.GetValueOrDefault(ListStatus.Watching)
+                      + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
+        int paused = s.ByStatus.GetValueOrDefault(ListStatus.Paused);
+        int denom = completed + watching + paused + dropped;
+        s.CompletionRate = denom > 0 ? completed * 100.0 / denom : 0;
+        s.DropRate = s.Total > 0 ? dropped * 100.0 / s.Total : 0;
+
+        s.LongestAnime = all
+            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0 && e.Status != ListStatus.Planning)
+            .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
+            .FirstOrDefault();
+
+        // ── Pass 2: filtered distribution stats ───────────────────────────────
+        var filtered = _statFilter.Count > 0
+            ? all.Where(e => e.Status.HasValue && _statFilter.Contains(e.Status.Value)).ToList()
+            : all;
+
+        s.FilteredTotal = filtered.Count;
+
+        foreach (var e in filtered)
+        {
+            // Score
+            if (e.Score > 0)
             {
                 s.ScoredCount++;
                 s.AvgScore += e.Score;
-                // FIX: AwayFromZero so 7.5 → bucket "7.5", not "8"
                 double rounded = Math.Round(e.Score * 2, MidpointRounding.AwayFromZero) / 2.0;
                 rounded = Math.Clamp(rounded, 0.5, 10.0);
                 string key = rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture);
@@ -694,58 +923,34 @@
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
 
-            // ── Metadata counts — excluded for Planning ──────────────────────────
-            if (e.Status == ListStatus.Watching ||
-                e.Status == ListStatus.Rewatching ||
-                e.Status == ListStatus.Completed ||
-                e.Status == ListStatus.Paused)
-            {
-                var localGenres = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var g in e.Anime.Genres ?? new())
-                    if (localGenres.Add(g))
-                        s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
+            // Genres
+            var seenG = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var g in e.Anime.Genres ?? new())
+                if (seenG.Add(g)) s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
 
-                if (!string.IsNullOrEmpty(e.Anime.Format))
-                    s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
+            // Format
+            if (!string.IsNullOrEmpty(e.Anime.Format))
+                s.ByFormat[e.Anime.Format] = s.ByFormat.GetValueOrDefault(e.Anime.Format) + 1;
 
-                var localStudios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var st in e.Anime.Studios ?? new())
-                    if (!string.IsNullOrEmpty(st.Name) && localStudios.Add(st.Name))
-                        s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
+            // Studios
+            var seenSt = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var st in e.Anime.Studios ?? new())
+                if (!string.IsNullOrEmpty(st.Name) && seenSt.Add(st.Name))
+                    s.TopStudios[st.Name] = s.TopStudios.GetValueOrDefault(st.Name) + 1;
 
-                if (e.Anime.Year.HasValue)
-                    s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
+            // Year / Season / Source / Country
+            if (e.Anime.Year.HasValue) s.ByYear[e.Anime.Year.Value] = s.ByYear.GetValueOrDefault(e.Anime.Year.Value) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.Season)) s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.Source)) s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
+            if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin)) s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
 
-                if (!string.IsNullOrEmpty(e.Anime.Season))
-                    s.BySeason[e.Anime.Season] = s.BySeason.GetValueOrDefault(e.Anime.Season) + 1;
-
-                if (!string.IsNullOrEmpty(e.Anime.Source))
-                    s.BySource[e.Anime.Source] = s.BySource.GetValueOrDefault(e.Anime.Source) + 1;
-
-                if (!string.IsNullOrEmpty(e.Anime.CountryOfOrigin))
-                    s.ByCountry[e.Anime.CountryOfOrigin] = s.ByCountry.GetValueOrDefault(e.Anime.CountryOfOrigin) + 1;
-
-                var localTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
-                    if (localTags.Add(t.Name))
-                        s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
-            }
-
-            if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
-            if (e.TotalRewatches > 0) s.Rewatched++;
-            if (e.IsPrivate) s.Private++;
+            // Tags
+            var seenT = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
+                if (seenT.Add(t.Name)) s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
         }
 
         if (s.ScoredCount > 0) s.AvgScore /= s.ScoredCount;
-
-        s.Completed = s.ByStatus.GetValueOrDefault(ListStatus.Completed);
-        int dropped = s.ByStatus.GetValueOrDefault(ListStatus.Dropped);
-        int watching = s.ByStatus.GetValueOrDefault(ListStatus.Watching)
-                     + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
-        int paused = s.ByStatus.GetValueOrDefault(ListStatus.Paused);
-        int denominator = s.Completed + watching + paused + dropped;
-        s.CompletionRate = denominator > 0 ? s.Completed * 100.0 / denominator : 0;
-        s.DropRate = s.Total > 0 ? dropped * 100.0 / s.Total : 0;
 
         s.UniqueGenres = s.TopGenres.Count;
         s.UniqueStudios = s.TopStudios.Count;
@@ -754,88 +959,57 @@
         s.TopStudios = s.TopStudios.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
         s.TopTags = s.TopTags.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-        s.LongestAnime = all
-            .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0
-                        && e.Status != ListStatus.Planning)
-            .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
-            .FirstOrDefault();
-
         _scrollYearToRight = s.ByYear.Any();
         _s = s;
     }
 
-    // ── AfterRender ──────────────────────────────────────────────────────────
+    // ── AfterRender ───────────────────────────────────────────────────────
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_scrollYearToRight)
         {
             _scrollYearToRight = false;
-            try
-            {
-                await JS.InvokeVoidAsync("eval",
-                    "setTimeout(()=>{const e=document.querySelector('.st-year-anilist');if(e)e.scrollLeft=e.scrollWidth;},50)");
-            }
+            try { await JS.InvokeVoidAsync("eval", "setTimeout(()=>{const e=document.querySelector('.st-year-anilist');if(e)e.scrollLeft=e.scrollWidth;},50)"); }
             catch { }
         }
     }
 
-    // ── SVG chart builders ───────────────────────────────────────────────────
-
+    // ── SVG ───────────────────────────────────────────────────────────────
     private static string BuildRadarSvg(List<KeyValuePair<string, int>> items, string strokeColor, string fillColor)
     {
         if (items.Count < 2) return "";
         int n = items.Count;
         double maxVal = items.Max(x => x.Value);
         if (maxVal == 0) return "";
-
         const double cx = 100, cy = 100, r = 75;
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-radar-svg\">");
-
         for (int ring = 1; ring <= 4; ring++)
         {
             double rr = r * ring / 4.0;
-            sb.Append($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{rr.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" fill=\"none\" stroke=\"rgba(255,255,255,0.08)\" stroke-width=\"0.5\"/>");
+            sb.Append($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{rr:F1}\" fill=\"none\" stroke=\"rgba(255,255,255,0.08)\" stroke-width=\"0.5\"/>");
         }
-
         for (int i = 0; i < n; i++)
         {
-            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
-            double ax = cx + r * Math.Cos(angle);
-            double ay = cy + r * Math.Sin(angle);
-            sb.Append($"<line x1=\"{cx}\" y1=\"{cy}\" x2=\"{ax.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" y2=\"{ay.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"0.5\"/>");
+            double a = 2 * Math.PI * i / n - Math.PI / 2;
+            sb.Append($"<line x1=\"{cx}\" y1=\"{cy}\" x2=\"{cx + r * Math.Cos(a):F1}\" y2=\"{cy + r * Math.Sin(a):F1}\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"0.5\"/>");
         }
-
-        var pts = new List<(double x, double y)>();
+        var pts = Enumerable.Range(0, n).Select(i =>
+        {
+            double a = 2 * Math.PI * i / n - Math.PI / 2, v = items[i].Value / maxVal;
+            return (x: cx + r * v * Math.Cos(a), y: cy + r * v * Math.Sin(a));
+        }).ToList();
+        sb.Append($"<polygon points=\"{string.Join(" ", pts.Select(p => $"{p.x:F1},{p.y:F1}"))}\" fill=\"{fillColor}\" fill-opacity=\"0.15\" stroke=\"{strokeColor}\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/>");
+        foreach (var (px, py) in pts) sb.Append($"<circle cx=\"{px:F1}\" cy=\"{py:F1}\" r=\"2.5\" fill=\"{strokeColor}\"/>");
         for (int i = 0; i < n; i++)
         {
-            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
-            double val = items[i].Value / maxVal;
-            double px = cx + r * val * Math.Cos(angle);
-            double py = cy + r * val * Math.Sin(angle);
-            pts.Add((px, py));
-        }
-
-        string polyPts = string.Join(" ", pts.Select(p =>
-            $"{p.x.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)},{p.y.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}"));
-
-        sb.Append($"<polygon points=\"{polyPts}\" fill=\"{fillColor}\" fill-opacity=\"0.15\" stroke=\"{strokeColor}\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/>");
-
-        foreach (var (px, py) in pts)
-            sb.Append($"<circle cx=\"{px.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" cy=\"{py.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" r=\"2.5\" fill=\"{strokeColor}\"/>");
-
-        for (int i = 0; i < n; i++)
-        {
-            double angle = (2 * Math.PI * i / n) - Math.PI / 2;
-            double lx = cx + (r + 14) * Math.Cos(angle);
-            double ly = cy + (r + 14) * Math.Sin(angle);
+            double a = 2 * Math.PI * i / n - Math.PI / 2;
+            double lx = cx + (r + 14) * Math.Cos(a), ly = cy + (r + 14) * Math.Sin(a);
             string anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
-            string label = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
-            sb.Append($"<text x=\"{lx.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" y=\"{ly.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" fill=\"rgba(255,255,255,0.5)\">{System.Net.WebUtility.HtmlEncode(label)}</text>");
+            string lbl = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
+            sb.Append($"<text x=\"{lx:F1}\" y=\"{ly:F1}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" fill=\"rgba(255,255,255,0.5)\">{System.Net.WebUtility.HtmlEncode(lbl)}</text>");
         }
-
-        sb.Append("</svg>");
-        return sb.ToString();
+        sb.Append("</svg>"); return sb.ToString();
     }
 
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
@@ -844,83 +1018,41 @@
         var colors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
         double total = items.Sum(x => x.Value);
         if (total == 0) return "";
-
         const double cx = 100, cy = 100, outerR = 74, innerR = 46;
         double gap = items.Count > 1 ? 0.025 : 0;
         string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
-
-        double angle = -Math.PI / 2;
-        int ci = 0;
+        double angle = -Math.PI / 2; int ci = 0;
         foreach (var kv in items)
         {
-            double sweep = 2 * Math.PI * kv.Value / total;
-            double sa = angle + gap;
-            double ea = angle + sweep - gap;
+            double sw = 2 * Math.PI * kv.Value / total, sa = angle + gap, ea = angle + sw - gap;
             if (ea > sa)
             {
                 double x1 = cx + outerR * Math.Cos(sa), y1 = cy + outerR * Math.Sin(sa);
                 double x2 = cx + outerR * Math.Cos(ea), y2 = cy + outerR * Math.Sin(ea);
                 double xi1 = cx + innerR * Math.Cos(sa), yi1 = cy + innerR * Math.Sin(sa);
                 double xi2 = cx + innerR * Math.Cos(ea), yi2 = cy + innerR * Math.Sin(ea);
-                int large = (sweep - gap * 2) > Math.PI ? 1 : 0;
-                string color = colors[ci % colors.Length];
-                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{color}\"/>");
+                int large = (sw - gap * 2) > Math.PI ? 1 : 0;
+                string col = colors[ci % colors.Length];
+                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{col}\"/>");
                 double pct = kv.Value / total;
-                if (pct > 0.07)
-                {
-                    double mid = sa + (ea - sa) / 2;
-                    double lr = (outerR + innerR) / 2;
-                    sb.Append($"<text x=\"{F(cx + lr * Math.Cos(mid))}\" y=\"{F(cy + lr * Math.Sin(mid))}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>");
-                }
+                if (pct > 0.07) { double mid = sa + (ea - sa) / 2, lr = (outerR + innerR) / 2; sb.Append($"<text x=\"{F(cx + lr * Math.Cos(mid))}\" y=\"{F(cy + lr * Math.Sin(mid))}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>"); }
             }
-            angle += sweep;
-            ci++;
+            angle += sw; ci++;
         }
         sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 1)}\" fill=\"#14141f\"/>");
         sb.Append($"<text x=\"100\" y=\"96\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"18\" font-weight=\"800\" fill=\"rgba(255,255,255,0.88)\">{(int)total}</text>");
         sb.Append($"<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"8\" fill=\"rgba(255,255,255,0.3)\">anime</text>");
-        sb.Append("</svg>");
-        return sb.ToString();
+        sb.Append("</svg>"); return sb.ToString();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private static int GetTotalEpsFromString(string? s)
-    {
-        if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0;
-        var part = s.Split('/').Last().Trim().TrimEnd('+', '?');
-        return int.TryParse(part, out int v) && v > 0 ? v : 0;
-    }
-
-    private static string FormatDays(long min)
-    {
-        double d = min / 1440.0;
-        return d >= 1 ? d.ToString("F1") : (min / 60.0).ToString("F1");
-    }
-
+    // ── Helpers ───────────────────────────────────────────────────────────
+    private static int GetTotalEpsFromString(string? s) { if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0; var p = s.Split('/').Last().Trim().TrimEnd('+', '?'); return int.TryParse(p, out int v) && v > 0 ? v : 0; }
+    private static string FormatDays(long min) { double d = min / 1440.0; return d >= 1 ? d.ToString("F1") : (min / 60.0).ToString("F1"); }
     private static string FormatHours(long min) => (min / 60.0).ToString("F0");
-
-    private static string FormatMinutes(long min)
-    {
-        if (min >= 1440) return (min / 1440.0).ToString("F1") + " days";
-        if (min >= 60) return (min / 60.0).ToString("F0") + " hrs";
-        return min + " min";
-    }
-
-    private static long GetAnimeMinutes(AnimeCard a)
-    {
-        int eps = 1;
-        if (!string.IsNullOrEmpty(a.Episodes) && a.Episodes != "N/A")
-        {
-            var part = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?');
-            if (int.TryParse(part, out int p) && p > 0) eps = p;
-        }
-        return eps * (long)(a.Duration ?? 24);
-    }
-
+    private static string FormatMinutes(long min) { if (min >= 1440) return (min / 1440.0).ToString("F1") + " days"; if (min >= 60) return (min / 60.0).ToString("F0") + " hrs"; return min + " min"; }
+    private static long GetAnimeMinutes(AnimeCard a) { int eps = 1; if (!string.IsNullOrEmpty(a.Episodes) && a.Episodes != "N/A") { var p = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?'); if (int.TryParse(p, out int v) && v > 0) eps = v; } return eps * (long)(a.Duration ?? 24); }
     private static string TruncateTitle(string t) => t.Length > 28 ? t[..26] + "…" : t;
 
     private string GetStatusColor(ListStatus s) => s switch
@@ -933,7 +1065,6 @@
         ListStatus.Dropped => "#ef4444",
         _ => "#6b7280"
     };
-
     private string GetStatusLabel(ListStatus s) => s switch
     {
         ListStatus.Watching => "Watching",
@@ -944,26 +1075,10 @@
         ListStatus.Dropped => "Dropped",
         _ => s.ToString()
     };
+    private static string GetScoreColor(double sc) => sc >= 8.5 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
+    private static string GetScoreBarColorDouble(double sc) => sc >= 9 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
 
-    private static string GetScoreColor(double score) => score switch
-    {
-        >= 8.5 => "#22c55e",
-        >= 7 => "#84cc16",
-        >= 5 => "#eab308",
-        >= 3 => "#f97316",
-        _ => "#ef4444"
-    };
-
-    private static string GetScoreBarColorDouble(double score) => score switch
-    {
-        >= 9 => "#22c55e",
-        >= 7 => "#84cc16",
-        >= 5 => "#eab308",
-        >= 3 => "#f97316",
-        _ => "#ef4444"
-    };
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // ── Lifecycle ─────────────────────────────────────────────────────────
     private bool _prevVisible = false;
 
     protected override void OnParametersSet()
@@ -978,7 +1093,7 @@
         }
     }
 
-    // ── OAuth ──────────────────────────────────────────────────────────────────
+    // ── OAuth ─────────────────────────────────────────────────────────────
     private async Task SubmitToken()
     {
         if (string.IsNullOrWhiteSpace(_pastedToken)) return;
@@ -989,7 +1104,6 @@
         if (user == null) _errorMessage = "Invalid token or could not fetch profile.";
         StateHasChanged();
     }
-
     public async Task OnTokenReceived()
     {
         _state = PanelState.Loading; _loadingText = "Fetching your profile…"; StateHasChanged();
@@ -998,20 +1112,17 @@
         else _state = PanelState.Connected;
         StateHasChanged();
     }
-
     public async Task TryAutoImportAsync()
     {
         if (!AniListAuth.IsAuthenticated) return;
         if (AniListAuth.CurrentUser == null) { var u = await AniListAuth.FetchCurrentUserAsync(); if (u == null) return; }
         await DoImportAsync(false);
     }
-
     private async Task StartOAuth()
     {
         try { await JS.InvokeVoidAsync("open", AniListAuth.GetAuthUrl(), "_blank"); _state = PanelState.WaitingForPin; StateHasChanged(); }
         catch (Exception ex) { _state = PanelState.Error; _errorMessage = "Could not open AniList login: " + ex.Message; StateHasChanged(); }
     }
-
     private async Task StartImport()
     {
         if (AniListAuth.CurrentUser == null) return;
@@ -1019,24 +1130,19 @@
         _importDone = 0; _importTotal = 0; _listsCreated = 0; StateHasChanged();
         await DoImportAsync(true);
     }
-
     private async Task DoImportAsync(bool showUI)
     {
         if (AniListAuth.CurrentUser == null) return;
         var entries = await AniListAuth.FetchAnimeListAsync(AniListAuth.CurrentUser.Id);
         if (entries.Count == 0) { if (showUI) { _state = PanelState.Error; _errorMessage = "Your AniList is empty or could not be fetched."; StateHasChanged(); } return; }
-
         var (map, newCount) = BuildCustomListMap(entries.SelectMany(e => e.CustomListNames).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
         _listsCreated = newCount; _importTotal = entries.Count;
         if (showUI) { _loadingText = "Importing anime…"; StateHasChanged(); }
-
         foreach (var imp in entries) { ApplyEntry(imp, map); _importDone++; if (showUI && _importDone % 20 == 0) { StateHasChanged(); await Task.Yield(); } }
         UserListService.NotifyChanged();
-
         try { var favIds = await AniListAuth.FetchFavouriteIdsAsync(); if (favIds.Count > 0) { UserListService.ImportFavorites(favIds); UserListService.NotifyChanged(); } } catch { }
         if (showUI) { _state = PanelState.Done; StateHasChanged(); }
     }
-
     private (Dictionary<string, string> map, int newCount) BuildCustomListMap(List<string> names)
     {
         if (!names.Any()) return (new(), 0);
@@ -1056,14 +1162,12 @@
         if (toAdd.Any()) UserListService.SaveCustomLists(existing.Concat(toAdd).ToList());
         return (map, newCount);
     }
-
     private void ApplyEntry(AniListImportEntry src, Dictionary<string, string> map)
     {
         if (src.AnimeCard.Id == 0 && src.MediaId == 0) return;
         if (src.AnimeCard.Id == 0) src.AnimeCard.Id = src.MediaId;
         UserListService.ImportEntry(new UserListEntry { Anime = src.AnimeCard, Status = MapStatus(src.AniListStatus), Score = src.Score, EpisodesWatched = src.Progress, TotalRewatches = src.Repeat, Notes = src.Notes, IsPrivate = src.IsPrivate, HideFromStatusLists = src.HideFromStatusLists, StartDate = src.StartedAt, FinishDate = src.CompletedAt, AddedAt = src.CreatedAt, UpdatedAt = src.UpdatedAt, CustomListIds = src.CustomListNames.Where(n => map.ContainsKey(n)).Select(n => map[n]).ToList() });
     }
-
     private static ListStatus? MapStatus(string s) => s switch
     {
         "CURRENT" => ListStatus.Watching,
@@ -1074,35 +1178,18 @@
         "DROPPED" => ListStatus.Dropped,
         _ => null
     };
-
     private async Task Disconnect()
     {
         try { await JS.InvokeVoidAsync("aniListRemoveToken"); } catch { }
-        AniListAuth.ClearToken();
-        _state = PanelState.NotConnected;
-        _importDone = 0; _importTotal = 0; _listsCreated = 0;
-        StateHasChanged();
+        AniListAuth.ClearToken(); _state = PanelState.NotConnected;
+        _importDone = 0; _importTotal = 0; _listsCreated = 0; StateHasChanged();
     }
-
     private void HandleOverlayClick() => Close();
     private void Close() => OnClose.InvokeAsync();
-
-    protected override void OnInitialized()
-    {
-        UserListService.OnChanged += HandleStatsRefresh;
-    }
-
-    public void Dispose()
-    {
-        UserListService.OnChanged -= HandleStatsRefresh;
-    }
-
+    protected override void OnInitialized() => UserListService.OnChanged += HandleStatsRefresh;
+    public void Dispose() => UserListService.OnChanged -= HandleStatsRefresh;
     private void HandleStatsRefresh()
     {
-        if (_activeTab == "stats")
-        {
-            ComputeStats();
-            InvokeAsync(StateHasChanged);
-        }
+        if (_activeTab == "stats") { ComputeStats(); InvokeAsync(StateHasChanged); }
     }
 }
