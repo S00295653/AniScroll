@@ -839,6 +839,9 @@
     color: rgba(255,255,255,0.65);
     width: 80px;
     flex-shrink: 0;
+    overflow: hidden; /* ← AJOUTER */
+    text-overflow: ellipsis; /* ← AJOUTER */
+    white-space: nowrap; /* ← AJOUTER */
 }
 
 .st-status-bar-wrap {
