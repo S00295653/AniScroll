@@ -626,6 +626,12 @@
     gap: 6px;
 }
 
+    .st-hero-right > * {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
 .st-hero-main {
     align-self: stretch;
     flex-shrink: 0;
