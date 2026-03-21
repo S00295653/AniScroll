@@ -1360,3 +1360,11 @@
     background: rgba(255,255,255,0.07);
     margin: 4px 0;
 }
+
+.st-filter-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}

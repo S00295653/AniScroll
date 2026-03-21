@@ -367,19 +367,17 @@
                                     @{
                                         var maxScoreCount = _s.ScoreDist2.Values.DefaultIfEmpty(1).Max();
                                     }
-                                    @for (decimal sc = 10m; sc >= 1m; sc -= 0.5m)
+                                    @for (decimal sc = 10m; sc >= 0.5m; sc -= 0.5m)
                                     {
                                         var key = sc.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
                                         var count = _s.ScoreDist2.GetValueOrDefault(key, 0);
-                                        var barPct = maxScoreCount > 0
-                                            ? (count > 0 ? Math.Max(3.0, count * 100.0 / maxScoreCount) : 0.4)
-                                            : 0;
+                                        if (count == 0) { continue; }
+                                        var barPct = maxScoreCount > 0 ? Math.Max(3.0, count * 100.0 / maxScoreCount) : 0;
                                         var ck = (double)sc;
-                                        var isAvg = Math.Abs(ck - _s.AvgScore) < 0.26;
-                                        <div class="st-score-row @(isAvg ? "st-score-row-avg" : "")">
+                                        <div class="st-score-row">
                                             <span class="st-score-label">@key</span>
                                             <div class="st-score-bar-wrap"><div class="st-score-bar-fill" style="width:@barPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%;background:@GetScoreBarColorDouble(ck);"></div></div>
-                                            <span class="st-score-count">@(count > 0 ? count.ToString() : "")</span>
+                                            <span class="st-score-count">@count</span>
                                         </div>
                                     }
                                 </div>
