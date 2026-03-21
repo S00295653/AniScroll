@@ -612,11 +612,19 @@
 /* ── Hero ── */
 .st-hero {
     display: flex;
-    align-items: center;
+    align-items: stretch; /* ← stretch pour que right column prenne toute la hauteur */
     gap: 16px;
     padding: 4px 0 16px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     margin-bottom: 14px;
+}
+
+.st-hero-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* ← pousse le bouton en bas */
+    gap: 8px;
 }
 
 .st-hero-main {
@@ -646,13 +654,6 @@
     text-transform: uppercase;
     letter-spacing: .06em;
     margin-top: 3px;
-}
-
-.st-hero-subs {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
 }
 
 .st-hero-sub {
