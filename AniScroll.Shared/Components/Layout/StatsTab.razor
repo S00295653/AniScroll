@@ -44,6 +44,7 @@
                         </svg>
                         <span class="st-filter-trigger-label">Stats for</span>
                         <span class="st-filter-badge">@(_statFilter.Count + _statFilterCustomIds.Count)</span>
+                        <span style="flex:1;"></span>
                         <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
                              width="11" height="11" viewBox="0 0 24 24" fill="none"
                              stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;">
@@ -609,8 +610,14 @@
                 }
             }
 
-            if (e.Status == ListStatus.Planning && totalEp > 0)
-                s.DaysPlanned += totalEp * (e.Anime.Duration ?? (isMovie ? 90 : 24)) / 1440.0;
+            if (e.Status == ListStatus.Planning)
+            {
+                // Count only episodes not yet watched, so partially-started planning
+                // entries don't inflate the planned time.
+                int remaining = totalEp > 0 ? Math.Max(0, totalEp - baseEp) : 0;
+                if (remaining > 0)
+                    s.DaysPlanned += remaining * (e.Anime.Duration ?? (isMovie ? 90 : 24)) / 1440.0;
+            }
 
             if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
             if (e.TotalRewatches > 0) s.Rewatched++;
