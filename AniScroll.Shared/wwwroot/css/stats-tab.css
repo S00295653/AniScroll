@@ -44,7 +44,7 @@
 
 .st-hero-right {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* ← required so children can shrink */
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -84,10 +84,7 @@
 .st-hero-sub {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     gap: 8px;
-    background: transparent;
-    border: none;
     padding: 0 10px;
     width: 100%;
 }
@@ -105,12 +102,18 @@
     font-weight: 600;
 }
 
-/* ── Stats filter dropdown ── */
+/* ══════════════════════════════════════════════════════════════
+   STATS FILTER DROPDOWN
+   — Key fix: the menu has a fixed width and every option clips
+     its text with ellipsis so long names never break the layout.
+   ══════════════════════════════════════════════════════════════ */
+
 .st-filter-wrap {
     position: relative;
     width: 100%;
 }
 
+/* Trigger button */
 .st-filter-trigger {
     display: flex;
     align-items: center;
@@ -125,10 +128,10 @@
     cursor: pointer;
     font-family: inherit;
     width: 100%;
+    box-sizing: border-box;
     text-align: left;
+    overflow: hidden; /* prevent trigger itself from growing */
     transition: background .15s, border-color .15s, color .15s;
-    white-space: nowrap;
-    overflow: hidden;
 }
 
     .st-filter-trigger:hover {
@@ -136,6 +139,10 @@
         color: rgba(255,255,255,0.8);
         border-color: rgba(255,255,255,0.18);
     }
+
+.st-filter-trigger-label {
+    flex-shrink: 0; /* "Stats for" never shrinks */
+}
 
 .st-filter-badge {
     display: inline-flex;
@@ -153,8 +160,6 @@
 }
 
 .st-filter-chevron {
-    margin-left: auto;
-    flex-shrink: 0;
     opacity: 0.5;
     transition: transform .2s ease;
 }
@@ -164,24 +169,41 @@
         opacity: 1;
     }
 
+/* Dropdown menu — fixed width, clip overflow */
 .st-filter-menu {
     position: absolute;
     top: calc(100% + 5px);
     right: 0;
     left: 0;
+    /* Constrain the menu to the trigger width — never wider */
+    width: 100%;
+    box-sizing: border-box;
     background: #1c1c2a;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
     padding: 6px;
-    z-index: 50;
+    z-index: 200;
     box-shadow: 0 8px 28px rgba(0,0,0,0.6);
     animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
     max-height: 55dvh;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: hidden; /* ← block horizontal overflow */
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.12) transparent;
 }
+
+    .st-filter-menu::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .st-filter-menu::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .st-filter-menu::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.12);
+        border-radius: 2px;
+    }
 
 @keyframes st-dd-open {
     from {
@@ -195,13 +217,20 @@
     }
 }
 
-/* ── Filter option — must constrain width for ellipsis to work ── */
+/* ── Filter option ─────────────────────────────────────────────
+   CRITICAL rules for proper truncation:
+   1. width: 100% + box-sizing so button never exceeds menu width
+   2. overflow: hidden clips anything that would stick out
+   3. min-width: 0 lets flex children shrink below their content size
+   ──────────────────────────────────────────────────────────── */
 .st-filter-option {
     display: flex;
     align-items: center;
     gap: 8px;
     width: 100%;
-    max-width: 100%;
+    box-sizing: border-box; /* ← width includes padding */
+    min-width: 0; /* ← allow flex children to shrink */
+    overflow: hidden; /* ← clip overflowing content */
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid transparent;
@@ -214,8 +243,6 @@
     text-align: left;
     transition: background .12s, color .12s;
     margin-bottom: 2px;
-    overflow: hidden; /* ← needed so children can ellipsis */
-    box-sizing: border-box;
 }
 
     .st-filter-option:last-of-type {
@@ -231,6 +258,7 @@
     font-weight: 600;
 }
 
+/* Color dot — never shrinks */
 .st-filter-dot {
     width: 8px;
     height: 8px;
@@ -238,18 +266,24 @@
     flex-shrink: 0;
 }
 
+/* Name — takes remaining space, clips with ellipsis */
 .st-filter-name {
     flex: 1;
-    min-width: 0; /* ← critical for ellipsis inside flex */
+    min-width: 0; /* ← REQUIRED for ellipsis inside flex */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+/* Count + check — never shrink */
 .st-filter-count {
     font-size: 10px;
     font-weight: 700;
     color: rgba(255,255,255,0.3);
+    flex-shrink: 0;
+}
+
+.st-filter-check {
     flex-shrink: 0;
 }
 
@@ -658,19 +692,20 @@
     height: 180px;
 }
 
-/* ── Pie chart ── */
+/* ── Pie / donut chart ── */
 .st-pie-wrap {
     display: flex;
     justify-content: center;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .st-pie-svg {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
+    overflow: visible;
 }
 
-/* ── Radar legend (shared with pie) ── */
+/* ── Shared legend (radar + pie) ── */
 .st-radar-legend {
     display: flex;
     flex-direction: column;

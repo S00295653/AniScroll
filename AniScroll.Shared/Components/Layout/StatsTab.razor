@@ -37,23 +37,23 @@
                 <div class="st-filter-wrap" @onclick:stopPropagation="true">
                     <button class="st-filter-trigger"
                             @onclick="() => { _filterDropdownOpen = !_filterDropdownOpen; StateHasChanged(); }">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;">
                             <line x1="3" y1="6" x2="21" y2="6" />
                             <line x1="6" y1="12" x2="18" y2="12" />
                             <line x1="9" y1="18" x2="15" y2="18" />
                         </svg>
-                        <span>Stats for</span>
+                        <span class="st-filter-trigger-label">Stats for</span>
                         <span class="st-filter-badge">@(_statFilter.Count + _statFilterCustomIds.Count)</span>
                         <svg class="st-filter-chevron @(_filterDropdownOpen ? "open" : "")"
                              width="11" height="11" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5">
+                             stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     </button>
 
                     @if (_filterDropdownOpen)
                     {
-                        <div class="st-filter-menu" style="right:0;left:auto;min-width:210px;">
+                        <div class="st-filter-menu">
                             @{
                                 var _ddStatusRows = UserListService.GetStatusSettings()
                                     .Select(s => (isBuiltIn: true, setting: s, custom: (UserCustomList?)null))
@@ -75,7 +75,7 @@
                                         <span class="st-filter-dot" style="background:@s.Color;box-shadow:0 0 5px @(s.Color)88;"></span>
                                         <span class="st-filter-name">@s.DisplayName</span>
                                         <span class="st-filter-count">@UserListService.Count(ls)</span>
-                                        @if (isOn) { <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                        @if (isOn) { <svg class="st-filter-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                     </button>
                                 }
                                 else
@@ -88,7 +88,7 @@
                                         <span class="st-filter-dot" style="background:@cl.Color;box-shadow:0 0 5px @(cl.Color)88;"></span>
                                         <span class="st-filter-name">@cl.Name</span>
                                         <span class="st-filter-count">@UserListService.GetCountForCustomList(cl.Id)</span>
-                                        @if (isOnCl) { <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                        @if (isOnCl) { <svg class="st-filter-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                     </button>
                                 }
                             }
@@ -108,7 +108,7 @@
                                         <span class="st-filter-dot" style="background:@cl.Color;box-shadow:0 0 5px @(cl.Color)88;"></span>
                                         <span class="st-filter-name">@cl.Name</span>
                                         <span class="st-filter-count">@UserListService.GetCountForCustomList(cl.Id)</span>
-                                        @if (isOnCl) { <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
+                                        @if (isOnCl) { <svg class="st-filter-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                     </button>
                                 }
                             }
@@ -495,7 +495,6 @@
     [Parameter] public bool IsActive { get; set; }
 
     private bool _prevActive = false;
-
     private HashSet<ListStatus> _statFilter = new() { ListStatus.Completed, ListStatus.Watching };
     private HashSet<string> _statFilterCustomIds = new();
     private bool _filterDropdownOpen = false;
@@ -503,13 +502,8 @@
     private bool _scrollYearToRight = false;
     private StatsSnapshot? _s;
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────
-
-    protected override void OnInitialized() =>
-        UserListService.OnChanged += HandleStatsRefresh;
-
-    public void Dispose() =>
-        UserListService.OnChanged -= HandleStatsRefresh;
+    protected override void OnInitialized() => UserListService.OnChanged += HandleStatsRefresh;
+    public void Dispose() => UserListService.OnChanged -= HandleStatsRefresh;
 
     protected override void OnParametersSet()
     {
@@ -533,23 +527,17 @@
         if (IsActive) { ComputeStats(); InvokeAsync(StateHasChanged); }
     }
 
-    // ── Filter ─────────────────────────────────────────────────────────────
-
     private void ToggleStatFilter(ListStatus status)
     {
         if (!_statFilter.Remove(status)) _statFilter.Add(status);
-        ComputeStats();
-        StateHasChanged();
+        ComputeStats(); StateHasChanged();
     }
 
     private void ToggleStatFilterCustom(string id)
     {
         if (!_statFilterCustomIds.Remove(id)) _statFilterCustomIds.Add(id);
-        ComputeStats();
-        StateHasChanged();
+        ComputeStats(); StateHasChanged();
     }
-
-    // ── Stats computation ──────────────────────────────────────────────────
 
     private void ComputeStats()
     {
@@ -572,9 +560,8 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp  = e.EpisodesWatched;
 
-            // FIX: for Rewatching entries, TotalRewatches only counts completed
-            // rewatches — the original watch is not captured. Add 1 so the first
-            // watch is included in the episode and minute totals.
+            // FIX: Rewatching means the original watch is ongoing — not yet in TotalRewatches.
+            // Add 1 so the first watch contributes to totals.
             bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
             int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
 
@@ -610,16 +597,15 @@
         int watching  = s.ByStatus.GetValueOrDefault(ListStatus.Watching)
                       + s.ByStatus.GetValueOrDefault(ListStatus.Rewatching);
         int paused    = s.ByStatus.GetValueOrDefault(ListStatus.Paused);
-        int denom = completed + watching + paused + dropped;
+        int denom     = completed + watching + paused + dropped;
         s.CompletionRate = denom > 0 ? completed * 100.0 / denom : 0;
-        s.DropRate = s.Total > 0 ? dropped * 100.0 / s.Total : 0;
+        s.DropRate       = s.Total > 0 ? dropped * 100.0 / s.Total : 0;
 
         s.LongestAnime = all
             .Where(e => e.Anime.Duration.HasValue && e.EpisodesWatched > 0 && e.Status != ListStatus.Planning)
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
-        // ── Everything else computed on filtered entries ──
         IEnumerable<UserListEntry> filteredQuery = all;
         if (_statFilter.Any() || _statFilterCustomIds.Any())
         {
@@ -636,13 +622,12 @@
         var filtered = filteredQuery.ToList();
         s.FilteredTotal = filtered.Count;
 
-        // ── Scores computed on filtered entries ──
         foreach (var e in filtered)
         {
             if (e.Score <= 0) continue;
             s.ScoredCount++;
             s.AvgScore += e.Score;
-            decimal scoreD = (decimal)Math.Round(e.Score, 1);
+            decimal scoreD  = (decimal)Math.Round(e.Score, 1);
             decimal rounded = Math.Round(scoreD * 2m, MidpointRounding.AwayFromZero) / 2m;
             rounded = Math.Clamp(rounded, 0.5m, 10.0m);
             string key = rounded.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -680,7 +665,7 @@
                 if (seenT.Add(t.Name)) s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
         }
 
-        s.UniqueGenres = s.TopGenres.Count;
+        s.UniqueGenres  = s.TopGenres.Count;
         s.UniqueStudios = s.TopStudios.Count;
         s.TopGenres  = s.TopGenres.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
         s.TopStudios = s.TopStudios.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
@@ -690,7 +675,7 @@
         _s = s;
     }
 
-    // ── SVG builders ───────────────────────────────────────────────────────
+    // ── SVG builders ──────────────────────────────────────────────────────
 
     private static string BuildRadarSvg(List<KeyValuePair<string, int>> items, string strokeColor, string fillColor)
     {
@@ -719,91 +704,176 @@
         foreach (var (px, py) in pts) sb.Append($"<circle cx=\"{px:F1}\" cy=\"{py:F1}\" r=\"2.5\" fill=\"{strokeColor}\"/>");
         for (int i = 0; i < n; i++)
         {
-            double a = 2 * Math.PI * i / n - Math.PI / 2;
+            double a  = 2 * Math.PI * i / n - Math.PI / 2;
             double lx = cx + (r + 14) * Math.Cos(a), ly = cy + (r + 14) * Math.Sin(a);
             string anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
-            string lbl = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
+            string lbl    = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
             sb.Append($"<text x=\"{lx:F1}\" y=\"{ly:F1}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" fill=\"rgba(255,255,255,0.5)\">{System.Net.WebUtility.HtmlEncode(lbl)}</text>");
         }
         sb.Append("</svg>"); return sb.ToString();
     }
 
-    // FIX: removed in-slice % labels — the legend below already shows count + pct
+    /// <summary>
+    /// Beautiful donut chart — per-slice radial gradients, subtle glow, clean gap, no in-slice labels.
+    /// The legend below the chart shows name + count + %.
+    /// </summary>
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
     {
         if (!items.Any()) return "";
-        var colors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
+
+        // Base color + lighter highlight for per-slice radial gradient
+        var palette = new (string baseCol, string lightCol)[]
+        {
+            ("#E94560", "#ff8fa3"),
+            ("#3b82f6", "#93c5fd"),
+            ("#22c55e", "#86efac"),
+            ("#f97316", "#fdba74"),
+            ("#a855f7", "#d8b4fe"),
+            ("#06b6d4", "#67e8f9"),
+        };
+
         double total = items.Sum(x => x.Value);
         if (total == 0) return "";
-        const double cx = 100, cy = 100, outerR = 74, innerR = 46;
-        double gap = items.Count > 1 ? 0.025 : 0;
-        string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+        const double cx = 100, cy = 100, outerR = 76, innerR = 48;
+        double gap = items.Count > 1 ? 0.05 : 0; // gap between slices in radians
+
+        string F(double v) => v.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
+
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
-        double angle = -Math.PI / 2; int ci = 0;
-        foreach (var kv in items)
+
+        // ── Defs: drop shadow + one radial gradient per palette entry ────
+        sb.Append("<defs>");
+        sb.Append(
+            "<filter id=\"pshadow\" x=\"-15%\" y=\"-15%\" width=\"130%\" height=\"130%\">" +
+            "<feDropShadow dx=\"0\" dy=\"1\" stdDeviation=\"2.5\" flood-color=\"rgba(0,0,0,0.55)\"/>" +
+            "</filter>");
+        for (int gi = 0; gi < palette.Length; gi++)
         {
-            double sw = 2 * Math.PI * kv.Value / total, sa = angle + gap, ea = angle + sw - gap;
+            var (b, l) = palette[gi];
+            sb.Append($"<radialGradient id=\"pg{gi}\" cx=\"35%\" cy=\"28%\" r=\"72%\">" +
+                      $"<stop offset=\"0%\"   stop-color=\"{l}\" stop-opacity=\"0.7\"/>" +
+                      $"<stop offset=\"100%\" stop-color=\"{b}\" stop-opacity=\"1\"/>" +
+                      "</radialGradient>");
+        }
+        sb.Append("</defs>");
+
+        // ── Faint outer ring ─────────────────────────────────────────────
+        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(outerR + 5)}\" fill=\"rgba(255,255,255,0.025)\"/>");
+
+        // ── Slices ───────────────────────────────────────────────────────
+        double angle = -Math.PI / 2;
+        for (int i = 0; i < items.Count; i++)
+        {
+            double sw = 2 * Math.PI * items[i].Value / total;
+            double sa = angle + gap / 2;
+            double ea = angle + sw - gap / 2;
             if (ea > sa)
             {
-                double x1 = cx + outerR * Math.Cos(sa), y1 = cy + outerR * Math.Sin(sa);
-                double x2 = cx + outerR * Math.Cos(ea), y2 = cy + outerR * Math.Sin(ea);
+                double x1  = cx + outerR * Math.Cos(sa), y1  = cy + outerR * Math.Sin(sa);
+                double x2  = cx + outerR * Math.Cos(ea), y2  = cy + outerR * Math.Sin(ea);
                 double xi1 = cx + innerR * Math.Cos(sa), yi1 = cy + innerR * Math.Sin(sa);
                 double xi2 = cx + innerR * Math.Cos(ea), yi2 = cy + innerR * Math.Sin(ea);
-                int large = (sw - gap * 2) > Math.PI ? 1 : 0;
-                string col = colors[ci % colors.Length];
-                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{col}\"/>");
-                // in-slice % label intentionally removed — legend below carries the info
+                int    large = (sw - gap) > Math.PI ? 1 : 0;
+                int    pi    = i % palette.Length;
+                var    (baseCol, _) = palette[pi];
+
+                string pathD = $"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} " +
+                               $"A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} " +
+                               $"L {F(xi2)} {F(yi2)} " +
+                               $"A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z";
+
+                // Soft glow halo (semi-transparent copy, slightly larger)
+                sb.Append($"<path d=\"{pathD}\" fill=\"{baseCol}\" opacity=\"0.15\" filter=\"url(#pshadow)\"/>");
+                // Main slice with gradient
+                sb.Append($"<path d=\"{pathD}\" fill=\"url(#pg{pi})\"/>");
+                // Bright inner arc for depth
+                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} A {F(innerR)} {F(innerR)} 0 {large} 1 {F(xi2)} {F(yi2)}\"" +
+                          $" fill=\"none\" stroke=\"rgba(255,255,255,0.15)\" stroke-width=\"0.75\"/>");
             }
-            angle += sw; ci++;
+            angle += sw;
         }
+
+        // ── Center hole ──────────────────────────────────────────────────
         sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 1)}\" fill=\"#14141f\"/>");
-        sb.Append($"<text x=\"100\" y=\"96\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"18\" font-weight=\"800\" fill=\"rgba(255,255,255,0.88)\">{(int)total}</text>");
-        sb.Append($"<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"8\" fill=\"rgba(255,255,255,0.3)\">anime</text>");
-        sb.Append("</svg>"); return sb.ToString();
+        // Hairline inner border
+        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 0.5)}\" fill=\"none\" stroke=\"rgba(255,255,255,0.07)\" stroke-width=\"1\"/>");
+
+        // Center count
+        sb.Append("<text x=\"100\" y=\"94\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
+                  "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"20\" font-weight=\"800\" " +
+                  $"fill=\"rgba(255,255,255,0.92)\">{(int)total}</text>");
+        // Center label
+        sb.Append("<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
+                  "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"8\" font-weight=\"600\" " +
+                  "fill=\"rgba(255,255,255,0.28)\" letter-spacing=\"0.8\">ANIME</text>");
+
+        sb.Append("</svg>");
+        return sb.ToString();
     }
 
-    // ── Static helpers ─────────────────────────────────────────────────────
+    // ── Static helpers ────────────────────────────────────────────────────
 
-    private static int GetTotalEpsFromString(string? s) { if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0; var p = s.Split('/').Last().Trim().TrimEnd('+', '?'); return int.TryParse(p, out int v) && v > 0 ? v : 0; }
-    private static string FormatDays(long min) { double d = min / 1440.0; return d >= 1 ? d.ToString("F1") : (min / 60.0).ToString("F1"); }
+    private static int GetTotalEpsFromString(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s) || s == "N/A") return 0;
+        var p = s.Split('/').Last().Trim().TrimEnd('+', '?');
+        return int.TryParse(p, out int v) && v > 0 ? v : 0;
+    }
+
+    private static string FormatDays(long min)  { double d = min / 1440.0; return d >= 1 ? d.ToString("F1") : (min / 60.0).ToString("F1"); }
     private static string FormatHours(long min) => (min / 60.0).ToString("F0");
-    private static string FormatMinutes(long min) { if (min >= 1440) return (min / 1440.0).ToString("F1") + " days"; if (min >= 60) return (min / 60.0).ToString("F0") + " hrs"; return min + " min"; }
-    private static long GetAnimeMinutes(AnimeCard a) { int eps = 1; if (!string.IsNullOrEmpty(a.Episodes) && a.Episodes != "N/A") { var p = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?'); if (int.TryParse(p, out int v) && v > 0) eps = v; } return eps * (long)(a.Duration ?? 24); }
-    private static string TruncateTitle(string t) => t.Length > 28 ? t[..26] + "…" : t;
-    private static string GetScoreColor(double sc) => sc >= 8.5 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
+    private static string FormatMinutes(long min)
+    {
+        if (min >= 1440) return (min / 1440.0).ToString("F1") + " days";
+        if (min >= 60)   return (min / 60.0).ToString("F0") + " hrs";
+        return min + " min";
+    }
+    private static long GetAnimeMinutes(AnimeCard a)
+    {
+        int eps = 1;
+        if (!string.IsNullOrEmpty(a.Episodes) && a.Episodes != "N/A")
+        {
+            var p = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?');
+            if (int.TryParse(p, out int v) && v > 0) eps = v;
+        }
+        return eps * (long)(a.Duration ?? 24);
+    }
+    private static string TruncateTitle(string t)           => t.Length > 28 ? t[..26] + "…" : t;
+    private static string GetScoreColor(double sc)          => sc >= 8.5 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
     private static string GetScoreBarColorDouble(double sc) => sc >= 9 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
 
-    // ── StatsSnapshot ──────────────────────────────────────────────────────
+    // ── StatsSnapshot ─────────────────────────────────────────────────────
 
     private class StatsSnapshot
     {
-        public int Total { get; set; }
-        public int TotalEpisodes { get; set; }
-        public long TotalMinutes { get; set; }
-        public int Favorited { get; set; }
-        public int Rewatched { get; set; }
-        public int Private { get; set; }
-        public int WithNotes { get; set; }
-        public double DaysPlanned { get; set; }
+        public int    Total          { get; set; }
+        public int    TotalEpisodes  { get; set; }
+        public long   TotalMinutes   { get; set; }
+        public int    Favorited      { get; set; }
+        public int    Rewatched      { get; set; }
+        public int    Private        { get; set; }
+        public int    WithNotes      { get; set; }
+        public double DaysPlanned    { get; set; }
         public double CompletionRate { get; set; }
-        public double DropRate { get; set; }
-        public Dictionary<ListStatus, int> ByStatus { get; set; } = new();
-        public UserListEntry? LongestAnime { get; set; }
-        public int FilteredTotal { get; set; }
-        public int ScoredCount { get; set; }
-        public double AvgScore { get; set; }
-        public int UniqueGenres { get; set; }
-        public int UniqueStudios { get; set; }
-        public Dictionary<string, int> ScoreDist2 { get; set; } = new();
-        public Dictionary<int, int> ScoreDist { get; set; } = new();
-        public Dictionary<string, int> TopGenres { get; set; } = new();
-        public Dictionary<string, int> ByFormat { get; set; } = new();
-        public Dictionary<string, int> TopStudios { get; set; } = new();
-        public Dictionary<int, int> ByYear { get; set; } = new();
-        public Dictionary<string, int> BySeason { get; set; } = new();
-        public Dictionary<string, int> BySource { get; set; } = new();
-        public Dictionary<string, int> ByCountry { get; set; } = new();
-        public Dictionary<string, int> TopTags { get; set; } = new();
+        public double DropRate       { get; set; }
+        public Dictionary<ListStatus, int> ByStatus     { get; set; } = new();
+        public UserListEntry?              LongestAnime { get; set; }
+        public int    FilteredTotal  { get; set; }
+        public int    ScoredCount    { get; set; }
+        public double AvgScore       { get; set; }
+        public int    UniqueGenres   { get; set; }
+        public int    UniqueStudios  { get; set; }
+        public Dictionary<string, int> ScoreDist2  { get; set; } = new();
+        public Dictionary<int,    int> ScoreDist   { get; set; } = new();
+        public Dictionary<string, int> TopGenres   { get; set; } = new();
+        public Dictionary<string, int> ByFormat    { get; set; } = new();
+        public Dictionary<string, int> TopStudios  { get; set; } = new();
+        public Dictionary<int,    int> ByYear      { get; set; } = new();
+        public Dictionary<string, int> BySeason    { get; set; } = new();
+        public Dictionary<string, int> BySource    { get; set; } = new();
+        public Dictionary<string, int> ByCountry   { get; set; } = new();
+        public Dictionary<string, int> TopTags     { get; set; } = new();
     }
 }
