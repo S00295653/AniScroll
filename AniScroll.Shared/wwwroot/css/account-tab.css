@@ -1,0 +1,417 @@
+﻿/* ============================================================
+   account-tab.css  — AccountTab component styles
+   ============================================================ */
+
+/* ── Connect section ── */
+.pp-connect-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 8px 0 4px;
+}
+
+.pp-connect-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    background: rgba(2,169,255,0.08);
+    border: 1px solid rgba(2,169,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+    box-shadow: 0 0 32px rgba(2,169,255,0.1);
+}
+
+    .pp-connect-icon-wrap svg {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+.pp-connect-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    margin: 0;
+}
+
+.pp-connect-sub {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 300px;
+}
+
+.pp-connect-features {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 4px 0 6px;
+    text-align: left;
+}
+
+.pp-connect-feature {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+}
+
+/* ── AniList button ── */
+.pp-anilist-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    background: #02a9ff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px 24px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s, transform .1s;
+    letter-spacing: -0.1px;
+    font-family: inherit;
+}
+
+    .pp-anilist-btn:hover {
+        filter: brightness(1.12);
+    }
+
+    .pp-anilist-btn:active {
+        transform: scale(0.97);
+    }
+
+/* ── Loading / spinner ── */
+.pp-loading-section,
+.pp-import-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+}
+
+.pp-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: #02a9ff;
+    border-radius: 50%;
+    animation: pp-spin .8s linear infinite;
+}
+
+@keyframes pp-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pp-loading-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+}
+
+/* ── Progress bar ── */
+.pp-progress-bar-wrap {
+    width: 100%;
+    max-width: 260px;
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.pp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg,#02a9ff,#0070cc);
+    border-radius: 99px;
+    transition: width .3s ease;
+}
+
+.pp-progress-count {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.35);
+    margin: 0;
+}
+
+/* ── User card ── */
+.pp-user-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.pp-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    border: 2px solid rgba(2,169,255,0.35);
+}
+
+.pp-avatar-placeholder {
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pp-username {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pp-anilist-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    transition: color .15s;
+}
+
+    .pp-anilist-link:hover {
+        color: #02a9ff;
+    }
+
+.pp-al-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #02a9ff;
+    flex-shrink: 0;
+}
+
+/* ── Import button ── */
+.pp-import-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(2,169,255,0.12);
+    border: 1px solid rgba(2,169,255,0.25);
+    color: #02a9ff;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    margin-bottom: 10px;
+    font-family: inherit;
+}
+
+    .pp-import-btn:hover {
+        background: rgba(2,169,255,0.2);
+    }
+
+    .pp-import-btn:active {
+        transform: scale(0.98);
+    }
+
+/* ── Disconnect button ── */
+.pp-disconnect-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.3);
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    font-family: inherit;
+}
+
+    .pp-disconnect-btn:hover {
+        background: rgba(255,80,80,0.08);
+        border-color: rgba(255,80,80,0.2);
+        color: rgba(255,100,100,0.7);
+    }
+
+/* ── Done section ── */
+.pp-done-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.pp-done-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pp-done-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+}
+
+.pp-done-stats {
+    display: flex;
+    gap: 24px;
+    margin: 4px 0 8px;
+}
+
+.pp-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.pp-stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: #02a9ff;
+    letter-spacing: -0.5px;
+}
+
+.pp-stat-lbl {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.pp-user-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+}
+
+.pp-avatar-mini {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(2,169,255,0.3);
+}
+
+.pp-username-mini {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+}
+
+.pp-done-close-btn {
+    width: 100%;
+    background: #02a9ff;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s, transform .1s;
+    font-family: inherit;
+}
+
+    .pp-done-close-btn:hover {
+        filter: brightness(1.12);
+    }
+
+    .pp-done-close-btn:active {
+        transform: scale(0.98);
+    }
+
+/* ── Error section ── */
+.pp-error-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    text-align: center;
+}
+
+.pp-error-icon {
+    font-size: 40px;
+}
+
+.pp-error-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    margin: 0;
+}
+
+.pp-error-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin: 0 0 6px;
+    max-width: 280px;
+    line-height: 1.5;
+}
+
+/* ── Token input ── */
+.pp-token-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s;
+}
+
+    .pp-token-input::placeholder {
+        color: rgba(255,255,255,0.22);
+    }
+
+    .pp-token-input:focus {
+        border-color: rgba(2,169,255,0.45);
+    }
