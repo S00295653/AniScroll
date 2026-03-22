@@ -462,12 +462,11 @@
 }
 
 .st-completion-lbl {
-    /* dot(8) + gap(8) + name(80) = 96px, then the gap(8) is provided by the row gap */
-    width: 96px;
+    width: 80px;
     flex-shrink: 0;
-    font-size: 11px;
-    color: rgba(255,255,255,0.35);
+    font-size: 12px;
     font-weight: 600;
+    color: rgba(255,255,255,0.35);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -475,7 +474,7 @@
 
 .st-completion-bar-wrap {
     flex: 1;
-    height: 6px; /* same height as st-status-bar-wrap */
+    height: 6px;
     background: rgba(255,255,255,0.07);
     border-radius: 3px;
     overflow: hidden;
@@ -483,9 +482,9 @@
 
 .st-completion-bar {
     height: 100%;
-    background: linear-gradient(90deg,#3b82f6,#06b6d4);
+    background: linear-gradient(90deg, #3b82f6, #06b6d4);
     border-radius: 3px;
-    transition: width .6s cubic-bezier(0.22,1,0.36,1);
+    transition: width .6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .st-completion-val {
@@ -938,12 +937,12 @@
 .st-genre-radar-wrap {
     display: flex;
     justify-content: center;
-    margin-bottom: 4px;
+    margin: 0 -4px; /* slight bleed so labels at edges don't clip */
 }
 
 .st-genre-radar-svg {
     width: 100%;
-    max-width: 320px;
+    max-width: 300px;
     height: auto;
     overflow: visible;
 }

@@ -204,9 +204,10 @@
             }
 
             <div class="st-completion-row">
+                <span class="st-status-dot" style="background:transparent;box-shadow:none;"></span>
                 <span class="st-completion-lbl">Completion</span>
                 <div class="st-completion-bar-wrap"><div class="st-completion-bar" style="width:@_s.CompletionRate.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
-                <span class="st-completion-val">@_s.CompletionRate.ToString("F0")%</span>
+                <span class="st-status-count" style="color:#93c5fd;">@_s.CompletionRate.ToString("F0")%</span>
             </div>
         </div>
 
@@ -696,78 +697,89 @@
         _s = s;
     }
 
-    // ── Genre radar chart ─────────────────────────────────────────────────
-    // Proper spider chart: concentric rings, axis lines, filled polygon + dots + labels.
+    // ── Genre radar chart — image-2 style ────────────────────────────────
+    // Concentric circles, abbreviated labels, filled polygon, accent stroke.
+    private static readonly Dictionary<string, string> _genreAbbr = new(StringComparer.OrdinalIgnoreCase)
+    {
+        {"Action","ACT"},{"Adventure","ADV"},{"Comedy","COM"},{"Drama","DRA"},
+        {"Ecchi","ECH"},{"Fantasy","FAN"},{"Horror","HOR"},{"Hentai","HNT"},
+        {"Mahou Shoujo","MAH"},{"Mecha","MEC"},{"Music","MUS"},{"Mystery","MYS"},
+        {"Psychological","PSY"},{"Romance","ROM"},{"Sci-Fi","SCI"},
+        {"Slice of Life","SOL"},{"Sports","SPT"},{"Supernatural","SUP"},
+        {"Thriller","THR"},{"Avant Garde","AVG"},{"Award Winning","AWD"},
+        {"Boys Love","BL"},{"Girls Love","GL"},{"Gourmet","GOU"},
+        {"Erotica","ERO"},{"Suspense","SUS"},
+    };
+
     private static string BuildGenreRadarSvg(Dictionary<string, int> genres)
     {
-        var items = genres.Take(10).ToList();
+        var items = genres.Take(16).ToList();
         int n = items.Count;
         if (n < 3) return "";
 
         double maxVal = items.Max(x => x.Value);
         if (maxVal == 0) return "";
 
-        const double cx = 130, cy = 115, r = 85;
+        // Canvas: square, labels need room outside the circle
+        const double cx = 140, cy = 140, r = 95;
         const int rings = 5;
-        const string accent = "#E94560";
-        const string accentFill = "rgba(233,69,96,0.15)";
-        const string gridColor = "rgba(255,255,255,0.08)";
-        const string axisColor = "rgba(255,255,255,0.1)";
-        const string labelColor = "rgba(255,255,255,0.55)";
+
+        // Colours matching image 2 dark style
+        const string accentStroke = "#00d4d4";        // teal outline
+        const string accentFill   = "rgba(0,180,180,0.18)";
+        const string gridStroke   = "rgba(255,255,255,0.1)";
+        const string axisStroke   = "rgba(255,255,255,0.12)";
+        const string labelCol     = "rgba(255,255,255,0.65)";
 
         string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-
-        // Axis angle for each genre (top = -π/2)
         double Angle(int i) => 2 * Math.PI * i / n - Math.PI / 2;
         double Px(double frac, int i) => cx + r * frac * Math.Cos(Angle(i));
         double Py(double frac, int i) => cy + r * frac * Math.Sin(Angle(i));
 
         var sb = new System.Text.StringBuilder();
-        sb.Append("<svg viewBox=\"0 0 260 230\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-genre-radar-svg\">");
+        // Viewbox gives breathing room for labels (labels go to ~1.35r outside cx)
+        sb.Append("<svg viewBox=\"0 0 280 280\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-genre-radar-svg\">");
 
-        // ── Concentric ring polygons ─────────────────────────────────────
+        // ── Concentric CIRCLES ───────────────────────────────────────────
         for (int ring = 1; ring <= rings; ring++)
         {
-            double frac = (double)ring / rings;
-            var pts = Enumerable.Range(0, n).Select(i => $"{F(Px(frac, i))},{F(Py(frac, i))}");
-            sb.Append($"<polygon points=\"{string.Join(" ", pts)}\" fill=\"none\" stroke=\"{gridColor}\" stroke-width=\"0.8\"/>");
+            double rr = r * ring / rings;
+            sb.Append($"<circle cx=\"{F(cx)}\" cy=\"{F(cy)}\" r=\"{F(rr)}\" fill=\"none\" stroke=\"{gridStroke}\" stroke-width=\"0.8\"/>");
         }
 
-        // ── Axis lines center → tip ──────────────────────────────────────
+        // ── Axis lines (center → rim) ────────────────────────────────────
         for (int i = 0; i < n; i++)
-            sb.Append($"<line x1=\"{F(cx)}\" y1=\"{F(cy)}\" x2=\"{F(Px(1, i))}\" y2=\"{F(Py(1, i))}\" stroke=\"{axisColor}\" stroke-width=\"0.8\"/>");
+            sb.Append($"<line x1=\"{F(cx)}\" y1=\"{F(cy)}\" x2=\"{F(Px(1, i))}\" y2=\"{F(Py(1, i))}\" stroke=\"{axisStroke}\" stroke-width=\"0.8\"/>");
 
-        // ── Data polygon ─────────────────────────────────────────────────
-        {
-            var dataPts = Enumerable.Range(0, n)
-                .Select(i => { double frac = items[i].Value / maxVal; return $"{F(Px(frac, i))},{F(Py(frac, i))}"; });
-            sb.Append($"<polygon points=\"{string.Join(" ", dataPts)}\" fill=\"{accentFill}\" stroke=\"{accent}\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/>");
-        }
+        // ── Filled data polygon ──────────────────────────────────────────
+        var dataPts = string.Join(" ", Enumerable.Range(0, n)
+            .Select(i => $"{F(Px(items[i].Value / maxVal, i))},{F(Py(items[i].Value / maxVal, i))}"));
+        sb.Append($"<polygon points=\"{dataPts}\" fill=\"{accentFill}\" stroke=\"{accentStroke}\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/>");
 
-        // ── Dots on data points ──────────────────────────────────────────
+        // ── Dots ─────────────────────────────────────────────────────────
         for (int i = 0; i < n; i++)
         {
             double frac = items[i].Value / maxVal;
-            sb.Append($"<circle cx=\"{F(Px(frac, i))}\" cy=\"{F(Py(frac, i))}\" r=\"3\" fill=\"{accent}\" stroke=\"#14141f\" stroke-width=\"1.2\"/>");
+            sb.Append($"<circle cx=\"{F(Px(frac, i))}\" cy=\"{F(Py(frac, i))}\" r=\"2.8\" fill=\"{accentStroke}\" stroke=\"#0e1420\" stroke-width=\"1\"/>");
         }
 
-        // ── Labels ───────────────────────────────────────────────────────
+        // ── Abbreviated labels outside rim ───────────────────────────────
         for (int i = 0; i < n; i++)
         {
-            double labelFrac = 1.18;
-            double lx = cx + r * labelFrac * Math.Cos(Angle(i));
-            double ly = cy + r * labelFrac * Math.Sin(Angle(i));
+            double lFrac = 1.22;
+            double lx = cx + r * lFrac * Math.Cos(Angle(i));
+            double ly = cy + r * lFrac * Math.Sin(Angle(i));
+            string anchor = lx < cx - 3 ? "end" : lx > cx + 3 ? "start" : "middle";
 
-            // Count label slightly further out
-            double countFrac = 1.32;
-            double clx = cx + r * countFrac * Math.Cos(Angle(i));
-            double cly = cy + r * countFrac * Math.Sin(Angle(i));
+            string fullName = items[i].Key;
+            string abbr = _genreAbbr.TryGetValue(fullName, out var a) ? a
+                        : fullName.Length > 4 ? fullName[..3].ToUpperInvariant()
+                        : fullName.ToUpperInvariant();
 
-            string anchor = lx < cx - 4 ? "end" : lx > cx + 4 ? "start" : "middle";
-            string lbl = items[i].Key.Length > 11 ? items[i].Key[..10] + "…" : items[i].Key;
-
-            sb.Append($"<text x=\"{F(lx)}\" y=\"{F(ly)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"8\" font-weight=\"600\" fill=\"{labelColor}\">{System.Net.WebUtility.HtmlEncode(lbl)}</text>");
-            sb.Append($"<text x=\"{F(clx)}\" y=\"{F(cly)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" font-weight=\"700\" fill=\"rgba(233,69,96,0.75)\">{items[i].Value}</text>");
+            sb.Append($"<text x=\"{F(lx)}\" y=\"{F(ly)}\" text-anchor=\"{anchor}\" " +
+                      $"dominant-baseline=\"middle\" font-size=\"8.5\" font-weight=\"700\" " +
+                      $"fill=\"{labelCol}\" font-family=\"system-ui,-apple-system,sans-serif\" " +
+                      $"letter-spacing=\"0.04em\">{System.Net.WebUtility.HtmlEncode(abbr)}</text>");
         }
 
         sb.Append("</svg>");
