@@ -4,6 +4,7 @@
 
 :root {
     --nav-top-height: 44px;
+    --notch-radius: 20px;
 }
 
 /* ════════════════════════════════════════
@@ -27,7 +28,7 @@
     background: rgba(14, 14, 22, 0.96);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border-radius: 6px 6px 24px 24px;
+    border-radius: 22px 22px 0 0;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     display: flex;
     flex-direction: column;
@@ -235,24 +236,20 @@
 
 
 /* ════════════════════════════════════════
-   DESKTOP  — iPhone 12/13 notch shape
-   Fully opaque, flat top flush to screen,
-   rounded bottom, outer-corner curves on
-   each side that blend with the page bg.
+   DESKTOP — notch avec coins mask-image
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
-    /* ── Outer wrapper ─────────────────────────────── */
     .nav-section {
         position: fixed;
         bottom: auto;
-        top: 0; /* flush to top of screen — no gap */
+        top: 0;
         left: 50%;
         right: auto;
         width: auto;
         min-width: 0;
         transform: translateX(-50%);
-        overflow: visible; /* must be visible so the ears show */
+        overflow: visible;
         background: transparent;
         border-radius: 0;
         pointer-events: none;
@@ -264,63 +261,52 @@
         flex-direction: row;
         align-items: center;
         width: auto;
-        height: 44px;
-        padding: 0 6px;
+        height: 52px;
+        padding: 0 8px;
         gap: 0;
         position: relative;
-        /* Flat top, rounded bottom — true notch shape */
-        border-radius: 0 0 24px 24px;
-        /* Fully opaque — same color as the app background */
-        background: #0a0a10;
+        overflow: visible;
+        border-radius: 0 0 var(--notch-radius) var(--notch-radius);
+        background: #0d0d18;
         border: none;
         border-top: none;
-        overflow: visible; /* must be visible so ::before/::after ears render */
         pointer-events: all;
-        /* Shadow only below the notch */
         box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
     }
 
-        /* ── Outer corner "ears" ────────────────────────────
-       Each pseudo-element is a square sitting just outside
-       the notch's bottom corner. Its border-radius makes it
-       a circle, and box-shadow fills the concave gap with
-       the same color as the app background (#0a0a10),
-       creating the illusion that the screen curves into
-       the notch — identical to real iPhone hardware.
-    ──────────────────────────────────────────────────── */
+        /* ── Coins concaves via mask-image ── */
         .main-nav-bar::before,
         .main-nav-bar::after {
             content: '';
             position: absolute;
-            bottom: 0;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: transparent;
+            top: 0;
+            width: var(--notch-radius);
+            height: var(--notch-radius);
+            background-color: #0d0d18;
             pointer-events: none;
-            /* Sit in the plane of the notch so they're always visible */
-            z-index: 1;
+            z-index: 2;
         }
 
-        /* Left ear */
+        /* Coin gauche */
         .main-nav-bar::before {
-            right: 100%; /* just outside the left edge */
-            box-shadow: 12px 12px 0 0 #0a0a10;
+            left: calc(var(--notch-radius) * -1);
+            mask-image: radial-gradient(circle at 0% 100%, transparent var(--notch-radius), black var(--notch-radius));
+            -webkit-mask-image: radial-gradient(circle at 0% 100%, transparent var(--notch-radius), black var(--notch-radius));
         }
 
-        /* Right ear */
+        /* Coin droit */
         .main-nav-bar::after {
-            left: 100%; /* just outside the right edge */
-            box-shadow: -12px 12px 0 0 #0a0a10;
+            right: calc(var(--notch-radius) * -1);
+            mask-image: radial-gradient(circle at 100% 100%, transparent var(--notch-radius), black var(--notch-radius));
+            -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent var(--notch-radius), black var(--notch-radius));
         }
 
-    /* ── Nav-buttons-row: dissolve into flex items ── */
+    /* ── Nav-buttons-row ── */
     .nav-buttons-row {
         display: contents;
         padding: 0;
     }
 
-    /* Center button hidden on desktop */
     .nav-center-btn {
         display: none !important;
     }
@@ -331,9 +317,8 @@
         flex-direction: row;
         gap: 7px;
         padding: 6px 14px;
-        /* Slightly rounded bottom to echo the notch curve */
-        border-radius: 0 0 16px 16px;
-        height: 34px;
+        border-radius: 0 0 14px 14px;
+        height: 36px;
         opacity: 0.62;
         white-space: nowrap;
     }
@@ -347,7 +332,6 @@
         .nav-btn:active {
             transform: scale(0.96);
             opacity: 0.9;
-            background: rgba(255,255,255,0.06);
         }
 
     .nav-btn-icon {
@@ -361,7 +345,7 @@
         letter-spacing: 0;
     }
 
-    /* ── ORDER: Lists · Search · Profile ── */
+    /* ── ORDER ── */
     .nav-buttons-row .nav-btn:first-child {
         order: 1;
     }
@@ -374,7 +358,7 @@
         order: 3;
     }
 
-    /* Thin separators flanking the search input */
+    /* Séparateurs */
     .search-row::before,
     .search-row::after {
         content: '';
@@ -394,7 +378,7 @@
         margin-left: 5px;
     }
 
-    /* ── Search: always open inline ── */
+    /* ── Search ── */
     .search-row {
         display: flex;
         align-items: center;
