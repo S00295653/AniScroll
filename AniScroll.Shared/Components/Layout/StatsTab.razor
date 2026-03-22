@@ -612,22 +612,6 @@
             .OrderByDescending(e => e.EpisodesWatched * (e.Anime.Duration ?? 0))
             .FirstOrDefault();
 
-        // ── Scores computed on ALL entries (not filtered) ──
-        foreach (var e in all)
-        {
-            if (e.Score <= 0) continue;
-            s.ScoredCount++;
-            s.AvgScore += e.Score;
-            decimal scoreD = (decimal)Math.Round(e.Score, 1);
-            decimal rounded = Math.Round(scoreD * 2m, MidpointRounding.AwayFromZero) / 2m;
-            rounded = Math.Clamp(rounded, 0.5m, 10.0m);
-            string key = rounded.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
-            s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
-            int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
-            s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
-        }
-        if (s.ScoredCount > 0) s.AvgScore /= s.ScoredCount;
-
         // ── Everything else computed on filtered entries ──
         IEnumerable<UserListEntry> filteredQuery = all;
         if (_statFilter.Any() || _statFilterCustomIds.Any())
@@ -644,6 +628,22 @@
         }
         var filtered = filteredQuery.ToList();
         s.FilteredTotal = filtered.Count;
+
+        // ── Scores computed on filtered entries ──
+        foreach (var e in filtered)
+        {
+            if (e.Score <= 0) continue;
+            s.ScoredCount++;
+            s.AvgScore += e.Score;
+            decimal scoreD = (decimal)Math.Round(e.Score, 1);
+            decimal rounded = Math.Round(scoreD * 2m, MidpointRounding.AwayFromZero) / 2m;
+            rounded = Math.Clamp(rounded, 0.5m, 10.0m);
+            string key = rounded.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            s.ScoreDist2[key] = s.ScoreDist2.GetValueOrDefault(key) + 1;
+            int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
+            s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
+        }
+        if (s.ScoredCount > 0) s.AvgScore /= s.ScoredCount;
 
         foreach (var e in filtered)
         {
