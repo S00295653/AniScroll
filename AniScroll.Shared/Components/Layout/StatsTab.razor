@@ -204,7 +204,7 @@
             }
 
             <div class="st-completion-row">
-                <span class="st-completion-lbl">Completion rate</span>
+                <span class="st-completion-lbl">Completion</span>
                 <div class="st-completion-bar-wrap"><div class="st-completion-bar" style="width:@_s.CompletionRate.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                 <span class="st-completion-val">@_s.CompletionRate.ToString("F0")%</span>
             </div>
@@ -278,18 +278,7 @@
                     Genres
                     <span class="st-section-meta">@_s.UniqueGenres unique</span>
                 </div>
-                <div class="st-bar-list">
-                    @{ var maxG = _s.TopGenres.FirstOrDefault().Value; }
-                    @foreach (var kv in _s.TopGenres.Take(12))
-                    {
-                        var pct = maxG > 0 ? kv.Value * 100.0 / maxG : 0;
-                        <div class="st-bar-row">
-                            <span class="st-bar-name">@kv.Key</span>
-                            <div class="st-bar-track"><div class="st-bar-fill st-bar-genre" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
-                            <span class="st-bar-val">@kv.Value</span>
-                        </div>
-                    }
-                </div>
+                <div class="st-genre-radar-wrap">@((MarkupString)BuildGenreRadarSvg(_s.TopGenres))</div>
             </div>
         }
 
@@ -705,6 +694,84 @@
 
         _scrollYearToRight = s.ByYear.Any();
         _s = s;
+    }
+
+    // ── Genre radar chart ─────────────────────────────────────────────────
+    // Proper spider chart: concentric rings, axis lines, filled polygon + dots + labels.
+    private static string BuildGenreRadarSvg(Dictionary<string, int> genres)
+    {
+        var items = genres.Take(10).ToList();
+        int n = items.Count;
+        if (n < 3) return "";
+
+        double maxVal = items.Max(x => x.Value);
+        if (maxVal == 0) return "";
+
+        const double cx = 130, cy = 115, r = 85;
+        const int rings = 5;
+        const string accent = "#E94560";
+        const string accentFill = "rgba(233,69,96,0.15)";
+        const string gridColor = "rgba(255,255,255,0.08)";
+        const string axisColor = "rgba(255,255,255,0.1)";
+        const string labelColor = "rgba(255,255,255,0.55)";
+
+        string F(double v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Axis angle for each genre (top = -π/2)
+        double Angle(int i) => 2 * Math.PI * i / n - Math.PI / 2;
+        double Px(double frac, int i) => cx + r * frac * Math.Cos(Angle(i));
+        double Py(double frac, int i) => cy + r * frac * Math.Sin(Angle(i));
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<svg viewBox=\"0 0 260 230\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-genre-radar-svg\">");
+
+        // ── Concentric ring polygons ─────────────────────────────────────
+        for (int ring = 1; ring <= rings; ring++)
+        {
+            double frac = (double)ring / rings;
+            var pts = Enumerable.Range(0, n).Select(i => $"{F(Px(frac, i))},{F(Py(frac, i))}");
+            sb.Append($"<polygon points=\"{string.Join(" ", pts)}\" fill=\"none\" stroke=\"{gridColor}\" stroke-width=\"0.8\"/>");
+        }
+
+        // ── Axis lines center → tip ──────────────────────────────────────
+        for (int i = 0; i < n; i++)
+            sb.Append($"<line x1=\"{F(cx)}\" y1=\"{F(cy)}\" x2=\"{F(Px(1, i))}\" y2=\"{F(Py(1, i))}\" stroke=\"{axisColor}\" stroke-width=\"0.8\"/>");
+
+        // ── Data polygon ─────────────────────────────────────────────────
+        {
+            var dataPts = Enumerable.Range(0, n)
+                .Select(i => { double frac = items[i].Value / maxVal; return $"{F(Px(frac, i))},{F(Py(frac, i))}"; });
+            sb.Append($"<polygon points=\"{string.Join(" ", dataPts)}\" fill=\"{accentFill}\" stroke=\"{accent}\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/>");
+        }
+
+        // ── Dots on data points ──────────────────────────────────────────
+        for (int i = 0; i < n; i++)
+        {
+            double frac = items[i].Value / maxVal;
+            sb.Append($"<circle cx=\"{F(Px(frac, i))}\" cy=\"{F(Py(frac, i))}\" r=\"3\" fill=\"{accent}\" stroke=\"#14141f\" stroke-width=\"1.2\"/>");
+        }
+
+        // ── Labels ───────────────────────────────────────────────────────
+        for (int i = 0; i < n; i++)
+        {
+            double labelFrac = 1.18;
+            double lx = cx + r * labelFrac * Math.Cos(Angle(i));
+            double ly = cy + r * labelFrac * Math.Sin(Angle(i));
+
+            // Count label slightly further out
+            double countFrac = 1.32;
+            double clx = cx + r * countFrac * Math.Cos(Angle(i));
+            double cly = cy + r * countFrac * Math.Sin(Angle(i));
+
+            string anchor = lx < cx - 4 ? "end" : lx > cx + 4 ? "start" : "middle";
+            string lbl = items[i].Key.Length > 11 ? items[i].Key[..10] + "…" : items[i].Key;
+
+            sb.Append($"<text x=\"{F(lx)}\" y=\"{F(ly)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"8\" font-weight=\"600\" fill=\"{labelColor}\">{System.Net.WebUtility.HtmlEncode(lbl)}</text>");
+            sb.Append($"<text x=\"{F(clx)}\" y=\"{F(cly)}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" font-weight=\"700\" fill=\"rgba(233,69,96,0.75)\">{items[i].Value}</text>");
+        }
+
+        sb.Append("</svg>");
+        return sb.ToString();
     }
 
     // ── Pie / donut — parallel edges via background-colour stroke ────────

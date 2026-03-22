@@ -462,15 +462,20 @@
 }
 
 .st-completion-lbl {
+    /* dot(8) + gap(8) + name(80) = 96px, then the gap(8) is provided by the row gap */
+    width: 96px;
+    flex-shrink: 0;
     font-size: 11px;
     color: rgba(255,255,255,0.35);
     font-weight: 600;
-    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .st-completion-bar-wrap {
     flex: 1;
-    height: 5px;
+    height: 6px; /* same height as st-status-bar-wrap */
     background: rgba(255,255,255,0.07);
     border-radius: 3px;
     overflow: hidden;
@@ -487,7 +492,7 @@
     font-size: 12px;
     font-weight: 800;
     color: #93c5fd;
-    width: 34px;
+    width: 28px; /* same as st-status-count */
     text-align: right;
     flex-shrink: 0;
 }
@@ -928,4 +933,30 @@
     text-transform: uppercase;
     letter-spacing: .05em;
     text-align: center;
+}
+
+.st-genre-radar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.st-genre-radar-svg {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    overflow: visible;
+}
+
+.st-radar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.st-radar-svg {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    overflow: visible;
 }
