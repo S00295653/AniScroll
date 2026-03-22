@@ -561,8 +561,9 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp  = e.EpisodesWatched;
 
-            bool isMovie = string.Equals(e.Anime.Format, "Movie", StringComparison.OrdinalIgnoreCase);
-            bool isMusic = string.Equals(e.Anime.Format, "Music", StringComparison.OrdinalIgnoreCase);
+            bool isMovie   = string.Equals(e.Anime.Format, "Movie",    StringComparison.OrdinalIgnoreCase);
+            bool isMusic   = string.Equals(e.Anime.Format, "Music",    StringComparison.OrdinalIgnoreCase);
+            bool isTvShort = string.Equals(e.Anime.Format, "TV Short", StringComparison.OrdinalIgnoreCase);
 
             // AniList stores progress=0 for completed entries — fall back to totalEp.
             if (baseEp == 0 && totalEp > 0 &&
@@ -584,8 +585,8 @@
             bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
             int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
 
-            // Episode counter: skip Movie and Music
-            if (!isMovie && !isMusic)
+            // Episode counter: skip Movie, Music and TV Short
+            if (!isMovie && !isMusic && !isTvShort)
             {
                 int rwEp = 0;
                 if (effectiveRewatches > 0 && e.Status != ListStatus.Planning)
