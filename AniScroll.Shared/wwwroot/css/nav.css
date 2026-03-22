@@ -2,6 +2,11 @@
    NAVIGATION BAR
    ====================================================== */
 
+/* ── CSS custom property: nav height used by other files ── */
+:root {
+    --nav-top-height: 80px;
+}
+
 .nav-section {
     position: fixed;
     bottom: 0;
@@ -17,7 +22,10 @@
 
 @media (min-width: 768px) {
     .nav-section {
-        display: none;
+        /* Move to top */
+        bottom: auto;
+        top: 0;
+        border-radius: 0 0 22px 22px;
     }
 }
 
@@ -35,6 +43,14 @@
     pointer-events: all;
 }
 
+@media (min-width: 768px) {
+    .main-nav-bar {
+        border-radius: 0 0 22px 22px;
+        border-top: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+}
+
 .search-is-active .nav-section {
     border-radius: 0;
     transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
@@ -43,8 +59,14 @@
 .search-is-active .main-nav-bar {
     border-radius: 0;
     border-top-color: transparent;
-    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-                border-top-color 0.22s ease;
+    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-top-color 0.22s ease;
+}
+
+@media (min-width: 768px) {
+    .search-is-active .main-nav-bar {
+        border-bottom-color: transparent;
+        border-top-color: transparent;
+    }
 }
 
 
@@ -155,6 +177,13 @@
     padding: 10px 24px max(16px, env(safe-area-inset-bottom));
 }
 
+/* On desktop: symmetric vertical padding (no safe-area-inset-bottom) */
+@media (min-width: 768px) {
+    .nav-buttons-row {
+        padding: 12px 24px 12px;
+    }
+}
+
 /* ── Side buttons ── */
 .nav-btn {
     background: transparent;
@@ -178,6 +207,13 @@
     .nav-btn:active {
         opacity: 0.85;
     }
+
+@media (min-width: 768px) {
+    .nav-btn:hover {
+        opacity: 0.85;
+        background: rgba(255, 255, 255, 0.05);
+    }
+}
 
 .nav-btn-icon {
     width: 21px;

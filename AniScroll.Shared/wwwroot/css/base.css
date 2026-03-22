@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&display=swap');
 
 /* ========== BASE ========== */
 * {
@@ -44,4 +44,12 @@ html, body {
     top: 0;
     left: 0;
     overflow: hidden;
+}
+
+/* ── Desktop: offset below the top nav bar ── */
+@media (min-width: 768px) {
+    .main-scroll {
+        top: var(--nav-top-height, 80px);
+        height: calc(100dvh - var(--nav-top-height, 80px));
+    }
 }
