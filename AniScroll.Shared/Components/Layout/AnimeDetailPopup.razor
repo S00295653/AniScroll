@@ -21,6 +21,13 @@
                 </svg>
             </button>
 
+            @if (_shareToastVisible)
+            {
+                <div class="share-toast @(_shareToastFading ? "share-toast-out" : "")">
+                    @_shareToastMessage
+                </div>
+            }
+
             <div class="modal-scroll-container"
                  @ref="scrollContainerRef"
                  style="@(isEdgeSwipeTrackingActive || isEdgeSwiping ? "overflow:hidden;touch-action:none;" : "")"
@@ -40,7 +47,6 @@
 
                             <div class="modal-action-buttons">
                                 @{
-                                    // Only show status-type custom list in the header button
                                     var _btnCustomList = (isInList && !currentListStatus.HasValue && currentCustomListId != null)
                                         ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == currentCustomListId)
                                         : null;
@@ -891,10 +897,51 @@
     </div>
 }
 
+<style>
+    .share-toast {
+        position: absolute;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(30, 30, 50, 0.96);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.9);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 9px 18px;
+        border-radius: 20px;
+        white-space: nowrap;
+        z-index: 300;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        animation: share-toast-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+        pointer-events: none;
+    }
+
+    .share-toast-out {
+        animation: share-toast-out 0.28s ease forwards;
+    }
+
+    @@keyframes share-toast-in {
+        from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.92); }
+        to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+    }
+
+    @@keyframes share-toast-out {
+        from { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+        to   { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.94); }
+    }
+</style>
+
 @code {
     [Parameter] public AnimeCard? CurrentAnime { get; set; }
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
+
+    // ── Share toast ───────────────────────────────────────────────────────────
+    private bool _shareToastVisible = false;
+    private bool _shareToastFading = false;
+    private string _shareToastMessage = "";
+    private System.Threading.CancellationTokenSource? _shareToastCts;
 
     // Tracks the status-type custom list ID shown in the header button
     private string? currentCustomListId = null;
@@ -938,7 +985,7 @@
 
     // Edit form fields
     private ListStatus? editStatus = null;
-    private string? _editStatusTypeCustomId = null;  // ← selected status-type custom list (mutually exclusive)
+    private string? _editStatusTypeCustomId = null;
     private double editScore = 0;
     private int editEpisodes = 0;
     private int editRewatches = 0;
@@ -947,7 +994,7 @@
     private DateTime? editFinishDate = null;
     private bool editIsPrivate = false;
     private bool editHideFromLists = false;
-    private HashSet<string> _editCustomListIds = new();  // ← regular custom lists only (multi-select)
+    private HashSet<string> _editCustomListIds = new();
 
     // Element refs
     private ElementReference _listEditorOverlayRef;
@@ -999,6 +1046,8 @@
     {
         UserListService.OnChanged -= HandleListChanged;
         try { _ = JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); } catch { }
+        _shareToastCts?.Cancel();
+        _shareToastCts?.Dispose();
     }
 
     private void HandleListChanged()
@@ -1071,10 +1120,62 @@
         var entry = UserListService.GetEntry(CurrentAnime.Id);
         isInList = entry != null;
         currentListStatus = entry?.Status;
-        // Display the status-type custom list in the header button (first match)
         var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
         currentCustomListId = entry?.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
         isFavorited = UserListService.IsFavorited(CurrentAnime.Id);
+    }
+
+    // ── Share ─────────────────────────────────────────────────────────────────
+    private async Task OnShare()
+    {
+        if (CurrentAnime == null) return;
+
+        var url = $"https://anilist.co/anime/{CurrentAnime.Id}";
+        var title = CurrentAnime.Title;
+
+        string result;
+        try
+        {
+            result = await JS.InvokeAsync<string>("shareAnime", title, url);
+        }
+        catch
+        {
+            result = "error";
+        }
+
+        string message = result switch
+        {
+            "shared"    => "✓ Shared!",
+            "copied"    => "✓ Link copied",
+            "cancelled" => "",
+            _           => "Could not share"
+        };
+
+        if (!string.IsNullOrEmpty(message))
+            await ShowShareToast(message);
+    }
+
+    private async Task ShowShareToast(string message)
+    {
+        _shareToastCts?.Cancel();
+        _shareToastCts = new System.Threading.CancellationTokenSource();
+        var token = _shareToastCts.Token;
+
+        _shareToastMessage = message;
+        _shareToastFading = false;
+        _shareToastVisible = true;
+        StateHasChanged();
+
+        try
+        {
+            await Task.Delay(2000, token);
+            _shareToastFading = true;
+            StateHasChanged();
+            await Task.Delay(300, token);
+            _shareToastVisible = false;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException) { }
     }
 
     // ── Auto-save ─────────────────────────────────────────────────────────────
@@ -1109,7 +1210,6 @@
         existing.IsPrivate           = editIsPrivate;
         existing.HideFromStatusLists = editHideFromLists;
 
-        // Combine status-type selection + regular custom list selections
         var allCustomIds = new List<string>(_editCustomListIds);
         if (_editStatusTypeCustomId != null) allCustomIds.Add(_editStatusTypeCustomId);
         existing.CustomListIds = allCustomIds;
@@ -1157,7 +1257,6 @@
             editIsPrivate      = existing.IsPrivate;
             editHideFromLists  = existing.HideFromStatusLists;
 
-            // Split saved IDs into status-type vs regular
             var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
             _editStatusTypeCustomId = existing.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
             _editCustomListIds = new HashSet<string>(existing.CustomListIds.Where(id => !statusTypeIds.Contains(id)));
@@ -1213,7 +1312,6 @@
     }
 
     // ── Custom Lists ──────────────────────────────────────────────────────────
-    // Toggles a regular custom list on/off (does not affect status or status-type lists)
     private async Task ToggleCustomList(string customListId)
     {
         if (!_editCustomListIds.Remove(customListId))
@@ -1563,7 +1661,6 @@
     // ── Helpers ───────────────────────────────────────────────────────────────
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
-    private void OnShare() { }
     private void OnFavorite()
     {
         if (CurrentAnime == null) return;

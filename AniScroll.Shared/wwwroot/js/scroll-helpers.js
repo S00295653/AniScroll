@@ -827,3 +827,25 @@ window.unregisterEscapeKey = function () {
         }
     }, true);
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SHARE
+// ═══════════════════════════════════════════════════════════════════════
+
+window.shareAnime = async function (title, url) {
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: title, url: url });
+            return 'shared';
+        } catch (e) {
+            if (e.name === 'AbortError') return 'cancelled';
+        }
+    }
+    // Fallback: copy URL to clipboard
+    try {
+        await navigator.clipboard.writeText(url);
+        return 'copied';
+    } catch (e) {
+        return 'error';
+    }
+};
