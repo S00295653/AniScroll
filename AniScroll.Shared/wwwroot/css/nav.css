@@ -236,7 +236,7 @@
 
 
 /* ════════════════════════════════════════
-   DESKTOP — notch avec coins mask-image
+   DESKTOP — notch mask-image corners
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
@@ -274,14 +274,14 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
     }
 
-        /* ── Coins concaves via mask-image ── */
+        /* ── Coins concaves via mask-image — sans gap, sans pixelisation ── */
         .main-nav-bar::before,
         .main-nav-bar::after {
             content: '';
             position: absolute;
-            top: 0;
-            width: var(--notch-radius);
-            height: var(--notch-radius);
+            top: -1px; /* colle à la barre, pas de gap */
+            width: calc(var(--notch-radius) + 1px); /* +1px overlap anti-gap */
+            height: calc(var(--notch-radius) + 1px);
             background-color: #0d0d18;
             pointer-events: none;
             z-index: 2;
@@ -290,15 +290,16 @@
         /* Coin gauche */
         .main-nav-bar::before {
             left: calc(var(--notch-radius) * -1);
-            mask-image: radial-gradient(circle at 0% 100%, transparent var(--notch-radius), black var(--notch-radius));
-            -webkit-mask-image: radial-gradient(circle at 0% 100%, transparent var(--notch-radius), black var(--notch-radius));
+            mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) /* +1px adoucit l'antialiasing */
+            );
+            -webkit-mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
         }
 
         /* Coin droit */
         .main-nav-bar::after {
             right: calc(var(--notch-radius) * -1);
-            mask-image: radial-gradient(circle at 100% 100%, transparent var(--notch-radius), black var(--notch-radius));
-            -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent var(--notch-radius), black var(--notch-radius));
+            mask-image: radial-gradient( circle at 100% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
+            -webkit-mask-image: radial-gradient( circle at 100% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
         }
 
     /* ── Nav-buttons-row ── */
@@ -345,7 +346,7 @@
         letter-spacing: 0;
     }
 
-    /* ── ORDER ── */
+    /* ── ORDER: Lists · Search · Profile ── */
     .nav-buttons-row .nav-btn:first-child {
         order: 1;
     }
