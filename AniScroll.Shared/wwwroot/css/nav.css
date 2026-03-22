@@ -3,11 +3,11 @@
    ====================================================== */
 
 :root {
-    --nav-top-height: 68px; /* used by search panel top offset only */
+    --nav-top-height: 44px;
 }
 
 /* ════════════════════════════════════════
-   MOBILE  (bottom bar – inchangé)
+   MOBILE  (bottom bar)
 ════════════════════════════════════════ */
 .nav-section {
     position: fixed;
@@ -236,7 +236,9 @@
 
 /* ════════════════════════════════════════
    DESKTOP  — iPhone 12/13 notch shape
-   Flat top flush to screen, rounded bottom only
+   Fully opaque, flat top flush to screen,
+   rounded bottom, outer-corner curves on
+   each side that blend with the page bg.
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
@@ -244,20 +246,20 @@
     .nav-section {
         position: fixed;
         bottom: auto;
-        top: 0; /* flush to top edge of screen */
+        top: 0; /* flush to top of screen — no gap */
         left: 50%;
         right: auto;
         width: auto;
         min-width: 0;
         transform: translateX(-50%);
-        overflow: visible;
+        overflow: visible; /* must be visible so the ears show */
         background: transparent;
         border-radius: 0;
         pointer-events: none;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)) drop-shadow(0 10px 28px rgba(0,0,0,0.35));
+        z-index: 1000;
     }
 
-    /* ── Notch bar — flat top, rounded bottom ── */
+    /* ── Notch bar ── */
     .main-nav-bar {
         flex-direction: row;
         align-items: center;
@@ -265,26 +267,54 @@
         height: 44px;
         padding: 0 6px;
         gap: 0;
-        /* Notch shape: NO top radius, rounded bottom only */
-        border-radius: 0 0 22px 22px;
-        background: rgba(10, 10, 16, 0.90);
-        backdrop-filter: blur(24px) saturate(160%) brightness(0.92);
-        -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92);
+        position: relative;
+        /* Flat top, rounded bottom — true notch shape */
+        border-radius: 0 0 24px 24px;
+        /* Fully opaque — same color as the app background */
+        background: #0a0a10;
         border: none;
         border-top: none;
-        overflow: visible;
+        overflow: visible; /* must be visible so ::before/::after ears render */
         pointer-events: all;
-        /* Border on sides + bottom only, none on top */
-        box-shadow: inset 1px 0 0 rgba(255,255,255,0.09), inset -1px 0 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(255,255,255,0.11), 0 6px 28px rgba(0,0,0,0.45);
+        /* Shadow only below the notch */
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
     }
 
-        /* Remove pill outside-corner pseudo-elements */
+        /* ── Outer corner "ears" ────────────────────────────
+       Each pseudo-element is a square sitting just outside
+       the notch's bottom corner. Its border-radius makes it
+       a circle, and box-shadow fills the concave gap with
+       the same color as the app background (#0a0a10),
+       creating the illusion that the screen curves into
+       the notch — identical to real iPhone hardware.
+    ──────────────────────────────────────────────────── */
         .main-nav-bar::before,
         .main-nav-bar::after {
-            display: none;
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: transparent;
+            pointer-events: none;
+            /* Sit in the plane of the notch so they're always visible */
+            z-index: 1;
         }
 
-    /* ── Nav-buttons-row: dissolve container, layout children directly ── */
+        /* Left ear */
+        .main-nav-bar::before {
+            right: 100%; /* just outside the left edge */
+            box-shadow: 12px 12px 0 0 #0a0a10;
+        }
+
+        /* Right ear */
+        .main-nav-bar::after {
+            left: 100%; /* just outside the right edge */
+            box-shadow: -12px 12px 0 0 #0a0a10;
+        }
+
+    /* ── Nav-buttons-row: dissolve into flex items ── */
     .nav-buttons-row {
         display: contents;
         padding: 0;
@@ -301,7 +331,8 @@
         flex-direction: row;
         gap: 7px;
         padding: 6px 14px;
-        border-radius: 0 0 15px 15px; /* follow the notch bottom curve */
+        /* Slightly rounded bottom to echo the notch curve */
+        border-radius: 0 0 16px 16px;
         height: 34px;
         opacity: 0.62;
         white-space: nowrap;
@@ -309,14 +340,14 @@
 
         .nav-btn:hover {
             opacity: 1;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
             transform: none;
         }
 
         .nav-btn:active {
             transform: scale(0.96);
             opacity: 0.9;
-            background: rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.06);
         }
 
     .nav-btn-icon {
@@ -330,7 +361,7 @@
         letter-spacing: 0;
     }
 
-    /* ── ORDER: Lists (1) · Search (2) · Profile (3) ── */
+    /* ── ORDER: Lists · Search · Profile ── */
     .nav-buttons-row .nav-btn:first-child {
         order: 1;
     }
@@ -343,7 +374,7 @@
         order: 3;
     }
 
-    /* Thin dividers flanking the search input */
+    /* Thin separators flanking the search input */
     .search-row::before,
     .search-row::after {
         content: '';
@@ -384,15 +415,15 @@
         height: 30px;
         margin: 0;
         border-radius: 15px;
-        background: rgba(255,255,255,0.07);
-        border: 1px solid rgba(255,255,255,0.09);
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.11);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.35);
     }
 
         .main-nav-bar.search-open .search-morphing-pill,
         .search-morphing-pill:focus-within {
-            background: rgba(255,255,255,0.11);
-            border-color: rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.2);
         }
 
     .search-pill-content {
