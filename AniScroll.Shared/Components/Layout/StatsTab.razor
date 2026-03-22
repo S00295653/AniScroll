@@ -292,7 +292,7 @@
             </div>
         }
 
-        <!-- ══ FORMATS — bar chart (robust regardless of distribution) ══ -->
+        <!-- ══ FORMATS ══ -->
         @if (_s.ByFormat.Any())
         {
             <div class="st-section">
@@ -307,12 +307,9 @@
                     @foreach (var kv in _s.ByFormat.OrderByDescending(x => x.Value))
                     {
                         var pct = maxFmt > 0 ? kv.Value * 100.0 / maxFmt : 0;
-                        var lpct = _s.FilteredTotal > 0 ? kv.Value * 100.0 / _s.FilteredTotal : 0;
                         <div class="st-bar-row">
                             <span class="st-bar-name">@kv.Key</span>
-                            <div class="st-bar-track">
-                                <div class="st-bar-fill st-bar-format" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
-                            </div>
+                            <div class="st-bar-track"><div class="st-bar-fill st-bar-format" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
                             <span class="st-bar-val">@kv.Value</span>
                         </div>
                     }
@@ -484,7 +481,8 @@
             <div class="st-engage-grid">
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.WithNotes</span><span class="st-engage-lbl">with notes</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Rewatched</span><span class="st-engage-lbl">rewatched</span></div>
-                <div class="st-engage-cell"><span class="st-engage-val">@_s.CompletionRate.ToString("F0")%</span><span class="st-engage-lbl">completion</span></div>
+                <!-- movies watched replaces completion rate here -->
+                <div class="st-engage-cell"><span class="st-engage-val">@_s.MoviesWatched</span><span class="st-engage-lbl">films</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.DropRate.ToString("F0")%</span><span class="st-engage-lbl">drop rate</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Private</span><span class="st-engage-lbl">private</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Favorited</span><span class="st-engage-lbl">favourited</span></div>
@@ -565,13 +563,31 @@
             bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
             int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
 
+            // ── Detect single-episode anime (films / specials / shorts) ───────
+            // A "movie" here means the anime has exactly 1 episode total.
+            // We use the canonical total from the AniList data, not the user's
+            // watched count, so rewatches are correctly tracked separately.
+            bool isMovie = totalEp == 1;
+
             int rwEp = 0;
             if (effectiveRewatches > 0 && e.Status != ListStatus.Planning)
             {
                 if (totalEp > 0) rwEp = effectiveRewatches * totalEp;
                 else if (baseEp > 0) rwEp = effectiveRewatches * baseEp;
             }
-            s.TotalEpisodes += baseEp + rwEp;
+
+            // Add to total episodes only if NOT a single-episode entry.
+            // Single-episode anime contribute to MoviesWatched instead.
+            if (!isMovie)
+                s.TotalEpisodes += baseEp + rwEp;
+
+            // Count the movie itself (1 episode per initial watch + rewatches)
+            if (isMovie && e.Status != ListStatus.Planning)
+            {
+                // 1 for the original watch + any rewatches
+                int movieWatches = 1 + effectiveRewatches;
+                s.MoviesWatched += movieWatches;
+            }
 
             if (e.Status != ListStatus.Planning)
             {
@@ -676,74 +692,42 @@
     }
 
     // ── Pie / donut chart ─────────────────────────────────────────────────
-    // Parallel edges technique: NO angular gap — instead use stroke with the
-    // background colour to create a uniform 2-px separator at every radius.
+    // Parallel-edge technique: full sweeps, then radial stroke lines in bg colour.
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
     {
         if (!items.Any()) return "";
-
         var colors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
-
         double total = items.Sum(x => x.Value);
         if (total == 0) return "";
-
         const double cx = 100, cy = 100, outerR = 76, innerR = 48;
-
         string F(double v) => v.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
-
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
-
-        // Draw filled slices with NO gap (full sweep)
         double angle = -Math.PI / 2;
         for (int i = 0; i < items.Count; i++)
         {
             double sw = 2 * Math.PI * items[i].Value / total;
             double ea = angle + sw;
-
             double x1  = cx + outerR * Math.Cos(angle), y1  = cy + outerR * Math.Sin(angle);
             double x2  = cx + outerR * Math.Cos(ea),    y2  = cy + outerR * Math.Sin(ea);
             double xi1 = cx + innerR * Math.Cos(angle), yi1 = cy + innerR * Math.Sin(angle);
             double xi2 = cx + innerR * Math.Cos(ea),    yi2 = cy + innerR * Math.Sin(ea);
             int large  = sw > Math.PI ? 1 : 0;
-
-            string col = colors[i % colors.Length];
-            string pathD = $"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} " +
-                           $"A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} " +
-                           $"L {F(xi2)} {F(yi2)} " +
-                           $"A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z";
-
-            sb.Append($"<path d=\"{pathD}\" fill=\"{col}\"/>");
+            string pathD = $"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z";
+            sb.Append($"<path d=\"{pathD}\" fill=\"{colors[i % colors.Length]}\"/>");
             angle += sw;
         }
-
-        // Overlay stroke in background colour to create perfectly parallel separators.
-        // The stroke is drawn on top of all filled slices — lines are radial so edges
-        // appear at equal width across the whole ring depth.
+        // Radial separator lines in background colour — perfectly parallel edges
         angle = -Math.PI / 2;
         for (int i = 0; i < items.Count; i++)
         {
             double sw = 2 * Math.PI * items[i].Value / total;
-            // Draw a radial line at the START angle of each slice
-            double lx1 = cx + innerR * Math.Cos(angle);
-            double ly1 = cy + innerR * Math.Sin(angle);
-            double lx2 = cx + outerR * Math.Cos(angle);
-            double ly2 = cy + outerR * Math.Sin(angle);
-            sb.Append($"<line x1=\"{F(lx1)}\" y1=\"{F(ly1)}\" x2=\"{F(lx2)}\" y2=\"{F(ly2)}\" stroke=\"#14141f\" stroke-width=\"2.5\"/>");
+            sb.Append($"<line x1=\"{F(cx + innerR * Math.Cos(angle))}\" y1=\"{F(cy + innerR * Math.Sin(angle))}\" x2=\"{F(cx + outerR * Math.Cos(angle))}\" y2=\"{F(cy + outerR * Math.Sin(angle))}\" stroke=\"#14141f\" stroke-width=\"2.5\"/>");
             angle += sw;
         }
-
-        // Center hole
         sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR)}\" fill=\"#14141f\"/>");
-
-        // Center count
-        sb.Append("<text x=\"100\" y=\"94\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-                  "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"20\" font-weight=\"800\" " +
-                  "fill=\"rgba(255,255,255,0.92)\">" + (int)total + "</text>");
-        sb.Append("<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
-                  "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"8\" font-weight=\"600\" " +
-                  "fill=\"rgba(255,255,255,0.28)\" letter-spacing=\"0.8\">ANIME</text>");
-
+        sb.Append("<text x=\"100\" y=\"94\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"20\" font-weight=\"800\" fill=\"rgba(255,255,255,0.92)\">" + (int)total + "</text>");
+        sb.Append("<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"8\" font-weight=\"600\" fill=\"rgba(255,255,255,0.28)\" letter-spacing=\"0.8\">ANIME</text>");
         sb.Append("</svg>");
         return sb.ToString();
     }
@@ -784,12 +768,13 @@
     private class StatsSnapshot
     {
         public int    Total          { get; set; }
-        public int    TotalEpisodes  { get; set; }
+        public int    TotalEpisodes  { get; set; }  // excludes single-episode anime
         public long   TotalMinutes   { get; set; }
         public int    Favorited      { get; set; }
         public int    Rewatched      { get; set; }
         public int    Private        { get; set; }
         public int    WithNotes      { get; set; }
+        public int    MoviesWatched  { get; set; }  // single-episode anime (incl. rewatches)
         public double DaysPlanned    { get; set; }
         public double CompletionRate { get; set; }
         public double DropRate       { get; set; }
