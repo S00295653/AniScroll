@@ -32,13 +32,6 @@
                     <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
                     <span class="st-hero-sub-lbl">episodes</span>
                 </div>
-                @if (_s.TotalMovies > 0)
-                {
-                    <div class="st-hero-sub">
-                        <span class="st-hero-sub-num">@_s.TotalMovies</span>
-                        <span class="st-hero-sub-lbl">movies watched</span>
-                    </div>
-                }
 
                 <!-- ── Stats filter dropdown ── -->
                 <div class="st-filter-wrap" @onclick:stopPropagation="true">
@@ -490,7 +483,7 @@
             <div class="st-engage-grid">
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.WithNotes</span><span class="st-engage-lbl">with notes</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Rewatched</span><span class="st-engage-lbl">rewatched</span></div>
-                <div class="st-engage-cell"><span class="st-engage-val">@_s.CompletionRate.ToString("F0")%</span><span class="st-engage-lbl">completion</span></div>
+                <div class="st-engage-cell"><span class="st-engage-val">@_s.TotalMovies</span><span class="st-engage-lbl">movies</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.DropRate.ToString("F0")%</span><span class="st-engage-lbl">drop rate</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Private</span><span class="st-engage-lbl">private</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Favorited</span><span class="st-engage-lbl">favourited</span></div>
