@@ -235,19 +235,16 @@
 
 
 /* ════════════════════════════════════════
-   DESKTOP  — iPhone 12/13 notch pill
-   Layout: [Lists] [Search...] [Profile]
+   DESKTOP  — iPhone 12/13 notch shape
+   Flat top flush to screen, rounded bottom only
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
-    /* ─── Outer wrapper ──────────────────────────────────────────
-       iPhone notch "outside corner" illusion:
-       wrapper has a slightly larger radius + same frosted bg,
-       creating a thin concave rim around the pill edges.
-    ──────────────────────────────────────────────────────────── */
+    /* ── Outer wrapper ─────────────────────────────── */
     .nav-section {
+        position: fixed;
         bottom: auto;
-        top: 10px;
+        top: 0; /* flush to top edge of screen */
         left: 50%;
         right: auto;
         width: auto;
@@ -255,98 +252,59 @@
         transform: translateX(-50%);
         overflow: visible;
         background: transparent;
-        border-radius: 100px;
+        border-radius: 0;
         pointer-events: none;
-        /* Layered shadow gives the floating depth */
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)) drop-shadow(0 10px 30px rgba(0,0,0,0.45));
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)) drop-shadow(0 10px 28px rgba(0,0,0,0.35));
     }
 
-    /* ─── Pill ───────────────────────────────────────────────────
-       Matches iPhone 12/13 notch proportions:
-       - border-radius ≈ height/2 on short axis → ~22px for 44px tall
-       - semi-transparent dark + blur so cards bleed through
-       - inset border for crisp edge definition
-       - "outside corner" squircle: extra box-shadow ring
-    ──────────────────────────────────────────────────────────── */
+    /* ── Notch bar — flat top, rounded bottom ── */
     .main-nav-bar {
         flex-direction: row;
         align-items: center;
         width: auto;
         height: 44px;
-        padding: 0 5px;
+        padding: 0 6px;
         gap: 0;
-        /* iPhone notch exact radius: fully rounded short sides */
-        border-radius: 22px;
-        /* Frosted glass — cards show through */
-        background: rgba(10, 10, 16, 0.72);
-        backdrop-filter: blur(20px) saturate(160%) brightness(0.95);
-        -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(0.95);
+        /* Notch shape: NO top radius, rounded bottom only */
+        border-radius: 0 0 22px 22px;
+        background: rgba(10, 10, 16, 0.90);
+        backdrop-filter: blur(24px) saturate(160%) brightness(0.92);
+        -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92);
         border: none;
         border-top: none;
-        overflow: visible; /* needed for outer ring */
+        overflow: visible;
         pointer-events: all;
-        /* Ring layers that create the "outside corner" feel:
-           1px  → subtle white inner glow (edge definition)
-           then a 3px dark gap
-           then a 1px outer subtle border  */
-        box-shadow:
-        /* inner white rim */
-        inset 0 0 0 0.5px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.22),
-        /* outer "notch gap" ring – the signature iPhone trick */
-        0 0 0 3px rgba(0,0,0,0.0),
-        /* soft glow behind */
-        0 2px 12px rgba(0,0,0,0.3);
+        /* Border on sides + bottom only, none on top */
+        box-shadow: inset 1px 0 0 rgba(255,255,255,0.09), inset -1px 0 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(255,255,255,0.11), 0 6px 28px rgba(0,0,0,0.45);
     }
 
-        /* ─── "outside corner" concave effect ───────────────────────
-       Two absolutely-positioned pseudo-elements at each side of the
-       pill create the inward curve you see on real iPhone notch.
-    ──────────────────────────────────────────────────────────── */
+        /* Remove pill outside-corner pseudo-elements */
         .main-nav-bar::before,
         .main-nav-bar::after {
-            content: '';
-            position: absolute;
-            top: -10px;
-            width: 14px;
-            height: 14px;
-            /* invisible by default, filled by box-shadow radial trick */
-            background: transparent;
-            border-radius: 50%;
-            pointer-events: none;
+            display: none;
         }
 
-        .main-nav-bar::before {
-            left: -14px;
-            box-shadow: 7px 4px 0 4px rgba(10, 10, 16, 0.72);
-        }
-
-        .main-nav-bar::after {
-            right: -14px;
-            box-shadow: -7px 4px 0 4px rgba(10, 10, 16, 0.72);
-        }
-
-    /* ─── Nav-buttons-row: dissolve container, layout children directly ── */
+    /* ── Nav-buttons-row: dissolve container, layout children directly ── */
     .nav-buttons-row {
-        display: contents; /* children become direct flex items of main-nav-bar */
+        display: contents;
         padding: 0;
     }
 
-    /* Center button: hidden on desktop */
+    /* Center button hidden on desktop */
     .nav-center-btn {
         display: none !important;
     }
 
-    /* ─── Nav buttons: horizontal icon + label ── */
+    /* ── Nav buttons ── */
     .nav-btn {
         flex: 0 0 auto;
         flex-direction: row;
         gap: 7px;
-        padding: 6px 13px;
-        border-radius: 17px;
+        padding: 6px 14px;
+        border-radius: 0 0 15px 15px; /* follow the notch bottom curve */
         height: 34px;
         opacity: 0.62;
         white-space: nowrap;
-        /* order injected below */
     }
 
         .nav-btn:hover {
@@ -372,23 +330,20 @@
         letter-spacing: 0;
     }
 
-    /* ─── ORDER: Lists (1) · Search (2) · Profile (3) ── */
-    /* nav-buttons-row has display:contents so nav-btns are
-       virtual direct children of main-nav-bar */
+    /* ── ORDER: Lists (1) · Search (2) · Profile (3) ── */
     .nav-buttons-row .nav-btn:first-child {
         order: 1;
     }
-    /* Lists */
+
     .search-row {
         order: 2;
     }
-    /* Search (middle) */
+
     .nav-buttons-row .nav-btn:last-child {
         order: 3;
     }
-    /* Profile */
 
-    /* Thin dividers flanking the search pill */
+    /* Thin dividers flanking the search input */
     .search-row::before,
     .search-row::after {
         content: '';
@@ -408,7 +363,7 @@
         margin-left: 5px;
     }
 
-    /* ─── Search pill: always open inline ── */
+    /* ── Search: always open inline ── */
     .search-row {
         display: flex;
         align-items: center;
