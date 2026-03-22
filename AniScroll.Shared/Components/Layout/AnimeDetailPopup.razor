@@ -21,13 +21,6 @@
                 </svg>
             </button>
 
-            @if (_shareToastVisible)
-            {
-                <div class="share-toast @(_shareToastFading ? "share-toast-out" : "")">
-                    @_shareToastMessage
-                </div>
-            }
-
             <div class="modal-scroll-container"
                  @ref="scrollContainerRef"
                  style="@(isEdgeSwipeTrackingActive || isEdgeSwiping ? "overflow:hidden;touch-action:none;" : "")"
@@ -59,7 +52,6 @@
                                                         ? $"--status-color:{_btnCustomList.Color};"
                                                         : "")"
                                         @onclick="OpenListEditor">
-
                                     <div class="btn-add-to-list-inner">
                                         @if (isInList && currentListStatus.HasValue)
                                         {
@@ -84,17 +76,15 @@
                                             </svg>
                                             <span>Add to List</span>
                                         }
-                                        <svg class="btn-list-chevron"
-                                            width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                        <svg class="btn-list-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                             <polyline points="6 9 12 15 18 9"></polyline>
                                         </svg>
                                     </div>
                                 </button>
 
-
                                 <div class="modal-secondary-btns">
-                                    <button class="btn-share" @onclick="OnShare">
+                                    <button class="btn-share" @onclick="OpenSharePanel">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="18" cy="5" r="3"></circle>
@@ -157,10 +147,7 @@
 
                             @{
                                 var topRankings = CurrentAnime.Rankings?
-                                .Where(r => r.AllTime)
-                                .OrderBy(r => r.Rank)
-                                .Take(2)
-                                .ToList();
+                                .Where(r => r.AllTime).OrderBy(r => r.Rank).Take(2).ToList();
                             }
                             @if (topRankings?.Any() == true)
                             {
@@ -176,40 +163,22 @@
 
                             <div class="modal-info-grid">
                                 <div class="info-col">
-                                    <div class="info-field">
-                                        <span class="info-lbl">Rating</span>
-                                        <span class="info-val">@CurrentAnime.Score</span>
-                                    </div>
+                                    <div class="info-field"><span class="info-lbl">Rating</span><span class="info-val">@CurrentAnime.Score</span></div>
                                     @if (CurrentAnime.Favourites.HasValue)
                                     {
-                                        <div class="info-field">
-                                            <span class="info-lbl">Favorites</span>
-                                            <span class="info-val">@CurrentAnime.Favourites.Value.ToString("N0")</span>
-                                        </div>
+                                        <div class="info-field"><span class="info-lbl">Favorites</span><span class="info-val">@CurrentAnime.Favourites.Value.ToString("N0")</span></div>
                                     }
-                                    <div class="info-field">
-                                        <span class="info-lbl">Status</span>
-                                        <span class="info-val">@GetStatusText(CurrentAnime.Status)</span>
-                                    </div>
+                                    <div class="info-field"><span class="info-lbl">Status</span><span class="info-val">@GetStatusText(CurrentAnime.Status)</span></div>
                                 </div>
                                 <div class="info-col">
-                                    <div class="info-field">
-                                        <span class="info-lbl">Episodes</span>
-                                        <span class="info-val">@CurrentAnime.Episodes</span>
-                                    </div>
+                                    <div class="info-field"><span class="info-lbl">Episodes</span><span class="info-val">@CurrentAnime.Episodes</span></div>
                                     @if (CurrentAnime.Duration.HasValue)
                                     {
-                                        <div class="info-field">
-                                            <span class="info-lbl">Duration</span>
-                                            <span class="info-val">@CurrentAnime.Duration min</span>
-                                        </div>
+                                        <div class="info-field"><span class="info-lbl">Duration</span><span class="info-val">@CurrentAnime.Duration min</span></div>
                                     }
                                     @if (!string.IsNullOrEmpty(CurrentAnime.Source))
                                     {
-                                        <div class="info-field">
-                                            <span class="info-lbl">Source</span>
-                                            <span class="info-val">@CurrentAnime.Source</span>
-                                        </div>
+                                        <div class="info-field"><span class="info-lbl">Source</span><span class="info-val">@CurrentAnime.Source</span></div>
                                     }
                                 </div>
                             </div>
@@ -230,15 +199,14 @@
                     @{
                         var relationOrder = new Dictionary<string, int>
                         {
-                            {"Source", 1}, {"Adaptation", 2}, {"Prequel", 3}, {"Parent", 4},
-                            {"Sequel", 5}, {"Side Story", 6}, {"Spin-off", 7},
-                            {"Alternative", 8}, {"Character", 9}, {"Summary", 10},
-                            {"Compilation", 11}, {"Contains", 12}, {"Other", 99}
+                            {"Source",1},{"Adaptation",2},{"Prequel",3},{"Parent",4},
+                            {"Sequel",5},{"Side Story",6},{"Spin-off",7},
+                            {"Alternative",8},{"Character",9},{"Summary",10},
+                            {"Compilation",11},{"Contains",12},{"Other",99}
                         };
                         var sortedRelations = CurrentAnime.Relations?
                             .OrderBy(r => relationOrder.TryGetValue(r.RelationType, out var o) ? o : 99)
-                            .ThenBy(r => r.Title)
-                            .ToList();
+                            .ThenBy(r => r.Title).ToList();
                     }
                     @if (sortedRelations?.Any() == true && CurrentAnime.Relations != null)
                     {
@@ -251,10 +219,7 @@
                                         <div class="relation-cover" style="background-image: url('@rel.ImageUrl');"></div>
                                         <div class="relation-info">
                                             <div class="relation-type">@rel.RelationType</div>
-                                            @if (!string.IsNullOrEmpty(rel.Format))
-                                            {
-                                                <div class="relation-format">@rel.Format</div>
-                                            }
+                                            @if (!string.IsNullOrEmpty(rel.Format)) { <div class="relation-format">@rel.Format</div> }
                                             <div class="relation-title">@rel.Title</div>
                                         </div>
                                     </div>
@@ -268,10 +233,7 @@
                         <div class="modal-section">
                             <h3 class="section-title">Genres</h3>
                             <div class="genres-container">
-                                @foreach (var genre in CurrentAnime.Genres)
-                                {
-                                    <span class="genre-pill">@genre</span>
-                                }
+                                @foreach (var genre in CurrentAnime.Genres) { <span class="genre-pill">@genre</span> }
                             </div>
                         </div>
                     }
@@ -281,17 +243,12 @@
                         <div class="modal-section">
                             <h3 class="section-title">Studios</h3>
                             <div class="studios-container">
-                                @foreach (var studio in CurrentAnime.Studios)
-                                {
-                                    <span class="studio-badge">@studio.Name</span>
-                                }
+                                @foreach (var studio in CurrentAnime.Studios) { <span class="studio-badge">@studio.Name</span> }
                             </div>
                         </div>
                     }
 
-                    @{
-                        var videoId = GetYouTubeVideoId(CurrentAnime.TrailerUrl ?? "");
-                    }
+                    @{ var videoId = GetYouTubeVideoId(CurrentAnime.TrailerUrl ?? ""); }
                     @if (!string.IsNullOrEmpty(videoId))
                     {
                         <div class="modal-section">
@@ -299,8 +256,7 @@
                             <div class="trailer-container">
                                 <div class="youtube-embed-wrapper">
                                     <iframe src="https://www.youtube-nocookie.com/embed/@videoId?rel=0&autoplay=0&modestbranding=1"
-                                            frameborder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             allowfullscreen></iframe>
                                 </div>
                             </div>
@@ -309,110 +265,49 @@
 
                     @{
                         var seasonRankings = CurrentAnime.Rankings?.Where(r => !r.AllTime).Take(2).ToList();
-                        bool showNativeTitle = !string.IsNullOrWhiteSpace(CurrentAnime.NativeTitle)
-                                              && !ContainsNonLatinScript(CurrentAnime.NativeTitle);
-                        bool hasDetails = showNativeTitle
-                            || !string.IsNullOrEmpty(CurrentAnime.Format)
-                            || !string.IsNullOrEmpty(CurrentAnime.StartDate)
-                            || !string.IsNullOrEmpty(CurrentAnime.EndDate)
-                            || CurrentAnime.Popularity.HasValue
-                            || (seasonRankings?.Any() == true);
+                        bool showNativeTitle = !string.IsNullOrWhiteSpace(CurrentAnime.NativeTitle) && !ContainsNonLatinScript(CurrentAnime.NativeTitle);
+                        bool hasDetails = showNativeTitle || !string.IsNullOrEmpty(CurrentAnime.Format) || !string.IsNullOrEmpty(CurrentAnime.StartDate) || !string.IsNullOrEmpty(CurrentAnime.EndDate) || CurrentAnime.Popularity.HasValue || (seasonRankings?.Any() == true);
                     }
                     @if (hasDetails)
                     {
                         <div class="modal-section">
                             <h3 class="section-title">Details</h3>
                             <div class="details-grid">
-                                @if (showNativeTitle)
-                                {
-                                    <div class="detail-row">
-                                        <span class="detail-lbl">Native Title</span>
-                                        <span class="detail-val detail-val-native">@CurrentAnime.NativeTitle</span>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(CurrentAnime.Format))
-                                {
-                                    <div class="detail-row">
-                                        <span class="detail-lbl">Format</span>
-                                        <span class="detail-val">@CurrentAnime.Format</span>
-                                    </div>
-                                }
-                                @if (CurrentAnime.Popularity.HasValue)
-                                {
-                                    <div class="detail-row">
-                                        <span class="detail-lbl">Popularity</span>
-                                        <span class="detail-val">@CurrentAnime.Popularity.Value.ToString("N0") users</span>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(CurrentAnime.StartDate))
-                                {
-                                    <div class="detail-row">
-                                        <span class="detail-lbl">Start Date</span>
-                                        <span class="detail-val">@CurrentAnime.StartDate</span>
-                                    </div>
-                                }
-                                @if (!string.IsNullOrEmpty(CurrentAnime.EndDate))
-                                {
-                                    <div class="detail-row">
-                                        <span class="detail-lbl">End Date</span>
-                                        <span class="detail-val">@CurrentAnime.EndDate</span>
-                                    </div>
-                                }
+                                @if (showNativeTitle) { <div class="detail-row"><span class="detail-lbl">Native Title</span><span class="detail-val detail-val-native">@CurrentAnime.NativeTitle</span></div> }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.Format)) { <div class="detail-row"><span class="detail-lbl">Format</span><span class="detail-val">@CurrentAnime.Format</span></div> }
+                                @if (CurrentAnime.Popularity.HasValue) { <div class="detail-row"><span class="detail-lbl">Popularity</span><span class="detail-val">@CurrentAnime.Popularity.Value.ToString("N0") users</span></div> }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.StartDate)) { <div class="detail-row"><span class="detail-lbl">Start Date</span><span class="detail-val">@CurrentAnime.StartDate</span></div> }
+                                @if (!string.IsNullOrEmpty(CurrentAnime.EndDate)) { <div class="detail-row"><span class="detail-lbl">End Date</span><span class="detail-val">@CurrentAnime.EndDate</span></div> }
                                 @if (seasonRankings?.Any() == true)
                                 {
                                     @foreach (var sr in seasonRankings)
-                                    {
-                                        <div class="detail-row">
-                                            <span class="detail-lbl">@(sr.Type == "RATED" ? "Seasonal Rating" : "Seasonal Popularity")</span>
-                                            <span class="detail-val">#@sr.Rank · @sr.Season @sr.Year</span>
-                                        </div>
-                                    }
+                                    { <div class="detail-row"><span class="detail-lbl">@(sr.Type == "RATED" ? "Seasonal Rating" : "Seasonal Popularity")</span><span class="detail-val">#@sr.Rank · @sr.Season @sr.Year</span></div> }
                                 }
                             </div>
                         </div>
                     }
 
                     @{
-                        var visibleTags = CurrentAnime.Tags?
-                            .Where(t => !t.IsMediaSpoiler)
-                            .OrderByDescending(t => t.Rank)
-                            .Take(20)
-                            .ToList();
-                        var spoilerTags = CurrentAnime.Tags?
-                            .Where(t => t.IsMediaSpoiler)
-                            .OrderByDescending(t => t.Rank)
-                            .ToList();
+                        var visibleTags = CurrentAnime.Tags?.Where(t => !t.IsMediaSpoiler).OrderByDescending(t => t.Rank).Take(20).ToList();
+                        var spoilerTags = CurrentAnime.Tags?.Where(t => t.IsMediaSpoiler).OrderByDescending(t => t.Rank).ToList();
                         int spoilerCount = spoilerTags?.Count ?? 0;
-
-                        var allTagsSorted = (visibleTags ?? new())
-                            .Select(t => (tag: t, isSpoiler: false))
+                        var allTagsSorted = (visibleTags ?? new()).Select(t => (tag: t, isSpoiler: false))
                             .Concat((spoilerTags ?? new()).Select(t => (tag: t, isSpoiler: true)))
-                            .OrderByDescending(x => x.tag.Rank)
-                            .ToList();
+                            .OrderByDescending(x => x.tag.Rank).ToList();
                     }
                     @if ((visibleTags?.Any() == true) || spoilerCount > 0)
                     {
                         <div class="modal-section">
                             <h3 class="section-title">Tags</h3>
-
                             @if (!showSpoilers)
                             {
                                 <div class="tags-wrap">
-                                    @foreach (var tag in visibleTags ?? new())
-                                    {
-                                        <span class="tag-pill">
-                                            @tag.Name<span class="tag-pct">@tag.Rank%</span>
-                                        </span>
-                                    }
+                                    @foreach (var tag in visibleTags ?? new()) { <span class="tag-pill">@tag.Name<span class="tag-pct">@tag.Rank%</span></span> }
                                 </div>
-
                                 @if (spoilerCount > 0)
                                 {
                                     <div style="display:flex;justify-content:center;margin-top:10px;">
-                                        <button class="tag-spoiler-btn"
-                                                @onclick="() => showSpoilers = true">
-                                            @spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") hidden — tap to reveal
-                                        </button>
+                                        <button class="tag-spoiler-btn" @onclick="() => showSpoilers = true">@spoilerCount spoiler@(spoilerCount > 1 ? "s" : "") hidden — tap to reveal</button>
                                     </div>
                                 }
                             }
@@ -421,26 +316,12 @@
                                 <div class="tags-wrap">
                                     @foreach (var entry in allTagsSorted)
                                     {
-                                        @if (!entry.isSpoiler)
-                                        {
-                                            <span class="tag-pill">
-                                                @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="tag-pill tag-pill-spoiler-revealed">
-                                                @entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span>
-                                            </span>
-                                        }
+                                        @if (!entry.isSpoiler) { <span class="tag-pill">@entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span></span> }
+                                        else { <span class="tag-pill tag-pill-spoiler-revealed">@entry.tag.Name<span class="tag-pct">@entry.tag.Rank%</span></span> }
                                     }
                                 </div>
-
                                 <div style="display:flex;justify-content:center;margin-top:10px;">
-                                    <button class="tag-spoiler-btn"
-                                            @onclick="() => showSpoilers = false">
-                                        Hide spoilers
-                                    </button>
+                                    <button class="tag-spoiler-btn" @onclick="() => showSpoilers = false">Hide spoilers</button>
                                 </div>
                             }
                         </div>
@@ -452,29 +333,21 @@
                     }
                     <div class="modal-section">
                         <h3 class="section-title">Watch &amp; More</h3>
-
                         @if (streamingLinks?.Any() == true)
                         {
                             <p class="links-sublabel">Where to watch</p>
                             <div class="platform-list">
                                 @foreach (var link in streamingLinks)
                                 {
-                                    var pc = (!string.IsNullOrEmpty(link.Color) && link.Color != "#000000" && link.Color.StartsWith("#"))
-                                        ? link.Color : "#7c7c99";
+                                    var pc = (!string.IsNullOrEmpty(link.Color) && link.Color != "#000000" && link.Color.StartsWith("#")) ? link.Color : "#7c7c99";
                                     <a href="@link.Url" target="_blank" class="platform-row" style="--pc: @pc;">
-                                        <span class="platform-icon-box">
-                                            @GetPlatformIconMarkup(link.Icon, link.Color, link.Site)
-                                        </span>
+                                        <span class="platform-icon-box">@GetPlatformIconMarkup(link.Icon, link.Color, link.Site)</span>
                                         <span class="platform-name-label">@link.Site</span>
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                             stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round">
-                                            <path d="m9 18 6-6-6-6"></path>
-                                        </svg>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg>
                                     </a>
                                 }
                             </div>
                         }
-
                         <div class="info-chip-row">
                             <a href="https://anilist.co/anime/@CurrentAnime.Id" target="_blank" class="info-chip">
                                 <span class="chip-dot" style="background:#02a9ff;"></span>AniList
@@ -483,11 +356,8 @@
                             {
                                 @foreach (var ol in otherLinks)
                                 {
-                                    var c = (!string.IsNullOrEmpty(ol.Color) && ol.Color != "#000000" && ol.Color.StartsWith("#"))
-                                        ? ol.Color : "#7c7c99";
-                                    <a href="@ol.Url" target="_blank" class="info-chip">
-                                        <span class="chip-dot" style="background:@c;"></span>@ol.Site
-                                    </a>
+                                    var c = (!string.IsNullOrEmpty(ol.Color) && ol.Color != "#000000" && ol.Color.StartsWith("#")) ? ol.Color : "#7c7c99";
+                                    <a href="@ol.Url" target="_blank" class="info-chip"><span class="chip-dot" style="background:@c;"></span>@ol.Site</a>
                                 }
                             }
                         </div>
@@ -495,6 +365,95 @@
 
                 </div>
             </div>
+        </div>
+    </div>
+}
+
+<!-- ══════════════════════════════════════════════════════════════
+     SHARE PANEL  (YouTube-style)
+     ══════════════════════════════════════════════════════════════ -->
+@if (_shareOpen && CurrentAnime != null)
+{
+    @{
+        var _shareUrl      = $"https://anilist.co/anime/{CurrentAnime.Id}";
+        var _shareEnc      = Uri.EscapeDataString(_shareUrl);
+        var _shareTitleEnc = Uri.EscapeDataString(CurrentAnime.Title);
+    }
+
+    <div class="sp-overlay" @onclick="CloseSharePanel">
+        <div class="sp-panel" @onclick:stopPropagation="true">
+
+            <div class="sp-header">
+                <span class="sp-title">Share</span>
+                <button class="sp-close" @onclick="CloseSharePanel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Social icons -->
+            <div class="sp-socials">
+
+                <a class="sp-social-item" href="https://wa.me/?text=@(_shareTitleEnc)%20@(_shareEnc)" target="_blank" rel="noopener" @onclick="CloseSharePanel">
+                    <div class="sp-social-icon" style="background:#25D366;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </div>
+                    <span class="sp-social-label">WhatsApp</span>
+                </a>
+
+                <a class="sp-social-item" href="https://www.facebook.com/sharer/sharer.php?u=@(_shareEnc)" target="_blank" rel="noopener" @onclick="CloseSharePanel">
+                    <div class="sp-social-icon" style="background:#1877F2;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </div>
+                    <span class="sp-social-label">Facebook</span>
+                </a>
+
+                <a class="sp-social-item" href="https://twitter.com/intent/tweet?text=@(_shareTitleEnc)&url=@(_shareEnc)" target="_blank" rel="noopener" @onclick="CloseSharePanel">
+                    <div class="sp-social-icon" style="background:#000000;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </div>
+                    <span class="sp-social-label">X</span>
+                </a>
+
+                <a class="sp-social-item" href="https://www.reddit.com/submit?url=@(_shareEnc)&title=@(_shareTitleEnc)" target="_blank" rel="noopener" @onclick="CloseSharePanel">
+                    <div class="sp-social-icon" style="background:#FF4500;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                    </div>
+                    <span class="sp-social-label">Reddit</span>
+                </a>
+
+                <a class="sp-social-item" href="mailto:?subject=@(_shareTitleEnc)&body=@(_shareEnc)" @onclick="CloseSharePanel">
+                    <div class="sp-social-icon" style="background:#6b7280;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <span class="sp-social-label">E-mail</span>
+                </a>
+
+            </div>
+
+            <!-- URL + Copy -->
+            <div class="sp-url-row">
+                <div class="sp-url-box">
+                    <span class="sp-url-text">@_shareUrl</span>
+                </div>
+                <button class="sp-copy-btn @(_shareCopied ? "sp-copy-btn-done" : "")" @onclick="CopyShareLink">
+                    @if (_shareCopied)
+                    {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Copied!</span>
+                    }
+                    else
+                    {
+                        <span>Copy</span>
+                    }
+                </button>
+            </div>
+
         </div>
     </div>
 }
@@ -520,23 +479,13 @@
              @onpointerdown:stopPropagation="true"
              @onclick:stopPropagation="true">
 
-            <!-- Header: banner + poster + title + fav + save -->
             <div class="list-editor-header">
-                <div class="list-editor-banner"
-                     style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl)
-                                ? $"background-image:url('{CurrentAnime.ImageUrl}');"
-                                : $"background-image:url('{CurrentAnime.BannerUrl}');")">
-                </div>
+                <div class="list-editor-banner" style="@(string.IsNullOrEmpty(CurrentAnime.BannerUrl) ? $"background-image:url('{CurrentAnime.ImageUrl}');" : $"background-image:url('{CurrentAnime.BannerUrl}');")"></div>
                 <div class="list-editor-header-content">
-                    <div class="list-editor-poster"
-                         style="background-image: url('@CurrentAnime.ImageUrl');
-                                @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")">
-                    </div>
+                    <div class="list-editor-poster" style="background-image: url('@CurrentAnime.ImageUrl');@(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")"></div>
                     <span class="list-editor-title">@CurrentAnime.Title</span>
                     <button class="list-editor-fav-btn @(isFavorited ? "is-fav" : "")" @onclick="OnFavorite" @onclick:stopPropagation="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24"
-                             fill="@(isFavorited ? "currentColor" : "none")"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="@(isFavorited ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
@@ -544,88 +493,42 @@
                 </div>
             </div>
 
-            <!-- Body -->
             <div class="list-editor-body">
-
-                <!-- ── Status Dropdown (status-type lists only) ── -->
                 <div class="le-dd-field" @onclick:stopPropagation="true">
                     <span class="list-editor-label">STATUS</span>
-
                     @{
-                        string _triggerBorderColor = editStatus.HasValue
-                            ? GetStatusHexColor(editStatus.Value)
-                            : _editStatusTypeCustomId != null
-                                ? (UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)?.Color ?? "rgba(255,255,255,0.1)")
-                                : "rgba(255,255,255,0.1)";
+                        string _triggerBorderColor = editStatus.HasValue ? GetStatusHexColor(editStatus.Value)
+                            : _editStatusTypeCustomId != null ? (UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)?.Color ?? "rgba(255,255,255,0.1)")
+                            : "rgba(255,255,255,0.1)";
                     }
                     <button class="le-dd-trigger @(editStatus.HasValue ? "le-dd-trigger-" + editStatus.Value.ToString().ToLower() : "")"
                             style="border-color: @_triggerBorderColor; @(_editStatusTypeCustomId != null && !editStatus.HasValue ? $"color:{_triggerBorderColor};" : "")"
                             @onclick="() => { _statusDropdownOpen = !_statusDropdownOpen; StateHasChanged(); }">
                         @{
                             var _triggerCl = !editStatus.HasValue && _editStatusTypeCustomId != null
-                                ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId)
-                                : null;
+                                ? UserListService.GetStatusTypeLists().FirstOrDefault(c => c.Id == _editStatusTypeCustomId) : null;
                         }
-                        @if (editStatus.HasValue)
-                        {
-                            @GlowDot(GetStatusHexColor(editStatus.Value))
-                            <span class="le-dd-trigger-text">@GetStatusLabel(editStatus.Value)</span>
-                        }
-                        else if (_triggerCl != null)
-                        {
-                            @GlowDot(_triggerCl.Color)
-                            <span class="le-dd-trigger-text">@_triggerCl.Name</span>
-                        }
-                        else
-                        {
-                            <span class="le-dd-dot le-dd-dot-none"></span>
-                            <span class="le-dd-trigger-text">Not in list</span>
-                        }
-                        <svg class="le-dd-chevron @(_statusDropdownOpen ? "open" : "")" width="14" height="14"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
+                        @if (editStatus.HasValue) { @GlowDot(GetStatusHexColor(editStatus.Value)) <span class="le-dd-trigger-text">@GetStatusLabel(editStatus.Value)</span> }
+                        else if (_triggerCl != null) { @GlowDot(_triggerCl.Color) <span class="le-dd-trigger-text">@_triggerCl.Name</span> }
+                        else { <span class="le-dd-dot le-dd-dot-none"></span><span class="le-dd-trigger-text">Not in list</span> }
+                        <svg class="le-dd-chevron @(_statusDropdownOpen ? "open" : "")" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
 
                     @if (_statusDropdownOpen)
                     {
                         <div class="le-dd-list" style="max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;" @onwheel:stopPropagation="true">
-
-                            <!-- Standard statuses -->
                             @foreach (var s in GetAvailableStatuses())
                             {
                                 bool isSel = editStatus == s;
                                 <button class="le-dd-option @(isSel ? "selected le-opt-" + s.ToString().ToLower() : "")"
-                                        @onclick="async () => {
-                                            var prev = editStatus;
-                                            editStatus = s;
-                                            _editStatusTypeCustomId = null;
-                                            if (s == ListStatus.Completed) {
-                                                int tot = GetTotalEpisodes();
-                                                if (tot > 0) editEpisodes = tot;
-                                            }
-                                            ApplyAutoDate(prev, editStatus);
-                                            _statusDropdownOpen = false;
-                                            await AutoSave();
-                                            StateHasChanged();
-                                        }"
+                                        @onclick="async () => { var prev = editStatus; editStatus = s; _editStatusTypeCustomId = null; if (s == ListStatus.Completed) { int tot = GetTotalEpisodes(); if (tot > 0) editEpisodes = tot; } ApplyAutoDate(prev, editStatus); _statusDropdownOpen = false; await AutoSave(); StateHasChanged(); }"
                                         @onclick:stopPropagation="true">
                                     @GlowDot(GetStatusHexColor(s))
                                     <span class="le-dd-option-text">@GetStatusLabel(s)</span>
-                                    @if (isSel)
-                                    {
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    }
+                                    @if (isSel) { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                 </button>
                             }
-
-                            <!-- Status-type custom lists (mutually exclusive with standard statuses) -->
-                            @{
-                                var statusTypeLists = UserListService.GetStatusTypeLists().ToList();
-                            }
+                            @{ var statusTypeLists = UserListService.GetStatusTypeLists().ToList(); }
                             @if (statusTypeLists.Any())
                             {
                                 @foreach (var cl in statusTypeLists)
@@ -633,42 +536,19 @@
                                     bool isInCl = _editStatusTypeCustomId == cl.Id;
                                     <button class="le-dd-option @(isInCl ? "selected" : "")"
                                         style="@(isInCl ? $"background:color-mix(in srgb,{cl.Color} 8%,transparent);color:{cl.Color};" : "")"
-                                        @onclick="async () => {
-                                            if (_editStatusTypeCustomId == cl.Id)
-                                            {
-                                                _editStatusTypeCustomId = null;
-                                            }
-                                            else
-                                            {
-                                                editStatus = null;
-                                                _editStatusTypeCustomId = cl.Id;
-                                            }
-                                            await AutoSave();
-                                            _statusDropdownOpen = false;
-                                            StateHasChanged();
-                                        }"
+                                        @onclick="async () => { if (_editStatusTypeCustomId == cl.Id) _editStatusTypeCustomId = null; else { editStatus = null; _editStatusTypeCustomId = cl.Id; } await AutoSave(); _statusDropdownOpen = false; StateHasChanged(); }"
                                         @onclick:stopPropagation="true">
                                         @GlowDot(cl.Color)
                                         <span class="le-dd-option-text">@cl.Name</span>
-                                        @if (isInCl)
-                                        {
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                                                 stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                        }
+                                        @if (isInCl) { <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                     </button>
                                 }
                             }
-
                         </div>
                     }
                 </div>
 
-                <!-- ── Custom Lists (multi-select pills) ── -->
-                @{
-                    var _regularLists = UserListService.GetRegularCustomLists();
-                }
+                @{ var _regularLists = UserListService.GetRegularCustomLists(); }
                 @if (_regularLists.Any())
                 {
                     <div class="le-custom-lists-section" @onclick:stopPropagation="true">
@@ -678,192 +558,110 @@
                             {
                                 bool isActive = _editCustomListIds.Contains(cl.Id);
                                 <button class="le-custom-pill @(isActive ? "le-custom-pill-on" : "")"
-                                        style="@(isActive
-                                            ? $"border-color:{cl.Color};color:{cl.Color};background:color-mix(in srgb,{cl.Color} 13%,transparent);"
-                                            : $"border-color:{cl.Color}33;")"
-                                        @onclick="async () => await ToggleCustomList(cl.Id)"
-                                        @onclick:stopPropagation="true">
-                                    @GlowDot(cl.Color)
-                                    <span>@cl.Name</span>
-                                    @if (isActive)
-                                    {
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    }
+                                        style="@(isActive ? $"border-color:{cl.Color};color:{cl.Color};background:color-mix(in srgb,{cl.Color} 13%,transparent);" : $"border-color:{cl.Color}33;")"
+                                        @onclick="async () => await ToggleCustomList(cl.Id)" @onclick:stopPropagation="true">
+                                    @GlowDot(cl.Color) <span>@cl.Name</span>
+                                    @if (isActive) { <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg> }
                                 </button>
                             }
                         </div>
                     </div>
                 }
 
-                <!-- Score & Episode Progress -->
                 <div class="list-editor-grid list-editor-grid-2">
-
-                    <!-- Score: − | editable input | + with draggable bar -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Score</span>
                         <div class="le-score-controls">
-                            <button class="le-score-step-btn"
-                                    @onclick="async () => { ChangeScore(-0.5); await AutoSave(); }">−</button>
-                            <input type="text"
-                                   inputmode="decimal"
-                                   @ref="scoreInputRef"
+                            <button class="le-score-step-btn" @onclick="async () => { ChangeScore(-0.5); await AutoSave(); }">−</button>
+                            <input type="text" inputmode="decimal" @ref="scoreInputRef"
                                    class="le-score-input @(editScore > 0 ? "le-score-input-" + GetScoreColorClass(editScore) : "")"
                                    value="@(editScore > 0 ? (_scoreBarDragging ? ((int)Math.Round(editScore)).ToString() : FormatScore(editScore)) : "")"
-                                   placeholder="—"
-                                   @onfocus="HandleScoreInputFocus"
-                                   @onchange="HandleScoreTextChange" />
-                            <button class="le-score-step-btn"
-                                    @onclick="async () => { ChangeScore(0.5); await AutoSave(); }">+</button>
+                                   placeholder="—" @onfocus="HandleScoreInputFocus" @onchange="HandleScoreTextChange" />
+                            <button class="le-score-step-btn" @onclick="async () => { ChangeScore(0.5); await AutoSave(); }">+</button>
                         </div>
-                        <!-- Draggable progress bar -->
-                        <div class="le-score-bar-click @(_scoreBarDragging ? "dragging" : "")"
-                             @ref="scoreBarRef"
-                             @onpointerdown="HandleScoreBarPointerDown"
-                             @onpointermove="HandleScoreBarPointerMove"
-                             @onpointerup="HandleScoreBarPointerUp"
-                             @onpointercancel="@(() => _scoreBarDragging = false)">
-                            <div class="le-score-bar-fill-click"
-                                 style="width:@((editScore / 10.0 * 100).ToString("F1", System.Globalization.CultureInfo.InvariantCulture))%;
-                                        background:@GetScoreHexColor(editScore);">
-                            </div>
+                        <div class="le-score-bar-click @(_scoreBarDragging ? "dragging" : "")" @ref="scoreBarRef"
+                             @onpointerdown="HandleScoreBarPointerDown" @onpointermove="HandleScoreBarPointerMove"
+                             @onpointerup="HandleScoreBarPointerUp" @onpointercancel="@(() => _scoreBarDragging = false)">
+                            <div class="le-score-bar-fill-click" style="width:@((editScore/10.0*100).ToString("F1",System.Globalization.CultureInfo.InvariantCulture))%;background:@GetScoreHexColor(editScore);"></div>
                         </div>
                     </div>
-
-                    <!-- Episode Progress -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Episode Progress</span>
-                        @{
-                            int totalEp = GetTotalEpisodes();
-                            string epInputVal = totalEp > 0
-                                ? $"{editEpisodes}/{totalEp}"
-                                : editEpisodes.ToString();
-                            int epPct = totalEp > 0
-                                ? Math.Min(100, (int)Math.Round(editEpisodes / (double)totalEp * 100))
-                                : 0;
-                        }
+                        @{ int totalEp = GetTotalEpisodes(); string epInputVal = totalEp > 0 ? $"{editEpisodes}/{totalEp}" : editEpisodes.ToString(); int epPct = totalEp > 0 ? Math.Min(100,(int)Math.Round(editEpisodes/(double)totalEp*100)) : 0; }
                         <div class="le-score-controls">
-                            <button class="le-score-step-btn"
-                                    disabled="@IsNotYetReleased"
-                                    @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
-                            <input type="text"
-                                   inputmode="numeric"
-                                   pattern="[0-9]*"
-                                   @ref="epInputRef"
-                                   class="le-score-input le-ep-input"
-                                   value="@epInputVal"
-                                   placeholder="0"
-                                   disabled="@IsNotYetReleased"
-                                   @onfocus="HandleEpInputFocus"
-                                   @onchange="HandleEpTextChange" />
-                            <button class="le-score-step-btn"
-                                    disabled="@IsNotYetReleased"
-                                    @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(1); await AutoSave(); } }">+</button>
+                            <button class="le-score-step-btn" disabled="@IsNotYetReleased" @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(-1); await AutoSave(); } }">−</button>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" @ref="epInputRef"
+                                   class="le-score-input le-ep-input" value="@epInputVal" placeholder="0"
+                                   disabled="@IsNotYetReleased" @onfocus="HandleEpInputFocus" @onchange="HandleEpTextChange" />
+                            <button class="le-score-step-btn" disabled="@IsNotYetReleased" @onclick="async () => { if (!IsNotYetReleased) { ChangeEpisodes(1); await AutoSave(); } }">+</button>
                         </div>
                         <div class="list-editor-ep-bar @(IsNotYetReleased ? "le-ep-bar-disabled" : "le-ep-bar-clickable") @(_epBarDragging ? "dragging" : "")"
-                             @ref="epBarRef"
-                             @onpointerdown="HandleEpBarPointerDown"
-                             @onpointermove="HandleEpBarPointerMove"
-                             @onpointerup="HandleEpBarPointerUp"
-                             @onpointercancel="@(() => _epBarDragging = false)">
-                            <div class="list-editor-ep-fill"
-                                 style="width: @epPct%;"></div>
+                             @ref="epBarRef" @onpointerdown="HandleEpBarPointerDown" @onpointermove="HandleEpBarPointerMove"
+                             @onpointerup="HandleEpBarPointerUp" @onpointercancel="@(() => _epBarDragging = false)">
+                            <div class="list-editor-ep-fill" style="width: @epPct%;"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Dates | Rewatches | Options -->
                 <div class="list-editor-grid">
-
-                    <!-- Start Date -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Start Date</span>
                         <div class="list-editor-date-wrapper">
-                            <input type="date" class="list-editor-date-input"
-                                   min="1900-01-01" max="2099-12-31"
+                            <input type="date" class="list-editor-date-input" min="1900-01-01" max="2099-12-31"
                                    value="@(editStartDate.HasValue ? editStartDate.Value.ToString("yyyy-MM-dd") : "")"
                                    @onchange="async e => { var s = e.Value?.ToString(); editStartDate = (!string.IsNullOrEmpty(s) && DateTime.TryParse(s, out var d)) ? d : null; await AutoSave(); }" />
                         </div>
                     </div>
-
-                    <!-- Finish Date -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Finish Date</span>
                         <div class="list-editor-date-wrapper">
-                            <input type="date" class="list-editor-date-input"
-                                   min="1900-01-01" max="2099-12-31"
+                            <input type="date" class="list-editor-date-input" min="1900-01-01" max="2099-12-31"
                                    value="@(editFinishDate.HasValue ? editFinishDate.Value.ToString("yyyy-MM-dd") : "")"
                                    @onchange="async e => { var s = e.Value?.ToString(); editFinishDate = (!string.IsNullOrEmpty(s) && DateTime.TryParse(s, out var d)) ? d : null; await AutoSave(); }" />
                         </div>
                     </div>
-
-                    <!-- Total Rewatches -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Rewatches</span>
                         <div class="le-score-controls">
-                            <button class="le-score-step-btn"
-                                    disabled="@IsNotYetReleased"
-                                    @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches - 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">−</button>
-                            <input type="text"
-                                   inputmode="numeric"
-                                   pattern="[0-9]*"
-                                   @ref="rewatchInputRef"
-                                   class="le-score-input le-rewatch-input"
-                                   value="@editRewatches"
-                                   disabled="@IsNotYetReleased"
-                                   @onfocus="HandleRewatchInputFocus"
-                                   @onchange="HandleRewatchTextChange" />
-                            <button class="le-score-step-btn"
-                                    disabled="@IsNotYetReleased"
-                                    @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches + 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">+</button>
+                            <button class="le-score-step-btn" disabled="@IsNotYetReleased" @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches - 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">−</button>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" @ref="rewatchInputRef"
+                                   class="le-score-input le-rewatch-input" value="@editRewatches"
+                                   disabled="@IsNotYetReleased" @onfocus="HandleRewatchInputFocus" @onchange="HandleRewatchTextChange" />
+                            <button class="le-score-step-btn" disabled="@IsNotYetReleased" @onclick="async () => { if (!IsNotYetReleased) { int prev = editRewatches; editRewatches = Math.Max(0, editRewatches + 1); ApplyRewatchAutoStatus(prev); await AutoSave(); } }">+</button>
                         </div>
                     </div>
-
-                    <!-- Privacy options -->
                     <div class="list-editor-field">
                         <span class="list-editor-label">Options</span>
                         <div class="list-editor-custom-lists">
                             <label class="list-editor-checkbox-row">
-                                <input type="checkbox" checked="@editHideFromLists"
-                                       @onchange="async e => { editHideFromLists = e.Value is bool b1 ? b1 : false; await AutoSave(); }" />
+                                <input type="checkbox" checked="@editHideFromLists" @onchange="async e => { editHideFromLists = e.Value is bool b1 ? b1 : false; await AutoSave(); }" />
                                 <span>Hide from status lists</span>
                             </label>
                             <label class="list-editor-checkbox-row">
-                                <input type="checkbox" checked="@editIsPrivate"
-                                       @onchange="async e => { editIsPrivate = e.Value is bool b2 ? b2 : false; await AutoSave(); }" />
+                                <input type="checkbox" checked="@editIsPrivate" @onchange="async e => { editIsPrivate = e.Value is bool b2 ? b2 : false; await AutoSave(); }" />
                                 <span>Private</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <!-- Notes -->
                 <div class="list-editor-field">
                     <span class="list-editor-label">Notes</span>
-                    <textarea class="list-editor-textarea"
-                              placeholder="Add notes..."
-                              value="@editNotes"
+                    <textarea class="list-editor-textarea" placeholder="Add notes..." value="@editNotes"
                               @oninput="e => editNotes = e.Value?.ToString() ?? string.Empty"
                               @onchange="async e => { editNotes = e.Value?.ToString() ?? string.Empty; await AutoSave(); }"></textarea>
                 </div>
 
-                <!-- Delete button -->
                 @{ var _deleteCls = "le-delete-section" + (_deleteAnimVisible ? " le-delete-visible" : ""); }
                 <div class="@_deleteCls">
                     <button class="le-delete-btn" @onclick="PromptDelete" @onclick:stopPropagation="true">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6l-1 14H6L5 6"></path>
-                            <path d="M10 11v6M14 11v6"></path>
-                            <path d="M9 6V4h6v2"></path>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path>
                         </svg>
                         Remove from list
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -877,12 +675,9 @@
     <div class="delete-confirm-overlay" @onclick="CancelDelete">
         <div class="delete-confirm-box" @onclick:stopPropagation="true">
             <div class="delete-confirm-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                     stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6l-1 14H6L5 6"></path>
-                    <path d="M10 11v6M14 11v6"></path>
-                    <path d="M9 6V4h6v2"></path>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path>
                 </svg>
             </div>
             <p class="delete-confirm-title">Remove from list?</p>
@@ -897,39 +692,152 @@
     </div>
 }
 
+<!-- ══ Share panel styles ══ -->
 <style>
-    .share-toast {
-        position: absolute;
-        top: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(30, 30, 50, 0.96);
-        border: 1px solid rgba(255,255,255,0.12);
-        color: rgba(255,255,255,0.9);
-        font-size: 13px;
-        font-weight: 600;
-        padding: 9px 18px;
-        border-radius: 20px;
-        white-space: nowrap;
-        z-index: 300;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        animation: share-toast-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
-        pointer-events: none;
-    }
+.sp-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: sp-ov-in .18s ease;
+}
+@@keyframes sp-ov-in { from { opacity:0; } to { opacity:1; } }
 
-    .share-toast-out {
-        animation: share-toast-out 0.28s ease forwards;
-    }
+.sp-panel {
+    background: #1c1c2a;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+    animation: sp-slide .26s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+@@keyframes sp-slide { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
 
-    @@keyframes share-toast-in {
-        from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.92); }
-        to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+@@media (min-width: 768px) {
+    .sp-overlay { align-items: center; }
+    .sp-panel {
+        border-radius: 16px;
+        padding: 22px 26px 26px;
+        max-width: 420px;
+        animation: sp-scale .22s cubic-bezier(0.34,1.26,0.64,1);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.07);
     }
+    @@keyframes sp-scale { from { transform:scale(0.92); opacity:0; } to { transform:scale(1); opacity:1; } }
+}
 
-    @@keyframes share-toast-out {
-        from { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
-        to   { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.94); }
-    }
+.sp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.sp-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.92);
+    letter-spacing: -0.2px;
+}
+.sp-close {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: rgba(255,255,255,0.55);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background .14s, color .14s;
+}
+.sp-close:hover { background: rgba(255,255,255,0.14); color: white; }
+
+/* Social row */
+.sp-socials {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 18px;
+    scrollbar-width: none;
+}
+.sp-socials::-webkit-scrollbar { display: none; }
+
+.sp-social-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    flex-shrink: 0;
+    width: 70px;
+    cursor: pointer;
+    transition: transform .14s;
+}
+.sp-social-item:hover { transform: translateY(-3px); }
+.sp-social-item:active { transform: scale(0.93); }
+
+.sp-social-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    transition: filter .14s;
+}
+.sp-social-item:hover .sp-social-icon { filter: brightness(1.12); }
+
+.sp-social-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* URL row */
+.sp-url-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px;
+    padding: 4px 4px 4px 14px;
+}
+.sp-url-box { flex: 1; min-width: 0; overflow: hidden; }
+.sp-url-text {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    font-family: monospace;
+    user-select: text;
+    -webkit-user-select: text;
+}
+.sp-copy-btn {
+    flex-shrink: 0;
+    padding: 9px 18px;
+    border-radius: 9px;
+    border: none;
+    background: #0ea5e9;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background .15s, transform .12s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.sp-copy-btn:hover  { background: #0284c7; }
+.sp-copy-btn:active { transform: scale(0.95); }
+.sp-copy-btn-done   { background: #22c55e !important; }
 </style>
 
 @code {
@@ -937,941 +845,225 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    // ── Share toast ───────────────────────────────────────────────────────────
-    private bool _shareToastVisible = false;
-    private bool _shareToastFading = false;
-    private string _shareToastMessage = "";
-    private System.Threading.CancellationTokenSource? _shareToastCts;
+    // ── Share ─────────────────────────────────────────────────────────────────
+    private bool _shareOpen   = false;
+    private bool _shareCopied = false;
+    private System.Threading.CancellationTokenSource? _copyResetCts;
 
-    // Tracks the status-type custom list ID shown in the header button
+    private void OpenSharePanel()  { _shareOpen = true;  _shareCopied = false; StateHasChanged(); }
+    private void CloseSharePanel() { _shareOpen = false; StateHasChanged(); }
+
+    private async Task CopyShareLink()
+    {
+        if (CurrentAnime == null) return;
+        var url = $"https://anilist.co/anime/{CurrentAnime.Id}";
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { }
+        _shareCopied = true;
+        StateHasChanged();
+        _copyResetCts?.Cancel();
+        _copyResetCts = new System.Threading.CancellationTokenSource();
+        var token = _copyResetCts.Token;
+        try { await Task.Delay(2200, token); _shareCopied = false; StateHasChanged(); } catch (TaskCanceledException) { }
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────────
     private string? currentCustomListId = null;
-
-    private AnimeCard? editAnime => CurrentAnime;
-
     private bool isFavorited = false;
     private bool showSpoilers = false;
     private int? _lastAnimeId = null;
-
-    // List state
     private bool isInList = false;
     private ListStatus? currentListStatus = null;
-
-    private static readonly ListStatus[] _allStatuses =
-    {
-        ListStatus.Watching, ListStatus.Rewatching, ListStatus.Completed,
-        ListStatus.Planning, ListStatus.Paused, ListStatus.Dropped
-    };
-
     private bool IsNotYetReleased => CurrentAnime?.Status == "NOT_YET_RELEASED";
 
     private IEnumerable<ListStatus> GetAvailableStatuses()
     {
         if (IsNotYetReleased) { yield return ListStatus.Planning; yield break; }
         foreach (var setting in UserListService.GetStatusSettings())
-        {
-            if (Enum.TryParse<ListStatus>(setting.Key, out var s))
-                yield return s;
-        }
+            if (Enum.TryParse<ListStatus>(setting.Key, out var s)) yield return s;
     }
 
-    // List Editor state
-    private bool showListEditor = false;
-    private bool showDeleteConfirm = false;
-    private bool _deleteAnimVisible = false;
-    private bool _statusDropdownOpen = false;
-    private bool _pointerDownOnModal = false;
-
-    private bool _edgeInterceptorRegistered = false;
-
-    // Edit form fields
+    private bool showListEditor = false, showDeleteConfirm = false, _deleteAnimVisible = false;
+    private bool _statusDropdownOpen = false, _pointerDownOnModal = false, _edgeInterceptorRegistered = false;
     private ListStatus? editStatus = null;
     private string? _editStatusTypeCustomId = null;
     private double editScore = 0;
-    private int editEpisodes = 0;
-    private int editRewatches = 0;
+    private int editEpisodes = 0, editRewatches = 0;
     private string editNotes = "";
-    private DateTime? editStartDate = null;
-    private DateTime? editFinishDate = null;
-    private bool editIsPrivate = false;
-    private bool editHideFromLists = false;
+    private DateTime? editStartDate = null, editFinishDate = null;
+    private bool editIsPrivate = false, editHideFromLists = false;
     private HashSet<string> _editCustomListIds = new();
-
-    // Element refs
     private ElementReference _listEditorOverlayRef;
     private bool _wheelListenerActive = false;
-    private ElementReference scoreBarRef;
-    private ElementReference epBarRef;
-    private ElementReference scoreInputRef;
-    private ElementReference epInputRef;
-    private ElementReference rewatchInputRef;
-
-    // Slider drag state
-    private bool _scoreBarDragging = false;
-    private bool _epBarDragging = false;
-
-    private ElementBounds? _cachedScoreBounds;
-    private ElementBounds? _cachedEpBounds;
-
-    // Swipe-down-to-close
+    private ElementReference scoreBarRef, epBarRef, scoreInputRef, epInputRef, rewatchInputRef;
+    private bool _scoreBarDragging = false, _epBarDragging = false;
+    private ElementBounds? _cachedScoreBounds, _cachedEpBounds;
     private ElementReference scrollContainerRef;
-    private double pullOffset = 0;
-    private double pullStartY = 0;
-    private bool isPulling = false;
-    private bool isPullTrackingActive = false;
+    private double pullOffset = 0, pullStartY = 0;
+    private bool isPulling = false, isPullTrackingActive = false;
     private const double PULL_CLOSE_THRESHOLD = 40;
+    private double edgeSwipeStartX = 0, edgeSwipeStartY = 0, edgeSwipeOffset = 0;
+    private bool isEdgeSwiping = false, isEdgeSwipeTrackingActive = false;
+    private const double EDGE_ZONE_WIDTH = 40, EDGE_SWIPE_CLOSE_THRESHOLD = 90;
+    private class ElementBounds { public double Left { get; set; } public double Width { get; set; } }
 
-    // Swipe-left-edge-to-close
-    private double edgeSwipeStartX = 0;
-    private double edgeSwipeStartY = 0;
-    private double edgeSwipeOffset = 0;
-    private bool isEdgeSwiping = false;
-    private bool isEdgeSwipeTrackingActive = false;
-    private const double EDGE_ZONE_WIDTH = 40;
-    private const double EDGE_SWIPE_CLOSE_THRESHOLD = 90;
-
-    private class ElementBounds
-    {
-        public double Left { get; set; }
-        public double Width { get; set; }
-    }
-
-    // ── Lifecycle ────────────────────────────────────────────────────────────
-
-    protected override void OnInitialized()
-    {
-        UserListService.OnChanged += HandleListChanged;
-    }
+    protected override void OnInitialized() => UserListService.OnChanged += HandleListChanged;
 
     public void Dispose()
     {
         UserListService.OnChanged -= HandleListChanged;
         try { _ = JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); } catch { }
-        _shareToastCts?.Cancel();
-        _shareToastCts?.Dispose();
+        _copyResetCts?.Cancel(); _copyResetCts?.Dispose();
     }
 
-    private void HandleListChanged()
-    {
-        RefreshListState();
-        InvokeAsync(StateHasChanged);
-    }
+    private void HandleListChanged() { RefreshListState(); InvokeAsync(StateHasChanged); }
 
     protected override void OnParametersSet()
     {
         if (CurrentAnime?.Id != _lastAnimeId)
         {
-            isFavorited = false;
-            showSpoilers = false;
-            showListEditor = false;
-            showDeleteConfirm = false;
-            pullOffset = 0;
-            isPulling = false;
-            isPullTrackingActive = false;
-            edgeSwipeOffset = 0;
-            isEdgeSwiping = false;
-            isEdgeSwipeTrackingActive = false;
-            _scoreBarDragging = false;
-            _epBarDragging = false;
-            _lastAnimeId = CurrentAnime?.Id;
-            RefreshListState();
+            isFavorited = false; showSpoilers = false; showListEditor = false; showDeleteConfirm = false;
+            pullOffset = 0; isPulling = false; isPullTrackingActive = false;
+            edgeSwipeOffset = 0; isEdgeSwiping = false; isEdgeSwipeTrackingActive = false;
+            _scoreBarDragging = false; _epBarDragging = false; _shareOpen = false; _shareCopied = false;
+            _lastAnimeId = CurrentAnime?.Id; RefreshListState();
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (showListEditor && !_wheelListenerActive)
-        {
-            _wheelListenerActive = true;
-            try { await JS.InvokeVoidAsync("preventWheelScroll", _listEditorOverlayRef); } catch { }
-        }
-        else if (!showListEditor && _wheelListenerActive)
-        {
-            _wheelListenerActive = false;
-            try { await JS.InvokeVoidAsync("removeWheelScrollPrevention", _listEditorOverlayRef); } catch { }
-        }
-
-        if (IsVisible && !_edgeInterceptorRegistered)
-        {
-            _edgeInterceptorRegistered = true;
-            try
-            {
-                await JS.InvokeVoidAsync("registerEdgeSwipeInterceptor", scrollContainerRef, (int)EDGE_ZONE_WIDTH);
-            }
-            catch { }
-        }
-        else if (!IsVisible && _edgeInterceptorRegistered)
-        {
-            _edgeInterceptorRegistered = false;
-            try { await JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); }
-            catch { }
-        }
+        if (showListEditor && !_wheelListenerActive) { _wheelListenerActive = true; try { await JS.InvokeVoidAsync("preventWheelScroll", _listEditorOverlayRef); } catch { } }
+        else if (!showListEditor && _wheelListenerActive) { _wheelListenerActive = false; try { await JS.InvokeVoidAsync("removeWheelScrollPrevention", _listEditorOverlayRef); } catch { } }
+        if (IsVisible && !_edgeInterceptorRegistered) { _edgeInterceptorRegistered = true; try { await JS.InvokeVoidAsync("registerEdgeSwipeInterceptor", scrollContainerRef, (int)EDGE_ZONE_WIDTH); } catch { } }
+        else if (!IsVisible && _edgeInterceptorRegistered) { _edgeInterceptorRegistered = false; try { await JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); } catch { } }
     }
 
     private void RefreshListState()
     {
-        if (CurrentAnime == null)
-        {
-            isInList = false;
-            currentListStatus = null;
-            currentCustomListId = null;
-            isFavorited = false;
-            return;
-        }
+        if (CurrentAnime == null) { isInList = false; currentListStatus = null; currentCustomListId = null; isFavorited = false; return; }
         var entry = UserListService.GetEntry(CurrentAnime.Id);
-        isInList = entry != null;
-        currentListStatus = entry?.Status;
+        isInList = entry != null; currentListStatus = entry?.Status;
         var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
         currentCustomListId = entry?.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
         isFavorited = UserListService.IsFavorited(CurrentAnime.Id);
     }
 
-    // ── Share ─────────────────────────────────────────────────────────────────
-    private async Task OnShare()
-    {
-        if (CurrentAnime == null) return;
-
-        var url = $"https://anilist.co/anime/{CurrentAnime.Id}";
-        var title = CurrentAnime.Title;
-
-        string result;
-        try
-        {
-            result = await JS.InvokeAsync<string>("shareAnime", title, url);
-        }
-        catch
-        {
-            result = "error";
-        }
-
-        string message = result switch
-        {
-            "shared"    => "✓ Shared!",
-            "copied"    => "✓ Link copied",
-            "cancelled" => "",
-            _           => "Could not share"
-        };
-
-        if (!string.IsNullOrEmpty(message))
-            await ShowShareToast(message);
-    }
-
-    private async Task ShowShareToast(string message)
-    {
-        _shareToastCts?.Cancel();
-        _shareToastCts = new System.Threading.CancellationTokenSource();
-        var token = _shareToastCts.Token;
-
-        _shareToastMessage = message;
-        _shareToastFading = false;
-        _shareToastVisible = true;
-        StateHasChanged();
-
-        try
-        {
-            await Task.Delay(2000, token);
-            _shareToastFading = true;
-            StateHasChanged();
-            await Task.Delay(300, token);
-            _shareToastVisible = false;
-            StateHasChanged();
-        }
-        catch (TaskCanceledException) { }
-    }
-
-    // ── Auto-save ─────────────────────────────────────────────────────────────
     private async Task AutoSave()
     {
         if (CurrentAnime == null) return;
-
         var existing = UserListService.GetEntry(CurrentAnime.Id);
-
-        bool hasContent = existing != null
-            || editStatus.HasValue
-            || _editStatusTypeCustomId != null
-            || editScore > 0
-            || editEpisodes > 0
-            || editRewatches > 0
-            || !string.IsNullOrEmpty(editNotes)
-            || editStartDate.HasValue
-            || editFinishDate.HasValue
-            || _editCustomListIds.Any();
-
+        bool hasContent = existing != null || editStatus.HasValue || _editStatusTypeCustomId != null || editScore > 0 || editEpisodes > 0 || editRewatches > 0 || !string.IsNullOrEmpty(editNotes) || editStartDate.HasValue || editFinishDate.HasValue || _editCustomListIds.Any();
         if (!hasContent) return;
-
         existing ??= new UserListEntry { Anime = CurrentAnime, AddedAt = DateTime.Now };
-
-        existing.Status              = editStatus;
-        existing.Score               = editScore;
-        existing.EpisodesWatched     = editEpisodes;
-        existing.TotalRewatches      = editRewatches;
-        existing.Notes               = editNotes;
-        existing.StartDate           = editStartDate;
-        existing.FinishDate          = editFinishDate;
-        existing.IsPrivate           = editIsPrivate;
-        existing.HideFromStatusLists = editHideFromLists;
-
-        var allCustomIds = new List<string>(_editCustomListIds);
-        if (_editStatusTypeCustomId != null) allCustomIds.Add(_editStatusTypeCustomId);
-        existing.CustomListIds = allCustomIds;
-
-        UserListService.SaveEntry(existing);
-        currentListStatus = editStatus;
-        currentCustomListId = _editStatusTypeCustomId;
-        isInList = true;
-
-        if (!_deleteAnimVisible && showListEditor)
-            _ = TriggerDeleteAnimAsync();
-
-        StateHasChanged();
-        await Task.CompletedTask;
+        existing.Status = editStatus; existing.Score = editScore; existing.EpisodesWatched = editEpisodes; existing.TotalRewatches = editRewatches; existing.Notes = editNotes; existing.StartDate = editStartDate; existing.FinishDate = editFinishDate; existing.IsPrivate = editIsPrivate; existing.HideFromStatusLists = editHideFromLists;
+        var allCustomIds = new List<string>(_editCustomListIds); if (_editStatusTypeCustomId != null) allCustomIds.Add(_editStatusTypeCustomId); existing.CustomListIds = allCustomIds;
+        UserListService.SaveEntry(existing); currentListStatus = editStatus; currentCustomListId = _editStatusTypeCustomId; isInList = true;
+        if (!_deleteAnimVisible && showListEditor) _ = TriggerDeleteAnimAsync();
+        StateHasChanged(); await Task.CompletedTask;
     }
 
-    // ── Close + save ──────────────────────────────────────────────────────────
     private async Task CloseAndSave()
     {
         if (CurrentAnime != null) await AutoSave();
-        showListEditor      = false;
-        _statusDropdownOpen = false;
-        _scoreBarDragging   = false;
-        _epBarDragging      = false;
-        _cachedScoreBounds  = null;
-        _cachedEpBounds     = null;
-        StateHasChanged();
+        showListEditor = false; _statusDropdownOpen = false; _scoreBarDragging = false; _epBarDragging = false; _cachedScoreBounds = null; _cachedEpBounds = null; StateHasChanged();
     }
 
-    // ── List Editor ──────────────────────────────────────────────────────────
     private void OpenListEditor()
     {
         if (CurrentAnime == null) return;
-
         var existing = UserListService.GetEntry(CurrentAnime.Id);
         if (existing != null)
         {
-            editStatus         = existing.Status;
-            editScore          = existing.Score;
-            editEpisodes       = existing.EpisodesWatched;
-            editRewatches      = existing.TotalRewatches;
-            editNotes          = existing.Notes;
-            editStartDate      = existing.StartDate;
-            editFinishDate     = existing.FinishDate;
-            editIsPrivate      = existing.IsPrivate;
-            editHideFromLists  = existing.HideFromStatusLists;
-
-            var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet();
-            _editStatusTypeCustomId = existing.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id));
-            _editCustomListIds = new HashSet<string>(existing.CustomListIds.Where(id => !statusTypeIds.Contains(id)));
+            editStatus = existing.Status; editScore = existing.Score; editEpisodes = existing.EpisodesWatched; editRewatches = existing.TotalRewatches; editNotes = existing.Notes; editStartDate = existing.StartDate; editFinishDate = existing.FinishDate; editIsPrivate = existing.IsPrivate; editHideFromLists = existing.HideFromStatusLists;
+            var statusTypeIds = UserListService.GetStatusTypeLists().Select(c => c.Id).ToHashSet(); _editStatusTypeCustomId = existing.CustomListIds.FirstOrDefault(id => statusTypeIds.Contains(id)); _editCustomListIds = new HashSet<string>(existing.CustomListIds.Where(id => !statusTypeIds.Contains(id)));
         }
-        else
-        {
-            editStatus              = null;
-            editScore               = 0;
-            editEpisodes            = 0;
-            editRewatches           = 0;
-            editNotes               = "";
-            editStartDate           = null;
-            editFinishDate          = null;
-            editIsPrivate           = false;
-            editHideFromLists       = false;
-            _editStatusTypeCustomId = null;
-            _editCustomListIds      = new();
-        }
-
-        if (CurrentAnime.Status == "NOT_YET_RELEASED")
-        {
-            editEpisodes  = 0;
-            editRewatches = 0;
-        }
-
-        _statusDropdownOpen = false;
-        _deleteAnimVisible  = false;
-        showListEditor      = true;
-        StateHasChanged();
+        else { editStatus = null; editScore = 0; editEpisodes = 0; editRewatches = 0; editNotes = ""; editStartDate = null; editFinishDate = null; editIsPrivate = false; editHideFromLists = false; _editStatusTypeCustomId = null; _editCustomListIds = new(); }
+        if (CurrentAnime.Status == "NOT_YET_RELEASED") { editEpisodes = 0; editRewatches = 0; }
+        _statusDropdownOpen = false; _deleteAnimVisible = false; showListEditor = true; StateHasChanged();
         if (isInList) _ = TriggerDeleteAnimAsync();
     }
 
-    private async Task TriggerDeleteAnimAsync()
-    {
-        await Task.Delay(60);
-        _deleteAnimVisible = true;
-        await InvokeAsync(StateHasChanged);
-    }
-
+    private async Task TriggerDeleteAnimAsync() { await Task.Delay(60); _deleteAnimVisible = true; await InvokeAsync(StateHasChanged); }
     private void PromptDelete()  { showDeleteConfirm = true;  StateHasChanged(); }
     private void CancelDelete()  { showDeleteConfirm = false; StateHasChanged(); }
+    private void ConfirmDelete() { if (CurrentAnime == null) return; UserListService.Remove(CurrentAnime.Id); isInList = false; currentListStatus = null; currentCustomListId = null; showDeleteConfirm = false; showListEditor = false; StateHasChanged(); }
+    private async Task ToggleCustomList(string id) { if (!_editCustomListIds.Remove(id)) _editCustomListIds.Add(id); await AutoSave(); StateHasChanged(); }
+    private void ChangeScore(double delta) { editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2)); StateHasChanged(); }
+    private async Task HandleScoreInputFocus() { try { await JS.InvokeVoidAsync("setAndSelectInput", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { } }
+    private async Task HandleScoreTextChange(ChangeEventArgs e) { var raw = e.Value?.ToString() ?? ""; if (string.IsNullOrWhiteSpace(raw)) { editScore = 0; try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, ""); } catch { } } else if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double v) && v >= 0 && v <= 10) editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2)); else { try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { } } await AutoSave(); StateHasChanged(); }
+    private async Task HandleScoreBarPointerDown(PointerEventArgs e) { _scoreBarDragging = true; try { _cachedScoreBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef); await JS.InvokeVoidAsync("capturePointer", scoreBarRef, e.PointerId); } catch { } ApplyScoreFromX(e.ClientX); StateHasChanged(); }
+    private void HandleScoreBarPointerMove(PointerEventArgs e) { if (!_scoreBarDragging || _cachedScoreBounds == null) return; ApplyScoreFromX(e.ClientX); JS.InvokeVoidAsync("setBarWidth", scoreBarRef, ".le-score-bar-fill-click", editScore / 10.0 * 100, GetScoreHexColor(editScore)); JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? ((int)editScore).ToString() : ""); }
+    private async Task HandleScoreBarPointerUp(PointerEventArgs e) { if (!_scoreBarDragging) return; _scoreBarDragging = false; _cachedScoreBounds = null; await AutoSave(); StateHasChanged(); }
+    private void ApplyScoreFromX(double clientX) { if (_cachedScoreBounds == null || _cachedScoreBounds.Width <= 0) return; editScore = Math.Round(Math.Clamp((clientX - _cachedScoreBounds.Left) / _cachedScoreBounds.Width, 0, 1) * 10); }
+    private int GetTotalEpisodes() { if (CurrentAnime == null) return 0; foreach (var part in (CurrentAnime.Episodes ?? "").Split('/').Reverse()) { var c = new string(part.Trim().TakeWhile(char.IsDigit).ToArray()); if (int.TryParse(c, out int p) && p > 0) return p; } return 0; }
+    private string GetEpInputDisplay() { int t = GetTotalEpisodes(); return t > 0 ? $"{editEpisodes}/{t}" : editEpisodes.ToString(); }
+    private void ChangeEpisodes(int delta) { if (CurrentAnime?.Status == "NOT_YET_RELEASED") return; int total = GetTotalEpisodes(); int next = editEpisodes + delta; if (next < 0 || (total > 0 && next > total)) return; editEpisodes = next; var prev = editStatus; if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching; if (total > 0 && editEpisodes == total) editStatus = ListStatus.Completed; ApplyAutoDate(prev, editStatus); StateHasChanged(); }
+    private async Task HandleEpInputFocus() { try { await JS.InvokeVoidAsync("selectInputContent", epInputRef); } catch { } }
+    private async Task HandleEpTextChange(ChangeEventArgs e) { if (CurrentAnime?.Status == "NOT_YET_RELEASED") { editEpisodes = 0; try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { } StateHasChanged(); return; } var part = (e.Value?.ToString() ?? "").Split('/')[0].Trim(); int totalEp = GetTotalEpisodes(); if (int.TryParse(part, out int v) && v >= 0 && (totalEp <= 0 || v <= totalEp)) { editEpisodes = v; var prev = editStatus; if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching; if (totalEp > 0 && editEpisodes == totalEp) editStatus = ListStatus.Completed; ApplyAutoDate(prev, editStatus); } else { try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { } } await AutoSave(); StateHasChanged(); }
+    private async Task HandleRewatchInputFocus() { try { await JS.InvokeVoidAsync("selectInputContent", rewatchInputRef); } catch { } }
+    private async Task HandleRewatchTextChange(ChangeEventArgs e) { var raw = e.Value?.ToString() ?? ""; if (int.TryParse(raw.Trim(), out int v) && v >= 0) { int prev = editRewatches; editRewatches = v; ApplyRewatchAutoStatus(prev); } else { try { await JS.InvokeVoidAsync("setInputValue", rewatchInputRef, editRewatches.ToString()); } catch { } } await AutoSave(); StateHasChanged(); }
+    private void ApplyAutoDate(ListStatus? prev, ListStatus? next) { if (next == ListStatus.Watching && prev != ListStatus.Watching && !editStartDate.HasValue) editStartDate = DateTime.Today; if (next == ListStatus.Completed && prev != ListStatus.Completed && !editFinishDate.HasValue) editFinishDate = DateTime.Today; }
+    private void ApplyRewatchAutoStatus(int prev) { if (editRewatches > 0 && prev == 0 && !editStatus.HasValue) { var p = editStatus; editStatus = ListStatus.Completed; int t = GetTotalEpisodes(); if (t > 0) editEpisodes = t; ApplyAutoDate(p, editStatus); } }
+    private async Task HandleEpBarPointerDown(PointerEventArgs e) { if (CurrentAnime?.Status == "NOT_YET_RELEASED") return; int totalEp = GetTotalEpisodes(); if (totalEp <= 0) return; _epBarDragging = true; try { _cachedEpBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef); await JS.InvokeVoidAsync("capturePointer", epBarRef, e.PointerId); } catch { } ApplyEpFromX(e.ClientX, totalEp); StateHasChanged(); }
+    private void HandleEpBarPointerMove(PointerEventArgs e) { if (!_epBarDragging || _cachedEpBounds == null) return; int totalEp = GetTotalEpisodes(); if (totalEp <= 0) return; ApplyEpFromX(e.ClientX, totalEp); JS.InvokeVoidAsync("setBarWidth", epBarRef, ".list-editor-ep-fill", (double)editEpisodes / totalEp * 100, null); JS.InvokeVoidAsync("setInputValue", epInputRef, $"{editEpisodes}/{totalEp}"); }
+    private async Task HandleEpBarPointerUp(PointerEventArgs e) { if (!_epBarDragging) return; _epBarDragging = false; _cachedEpBounds = null; int totalEp = GetTotalEpisodes(); var prev = editStatus; if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching; if (totalEp > 0 && editEpisodes == totalEp) editStatus = ListStatus.Completed; ApplyAutoDate(prev, editStatus); await AutoSave(); StateHasChanged(); }
+    private void ApplyEpFromX(double clientX, int totalEp) { if (_cachedEpBounds == null || _cachedEpBounds.Width <= 0) return; editEpisodes = (int)Math.Round(Math.Clamp((clientX - _cachedEpBounds.Left) / _cachedEpBounds.Width, 0, 1) * totalEp); }
+    private string GetModalTransition() => (isPulling || isEdgeSwiping) ? "none" : "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)";
+    private async Task HandleModalTouchStart(TouchEventArgs e) { if (e.Touches.Length == 0) return; var touch = e.Touches[0]; if (touch.ClientX <= EDGE_ZONE_WIDTH) { isPullTrackingActive = false; isPulling = false; pullOffset = 0; isEdgeSwipeTrackingActive = true; isEdgeSwiping = false; edgeSwipeStartX = touch.ClientX; edgeSwipeStartY = touch.ClientY; edgeSwipeOffset = 0; StateHasChanged(); return; } bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef); if (!atTop) return; isPullTrackingActive = true; isPulling = false; pullStartY = touch.ClientY; pullOffset = 0; }
+    private void HandleModalTouchMove(TouchEventArgs e) { if (e.Touches.Length == 0) return; var touch = e.Touches[0]; if (isEdgeSwipeTrackingActive) { double dx = touch.ClientX - edgeSwipeStartX, dy = touch.ClientY - edgeSwipeStartY; if (!isEdgeSwiping && Math.Abs(dy) > Math.Abs(dx) + 10) { isEdgeSwipeTrackingActive = false; StateHasChanged(); return; } if (dx > 0) { isEdgeSwiping = true; edgeSwipeOffset = dx <= EDGE_SWIPE_CLOSE_THRESHOLD ? dx : EDGE_SWIPE_CLOSE_THRESHOLD + (dx - EDGE_SWIPE_CLOSE_THRESHOLD) * 0.25; StateHasChanged(); } return; } if (!isPullTrackingActive) return; double delta = touch.ClientY - pullStartY; if (delta <= 0) { isPulling = false; pullOffset = 0; return; } isPulling = true; pullOffset = Math.Sqrt(delta) * 6; StateHasChanged(); }
+    private async Task HandleModalTouchEnd(TouchEventArgs e) { if (isEdgeSwipeTrackingActive) { isEdgeSwipeTrackingActive = false; isEdgeSwiping = false; if (edgeSwipeOffset >= EDGE_SWIPE_CLOSE_THRESHOLD) { edgeSwipeOffset = 500; StateHasChanged(); await Task.Delay(260); edgeSwipeOffset = 0; await OnClose.InvokeAsync(); } else { edgeSwipeOffset = 0; StateHasChanged(); } return; } if (!isPullTrackingActive) return; isPullTrackingActive = false; isPulling = false; if (pullOffset >= PULL_CLOSE_THRESHOLD) { pullOffset = 900; StateHasChanged(); await Task.Delay(260); pullOffset = 0; await OnClose.InvokeAsync(); } else { pullOffset = 0; StateHasChanged(); } }
 
-    private void ConfirmDelete()
-    {
-        if (CurrentAnime == null) return;
-        UserListService.Remove(CurrentAnime.Id);
-        isInList = false;
-        currentListStatus = null;
-        currentCustomListId = null;
-        showDeleteConfirm = false;
-        showListEditor = false;
-        StateHasChanged();
-    }
-
-    // ── Custom Lists ──────────────────────────────────────────────────────────
-    private async Task ToggleCustomList(string customListId)
-    {
-        if (!_editCustomListIds.Remove(customListId))
-            _editCustomListIds.Add(customListId);
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    // ── Score ─────────────────────────────────────────────────────────────────
-    private void ChangeScore(double delta)
-    {
-        editScore = Math.Max(0, Math.Min(10, Math.Round((editScore + delta) * 2) / 2));
-        StateHasChanged();
-    }
-
-    private async Task HandleScoreInputFocus()
-    {
-        try
-        {
-            var val = editScore > 0 ? FormatScore(editScore) : "";
-            await JS.InvokeVoidAsync("setAndSelectInput", scoreInputRef, val);
-        }
-        catch { }
-    }
-
-    private async Task HandleScoreTextChange(ChangeEventArgs e)
-    {
-        var raw = e.Value?.ToString() ?? "";
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            editScore = 0;
-            try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, ""); } catch { }
-        }
-        else if (double.TryParse(raw.Replace(',', '.'), System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out double v) && v >= 0 && v <= 10)
-        {
-            editScore = Math.Max(0, Math.Min(10, Math.Round(v * 2) / 2));
-        }
-        else
-        {
-            try { await JS.InvokeVoidAsync("setInputValue", scoreInputRef, editScore > 0 ? FormatScore(editScore) : ""); } catch { }
-        }
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    private async Task HandleScoreBarPointerDown(PointerEventArgs e)
-    {
-        _scoreBarDragging = true;
-        try
-        {
-            _cachedScoreBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", scoreBarRef);
-            await JS.InvokeVoidAsync("capturePointer", scoreBarRef, e.PointerId);
-        }
-        catch { }
-        ApplyScoreFromX(e.ClientX);
-        StateHasChanged();
-    }
-
-    private void HandleScoreBarPointerMove(PointerEventArgs e)
-    {
-        if (!_scoreBarDragging || _cachedScoreBounds == null) return;
-        ApplyScoreFromX(e.ClientX);
-        JS.InvokeVoidAsync("setBarWidth", scoreBarRef, ".le-score-bar-fill-click",
-            editScore / 10.0 * 100, GetScoreHexColor(editScore));
-        JS.InvokeVoidAsync("setInputValue", scoreInputRef,
-            editScore > 0 ? ((int)editScore).ToString() : "");
-    }
-
-    private async Task HandleScoreBarPointerUp(PointerEventArgs e)
-    {
-        if (!_scoreBarDragging) return;
-        _scoreBarDragging  = false;
-        _cachedScoreBounds = null;
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    private void ApplyScoreFromX(double clientX)
-    {
-        if (_cachedScoreBounds == null || _cachedScoreBounds.Width <= 0) return;
-        double pct = Math.Clamp((clientX - _cachedScoreBounds.Left) / _cachedScoreBounds.Width, 0, 1);
-        editScore = Math.Round(pct * 10);
-    }
-
-    // ── Episodes ──────────────────────────────────────────────────────────────
-    private int GetTotalEpisodes()
-    {
-        if (CurrentAnime == null) return 0;
-        var epRaw = CurrentAnime.Episodes ?? "";
-        foreach (var part in epRaw.Split('/').Reverse())
-        {
-            var cleaned = new string(part.Trim().TakeWhile(char.IsDigit).ToArray());
-            if (int.TryParse(cleaned, out int parsed) && parsed > 0) return parsed;
-        }
-        return 0;
-    }
-
-    private string GetEpInputDisplay()
-    {
-        int total = GetTotalEpisodes();
-        return total > 0 ? $"{editEpisodes}/{total}" : editEpisodes.ToString();
-    }
-
-    private void ChangeEpisodes(int delta)
-    {
-        if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
-        int total = GetTotalEpisodes();
-        int next  = editEpisodes + delta;
-        if (next < 0) return;
-        if (total > 0 && next > total) return;
-        editEpisodes = next;
-        var prev = editStatus;
-        if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching;
-        if (total > 0 && editEpisodes == total) editStatus = ListStatus.Completed;
-        ApplyAutoDate(prev, editStatus);
-        StateHasChanged();
-    }
-
-    private async Task HandleEpInputFocus()
-    {
-        try { await JS.InvokeVoidAsync("selectInputContent", epInputRef); } catch { }
-    }
-
-    private async Task HandleEpTextChange(ChangeEventArgs e)
-    {
-        if (CurrentAnime?.Status == "NOT_YET_RELEASED")
-        {
-            editEpisodes = 0;
-            try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { }
-            StateHasChanged();
-            return;
-        }
-        var raw    = e.Value?.ToString() ?? "";
-        var part   = raw.Split('/')[0].Trim();
-        int totalEp = GetTotalEpisodes();
-        bool valid  = int.TryParse(part, out int v) && v >= 0 && (totalEp <= 0 || v <= totalEp);
-        if (valid)
-        {
-            editEpisodes = v;
-            var prev = editStatus;
-            if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching;
-            if (totalEp > 0 && editEpisodes == totalEp) editStatus = ListStatus.Completed;
-            ApplyAutoDate(prev, editStatus);
-        }
-        else
-        {
-            try { await JS.InvokeVoidAsync("setInputValue", epInputRef, GetEpInputDisplay()); } catch { }
-        }
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    // ── Rewatches ─────────────────────────────────────────────────────────────
-    private async Task HandleRewatchInputFocus()
-    {
-        try { await JS.InvokeVoidAsync("selectInputContent", rewatchInputRef); } catch { }
-    }
-
-    private async Task HandleRewatchTextChange(ChangeEventArgs e)
-    {
-        var raw = e.Value?.ToString() ?? "";
-        if (int.TryParse(raw.Trim(), out int v) && v >= 0)
-        {
-            int prev = editRewatches;
-            editRewatches = v;
-            ApplyRewatchAutoStatus(prev);
-        }
-        else
-        {
-            try { await JS.InvokeVoidAsync("setInputValue", rewatchInputRef, editRewatches.ToString()); } catch { }
-        }
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    private void ApplyAutoDate(ListStatus? previousStatus, ListStatus? newStatus)
-    {
-        if (newStatus == ListStatus.Watching && previousStatus != ListStatus.Watching && !editStartDate.HasValue)
-            editStartDate = DateTime.Today;
-        if (newStatus == ListStatus.Completed && previousStatus != ListStatus.Completed && !editFinishDate.HasValue)
-            editFinishDate = DateTime.Today;
-    }
-
-    private void ApplyRewatchAutoStatus(int previousRewatches)
-    {
-        if (editRewatches > 0 && previousRewatches == 0 && !editStatus.HasValue)
-        {
-            var prev = editStatus;
-            editStatus = ListStatus.Completed;
-            int total = GetTotalEpisodes();
-            if (total > 0) editEpisodes = total;
-            ApplyAutoDate(prev, editStatus);
-        }
-    }
-
-    // ── Episode bar ───────────────────────────────────────────────────────────
-    private async Task HandleEpBarPointerDown(PointerEventArgs e)
-    {
-        if (CurrentAnime?.Status == "NOT_YET_RELEASED") return;
-        int totalEp = GetTotalEpisodes();
-        if (totalEp <= 0) return;
-        _epBarDragging = true;
-        try
-        {
-            _cachedEpBounds = await JS.InvokeAsync<ElementBounds>("getElementBounds", epBarRef);
-            await JS.InvokeVoidAsync("capturePointer", epBarRef, e.PointerId);
-        }
-        catch { }
-        ApplyEpFromX(e.ClientX, totalEp);
-        StateHasChanged();
-    }
-
-    private void HandleEpBarPointerMove(PointerEventArgs e)
-    {
-        if (!_epBarDragging || _cachedEpBounds == null) return;
-        int totalEp = GetTotalEpisodes();
-        if (totalEp <= 0) return;
-        ApplyEpFromX(e.ClientX, totalEp);
-        double fillPct = (double)editEpisodes / totalEp * 100;
-        JS.InvokeVoidAsync("setBarWidth", epBarRef, ".list-editor-ep-fill", fillPct, null);
-        JS.InvokeVoidAsync("setInputValue", epInputRef, $"{editEpisodes}/{totalEp}");
-    }
-
-    private async Task HandleEpBarPointerUp(PointerEventArgs e)
-    {
-        if (!_epBarDragging) return;
-        _epBarDragging  = false;
-        _cachedEpBounds = null;
-        int totalEp = GetTotalEpisodes();
-        var prev = editStatus;
-        if (editEpisodes > 0 && !editStatus.HasValue) editStatus = ListStatus.Watching;
-        if (totalEp > 0 && editEpisodes == totalEp) editStatus = ListStatus.Completed;
-        ApplyAutoDate(prev, editStatus);
-        await AutoSave();
-        StateHasChanged();
-    }
-
-    private void ApplyEpFromX(double clientX, int totalEp)
-    {
-        if (_cachedEpBounds == null || _cachedEpBounds.Width <= 0) return;
-        double pct = Math.Clamp((clientX - _cachedEpBounds.Left) / _cachedEpBounds.Width, 0, 1);
-        editEpisodes = (int)Math.Round(pct * totalEp);
-    }
-
-    // ── Touch handlers ────────────────────────────────────────────────────────
-    private string GetModalTransition()
-    {
-        if (isPulling || isEdgeSwiping) return "none";
-        return "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)";
-    }
-
-    private async Task HandleModalTouchStart(TouchEventArgs e)
-    {
-        if (e.Touches.Length == 0) return;
-        var touch = e.Touches[0];
-
-        if (touch.ClientX <= EDGE_ZONE_WIDTH)
-        {
-            isPullTrackingActive      = false;
-            isPulling                 = false;
-            pullOffset                = 0;
-            isEdgeSwipeTrackingActive = true;
-            isEdgeSwiping             = false;
-            edgeSwipeStartX           = touch.ClientX;
-            edgeSwipeStartY           = touch.ClientY;
-            edgeSwipeOffset           = 0;
-            StateHasChanged();
-            return;
-        }
-
-        bool atTop = await JS.InvokeAsync<bool>("isModalScrollAtTop", scrollContainerRef);
-        if (!atTop) return;
-        isPullTrackingActive = true;
-        isPulling            = false;
-        pullStartY           = touch.ClientY;
-        pullOffset           = 0;
-    }
-
-    private void HandleModalTouchMove(TouchEventArgs e)
-    {
-        if (e.Touches.Length == 0) return;
-        var touch = e.Touches[0];
-
-        if (isEdgeSwipeTrackingActive)
-        {
-            double dx = touch.ClientX - edgeSwipeStartX;
-            double dy = touch.ClientY - edgeSwipeStartY;
-            if (!isEdgeSwiping && Math.Abs(dy) > Math.Abs(dx) + 10)
-            {
-                isEdgeSwipeTrackingActive = false;
-                StateHasChanged();
-                return;
-            }
-            if (dx > 0)
-            {
-                isEdgeSwiping = true;
-                edgeSwipeOffset = dx <= EDGE_SWIPE_CLOSE_THRESHOLD
-                    ? dx
-                    : EDGE_SWIPE_CLOSE_THRESHOLD + (dx - EDGE_SWIPE_CLOSE_THRESHOLD) * 0.25;
-                StateHasChanged();
-            }
-            return;
-        }
-
-        if (!isPullTrackingActive) return;
-        double delta = touch.ClientY - pullStartY;
-        if (delta <= 0) { isPulling = false; pullOffset = 0; return; }
-        isPulling  = true;
-        pullOffset = Math.Sqrt(delta) * 6;
-        StateHasChanged();
-    }
-
-    private async Task HandleModalTouchEnd(TouchEventArgs e)
-    {
-        if (isEdgeSwipeTrackingActive)
-        {
-            isEdgeSwipeTrackingActive = false;
-            isEdgeSwiping             = false;
-            if (edgeSwipeOffset >= EDGE_SWIPE_CLOSE_THRESHOLD)
-            {
-                edgeSwipeOffset = 500;
-                StateHasChanged();
-                await Task.Delay(260);
-                edgeSwipeOffset = 0;
-                await OnClose.InvokeAsync();
-            }
-            else { edgeSwipeOffset = 0; StateHasChanged(); }
-            return;
-        }
-
-        if (!isPullTrackingActive) return;
-        isPullTrackingActive = false;
-        isPulling            = false;
-
-        if (pullOffset >= PULL_CLOSE_THRESHOLD)
-        {
-            pullOffset = 900;
-            StateHasChanged();
-            await Task.Delay(260);
-            pullOffset = 0;
-            await OnClose.InvokeAsync();
-        }
-        else { pullOffset = 0; StateHasChanged(); }
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
     private void Close() => OnClose.InvokeAsync();
     private void OnOverlayClick() => Close();
-    private void OnFavorite()
-    {
-        if (CurrentAnime == null) return;
-        isFavorited = UserListService.ToggleFavorite(CurrentAnime.Id);
-        StateHasChanged();
-    }
-
-    private string GetStatusLabel(ListStatus s) => UiHelpers.GetStatusLabel(s);
-
-    private string GetStatusCssKey(ListStatus s) => UiHelpers.GetStatusCssKey(s);
-
-    private string GetStatusHexColor(ListStatus s)
-    => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
+    private void OnFavorite() { if (CurrentAnime == null) return; isFavorited = UserListService.ToggleFavorite(CurrentAnime.Id); StateHasChanged(); }
+    private string GetStatusLabel(ListStatus s)    => UiHelpers.GetStatusLabel(s);
+    private string GetStatusCssKey(ListStatus s)   => UiHelpers.GetStatusCssKey(s);
+    private string GetStatusHexColor(ListStatus s) => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
+    private MarkupString GlowDot(string color)     => UiHelpers.GlowDot(color);
+    private string FormatCountdown(int seconds)    => UiHelpers.FormatCountdown(seconds);
+    private bool ContainsNonLatinScript(string? s) => UiHelpers.ContainsNonLatinScript(s);
+    private string GetYouTubeVideoId(string url)   => UiHelpers.GetYouTubeVideoId(url);
+    private string GetScoreHexColor(double score)  => UiHelpers.GetScoreHexColor(score);
+    private string FormatScore(double score)       => UiHelpers.FormatScore(score);
+    private string GetScoreColorClass(double score)=> UiHelpers.GetScoreColorClass(score);
 
     private MarkupString StatusDotMarkup(ListStatus s, bool active)
     {
         string color = GetStatusHexColor(s);
-        string style = active
-            ? $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-              $"background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};"
-            : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;" +
-              $"background:{color};opacity:0.35;";
+        string style = active ? $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:{color};box-shadow:0 0 6px {color}99,0 0 2px {color};" : $"display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0;background:{color};opacity:0.35;";
         return new MarkupString($"<span style=\"{style}\"></span>");
     }
 
-    private MarkupString GlowDot(string color)          => UiHelpers.GlowDot(color);
+    private string GetStatusText(string status) => status switch { "RELEASING" => "Airing", "FINISHED" => "Completed", "NOT_YET_RELEASED" => "Upcoming", "CANCELLED" => "Cancelled", "HIATUS" => "On Hiatus", _ => status };
 
-    private string GetStatusText(string status) => status switch
-    {
-        "RELEASING"        => "Airing",
-        "FINISHED"         => "Completed",
-        "NOT_YET_RELEASED" => "Upcoming",
-        "CANCELLED"        => "Cancelled",
-        "HIATUS"           => "On Hiatus",
-        _                  => status
-    };
-
-    private string FormatCountdown(int seconds)          => UiHelpers.FormatCountdown(seconds);
-
-    private bool ContainsNonLatinScript(string? s)       => UiHelpers.ContainsNonLatinScript(s);
-
-    private string GetYouTubeVideoId(string url)         => UiHelpers.GetYouTubeVideoId(url);
-
-    // ── Platform icon helpers ─────────────────────────────────────────────────
-
-    private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Alpha Manga", "AlphaPolis", "Asacomi", "Bandai Channel", "Carlsen Manga!",
-        "Ciao Plus", "Disney Plus", "Dongman Manhua", "FEEL web", "Flower Comics",
-        "Gau Gau", "Ichijin Plus", "Kana", "Kanmanhua", "Manga UP!", "MangaPlaza",
-        "Manman Manhua", "Nico Nico Seiga", "ONO", "Piccoma", "Pixiv Comic", "Pixiv",
-        "Pocket Magazine", "Renta!", "Rimacomi Plus", "SORAJIMA TOON", "Star+",
-        "SuBLime", "Takecomic", "Tencent Comics", "Viki", "WeComics",
-        "Weekly CoroCoro Comic", "Yanmaga", "Yawaraka Spirits", "Young Animal"
-    };
-
-    private static readonly HashSet<string> _neverRecolorSites = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Disney+", "Disney Plus"
-    };
+    private static readonly HashSet<string> _colorfulIconSites = new(StringComparer.OrdinalIgnoreCase) { "Alpha Manga","AlphaPolis","Asacomi","Bandai Channel","Carlsen Manga!","Ciao Plus","Disney Plus","Dongman Manhua","FEEL web","Flower Comics","Gau Gau","Ichijin Plus","Kana","Kanmanhua","Manga UP!","MangaPlaza","Manman Manhua","Nico Nico Seiga","ONO","Piccoma","Pixiv Comic","Pixiv","Pocket Magazine","Renta!","Rimacomi Plus","SORAJIMA TOON","Star+","SuBLime","Takecomic","Tencent Comics","Viki","WeComics","Weekly CoroCoro Comic","Yanmaga","Yawaraka Spirits","Young Animal" };
+    private static readonly HashSet<string> _neverRecolorSites = new(StringComparer.OrdinalIgnoreCase) { "Disney+","Disney Plus" };
 
     private MarkupString GetPlatformIconMarkup(string iconUrl, string brandColor, string site)
     {
-        bool shouldRecolor = !_colorfulIconSites.Contains(site)
-                             && !_neverRecolorSites.Contains(site)
-                             && !string.IsNullOrEmpty(brandColor)
-                             && brandColor != "#000000"
-                             && brandColor.StartsWith("#");
-
-        if (!string.IsNullOrEmpty(iconUrl))
-        {
-            string styleAttr = shouldRecolor
-                ? $"object-fit:contain;border-radius:2px;{GetWhiteToColorFilter(brandColor)}"
-                : "object-fit:contain;border-radius:2px;";
-            return new MarkupString($"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" style=\"{styleAttr}\" />");
-        }
-
-        string svgColor = shouldRecolor ? brandColor : "rgba(255,255,255,0.6)";
-        return new MarkupString(
-            $"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' " +
-            $"stroke='{svgColor}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
-            $"<rect x='2' y='2' width='20' height='20' rx='4'/>" +
-            $"<polygon points='10,8 16,12 10,16' fill='{svgColor}' stroke='none'/></svg>");
+        bool shouldRecolor = !_colorfulIconSites.Contains(site) && !_neverRecolorSites.Contains(site) && !string.IsNullOrEmpty(brandColor) && brandColor != "#000000" && brandColor.StartsWith("#");
+        if (!string.IsNullOrEmpty(iconUrl)) { string s = shouldRecolor ? $"object-fit:contain;border-radius:2px;{GetWhiteToColorFilter(brandColor)}" : "object-fit:contain;border-radius:2px;"; return new MarkupString($"<img src=\"{iconUrl}\" width=\"20\" height=\"20\" style=\"{s}\" />"); }
+        string sc = shouldRecolor ? brandColor : "rgba(255,255,255,0.6)";
+        return new MarkupString($"<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='{sc}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='2' width='20' height='20' rx='4'/><polygon points='10,8 16,12 10,16' fill='{sc}' stroke='none'/></svg>");
     }
 
-    private static readonly Dictionary<string, string> _filterCache = new();
-
+    private static readonly Dictionary<string,string> _filterCache = new();
     private static string GetWhiteToColorFilter(string hex)
     {
         if (string.IsNullOrEmpty(hex) || !hex.StartsWith('#')) return string.Empty;
         if (_filterCache.TryGetValue(hex, out var cached)) return cached;
-        var rgb = ParseHexColor(hex);
-        if (rgb == null) { _filterCache[hex] = string.Empty; return string.Empty; }
-        var colorFilter = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b);
-        var result = $"filter:brightness(0) saturate(100%) {colorFilter};";
-        _filterCache[hex] = result;
-        return result;
+        var rgb = ParseHexColor(hex); if (rgb == null) { _filterCache[hex] = string.Empty; return string.Empty; }
+        var cf = ComputeColorFilter(rgb.Value.r, rgb.Value.g, rgb.Value.b); var result = $"filter:brightness(0) saturate(100%) {cf};"; _filterCache[hex] = result; return result;
     }
-
-    private static (int r, int g, int b)? ParseHexColor(string hex)
-    {
-        hex = hex.TrimStart('#');
-        if (hex.Length == 3) hex = new string(new[] { hex[0], hex[0], hex[1], hex[1], hex[2], hex[2] });
-        if (hex.Length != 6) return null;
-        try { return (Convert.ToInt32(hex[0..2], 16), Convert.ToInt32(hex[2..4], 16), Convert.ToInt32(hex[4..6], 16)); }
-        catch { return null; }
-    }
-
-    private static string ComputeColorFilter(int tr, int tg, int tb)
-    {
-        var (th, ts, tl) = RgbToHsl(tr, tg, tb);
-        var rng = new Random(42);
-        double[] best = Array.Empty<double>();
-        double bestLoss = double.MaxValue;
-        for (int attempt = 0; attempt < 3 && bestLoss > 25; attempt++)
-        {
-            var r = RunSpsa(tr, tg, tb, th, ts, tl,
-                new double[] { 50, 20, 3750, 50, 100, 100 },
-                A: 5, a: new double[] { 60, 180, 18000, 600, 1.2, 1.2 },
-                c: 15, iterations: 1000, rng);
-            if (r.loss < bestLoss) { best = r.values; bestLoss = r.loss; }
-        }
-        double A1 = bestLoss + 1;
-        var r2 = RunSpsa(tr, tg, tb, th, ts, tl, best,
-            A: bestLoss, a: new double[] { 0.25*A1, 0.25*A1, A1, 0.25*A1, 0.2*A1, 0.2*A1 },
-            c: 2, iterations: 500, rng);
-        if (r2.loss < bestLoss) best = r2.values;
-        static int R(double v) => (int)Math.Round(v);
-        return $"invert({R(best[0])}%) sepia({R(best[1])}%) saturate({R(best[2])}%) hue-rotate({R(best[3] * 3.6)}deg) brightness({R(best[4])}%) contrast({R(best[5])}%)";
-    }
-
-    private static (double[] values, double loss) RunSpsa(
-        int tr, int tg, int tb, double th, double ts, double tl,
-        double[] initial, double A, double[] a, double c, int iterations, Random rng)
-    {
-        var v = (double[])initial.Clone();
-        double[] best = null!;
-        double bestLoss = double.MaxValue;
-        var deltas = new double[6]; var hi = new double[6]; var lo = new double[6];
-        for (int k = 0; k < iterations; k++)
-        {
-            double ck = c / Math.Pow(k + 1, 1.0 / 6.0);
-            for (int i = 0; i < 6; i++) { deltas[i] = rng.NextDouble() > 0.5 ? 1 : -1; hi[i] = v[i] + ck * deltas[i]; lo[i] = v[i] - ck * deltas[i]; }
-            double lossDiff = FilterLoss(hi, tr, tg, tb, th, ts, tl) - FilterLoss(lo, tr, tg, tb, th, ts, tl);
-            for (int i = 0; i < 6; i++) { double g = lossDiff / (2 * ck) * deltas[i]; double ak = a[i] / Math.Pow(A + k + 1, 1.0); v[i] = ClampFilterParam(v[i] - ak * g, i); }
-            double l = FilterLoss(v, tr, tg, tb, th, ts, tl);
-            if (l < bestLoss) { best = (double[])v.Clone(); bestLoss = l; }
-        }
-        return (best ?? v, bestLoss);
-    }
-
-    private static double FilterLoss(double[] f, int tr, int tg, int tb, double th, double ts, double tl)
-    {
-        var (r, g, b) = ApplyFilters(f);
-        var (h, s, l) = RgbToHsl((int)r, (int)g, (int)b);
-        return Math.Abs(r - tr) + Math.Abs(g - tg) + Math.Abs(b - tb) + Math.Abs(h - th) + Math.Abs(s - ts) + Math.Abs(l - tl);
-    }
-
-    private static (double r, double g, double b) ApplyFilters(double[] f)
-    {
-        double r = 0, g = 0, b = 0;
-        double inv = f[0] / 100.0;
-        r = Cl((inv + r / 255.0 * (1 - 2 * inv)) * 255);
-        g = Cl((inv + g / 255.0 * (1 - 2 * inv)) * 255);
-        b = Cl((inv + b / 255.0 * (1 - 2 * inv)) * 255);
-        (r, g, b) = MatMul(r, g, b, SepiaMatrix(f[1] / 100.0));
-        (r, g, b) = MatMul(r, g, b, SaturateMatrix(f[2] / 100.0));
-        (r, g, b) = MatMul(r, g, b, HueRotateMatrix(f[3] * 3.6));
-        r = Cl(r * (f[4] / 100.0)); g = Cl(g * (f[4] / 100.0)); b = Cl(b * (f[4] / 100.0));
-        double con = f[5] / 100.0; double ic = (-0.5 * con + 0.5) * 255;
-        r = Cl(r * con + ic); g = Cl(g * con + ic); b = Cl(b * con + ic);
-        return (r, g, b);
-    }
-
-    private static double Cl(double v) => Math.Max(0, Math.Min(255, v));
-    private static (double r, double g, double b) MatMul(double r, double g, double b, double[] m) =>
-        (Cl(r*m[0]+g*m[1]+b*m[2]), Cl(r*m[3]+g*m[4]+b*m[5]), Cl(r*m[6]+g*m[7]+b*m[8]));
-    private static double[] SepiaMatrix(double v) => new[] { 0.393+0.607*(1-v), 0.769-0.769*(1-v), 0.189-0.189*(1-v), 0.349-0.349*(1-v), 0.686+0.314*(1-v), 0.168-0.168*(1-v), 0.272-0.272*(1-v), 0.534-0.534*(1-v), 0.131+0.869*(1-v) };
-    private static double[] SaturateMatrix(double v) => new[] { 0.213+0.787*v, 0.715-0.715*v, 0.072-0.072*v, 0.213-0.213*v, 0.715+0.285*v, 0.072-0.072*v, 0.213-0.213*v, 0.715-0.715*v, 0.072+0.928*v };
-    private static double[] HueRotateMatrix(double deg)
-    {
-        double rad = deg / 180.0 * Math.PI, sin = Math.Sin(rad), cos = Math.Cos(rad);
-        return new[] { 0.213+cos*0.787-sin*0.213, 0.715-cos*0.715-sin*0.715, 0.072-cos*0.072+sin*0.928, 0.213-cos*0.213+sin*0.143, 0.715+cos*0.285+sin*0.140, 0.072-cos*0.072-sin*0.283, 0.213-cos*0.213-sin*0.787, 0.715-cos*0.715+sin*0.715, 0.072+cos*0.928+sin*0.072 };
-    }
-    private static double ClampFilterParam(double v, int idx)
-    {
-        double max = idx == 2 ? 7500 : (idx == 4 || idx == 5) ? 200 : 100;
-        if (idx == 3) { if (v > max) v %= max; else if (v < 0) v = max + v % max; }
-        else v = Math.Max(0, Math.Min(max, v));
-        return v;
-    }
-    private static (double h, double s, double l) RgbToHsl(int r, int g, int b)
-    {
-        double rf = r/255.0, gf = g/255.0, bf = b/255.0;
-        double max = Math.Max(rf, Math.Max(gf, bf)), min = Math.Min(rf, Math.Min(gf, bf));
-        double l = (max + min) / 2.0, h = 0, s = 0;
-        if (max != min)
-        {
-            double d = max - min;
-            s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-            if (max == rf) h = (gf-bf)/d + (gf < bf ? 6 : 0);
-            else if (max == gf) h = (bf-rf)/d + 2;
-            else h = (rf-gf)/d + 4;
-            h /= 6;
-        }
-        return (h*100, s*100, l*100);
-    }
-
-    private string GetScoreHexColor(double score)        => UiHelpers.GetScoreHexColor(score);
-
-    private string FormatScore(double score)             => UiHelpers.FormatScore(score);
-
-    private string GetScoreColorClass(double score)      => UiHelpers.GetScoreColorClass(score);
+    private static (int r,int g,int b)? ParseHexColor(string hex) { hex = hex.TrimStart('#'); if (hex.Length==3) hex=new string(new[]{hex[0],hex[0],hex[1],hex[1],hex[2],hex[2]}); if (hex.Length!=6) return null; try { return (Convert.ToInt32(hex[0..2],16),Convert.ToInt32(hex[2..4],16),Convert.ToInt32(hex[4..6],16)); } catch { return null; } }
+    private static string ComputeColorFilter(int tr,int tg,int tb) { var (th,ts,tl)=RgbToHsl(tr,tg,tb); var rng=new Random(42); double[] best=Array.Empty<double>(); double bestLoss=double.MaxValue; for(int a=0;a<3&&bestLoss>25;a++){var r=RunSpsa(tr,tg,tb,th,ts,tl,new double[]{50,20,3750,50,100,100},A:5,a:new double[]{60,180,18000,600,1.2,1.2},c:15,iterations:1000,rng);if(r.loss<bestLoss){best=r.values;bestLoss=r.loss;}} double A1=bestLoss+1;var r2=RunSpsa(tr,tg,tb,th,ts,tl,best,A:bestLoss,a:new double[]{0.25*A1,0.25*A1,A1,0.25*A1,0.2*A1,0.2*A1},c:2,iterations:500,rng);if(r2.loss<bestLoss)best=r2.values; static int R(double v)=>(int)Math.Round(v); return $"invert({R(best[0])}%) sepia({R(best[1])}%) saturate({R(best[2])}%) hue-rotate({R(best[3]*3.6)}deg) brightness({R(best[4])}%) contrast({R(best[5])}%)"; }
+    private static (double[] values,double loss) RunSpsa(int tr,int tg,int tb,double th,double ts,double tl,double[] initial,double A,double[] a,double c,int iterations,Random rng) { var v=(double[])initial.Clone();double[] best=null!;double bestLoss=double.MaxValue;var deltas=new double[6];var hi=new double[6];var lo=new double[6];for(int k=0;k<iterations;k++){double ck=c/Math.Pow(k+1,1.0/6.0);for(int i=0;i<6;i++){deltas[i]=rng.NextDouble()>0.5?1:-1;hi[i]=v[i]+ck*deltas[i];lo[i]=v[i]-ck*deltas[i];}double lossDiff=FilterLoss(hi,tr,tg,tb,th,ts,tl)-FilterLoss(lo,tr,tg,tb,th,ts,tl);for(int i=0;i<6;i++){double g=lossDiff/(2*ck)*deltas[i];double ak=a[i]/Math.Pow(A+k+1,1.0);v[i]=ClampFilterParam(v[i]-ak*g,i);}double l=FilterLoss(v,tr,tg,tb,th,ts,tl);if(l<bestLoss){best=(double[])v.Clone();bestLoss=l;}}return(best??v,bestLoss); }
+    private static double FilterLoss(double[] f,int tr,int tg,int tb,double th,double ts,double tl){var(r,g,b)=ApplyFilters(f);var(h,s,l)=RgbToHsl((int)r,(int)g,(int)b);return Math.Abs(r-tr)+Math.Abs(g-tg)+Math.Abs(b-tb)+Math.Abs(h-th)+Math.Abs(s-ts)+Math.Abs(l-tl);}
+    private static (double r,double g,double b) ApplyFilters(double[] f){double r=0,g=0,b=0;double inv=f[0]/100.0;r=Cl((inv+r/255.0*(1-2*inv))*255);g=Cl((inv+g/255.0*(1-2*inv))*255);b=Cl((inv+b/255.0*(1-2*inv))*255);(r,g,b)=MatMul(r,g,b,SepiaMatrix(f[1]/100.0));(r,g,b)=MatMul(r,g,b,SaturateMatrix(f[2]/100.0));(r,g,b)=MatMul(r,g,b,HueRotateMatrix(f[3]*3.6));r=Cl(r*(f[4]/100.0));g=Cl(g*(f[4]/100.0));b=Cl(b*(f[4]/100.0));double con=f[5]/100.0,ic=(-0.5*con+0.5)*255;r=Cl(r*con+ic);g=Cl(g*con+ic);b=Cl(b*con+ic);return(r,g,b);}
+    private static double Cl(double v)=>Math.Max(0,Math.Min(255,v));
+    private static (double r,double g,double b) MatMul(double r,double g,double b,double[] m)=>(Cl(r*m[0]+g*m[1]+b*m[2]),Cl(r*m[3]+g*m[4]+b*m[5]),Cl(r*m[6]+g*m[7]+b*m[8]));
+    private static double[] SepiaMatrix(double v)=>new[]{0.393+0.607*(1-v),0.769-0.769*(1-v),0.189-0.189*(1-v),0.349-0.349*(1-v),0.686+0.314*(1-v),0.168-0.168*(1-v),0.272-0.272*(1-v),0.534-0.534*(1-v),0.131+0.869*(1-v)};
+    private static double[] SaturateMatrix(double v)=>new[]{0.213+0.787*v,0.715-0.715*v,0.072-0.072*v,0.213-0.213*v,0.715+0.285*v,0.072-0.072*v,0.213-0.213*v,0.715-0.715*v,0.072+0.928*v};
+    private static double[] HueRotateMatrix(double deg){double rad=deg/180.0*Math.PI,sin=Math.Sin(rad),cos=Math.Cos(rad);return new[]{0.213+cos*0.787-sin*0.213,0.715-cos*0.715-sin*0.715,0.072-cos*0.072+sin*0.928,0.213-cos*0.213+sin*0.143,0.715+cos*0.285+sin*0.140,0.072-cos*0.072-sin*0.283,0.213-cos*0.213-sin*0.787,0.715-cos*0.715+sin*0.715,0.072+cos*0.928+sin*0.072};}
+    private static double ClampFilterParam(double v,int idx){double max=idx==2?7500:(idx==4||idx==5)?200:100;if(idx==3){if(v>max)v%=max;else if(v<0)v=max+v%max;}else v=Math.Max(0,Math.Min(max,v));return v;}
+    private static (double h,double s,double l) RgbToHsl(int r,int g,int b){double rf=r/255.0,gf=g/255.0,bf=b/255.0,max=Math.Max(rf,Math.Max(gf,bf)),min=Math.Min(rf,Math.Min(gf,bf)),l=(max+min)/2.0,h=0,s=0;if(max!=min){double d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max==rf)h=(gf-bf)/d+(gf<bf?6:0);else if(max==gf)h=(bf-rf)/d+2;else h=(rf-gf)/d+4;h/=6;}return(h*100,s*100,l*100);}
 }
