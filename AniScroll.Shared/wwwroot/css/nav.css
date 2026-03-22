@@ -3,8 +3,8 @@
    ====================================================== */
 
 :root {
-    --nav-top-height: 52px;
-    --notch-radius: 22px;
+    --nav-top-height: 44px;
+    --notch-radius: 20px;
 }
 
 /* ════════════════════════════════════════
@@ -236,9 +236,7 @@
 
 
 /* ════════════════════════════════════════
-   DESKTOP — notch with clip-path corners
-   No background color dependency — works
-   over any dynamic content / images.
+   DESKTOP — notch mask-image corners
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
@@ -258,27 +256,7 @@
         z-index: 1000;
     }
 
-    /* ── Notch bar ──────────────────────────────────
-       clip-path: path() cuts the concave corners
-       directly into the shape of the element.
-       No pseudo-element background matching needed.
-       The path is built for a 9999px-wide element
-       (clamped to actual width by clip-path).
-
-       R = --notch-radius = 22px
-
-       Shape (top edge is y=0):
-         Start outside left at (-R, 0)
-         Arc concave to (0, R)
-         Line down to bottom-left curve start
-         Arc rounded bottom-left
-         Line right along bottom
-         Arc rounded bottom-right
-         Line up to (W, R)
-         Arc concave to (W+R, 0)
-
-       We use a large W (4000) — clip-path auto-clips.
-    ──────────────────────────────────────────────── */
+    /* ── Notch bar ── */
     .main-nav-bar {
         flex-direction: row;
         align-items: center;
@@ -288,8 +266,7 @@
         gap: 0;
         position: relative;
         overflow: visible;
-        /* Concave corner clip — no color matching, works over images */
-        clip-path: path('M -22 0 A 22 22 0 0 0 0 22 L 0 30 A 22 22 0 0 0 22 52 L 3978 52 A 22 22 0 0 0 4000 30 L 4000 22 A 22 22 0 0 0 4022 0 Z');
+        border-radius: 0 0 var(--notch-radius) var(--notch-radius);
         background: #0d0d18;
         border: none;
         border-top: none;
@@ -297,10 +274,32 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
     }
 
-        /* No pseudo-elements needed */
+        /* ── Coins concaves via mask-image — sans gap, sans pixelisation ── */
         .main-nav-bar::before,
         .main-nav-bar::after {
-            display: none;
+            content: '';
+            position: absolute;
+            top: -1px; /* colle à la barre, pas de gap */
+            width: calc(var(--notch-radius) + 1px); /* +1px overlap anti-gap */
+            height: calc(var(--notch-radius) + 1px);
+            background-color: #0d0d18;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Coin gauche */
+        .main-nav-bar::before {
+            left: calc(var(--notch-radius) * -1);
+            mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) /* +1px adoucit l'antialiasing */
+            );
+            -webkit-mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
+        }
+
+        /* Coin droit */
+        .main-nav-bar::after {
+            right: calc(var(--notch-radius) * -1);
+            mask-image: radial-gradient( circle at 100% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
+            -webkit-mask-image: radial-gradient( circle at 100% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
         }
 
     /* ── Nav-buttons-row ── */
