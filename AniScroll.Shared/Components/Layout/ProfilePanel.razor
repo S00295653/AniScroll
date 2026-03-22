@@ -733,17 +733,21 @@
         }
 
     .st-filter-menu {
-        position: absolute;
-        top: calc(100% + 5px);
-        background: #1c1c2a;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 6px;
-        z-index: 50;
-        box-shadow: 0 8px 28px rgba(0,0,0,0.6);
-        animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
-        min-width: 200px;
-    }
+    position: absolute;
+    top: calc(100% + 5px);
+    background: #1c1c2a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 6px;
+    z-index: 50;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+    animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
+    min-width: 200px;
+    max-height: 55dvh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
 
     @@keyframes st-dd-open {
         from {
@@ -1012,7 +1016,7 @@
         var filtered = filteredQuery.ToList();
         s.FilteredTotal = filtered.Count;
 
-        foreach (var e in filtered)
+        foreach (var e in all)
         {
             if (e.Score > 0)
             {
@@ -1026,7 +1030,11 @@
                 int bucket = Math.Clamp((int)Math.Round(e.Score, MidpointRounding.AwayFromZero), 1, 10);
                 s.ScoreDist[bucket] = s.ScoreDist.GetValueOrDefault(bucket) + 1;
             }
+        }
+        if (s.ScoredCount > 0) s.AvgScore /= s.ScoredCount;
 
+        foreach (var e in filtered)
+        {
             var seenG = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var g in e.Anime.Genres ?? new())
                 if (seenG.Add(g)) s.TopGenres[g] = s.TopGenres.GetValueOrDefault(g) + 1;
@@ -1052,8 +1060,6 @@
             foreach (var t in e.Anime.Tags?.Where(t => !t.IsMediaSpoiler) ?? Enumerable.Empty<AnimeTag>())
                 if (seenT.Add(t.Name)) s.TopTags[t.Name] = s.TopTags.GetValueOrDefault(t.Name) + 1;
         }
-
-        if (s.ScoredCount > 0) s.AvgScore /= s.ScoredCount;
 
         s.UniqueGenres = s.TopGenres.Count;
         s.UniqueStudios = s.TopStudios.Count;
