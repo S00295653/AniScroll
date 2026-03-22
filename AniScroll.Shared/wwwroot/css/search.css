@@ -36,25 +36,25 @@
         display: none;
     }
 
-/* ── Desktop: drops from below the pill ── */
+/* ── Desktop: frosted panel drops from pill ── */
 @media (min-width: 768px) {
     .search-results-panel {
-        /* Not full-width — match pill width range with some extra */
         bottom: auto;
-        top: var(--nav-top-height, 74px);
-        /* Centered under the pill */
+        top: 68px; /* pill top(12) + pill height(46) + gap(10) */
         left: 50%;
         right: auto;
-        transform: translateX(-50%) translateY(-12px);
-        width: 600px;
+        transform: translateX(-50%) translateY(-10px);
+        width: 560px;
         max-width: calc(100vw - 48px);
-        max-height: calc(100dvh - var(--nav-top-height, 74px) - 24px);
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.08);
-        border-top: none;
-        padding-bottom: 16px;
-        /* Outer ring to visually connect to the pill */
-        box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 3px rgba(0,0,0,0.88), 0 0 0 1px rgba(255,255,255,0.07);
+        max-height: calc(100dvh - 90px);
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.09);
+        border-top-color: rgba(255,255,255,0.06);
+        padding-bottom: 12px;
+        background: rgba(12, 12, 18, 0.82);
+        backdrop-filter: blur(32px) saturate(160%);
+        -webkit-backdrop-filter: blur(32px) saturate(160%);
+        box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
     }
 
         .search-results-panel.visible {
@@ -77,7 +77,6 @@
 
 .search-no-results-hint {
     font-size: 12px;
-    font-weight: 420;
     color: rgba(255,255,255,0.22);
 }
 
@@ -95,8 +94,8 @@
         border-bottom: none;
     }
 
-    .search-result-item:active,
-    .search-result-item:hover {
+    .search-result-item:hover,
+    .search-result-item:active {
         background: rgba(255,255,255,0.06);
     }
 

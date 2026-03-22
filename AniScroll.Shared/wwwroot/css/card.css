@@ -37,7 +37,7 @@
     opacity: 0.4;
     overflow: hidden;
     transform: translate3d(0, 0, 0) scale(1.12);
-    filter: blur(5px);
+    filter: blur(6px);
     will-change: filter, transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
