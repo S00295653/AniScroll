@@ -222,7 +222,9 @@
     private async Task SubmitToken()
     {
         if (string.IsNullOrWhiteSpace(_pastedToken)) return;
-        AniListAuth.SetToken(_pastedToken.Trim());
+        var token = _pastedToken.Trim();
+        AniListAuth.SetToken(token);
+        try { await JS.InvokeVoidAsync("aniListSaveToken", token); } catch { }  // ← ligne ajoutée
         _state = PanelState.Loading;
         _loadingText = "Fetching your profile…";
         StateHasChanged();
