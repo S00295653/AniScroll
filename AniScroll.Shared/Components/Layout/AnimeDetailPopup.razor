@@ -374,11 +374,9 @@
      ══════════════════════════════════════════════════════════════ -->
 @if (_shareOpen && CurrentAnime != null)
 {
-    @{
-        var _shareUrl      = $"https://anilist.co/anime/{CurrentAnime.Id}";
-        var _shareEnc      = Uri.EscapeDataString(_shareUrl);
-        var _shareTitleEnc = Uri.EscapeDataString(CurrentAnime.Title);
-    }
+    var _shareUrl = $"https://anilist.co/anime/{CurrentAnime.Id}";
+    var _shareEnc = Uri.EscapeDataString(_shareUrl);
+    var _shareTitleEnc = Uri.EscapeDataString(CurrentAnime.Title);
 
     <div class="sp-overlay" @onclick="CloseSharePanel">
         <div class="sp-panel" @onclick:stopPropagation="true">
