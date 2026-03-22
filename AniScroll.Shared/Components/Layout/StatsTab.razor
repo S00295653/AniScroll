@@ -570,12 +570,19 @@
                 s.ByStatus[e.Status.Value] = s.ByStatus.GetValueOrDefault(e.Status.Value) + 1;
 
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
-            int baseEp = e.EpisodesWatched;
+            int baseEp  = e.EpisodesWatched;
+
+            // FIX: for Rewatching entries, TotalRewatches only counts completed
+            // rewatches — the original watch is not captured. Add 1 so the first
+            // watch is included in the episode and minute totals.
+            bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
+            int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
+
             int rwEp = 0;
-            if (e.TotalRewatches > 0 && e.Status != ListStatus.Planning)
+            if (effectiveRewatches > 0 && e.Status != ListStatus.Planning)
             {
-                if (totalEp > 0) rwEp = e.TotalRewatches * totalEp;
-                else if (baseEp > 0) rwEp = e.TotalRewatches * baseEp;
+                if (totalEp > 0) rwEp = effectiveRewatches * totalEp;
+                else if (baseEp > 0) rwEp = effectiveRewatches * baseEp;
             }
             s.TotalEpisodes += baseEp + rwEp;
 
@@ -583,10 +590,10 @@
             {
                 int dur = e.Anime.Duration ?? 24;
                 s.TotalMinutes += (long)baseEp * dur;
-                if (e.TotalRewatches > 0)
+                if (effectiveRewatches > 0)
                 {
-                    if (totalEp > 0) s.TotalMinutes += (long)e.TotalRewatches * totalEp * dur;
-                    else if (baseEp > 0) s.TotalMinutes += (long)e.TotalRewatches * baseEp * dur;
+                    if (totalEp > 0) s.TotalMinutes += (long)effectiveRewatches * totalEp * dur;
+                    else if (baseEp > 0) s.TotalMinutes += (long)effectiveRewatches * baseEp * dur;
                 }
             }
 
@@ -721,6 +728,7 @@
         sb.Append("</svg>"); return sb.ToString();
     }
 
+    // FIX: removed in-slice % labels — the legend below already shows count + pct
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
     {
         if (!items.Any()) return "";
@@ -745,8 +753,7 @@
                 int large = (sw - gap * 2) > Math.PI ? 1 : 0;
                 string col = colors[ci % colors.Length];
                 sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} L {F(xi2)} {F(yi2)} A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z\" fill=\"{col}\"/>");
-                double pct = kv.Value / total;
-                if (pct > 0.07) { double mid = sa + (ea - sa) / 2, lr = (outerR + innerR) / 2; sb.Append($"<text x=\"{F(cx + lr * Math.Cos(mid))}\" y=\"{F(cy + lr * Math.Sin(mid))}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"9\" font-weight=\"700\" fill=\"white\">{(pct * 100).ToString("F0")}%</text>"); }
+                // in-slice % label intentionally removed — legend below carries the info
             }
             angle += sw; ci++;
         }

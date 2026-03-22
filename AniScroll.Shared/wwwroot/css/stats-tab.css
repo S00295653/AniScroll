@@ -44,6 +44,7 @@
 
 .st-hero-right {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -127,6 +128,7 @@
     text-align: left;
     transition: background .15s, border-color .15s, color .15s;
     white-space: nowrap;
+    overflow: hidden;
 }
 
     .st-filter-trigger:hover {
@@ -147,10 +149,12 @@
     color: #fff;
     font-size: 10px;
     font-weight: 800;
+    flex-shrink: 0;
 }
 
 .st-filter-chevron {
     margin-left: auto;
+    flex-shrink: 0;
     opacity: 0.5;
     transition: transform .2s ease;
 }
@@ -163,6 +167,8 @@
 .st-filter-menu {
     position: absolute;
     top: calc(100% + 5px);
+    right: 0;
+    left: 0;
     background: #1c1c2a;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
@@ -170,9 +176,9 @@
     z-index: 50;
     box-shadow: 0 8px 28px rgba(0,0,0,0.6);
     animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
-    min-width: 200px;
     max-height: 55dvh;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.12) transparent;
 }
@@ -189,11 +195,13 @@
     }
 }
 
+/* ── Filter option — must constrain width for ellipsis to work ── */
 .st-filter-option {
     display: flex;
     align-items: center;
     gap: 8px;
     width: 100%;
+    max-width: 100%;
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid transparent;
@@ -206,6 +214,8 @@
     text-align: left;
     transition: background .12s, color .12s;
     margin-bottom: 2px;
+    overflow: hidden; /* ← needed so children can ellipsis */
+    box-sizing: border-box;
 }
 
     .st-filter-option:last-of-type {
@@ -230,16 +240,17 @@
 
 .st-filter-name {
     flex: 1;
+    min-width: 0; /* ← critical for ellipsis inside flex */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    min-width: 0;
 }
 
 .st-filter-count {
     font-size: 10px;
     font-weight: 700;
     color: rgba(255,255,255,0.3);
+    flex-shrink: 0;
 }
 
 .st-filter-sep {
