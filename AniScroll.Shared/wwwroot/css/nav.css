@@ -3,12 +3,11 @@
    ====================================================== */
 
 :root {
-    --nav-top-height: 70px; /* pill 12px top + ~46px height + 12px gap */
-    --nav-pill-radius: 22px;
+    --nav-top-height: 68px; /* used by search panel top offset only */
 }
 
 /* ════════════════════════════════════════
-   MOBILE  (bottom bar – unchanged)
+   MOBILE  (bottom bar – inchangé)
 ════════════════════════════════════════ */
 .nav-section {
     position: fixed;
@@ -122,7 +121,7 @@
 
 .clear-search-btn {
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.09);
+    background: rgba(255,255,255,0.09);
     border: none;
     border-radius: 50%;
     width: 26px;
@@ -130,7 +129,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255,255,255,0.65);
     cursor: pointer;
     padding: 0;
     transition: background 0.18s ease, transform 0.14s ease;
@@ -236,73 +235,118 @@
 
 
 /* ════════════════════════════════════════
-   DESKTOP  — iPhone 13 notch style
-   Floating pill, frosted-glass, no solid bg
+   DESKTOP  — iPhone 12/13 notch pill
+   Layout: [Lists] [Search...] [Profile]
 ════════════════════════════════════════ */
 @media (min-width: 768px) {
 
-    /* ── Wrapper: centered, auto-width ── */
+    /* ─── Outer wrapper ──────────────────────────────────────────
+       iPhone notch "outside corner" illusion:
+       wrapper has a slightly larger radius + same frosted bg,
+       creating a thin concave rim around the pill edges.
+    ──────────────────────────────────────────────────────────── */
     .nav-section {
         bottom: auto;
-        top: 12px;
+        top: 10px;
         left: 50%;
         right: auto;
         width: auto;
+        min-width: 0;
         transform: translateX(-50%);
-        border-radius: 100px;
         overflow: visible;
         background: transparent;
-        /* Outer "outside corner" rings — 2 layered shadows create the squircle illusion */
-        filter: drop-shadow(0 8px 28px rgba(0,0,0,0.45)) drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+        border-radius: 100px;
+        pointer-events: none;
+        /* Layered shadow gives the floating depth */
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)) drop-shadow(0 10px 30px rgba(0,0,0,0.45));
     }
 
-    /* ── Pill ── */
+    /* ─── Pill ───────────────────────────────────────────────────
+       Matches iPhone 12/13 notch proportions:
+       - border-radius ≈ height/2 on short axis → ~22px for 44px tall
+       - semi-transparent dark + blur so cards bleed through
+       - inset border for crisp edge definition
+       - "outside corner" squircle: extra box-shadow ring
+    ──────────────────────────────────────────────────────────── */
     .main-nav-bar {
         flex-direction: row;
         align-items: center;
         width: auto;
-        /* iPhone 13 notch: wide pill, ~22px radius, fairly tight height */
-        border-radius: 22px;
-        height: 46px;
-        padding: 0 4px 0 4px;
+        height: 44px;
+        padding: 0 5px;
         gap: 0;
-        overflow: hidden;
+        /* iPhone notch exact radius: fully rounded short sides */
+        border-radius: 22px;
+        /* Frosted glass — cards show through */
+        background: rgba(10, 10, 16, 0.72);
+        backdrop-filter: blur(20px) saturate(160%) brightness(0.95);
+        -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(0.95);
         border: none;
         border-top: none;
-        /* Frosted glass — no opaque background, cards show through */
-        background: rgba(12, 12, 18, 0.45);
-        backdrop-filter: blur(24px) saturate(180%);
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
-        /* Thin border to define the pill edge */
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.18),
-        /* "Outside corner" black ring — the iPhone notch trick */
-        0 0 0 3px rgba(0,0,0,0.0);
+        overflow: visible; /* needed for outer ring */
+        pointer-events: all;
+        /* Ring layers that create the "outside corner" feel:
+           1px  → subtle white inner glow (edge definition)
+           then a 3px dark gap
+           then a 1px outer subtle border  */
+        box-shadow:
+        /* inner white rim */
+        inset 0 0 0 0.5px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.22),
+        /* outer "notch gap" ring – the signature iPhone trick */
+        0 0 0 3px rgba(0,0,0,0.0),
+        /* soft glow behind */
+        0 2px 12px rgba(0,0,0,0.3);
     }
 
-    /* ── Hide the big center button on desktop ── */
+        /* ─── "outside corner" concave effect ───────────────────────
+       Two absolutely-positioned pseudo-elements at each side of the
+       pill create the inward curve you see on real iPhone notch.
+    ──────────────────────────────────────────────────────────── */
+        .main-nav-bar::before,
+        .main-nav-bar::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            width: 14px;
+            height: 14px;
+            /* invisible by default, filled by box-shadow radial trick */
+            background: transparent;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .main-nav-bar::before {
+            left: -14px;
+            box-shadow: 7px 4px 0 4px rgba(10, 10, 16, 0.72);
+        }
+
+        .main-nav-bar::after {
+            right: -14px;
+            box-shadow: -7px 4px 0 4px rgba(10, 10, 16, 0.72);
+        }
+
+    /* ─── Nav-buttons-row: dissolve container, layout children directly ── */
+    .nav-buttons-row {
+        display: contents; /* children become direct flex items of main-nav-bar */
+        padding: 0;
+    }
+
+    /* Center button: hidden on desktop */
     .nav-center-btn {
         display: none !important;
     }
 
-    /* ── Nav buttons row ── */
-    .nav-buttons-row {
-        padding: 0 2px;
-        gap: 0;
-        justify-content: flex-start;
-        width: auto;
-        flex: 0 0 auto;
-        order: 1;
-    }
-
-    /* ── Each nav btn: horizontal (icon + text) ── */
+    /* ─── Nav buttons: horizontal icon + label ── */
     .nav-btn {
-        flex-direction: row;
         flex: 0 0 auto;
+        flex-direction: row;
         gap: 7px;
-        padding: 7px 13px;
-        border-radius: 18px;
-        height: 36px;
-        opacity: 0.6;
+        padding: 6px 13px;
+        border-radius: 17px;
+        height: 34px;
+        opacity: 0.62;
+        white-space: nowrap;
+        /* order injected below */
     }
 
         .nav-btn:hover {
@@ -312,81 +356,112 @@
         }
 
         .nav-btn:active {
-            opacity: 0.85;
+            transform: scale(0.96);
+            opacity: 0.9;
             background: rgba(255,255,255,0.07);
-            transform: scale(0.97);
         }
 
     .nav-btn-icon {
-        width: 17px;
-        height: 17px;
+        width: 16px;
+        height: 16px;
     }
 
     .nav-btn-label {
         font-size: 13px;
         font-weight: 600;
         letter-spacing: 0;
-        white-space: nowrap;
     }
 
-    /* ── Divider between buttons and search ── */
-    .nav-buttons-row::after {
+    /* ─── ORDER: Lists (1) · Search (2) · Profile (3) ── */
+    /* nav-buttons-row has display:contents so nav-btns are
+       virtual direct children of main-nav-bar */
+    .nav-buttons-row .nav-btn:first-child {
+        order: 1;
+    }
+    /* Lists */
+    .search-row {
+        order: 2;
+    }
+    /* Search (middle) */
+    .nav-buttons-row .nav-btn:last-child {
+        order: 3;
+    }
+    /* Profile */
+
+    /* Thin dividers flanking the search pill */
+    .search-row::before,
+    .search-row::after {
         content: '';
         display: block;
         width: 1px;
-        height: 20px;
-        background: rgba(255,255,255,0.14);
-        margin: 0 6px;
+        height: 18px;
+        background: rgba(255,255,255,0.12);
         flex-shrink: 0;
+        align-self: center;
     }
 
-    /* ── Search always open inline ── */
+    .search-row::before {
+        margin-right: 5px;
+    }
+
+    .search-row::after {
+        margin-left: 5px;
+    }
+
+    /* ─── Search pill: always open inline ── */
     .search-row {
-        flex: 1 1 auto;
-        order: 2;
+        display: flex;
+        align-items: center;
+        flex: 1;
+        min-width: 160px;
+        max-width: 240px;
         height: auto !important;
         overflow: visible;
-        min-width: 150px;
-        max-width: 260px;
+        padding: 0;
     }
 
     .search-morphing-pill {
         opacity: 1 !important;
         transform: none !important;
         transition: none !important;
+        flex: 1;
         width: 100%;
-        height: 34px;
+        height: 30px;
         margin: 0;
-        border-radius: 16px;
+        border-radius: 15px;
         background: rgba(255,255,255,0.07);
         border: 1px solid rgba(255,255,255,0.09);
-        box-shadow: none;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
     }
 
-    .main-nav-bar.search-open .search-morphing-pill {
-        background: rgba(255,255,255,0.11);
-        border-color: rgba(255,255,255,0.16);
-    }
+        .main-nav-bar.search-open .search-morphing-pill,
+        .search-morphing-pill:focus-within {
+            background: rgba(255,255,255,0.11);
+            border-color: rgba(255,255,255,0.18);
+        }
 
     .search-pill-content {
         opacity: 1 !important;
         transition: none !important;
         padding: 0 10px;
-        gap: 7px;
+        gap: 6px;
     }
 
     .search-field {
-        font-size: 13px;
+        font-size: 12.5px;
     }
+
+        .search-field::placeholder {
+            font-size: 12px;
+        }
 
     .search-pill-icon {
-        opacity: 0.38;
+        opacity: 0.35;
     }
 
-    /* Make search-row a flex container */
-    .search-row {
-        display: flex;
-        align-items: center;
-        padding: 0 4px 0 0;
+    .clear-search-btn {
+        width: 20px;
+        height: 20px;
+        margin-right: 2px;
     }
 }

@@ -43,7 +43,7 @@ html, body {
     overflow: hidden;
 }
 
-/* Desktop: cards fill the full height, pill floats above */
+/* Desktop: pill floats over cards — no offset, cards use full height */
 @media (min-width: 768px) {
     .main-scroll {
         top: 0;
