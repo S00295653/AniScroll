@@ -292,7 +292,7 @@
             </div>
         }
 
-        <!-- ══ FORMATS ══ -->
+        <!-- ══ FORMATS — bar chart (robust regardless of distribution) ══ -->
         @if (_s.ByFormat.Any())
         {
             <div class="st-section">
@@ -302,16 +302,18 @@
                     </svg>
                     Formats
                 </div>
-                @{ var radarFormats = _s.ByFormat.OrderByDescending(x => x.Value).Take(7).ToList(); }
-                <div class="st-radar-wrap">@((MarkupString)BuildRadarSvg(radarFormats, "#E94560", "#ff8fa3"))</div>
-                <div class="st-radar-legend">
-                    @foreach (var kv in radarFormats)
+                <div class="st-bar-list">
+                    @{ var maxFmt = _s.ByFormat.Values.Max(); }
+                    @foreach (var kv in _s.ByFormat.OrderByDescending(x => x.Value))
                     {
-                        var lp = _s.FilteredTotal > 0 ? kv.Value * 100.0 / _s.FilteredTotal : 0;
-                        <div class="st-radar-legend-item">
-                            <span class="st-radar-legend-dot" style="background:#ff8fa3;"></span>
-                            <span class="st-radar-legend-name">@kv.Key</span>
-                            <span class="st-radar-legend-val">@kv.Value <span class="st-radar-legend-pct">(@lp.ToString("F0")%)</span></span>
+                        var pct = maxFmt > 0 ? kv.Value * 100.0 / maxFmt : 0;
+                        var lpct = _s.FilteredTotal > 0 ? kv.Value * 100.0 / _s.FilteredTotal : 0;
+                        <div class="st-bar-row">
+                            <span class="st-bar-name">@kv.Key</span>
+                            <div class="st-bar-track">
+                                <div class="st-bar-fill st-bar-format" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <span class="st-bar-val">@kv.Value</span>
                         </div>
                     }
                 </div>
@@ -560,8 +562,6 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp  = e.EpisodesWatched;
 
-            // FIX: Rewatching means the original watch is ongoing — not yet in TotalRewatches.
-            // Add 1 so the first watch contributes to totals.
             bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
             int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
 
@@ -675,136 +675,71 @@
         _s = s;
     }
 
-    // ── SVG builders ──────────────────────────────────────────────────────
-
-    private static string BuildRadarSvg(List<KeyValuePair<string, int>> items, string strokeColor, string fillColor)
-    {
-        if (items.Count < 2) return "";
-        int n = items.Count;
-        double maxVal = items.Max(x => x.Value);
-        if (maxVal == 0) return "";
-        const double cx = 100, cy = 100, r = 75;
-        var sb = new System.Text.StringBuilder();
-        sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-radar-svg\">");
-        for (int ring = 1; ring <= 4; ring++)
-        {
-            double rr = r * ring / 4.0;
-            sb.Append($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{rr:F1}\" fill=\"none\" stroke=\"rgba(255,255,255,0.08)\" stroke-width=\"0.5\"/>");
-        }
-        for (int i = 0; i < n; i++)
-        {
-            double a = 2 * Math.PI * i / n - Math.PI / 2;
-            sb.Append($"<line x1=\"{cx}\" y1=\"{cy}\" x2=\"{cx + r * Math.Cos(a):F1}\" y2=\"{cy + r * Math.Sin(a):F1}\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"0.5\"/>");
-        }
-        var pts = Enumerable.Range(0, n).Select(i => {
-            double a = 2 * Math.PI * i / n - Math.PI / 2, v = items[i].Value / maxVal;
-            return (x: cx + r * v * Math.Cos(a), y: cy + r * v * Math.Sin(a));
-        }).ToList();
-        sb.Append($"<polygon points=\"{string.Join(" ", pts.Select(p => $"{p.x:F1},{p.y:F1}"))}\" fill=\"{fillColor}\" fill-opacity=\"0.15\" stroke=\"{strokeColor}\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/>");
-        foreach (var (px, py) in pts) sb.Append($"<circle cx=\"{px:F1}\" cy=\"{py:F1}\" r=\"2.5\" fill=\"{strokeColor}\"/>");
-        for (int i = 0; i < n; i++)
-        {
-            double a  = 2 * Math.PI * i / n - Math.PI / 2;
-            double lx = cx + (r + 14) * Math.Cos(a), ly = cy + (r + 14) * Math.Sin(a);
-            string anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
-            string lbl    = items[i].Key.Length > 10 ? items[i].Key[..9] + "…" : items[i].Key;
-            sb.Append($"<text x=\"{lx:F1}\" y=\"{ly:F1}\" text-anchor=\"{anchor}\" dominant-baseline=\"middle\" font-size=\"7\" fill=\"rgba(255,255,255,0.5)\">{System.Net.WebUtility.HtmlEncode(lbl)}</text>");
-        }
-        sb.Append("</svg>"); return sb.ToString();
-    }
-
-    /// <summary>
-    /// Beautiful donut chart — per-slice radial gradients, subtle glow, clean gap, no in-slice labels.
-    /// The legend below the chart shows name + count + %.
-    /// </summary>
+    // ── Pie / donut chart ─────────────────────────────────────────────────
+    // Parallel edges technique: NO angular gap — instead use stroke with the
+    // background colour to create a uniform 2-px separator at every radius.
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
     {
         if (!items.Any()) return "";
 
-        // Base color + lighter highlight for per-slice radial gradient
-        var palette = new (string baseCol, string lightCol)[]
-        {
-            ("#E94560", "#ff8fa3"),
-            ("#3b82f6", "#93c5fd"),
-            ("#22c55e", "#86efac"),
-            ("#f97316", "#fdba74"),
-            ("#a855f7", "#d8b4fe"),
-            ("#06b6d4", "#67e8f9"),
-        };
+        var colors = new[] { "#E94560", "#3b82f6", "#22c55e", "#f97316", "#a855f7", "#06b6d4" };
 
         double total = items.Sum(x => x.Value);
         if (total == 0) return "";
 
         const double cx = 100, cy = 100, outerR = 76, innerR = 48;
-        double gap = items.Count > 1 ? 0.05 : 0; // gap between slices in radians
 
         string F(double v) => v.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
 
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
 
-        // ── Defs: drop shadow + one radial gradient per palette entry ────
-        sb.Append("<defs>");
-        sb.Append(
-            "<filter id=\"pshadow\" x=\"-15%\" y=\"-15%\" width=\"130%\" height=\"130%\">" +
-            "<feDropShadow dx=\"0\" dy=\"1\" stdDeviation=\"2.5\" flood-color=\"rgba(0,0,0,0.55)\"/>" +
-            "</filter>");
-        for (int gi = 0; gi < palette.Length; gi++)
-        {
-            var (b, l) = palette[gi];
-            sb.Append($"<radialGradient id=\"pg{gi}\" cx=\"35%\" cy=\"28%\" r=\"72%\">" +
-                      $"<stop offset=\"0%\"   stop-color=\"{l}\" stop-opacity=\"0.7\"/>" +
-                      $"<stop offset=\"100%\" stop-color=\"{b}\" stop-opacity=\"1\"/>" +
-                      "</radialGradient>");
-        }
-        sb.Append("</defs>");
-
-        // ── Faint outer ring ─────────────────────────────────────────────
-        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(outerR + 5)}\" fill=\"rgba(255,255,255,0.025)\"/>");
-
-        // ── Slices ───────────────────────────────────────────────────────
+        // Draw filled slices with NO gap (full sweep)
         double angle = -Math.PI / 2;
         for (int i = 0; i < items.Count; i++)
         {
             double sw = 2 * Math.PI * items[i].Value / total;
-            double sa = angle + gap / 2;
-            double ea = angle + sw - gap / 2;
-            if (ea > sa)
-            {
-                double x1  = cx + outerR * Math.Cos(sa), y1  = cy + outerR * Math.Sin(sa);
-                double x2  = cx + outerR * Math.Cos(ea), y2  = cy + outerR * Math.Sin(ea);
-                double xi1 = cx + innerR * Math.Cos(sa), yi1 = cy + innerR * Math.Sin(sa);
-                double xi2 = cx + innerR * Math.Cos(ea), yi2 = cy + innerR * Math.Sin(ea);
-                int    large = (sw - gap) > Math.PI ? 1 : 0;
-                int    pi    = i % palette.Length;
-                var    (baseCol, _) = palette[pi];
+            double ea = angle + sw;
 
-                string pathD = $"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} " +
-                               $"A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} " +
-                               $"L {F(xi2)} {F(yi2)} " +
-                               $"A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z";
+            double x1  = cx + outerR * Math.Cos(angle), y1  = cy + outerR * Math.Sin(angle);
+            double x2  = cx + outerR * Math.Cos(ea),    y2  = cy + outerR * Math.Sin(ea);
+            double xi1 = cx + innerR * Math.Cos(angle), yi1 = cy + innerR * Math.Sin(angle);
+            double xi2 = cx + innerR * Math.Cos(ea),    yi2 = cy + innerR * Math.Sin(ea);
+            int large  = sw > Math.PI ? 1 : 0;
 
-                // Soft glow halo (semi-transparent copy, slightly larger)
-                sb.Append($"<path d=\"{pathD}\" fill=\"{baseCol}\" opacity=\"0.15\" filter=\"url(#pshadow)\"/>");
-                // Main slice with gradient
-                sb.Append($"<path d=\"{pathD}\" fill=\"url(#pg{pi})\"/>");
-                // Bright inner arc for depth
-                sb.Append($"<path d=\"M {F(xi1)} {F(yi1)} A {F(innerR)} {F(innerR)} 0 {large} 1 {F(xi2)} {F(yi2)}\"" +
-                          $" fill=\"none\" stroke=\"rgba(255,255,255,0.15)\" stroke-width=\"0.75\"/>");
-            }
+            string col = colors[i % colors.Length];
+            string pathD = $"M {F(xi1)} {F(yi1)} L {F(x1)} {F(y1)} " +
+                           $"A {F(outerR)} {F(outerR)} 0 {large} 1 {F(x2)} {F(y2)} " +
+                           $"L {F(xi2)} {F(yi2)} " +
+                           $"A {F(innerR)} {F(innerR)} 0 {large} 0 {F(xi1)} {F(yi1)} Z";
+
+            sb.Append($"<path d=\"{pathD}\" fill=\"{col}\"/>");
             angle += sw;
         }
 
-        // ── Center hole ──────────────────────────────────────────────────
-        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 1)}\" fill=\"#14141f\"/>");
-        // Hairline inner border
-        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR - 0.5)}\" fill=\"none\" stroke=\"rgba(255,255,255,0.07)\" stroke-width=\"1\"/>");
+        // Overlay stroke in background colour to create perfectly parallel separators.
+        // The stroke is drawn on top of all filled slices — lines are radial so edges
+        // appear at equal width across the whole ring depth.
+        angle = -Math.PI / 2;
+        for (int i = 0; i < items.Count; i++)
+        {
+            double sw = 2 * Math.PI * items[i].Value / total;
+            // Draw a radial line at the START angle of each slice
+            double lx1 = cx + innerR * Math.Cos(angle);
+            double ly1 = cy + innerR * Math.Sin(angle);
+            double lx2 = cx + outerR * Math.Cos(angle);
+            double ly2 = cy + outerR * Math.Sin(angle);
+            sb.Append($"<line x1=\"{F(lx1)}\" y1=\"{F(ly1)}\" x2=\"{F(lx2)}\" y2=\"{F(ly2)}\" stroke=\"#14141f\" stroke-width=\"2.5\"/>");
+            angle += sw;
+        }
+
+        // Center hole
+        sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR)}\" fill=\"#14141f\"/>");
 
         // Center count
         sb.Append("<text x=\"100\" y=\"94\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
                   "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"20\" font-weight=\"800\" " +
-                  $"fill=\"rgba(255,255,255,0.92)\">{(int)total}</text>");
-        // Center label
+                  "fill=\"rgba(255,255,255,0.92)\">" + (int)total + "</text>");
         sb.Append("<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" " +
                   "font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"8\" font-weight=\"600\" " +
                   "fill=\"rgba(255,255,255,0.28)\" letter-spacing=\"0.8\">ANIME</text>");

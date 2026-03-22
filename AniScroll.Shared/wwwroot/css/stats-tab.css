@@ -44,7 +44,7 @@
 
 .st-hero-right {
     flex: 1;
-    min-width: 0; /* ← required so children can shrink */
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -104,8 +104,6 @@
 
 /* ══════════════════════════════════════════════════════════════
    STATS FILTER DROPDOWN
-   — Key fix: the menu has a fixed width and every option clips
-     its text with ellipsis so long names never break the layout.
    ══════════════════════════════════════════════════════════════ */
 
 .st-filter-wrap {
@@ -113,7 +111,6 @@
     width: 100%;
 }
 
-/* Trigger button */
 .st-filter-trigger {
     display: flex;
     align-items: center;
@@ -130,7 +127,7 @@
     width: 100%;
     box-sizing: border-box;
     text-align: left;
-    overflow: hidden; /* prevent trigger itself from growing */
+    overflow: hidden;
     transition: background .15s, border-color .15s, color .15s;
 }
 
@@ -141,7 +138,7 @@
     }
 
 .st-filter-trigger-label {
-    flex-shrink: 0; /* "Stats for" never shrinks */
+    flex-shrink: 0;
 }
 
 .st-filter-badge {
@@ -169,13 +166,11 @@
         opacity: 1;
     }
 
-/* Dropdown menu — fixed width, clip overflow */
 .st-filter-menu {
     position: absolute;
     top: calc(100% + 5px);
     right: 0;
     left: 0;
-    /* Constrain the menu to the trigger width — never wider */
     width: 100%;
     box-sizing: border-box;
     background: #1c1c2a;
@@ -187,7 +182,7 @@
     animation: st-dd-open .16s cubic-bezier(.22,1,.36,1);
     max-height: 55dvh;
     overflow-y: auto;
-    overflow-x: hidden; /* ← block horizontal overflow */
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.12) transparent;
 }
@@ -217,20 +212,14 @@
     }
 }
 
-/* ── Filter option ─────────────────────────────────────────────
-   CRITICAL rules for proper truncation:
-   1. width: 100% + box-sizing so button never exceeds menu width
-   2. overflow: hidden clips anything that would stick out
-   3. min-width: 0 lets flex children shrink below their content size
-   ──────────────────────────────────────────────────────────── */
 .st-filter-option {
     display: flex;
     align-items: center;
     gap: 8px;
     width: 100%;
-    box-sizing: border-box; /* ← width includes padding */
-    min-width: 0; /* ← allow flex children to shrink */
-    overflow: hidden; /* ← clip overflowing content */
+    box-sizing: border-box;
+    min-width: 0;
+    overflow: hidden;
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid transparent;
@@ -258,7 +247,6 @@
     font-weight: 600;
 }
 
-/* Color dot — never shrinks */
 .st-filter-dot {
     width: 8px;
     height: 8px;
@@ -266,16 +254,14 @@
     flex-shrink: 0;
 }
 
-/* Name — takes remaining space, clips with ellipsis */
 .st-filter-name {
     flex: 1;
-    min-width: 0; /* ← REQUIRED for ellipsis inside flex */
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-/* Count + check — never shrink */
 .st-filter-count {
     font-size: 10px;
     font-weight: 700;
@@ -620,7 +606,7 @@
     flex-shrink: 0;
 }
 
-/* ── Bar lists (genres, studios, sources) ── */
+/* ── Bar lists (genres, formats, studios, sources) ── */
 .st-bar-list {
     display: flex;
     flex-direction: column;
@@ -663,6 +649,10 @@
     background: linear-gradient(90deg,#E94560,#ff6b7a);
 }
 
+.st-bar-format {
+    background: linear-gradient(90deg,#f97316,#fbbf24);
+}
+
 .st-bar-studio {
     background: linear-gradient(90deg,#3b82f6,#60a5fa);
 }
@@ -680,18 +670,6 @@
     flex-shrink: 0;
 }
 
-/* ── Radar chart ── */
-.st-radar-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 14px;
-}
-
-.st-radar-svg {
-    width: 180px;
-    height: 180px;
-}
-
 /* ── Pie / donut chart ── */
 .st-pie-wrap {
     display: flex;
@@ -705,7 +683,7 @@
     overflow: visible;
 }
 
-/* ── Shared legend (radar + pie) ── */
+/* ── Shared legend (pie) ── */
 .st-radar-legend {
     display: flex;
     flex-direction: column;
