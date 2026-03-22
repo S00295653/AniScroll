@@ -32,6 +32,13 @@
                     <span class="st-hero-sub-num">@_s.TotalEpisodes.ToString("N0")</span>
                     <span class="st-hero-sub-lbl">episodes</span>
                 </div>
+                @if (_s.TotalMovies > 0)
+                {
+                    <div class="st-hero-sub">
+                        <span class="st-hero-sub-num">@_s.TotalMovies</span>
+                        <span class="st-hero-sub-lbl">movies watched</span>
+                    </div>
+                }
 
                 <!-- ── Stats filter dropdown ── -->
                 <div class="st-filter-wrap" @onclick:stopPropagation="true">
@@ -292,7 +299,7 @@
             </div>
         }
 
-        <!-- ══ FORMATS ══ -->
+        <!-- ══ FORMATS — bar chart, only formats with count > 0 ══ -->
         @if (_s.ByFormat.Any())
         {
             <div class="st-section">
@@ -304,12 +311,14 @@
                 </div>
                 <div class="st-bar-list">
                     @{ var maxFmt = _s.ByFormat.Values.Max(); }
-                    @foreach (var kv in _s.ByFormat.OrderByDescending(x => x.Value))
+                    @foreach (var kv in _s.ByFormat.OrderByDescending(x => x.Value).Where(x => x.Value > 0))
                     {
                         var pct = maxFmt > 0 ? kv.Value * 100.0 / maxFmt : 0;
                         <div class="st-bar-row">
                             <span class="st-bar-name">@kv.Key</span>
-                            <div class="st-bar-track"><div class="st-bar-fill st-bar-format" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
+                            <div class="st-bar-track">
+                                <div class="st-bar-fill st-bar-format" style="width:@pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
                             <span class="st-bar-val">@kv.Value</span>
                         </div>
                     }
@@ -481,8 +490,7 @@
             <div class="st-engage-grid">
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.WithNotes</span><span class="st-engage-lbl">with notes</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Rewatched</span><span class="st-engage-lbl">rewatched</span></div>
-                <!-- movies watched replaces completion rate here -->
-                <div class="st-engage-cell"><span class="st-engage-val">@_s.MoviesWatched</span><span class="st-engage-lbl">films</span></div>
+                <div class="st-engage-cell"><span class="st-engage-val">@_s.CompletionRate.ToString("F0")%</span><span class="st-engage-lbl">completion</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.DropRate.ToString("F0")%</span><span class="st-engage-lbl">drop rate</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Private</span><span class="st-engage-lbl">private</span></div>
                 <div class="st-engage-cell"><span class="st-engage-val">@_s.Favorited</span><span class="st-engage-lbl">favourited</span></div>
@@ -560,38 +568,45 @@
             int totalEp = GetTotalEpsFromString(e.Anime.Episodes);
             int baseEp  = e.EpisodesWatched;
 
+            bool isMovie = string.Equals(e.Anime.Format, "Movie", StringComparison.OrdinalIgnoreCase);
+            bool isMusic = string.Equals(e.Anime.Format, "Music", StringComparison.OrdinalIgnoreCase);
+
+            // AniList stores progress=0 for completed entries — fall back to totalEp.
+            if (baseEp == 0 && totalEp > 0 &&
+                (e.Status == ListStatus.Completed || e.Status == ListStatus.Rewatching))
+            {
+                baseEp = totalEp;
+            }
+
+            // Movie counter (Completed / Watching / Rewatching only)
+            if (isMovie &&
+                (e.Status == ListStatus.Completed ||
+                 e.Status == ListStatus.Watching  ||
+                 e.Status == ListStatus.Rewatching))
+            {
+                s.TotalMovies++;
+            }
+
+            // Rewatching: the original watch is not yet in TotalRewatches — add 1.
             bool isRewatchingNow    = e.Status == ListStatus.Rewatching;
             int  effectiveRewatches = e.TotalRewatches + (isRewatchingNow ? 1 : 0);
 
-            // ── Detect single-episode anime (films / specials / shorts) ───────
-            // A "movie" here means the anime has exactly 1 episode total.
-            // We use the canonical total from the AniList data, not the user's
-            // watched count, so rewatches are correctly tracked separately.
-            bool isMovie = totalEp == 1;
-
-            int rwEp = 0;
-            if (effectiveRewatches > 0 && e.Status != ListStatus.Planning)
+            // Episode counter: skip Movie and Music
+            if (!isMovie && !isMusic)
             {
-                if (totalEp > 0) rwEp = effectiveRewatches * totalEp;
-                else if (baseEp > 0) rwEp = effectiveRewatches * baseEp;
-            }
-
-            // Add to total episodes only if NOT a single-episode entry.
-            // Single-episode anime contribute to MoviesWatched instead.
-            if (!isMovie)
+                int rwEp = 0;
+                if (effectiveRewatches > 0 && e.Status != ListStatus.Planning)
+                {
+                    if (totalEp > 0) rwEp = effectiveRewatches * totalEp;
+                    else if (baseEp > 0) rwEp = effectiveRewatches * baseEp;
+                }
                 s.TotalEpisodes += baseEp + rwEp;
-
-            // Count the movie itself (1 episode per initial watch + rewatches)
-            if (isMovie && e.Status != ListStatus.Planning)
-            {
-                // 1 for the original watch + any rewatches
-                int movieWatches = 1 + effectiveRewatches;
-                s.MoviesWatched += movieWatches;
             }
 
+            // Watch time: all formats (movies contribute their runtime too)
             if (e.Status != ListStatus.Planning)
             {
-                int dur = e.Anime.Duration ?? 24;
+                int dur = e.Anime.Duration ?? (isMovie ? 90 : 24);
                 s.TotalMinutes += (long)baseEp * dur;
                 if (effectiveRewatches > 0)
                 {
@@ -601,7 +616,7 @@
             }
 
             if (e.Status == ListStatus.Planning && totalEp > 0)
-                s.DaysPlanned += totalEp * (e.Anime.Duration ?? 24) / 1440.0;
+                s.DaysPlanned += totalEp * (e.Anime.Duration ?? (isMovie ? 90 : 24)) / 1440.0;
 
             if (!string.IsNullOrEmpty(e.Notes)) s.WithNotes++;
             if (e.TotalRewatches > 0) s.Rewatched++;
@@ -691,8 +706,7 @@
         _s = s;
     }
 
-    // ── Pie / donut chart ─────────────────────────────────────────────────
-    // Parallel-edge technique: full sweeps, then radial stroke lines in bg colour.
+    // ── Pie / donut — parallel edges via background-colour stroke ────────
     private static string BuildPieSvg(List<KeyValuePair<string, int>> items)
     {
         if (!items.Any()) return "";
@@ -703,6 +717,7 @@
         string F(double v) => v.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
         var sb = new System.Text.StringBuilder();
         sb.Append("<svg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\" class=\"st-pie-svg\">");
+        // Draw all filled slices with no angular gap
         double angle = -Math.PI / 2;
         for (int i = 0; i < items.Count; i++)
         {
@@ -717,14 +732,17 @@
             sb.Append($"<path d=\"{pathD}\" fill=\"{colors[i % colors.Length]}\"/>");
             angle += sw;
         }
-        // Radial separator lines in background colour — perfectly parallel edges
+        // Overlay radial lines in background colour → perfectly parallel edges at every depth
         angle = -Math.PI / 2;
         for (int i = 0; i < items.Count; i++)
         {
             double sw = 2 * Math.PI * items[i].Value / total;
-            sb.Append($"<line x1=\"{F(cx + innerR * Math.Cos(angle))}\" y1=\"{F(cy + innerR * Math.Sin(angle))}\" x2=\"{F(cx + outerR * Math.Cos(angle))}\" y2=\"{F(cy + outerR * Math.Sin(angle))}\" stroke=\"#14141f\" stroke-width=\"2.5\"/>");
+            double lx1 = cx + innerR * Math.Cos(angle), ly1 = cy + innerR * Math.Sin(angle);
+            double lx2 = cx + outerR * Math.Cos(angle), ly2 = cy + outerR * Math.Sin(angle);
+            sb.Append($"<line x1=\"{F(lx1)}\" y1=\"{F(ly1)}\" x2=\"{F(lx2)}\" y2=\"{F(ly2)}\" stroke=\"#14141f\" stroke-width=\"2.5\"/>");
             angle += sw;
         }
+        // Center hole
         sb.Append($"<circle cx=\"100\" cy=\"100\" r=\"{F(innerR)}\" fill=\"#14141f\"/>");
         sb.Append("<text x=\"100\" y=\"94\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"20\" font-weight=\"800\" fill=\"rgba(255,255,255,0.92)\">" + (int)total + "</text>");
         sb.Append("<text x=\"100\" y=\"110\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-family=\"system-ui,-apple-system,sans-serif\" font-size=\"8\" font-weight=\"600\" fill=\"rgba(255,255,255,0.28)\" letter-spacing=\"0.8\">ANIME</text>");
@@ -757,7 +775,8 @@
             var p = a.Episodes.Split('/').Last().Trim().TrimEnd('+', '?');
             if (int.TryParse(p, out int v) && v > 0) eps = v;
         }
-        return eps * (long)(a.Duration ?? 24);
+        bool isMovie = string.Equals(a.Format, "Movie", StringComparison.OrdinalIgnoreCase);
+        return eps * (long)(a.Duration ?? (isMovie ? 90 : 24));
     }
     private static string TruncateTitle(string t)           => t.Length > 28 ? t[..26] + "…" : t;
     private static string GetScoreColor(double sc)          => sc >= 8.5 ? "#22c55e" : sc >= 7 ? "#84cc16" : sc >= 5 ? "#eab308" : sc >= 3 ? "#f97316" : "#ef4444";
@@ -768,13 +787,13 @@
     private class StatsSnapshot
     {
         public int    Total          { get; set; }
-        public int    TotalEpisodes  { get; set; }  // excludes single-episode anime
+        public int    TotalEpisodes  { get; set; }
+        public int    TotalMovies    { get; set; }
         public long   TotalMinutes   { get; set; }
         public int    Favorited      { get; set; }
         public int    Rewatched      { get; set; }
         public int    Private        { get; set; }
         public int    WithNotes      { get; set; }
-        public int    MoviesWatched  { get; set; }  // single-episode anime (incl. rewatches)
         public double DaysPlanned    { get; set; }
         public double CompletionRate { get; set; }
         public double DropRate       { get; set; }
