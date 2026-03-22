@@ -3,6 +3,13 @@
 @inject AniListAuthService AniListAuth
 @inject IJSRuntime JS
 
+@* Always mounted so TryAutoImportAsync works even before the panel is opened.
+   AccountTab renders nothing when IsActive=false, so there is zero DOM cost. *@
+@if (!IsVisible)
+{
+    <AccountTab IsVisible="false" IsActive="false" @ref="_accountTab" />
+}
+
 @if (IsVisible)
 {
     <div class="pp-overlay" @onclick="HandleOverlayClick">
