@@ -46,10 +46,11 @@ html, body {
     overflow: hidden;
 }
 
-/* ── Desktop: offset below the top nav bar ── */
+/* Desktop: offset below the floating pill
+   pill is at top:12px, height≈50px, bottom gap≈12px → 74px total */
 @media (min-width: 768px) {
     .main-scroll {
-        top: var(--nav-top-height, 80px);
-        height: calc(100dvh - var(--nav-top-height, 80px));
+        top: var(--nav-top-height, 74px);
+        height: calc(100dvh - var(--nav-top-height, 74px));
     }
 }

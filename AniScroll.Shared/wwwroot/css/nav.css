@@ -2,11 +2,16 @@
    NAVIGATION BAR
    ====================================================== */
 
-/* ── CSS custom property: nav height used by other files ── */
 :root {
-    --nav-top-height: 80px;
+    /* Height reserved for the floating pill on desktop
+       (pill top-offset 12px + height 50px + bottom gap 12px) */
+    --nav-top-height: 74px;
+    --nav-pill-radius: 26px;
 }
 
+/* ════════════════════════════════════════
+   MOBILE  (default, bottom bar)
+════════════════════════════════════════ */
 .nav-section {
     position: fixed;
     bottom: 0;
@@ -18,15 +23,6 @@
     overflow: hidden;
     z-index: 1000;
     pointer-events: none;
-}
-
-@media (min-width: 768px) {
-    .nav-section {
-        /* Move to top */
-        bottom: auto;
-        top: 0;
-        border-radius: 0 0 22px 22px;
-    }
 }
 
 .main-nav-bar {
@@ -43,34 +39,18 @@
     pointer-events: all;
 }
 
-@media (min-width: 768px) {
-    .main-nav-bar {
-        border-radius: 0 0 22px 22px;
-        border-top: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    }
-}
-
 .search-is-active .nav-section {
     border-radius: 0;
-    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-radius 0.22s cubic-bezier(0.4,0,0.2,1);
 }
 
 .search-is-active .main-nav-bar {
     border-radius: 0;
     border-top-color: transparent;
-    transition: border-radius 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-top-color 0.22s ease;
+    transition: border-radius 0.22s cubic-bezier(0.4,0,0.2,1), border-top-color 0.22s ease;
 }
 
-@media (min-width: 768px) {
-    .search-is-active .main-nav-bar {
-        border-bottom-color: transparent;
-        border-top-color: transparent;
-    }
-}
-
-
-/* ── Search row ── */
+/* ── Mobile search row ── */
 .search-row {
     width: 100%;
     height: 0;
@@ -82,7 +62,7 @@
     height: 66px;
 }
 
-/* ── Morphing pill ── */
+/* ── Morphing pill (mobile animation) ── */
 .search-morphing-pill {
     width: calc(100% - 32px);
     height: 46px;
@@ -97,13 +77,13 @@
     opacity: 0;
     transform: scaleX(0.124);
     transform-origin: center center;
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0s, opacity 0.18s ease 0s;
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1) 0s, opacity 0.18s ease 0s;
 }
 
     .search-morphing-pill.expanded {
         opacity: 1;
         transform: scaleX(1);
-        transition: opacity 0.16s ease 0.18s, transform 0.48s cubic-bezier(0.34, 1.4, 0.64, 1) 0.20s;
+        transition: opacity 0.16s ease 0.18s, transform 0.48s cubic-bezier(0.34,1.4,0.64,1) 0.20s;
     }
 
 /* ── Pill content ── */
@@ -126,7 +106,6 @@
 .search-pill-icon {
     flex-shrink: 0;
     color: white;
-    transition: opacity 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     opacity: 0.42;
 }
 
@@ -165,10 +144,10 @@
 
     .clear-search-btn:active {
         transform: scale(0.86);
-        background: rgba(255, 255, 255, 0.18);
+        background: rgba(255,255,255,0.18);
     }
 
-/* ── Nav buttons row ── */
+/* ── Nav buttons row (mobile) ── */
 .nav-buttons-row {
     width: 100%;
     display: flex;
@@ -177,19 +156,11 @@
     padding: 10px 24px max(16px, env(safe-area-inset-bottom));
 }
 
-/* On desktop: symmetric vertical padding (no safe-area-inset-bottom) */
-@media (min-width: 768px) {
-    .nav-buttons-row {
-        padding: 12px 24px 12px;
-    }
-}
-
 /* ── Side buttons ── */
 .nav-btn {
     background: transparent;
     border: none;
     color: white;
-    transition: opacity 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     opacity: 0.42;
     cursor: pointer;
     display: flex;
@@ -201,19 +172,12 @@
     border-radius: 12px;
     flex: 1;
     min-width: 0;
-    transition: opacity 0.2s ease, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: opacity 0.2s ease, background 0.15s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
 }
 
     .nav-btn:active {
         opacity: 0.85;
     }
-
-@media (min-width: 768px) {
-    .nav-btn:hover {
-        opacity: 0.85;
-        background: rgba(255, 255, 255, 0.05);
-    }
-}
 
 .nav-btn-icon {
     width: 21px;
@@ -229,7 +193,7 @@
     letter-spacing: 0.02em;
 }
 
-/* ── Center button ── */
+/* ── Center button (mobile size) ── */
 .nav-center-btn {
     flex: 0 0 auto;
     width: 56px;
@@ -244,8 +208,8 @@
     background: linear-gradient(150deg, #ff4d6b 0%, #c8253f 100%);
     border: none;
     color: white;
-    box-shadow: 0 0 0 6px rgba(200, 37, 63, 0.12), 0 4px 18px rgba(200, 37, 63, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
-    transition: background 0.38s ease, box-shadow 0.38s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 0 6px rgba(200,37,63,0.12), 0 4px 18px rgba(200,37,63,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: background 0.38s ease, box-shadow 0.38s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
 }
 
     .nav-center-btn::before {
@@ -259,7 +223,7 @@
 
     .nav-center-btn.is-active {
         background: linear-gradient(150deg, #5d8ef0 0%, #2c5cc5 100%);
-        box-shadow: 0 0 0 6px rgba(44, 92, 197, 0.12), 0 4px 18px rgba(44, 92, 197, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+        box-shadow: 0 0 0 6px rgba(44,92,197,0.12), 0 4px 18px rgba(44,92,197,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
     }
 
     .nav-center-btn:active {
@@ -275,4 +239,180 @@
     border-radius: 50%;
     background: #22c55e;
     border: 2px solid var(--bg-primary, #16181e);
+}
+
+
+/* ════════════════════════════════════════
+   DESKTOP  (Dynamic Island floating pill)
+════════════════════════════════════════ */
+@media (min-width: 768px) {
+
+    /* ── Outer container: floating centered, not full-width ── */
+    .nav-section {
+        bottom: auto;
+        top: 12px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        /* Auto width = shrinks to content */
+        width: auto;
+        min-width: 480px;
+        max-width: 700px;
+        border-radius: 100px;
+        overflow: visible; /* Allow outer shadow/ring to show */
+        background: transparent;
+        /* Outer "ring" that creates the Dynamic Island outside-corner illusion.
+           The 3px black outline between the pill edge and content below
+           makes the corners look extra-rounded (squircle feel). */
+        filter: drop-shadow(0 14px 36px rgba(0,0,0,0.55)) drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+    }
+
+    /* ── Pill itself ── */
+    .main-nav-bar {
+        /* Layout: horizontal row */
+        flex-direction: row;
+        align-items: center;
+        width: auto;
+        /* Dynamic Island shape:
+           inner radius slightly smaller than outer section radius
+           + 3px black box-shadow ring = outside-corner squircle effect */
+        border-radius: var(--nav-pill-radius);
+        padding: 5px 5px 5px 10px;
+        gap: 2px;
+        /* Border & background */
+        border: none;
+        border-top: none;
+        outline: 3px solid rgba(0,0,0,0.92); /* the "outside corner" separator */
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.1), /* subtle inner border */
+        0 0 0 4px rgba(0,0,0,0.88), /* black outer ring */
+        inset 0 1px 0 rgba(255,255,255,0.08);
+        /* Larger border-radius here + black ring + section's larger radius = squircle */
+        overflow: visible;
+    }
+
+    /* No rounded-top only on desktop */
+    .search-is-active .main-nav-bar {
+        border-top-color: transparent;
+    }
+
+    /* ── Nav buttons row: no padding, natural width ── */
+    .nav-buttons-row {
+        padding: 0;
+        gap: 2px;
+        order: 1;
+        flex: 0 0 auto;
+        justify-content: flex-start;
+        width: auto;
+    }
+
+    /* ── Nav buttons: icon LEFT + text RIGHT (horizontal) ── */
+    .nav-btn {
+        flex-direction: row; /* horizontal: icon then label */
+        flex: 0 0 auto;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        opacity: 0.55;
+    }
+
+        .nav-btn:hover {
+            opacity: 1;
+            background: rgba(255,255,255,0.07);
+            transform: none;
+        }
+
+        .nav-btn:active {
+            transform: scale(0.96);
+        }
+
+    .nav-btn-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .nav-btn-label {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+
+    /* ── Center button: slightly smaller to fit the pill height ── */
+    .nav-center-btn {
+        width: 44px;
+        height: 44px;
+        box-shadow: 0 0 0 4px rgba(200,37,63,0.14), 0 3px 12px rgba(200,37,63,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+        .nav-center-btn.is-active {
+            box-shadow: 0 0 0 4px rgba(44,92,197,0.14), 0 3px 12px rgba(44,92,197,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+    /* ── Search: always visible inline, NO morphing animation ── */
+    .search-row {
+        flex: 1;
+        order: 2;
+        height: auto !important; /* always open on desktop */
+        overflow: visible;
+        min-width: 140px;
+    }
+
+    .search-morphing-pill {
+        /* Cancel all mobile animation */
+        opacity: 1 !important;
+        transform: scaleX(1) !important;
+        transition: none !important;
+        /* Inline sizing */
+        width: 100%;
+        height: 38px;
+        margin: 0;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        box-shadow: none;
+    }
+    /* Slight highlight on focus */
+    .main-nav-bar.search-open .search-morphing-pill {
+        background: rgba(255,255,255,0.09);
+        border-color: rgba(255,255,255,0.14);
+    }
+
+    .search-pill-content {
+        opacity: 1 !important;
+        transition: none !important;
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    .search-field {
+        font-size: 13.5px;
+    }
+
+        .search-field::placeholder {
+            font-size: 13px;
+        }
+
+    /* On desktop the clear button sits at the right end of the pill.
+       Add a tiny right margin so it's not flush against the pill edge. */
+    .clear-search-btn {
+        margin-right: 2px;
+    }
+
+    /* Divider line between search pill and the rest */
+    .search-row::before {
+        content: '';
+        display: block;
+        width: 1px;
+        height: 24px;
+        background: rgba(255,255,255,0.1);
+        align-self: center;
+        margin-right: 6px;
+        flex-shrink: 0;
+    }
+    /* Make search-row itself a flex row too */
+    .search-row {
+        display: flex;
+        align-items: center;
+        padding-right: 4px;
+    }
 }
