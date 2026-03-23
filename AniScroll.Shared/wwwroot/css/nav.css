@@ -302,7 +302,7 @@
         display: none !important;
     }
 
-    /* ── Nav buttons ── */
+    /* ── Nav buttons Rounded── */
     .nav-btn {
         flex: 0 0 auto;
         flex-direction: row;
