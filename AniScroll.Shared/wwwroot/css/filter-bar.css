@@ -6,7 +6,7 @@
 .lf-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     padding: 0 14px 10px;
     position: relative; /* anchor for absolute dropdowns */
     z-index: 10;

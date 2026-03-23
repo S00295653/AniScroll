@@ -44,7 +44,7 @@
             <div class="lf-bar @(_searchOpen ? "lf-bar-search-mode" : "")" @onclick:stopPropagation="true">
 
                 <!-- [+] Manage lists -->
-                <button class="lists-add-btn lf-btn-hide-on-search" @onclick="OpenCustomListManager" title="Manage lists">
+                <button class="lists-add-btn" @onclick="OpenCustomListManager" title="Manage lists">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -53,7 +53,7 @@
                 </button>
 
                 <!-- [⇅] Sort & Filter -->
-                <button class="lists-add-btn lists-sort-btn lf-btn-hide-on-search @(!_sortOptions.IsDefault ? "lists-sort-btn-active" : "")"
+                <button class="lists-add-btn lists-sort-btn @(!_sortOptions.IsDefault ? "lists-sort-btn-active" : "")"
                         @onclick="OpenSortFilter" title="Sort & Filter">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
