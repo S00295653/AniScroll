@@ -10,8 +10,8 @@
     padding: 0 14px 10px;
     position: relative;
     z-index: 10;
-    flex-wrap: nowrap; /* ← pas de retour à la ligne */
-    overflow: hidden; /* ← rien ne dépasse */
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 /* + button (open CustomListManager) ──────────────────────────────────────── */
@@ -36,24 +36,45 @@
         border-color: rgba(255, 255, 255, 0.18);
     }
 
-/* ── Expandable search toggle ─────────────────────────────────────────────── */
-.lf-search-toggle {
-    flex-shrink: 0;
+/* ── Slot wrapper — occupe uniquement la place restante, anime max-width ──── */
+/*    flex est toujours 1 1 0 : AUCUN changement de flex pendant la transition */
+.lf-search-slot {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 32px; /* fermé */
+    overflow: hidden;
     display: flex;
     align-items: center;
-    justify-content: center;
+    transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Quand la barre est en mode recherche, on libère le slot */
+.lf-bar-search-mode .lf-search-slot {
+    max-width: 100%; /* prend toute la place disponible (flex contrainte) */
+}
+
+/* Cache les dropdowns quand la recherche est ouverte */
+.lf-bar-search-mode .lf-dd-hide-on-search {
+    display: none;
+}
+
+/* ── Search toggle — toujours width:100% du slot ──────────────────────────── */
+.lf-search-toggle {
+    /* NE CHANGE PLUS : pas de flex/max-width animés ici */
+    display: flex;
+    align-items: center;
+    gap: 7px;
     height: 32px;
-    max-width: 32px; /* ← animer max-width, pas width */
-    width: 32px;
-    padding: 0;
+    width: 100%; /* remplit toujours le slot */
+    padding: 0 9px; /* centre l'icône 14px dans 32px : (32-14)/2 = 9 */
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     overflow: hidden;
-    will-change: max-width; /* ← hint GPU */
-    transition: max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
+    /* padding passe de 9px → 10px, quasi imperceptible — plus de saut de l'icône */
+    transition: padding 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
 }
 
     .lf-search-toggle:hover {
@@ -63,13 +84,7 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        flex: 1 1 0; /* ← prend uniquement la place restante */
-        max-width: 9999px;
-        width: auto;
-        min-width: 0; /* ← permet de rétrécir si besoin */
-        justify-content: flex-start;
-        padding: 0 10px;
-        gap: 7px;
+        padding: 0 10px; /* delta = 1px → icône ne bouge presque pas */
         cursor: text;
         border-color: rgba(255, 255, 255, 0.14);
         background: rgba(255, 255, 255, 0.07);
@@ -80,33 +95,16 @@
             background: rgba(255, 255, 255, 0.09);
         }
 
-@media (min-width: 600px) {
-    .lf-search-toggle,
-    .lf-search-toggle.lf-search-open {
-        max-width: 600px !important;
-        width: 600px !important;
-        justify-content: flex-start !important;
-        padding: 0 10px !important;
-        gap: 7px !important;
-        cursor: text !important;
+    /* l'icône SVG ne doit jamais se laisser rétrécir */
+    .lf-search-toggle svg {
+        flex-shrink: 0;
+        pointer-events: none;
+        display: block;
     }
-
-    .lf-search-input {
-        flex: 1 1 0 !important;
-        opacity: 1 !important;
-        pointer-events: all !important;
-    }
-}
-
-.lf-search-toggle svg {
-    flex-shrink: 0;
-    pointer-events: none;
-    display: block;
-}
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
 .lf-search-input {
-    flex: 0 0 0; /* ← clé : ne prend AUCUNE place quand caché */
+    flex: 0 0 0;
     min-width: 0;
     width: 0;
     opacity: 0;
@@ -133,6 +131,7 @@
     opacity: 1;
     pointer-events: all;
 }
+
 /* ── Clear button (inside toggle) ─────────────────────────────────────────── */
 .lf-search-clear-btn {
     flex-shrink: 0;
@@ -176,7 +175,7 @@
 .lf-dd {
     position: relative;
     flex: 1;
-    min-width: 75px; /* ← nouveau */
+    min-width: 75px;
     transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
