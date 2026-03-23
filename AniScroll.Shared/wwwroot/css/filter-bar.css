@@ -10,8 +10,8 @@
     padding: 0 14px 10px;
     position: relative;
     z-index: 10;
-    flex-wrap: nowrap; /* ← pas de retour à la ligne */
-    overflow: hidden; /* ← rien ne dépasse */
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 /* + button (open CustomListManager) ──────────────────────────────────────── */
@@ -37,23 +37,40 @@
     }
 
 /* ── Expandable search toggle ─────────────────────────────────────────────── */
+/*
+   CORRECTIF ANIMATION :
+   - Avant : max-width 32px → 9999px  → courbe easing totalement faussée car le
+     navigateur interpole sur 9999px, pas sur la largeur visuelle réelle.
+   - Avant : justify-content center → flex-start pendant l'animation → l'icône
+     "saute" latéralement.
+
+   Solution :
+   1. justify-content: flex-start TOUJOURS + padding gauche fixe → icône immobile.
+   2. On anime flex-grow (0 → 1) : propriété cheap, pas de reflow layout.
+      flex-basis reste à 32px → le navigateur grandit le composant depuis sa
+      base sans jamais changer justify-content.
+   3. L'input est opacity-only (GPU, zéro reflow).
+   4. Les dropdowns rétrécissent via max-width 200px → 0 (plage raisonnable,
+      courbe fidèle).
+*/
+
 .lf-search-toggle {
-    flex-shrink: 0;
+    /* flex-grow:0 → flex-grow:1 s'anime; basis fixe = pas de saut */
+    flex: 0 1 32px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* ← fixe : l'icône ne bouge plus jamais */
     height: 32px;
-    max-width: 32px; /* ← animer max-width, pas width */
-    width: 32px;
-    padding: 0;
+    padding: 0 9px; /* ← padding gauche fixe pour caler l'icône */
+    gap: 0;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     overflow: hidden;
-    will-change: max-width; /* ← hint GPU */
-    transition: max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
+    /* On n'anime QUE flex-grow + gap + padding-right → zéro reflow layout */
+    transition: flex-grow 0.32s cubic-bezier(0.4, 0, 0.2, 1), gap 0.28s cubic-bezier(0.4, 0, 0.2, 1), padding-right 0.28s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
 }
 
     .lf-search-toggle:hover {
@@ -62,14 +79,11 @@
         border-color: rgba(255, 255, 255, 0.18);
     }
 
+    /* État ouvert : flex-grow passe de 0 → 1, c'est tout ce qui déclenche l'expansion */
     .lf-search-toggle.lf-search-open {
-        flex: 1 1 0; /* ← prend uniquement la place restante */
-        max-width: 9999px;
-        width: auto;
-        min-width: 0; /* ← permet de rétrécir si besoin */
-        justify-content: flex-start;
-        padding: 0 10px;
+        flex: 1 1 32px; /* grow:1 s'anime depuis grow:0 */
         gap: 7px;
+        padding-right: 10px;
         cursor: text;
         border-color: rgba(255, 255, 255, 0.14);
         background: rgba(255, 255, 255, 0.07);
@@ -80,35 +94,23 @@
             background: rgba(255, 255, 255, 0.09);
         }
 
-@media (min-width: 600px) {
-    .lf-search-toggle,
-    .lf-search-toggle.lf-search-open {
-        max-width: 600px !important;
-        width: 600px !important;
-        justify-content: flex-start !important;
-        padding: 0 10px !important;
-        gap: 7px !important;
-        cursor: text !important;
+    .lf-search-toggle svg {
+        flex-shrink: 0;
+        pointer-events: none;
+        display: block;
+        /* Pas de transition : l'icône reste collée à gauche, elle ne participe
+       jamais à l'animation */
     }
-
-    .lf-search-input {
-        flex: 1 1 0 !important;
-        opacity: 1 !important;
-        pointer-events: all !important;
-    }
-}
-
-.lf-search-toggle svg {
-    flex-shrink: 0;
-    pointer-events: none;
-    display: block;
-}
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
+/*
+   L'input est TOUJOURS flex:1 1 0 mais caché via opacity.
+   Le overflow:hidden du parent fait le reste quand le toggle est à 32px.
+   → Zéro animation de largeur = zéro reflow.
+*/
 .lf-search-input {
-    flex: 0 0 0; /* ← clé : ne prend AUCUNE place quand caché */
+    flex: 1 1 0;
     min-width: 0;
-    width: 0;
     opacity: 0;
     pointer-events: none;
     background: transparent;
@@ -121,7 +123,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: opacity 0.18s ease, flex 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    /* opacity uniquement → GPU compositing, pas de layout */
+    transition: opacity 0.2s ease 0.06s;
 }
 
     .lf-search-input::placeholder {
@@ -129,10 +132,10 @@
     }
 
 .lf-search-toggle.lf-search-open .lf-search-input {
-    flex: 1 1 0;
     opacity: 1;
     pointer-events: all;
 }
+
 /* ── Clear button (inside toggle) ─────────────────────────────────────────── */
 .lf-search-clear-btn {
     flex-shrink: 0;
@@ -172,11 +175,52 @@
     transform: scale(0.88);
 }
 
+/* ── Collapse des dropdowns quand la recherche s'ouvre ────────────────────── */
+/*
+   .lf-bar-search-mode est déjà posé par Blazor sur .lf-bar.
+   max-width: 200px → 0 : plage raisonnable = courbe easing fidèle.
+*/
+.lf-dd-hide-on-search {
+    transition: max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease;
+    max-width: 200px; /* ← valeur max réaliste des dropdowns */
+    overflow: hidden;
+}
+
+.lf-bar-search-mode .lf-dd-hide-on-search {
+    max-width: 0;
+    min-width: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Desktop : barre toujours déployée ──────────────────────────────────────── */
+@media (min-width: 600px) {
+    .lf-search-toggle {
+        flex: 1 1 32px !important; /* toujours "open" */
+        gap: 7px !important;
+        padding-right: 10px !important;
+        cursor: text !important;
+    }
+
+    .lf-search-input {
+        opacity: 1 !important;
+        pointer-events: all !important;
+    }
+
+    /* Les dropdowns restent visibles en desktop */
+    .lf-bar-search-mode .lf-dd-hide-on-search {
+        max-width: 200px !important;
+        min-width: 75px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+}
+
 /* Dropdown wrapper ───────────────────────────────────────────────────────── */
 .lf-dd {
     position: relative;
     flex: 1;
-    min-width: 75px; /* ← nouveau */
+    min-width: 75px;
     transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -265,9 +309,6 @@
     gap: 1px;
     max-height: 260px;
     overflow-y: auto;
-}
-
-.lf-dd-menu {
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
