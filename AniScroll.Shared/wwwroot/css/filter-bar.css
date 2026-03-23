@@ -60,25 +60,33 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        flex: 1 1 0px;
-        max-width: 9999px;
-        width: auto;
+        flex: 0 0 160px;
+        width: 160px;
         justify-content: flex-start;
         padding: 0 10px;
         cursor: text;
-        border-color: rgba(233, 69, 96, 0.35);
-        background: rgba(233, 69, 96, 0.06);
+        border-color: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.07);
     }
 
         .lf-search-toggle.lf-search-open:focus-within {
-            border-color: rgba(233, 69, 96, 0.55);
-            background: rgba(233, 69, 96, 0.09);
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.09);
         }
 
-    .lf-search-toggle svg {
-        flex-shrink: 0;
-        pointer-events: none;
+@media (min-width: 600px) {
+    .lf-search-toggle.lf-search-open {
+        flex: 0 0 220px;
+        width: 220px;
     }
+}
+
+.lf-search-toggle svg {
+    flex-shrink: 0;
+    pointer-events: none;
+    display: block; /* évite l'espace baseline */
+    line-height: 0;
+}
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
 .lf-search-input {
@@ -93,7 +101,7 @@
     color: rgba(255, 255, 255, 0.9);
     font-size: 13px;
     font-family: inherit;
-    caret-color: #E94560;
+    caret-color: rgba(255, 255, 255, 0.7);
     user-select: text;
     -webkit-user-select: text;
     transition: opacity 0.15s ease 0.08s;
@@ -147,31 +155,6 @@
 .lf-search-clear-btn:active {
     transform: scale(0.88);
 }
-
-/* ── Dropdowns SHRINK (don't hide) when search is open ───────────────────── */
-.lf-dd-hide-on-search {
-    transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lf-bar.lf-bar-search-mode .lf-dd-hide-on-search {
-    flex: 0 0 40px;
-    max-width: 40px;
-    overflow: hidden;
-}
-
-    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-trigger {
-        justify-content: center;
-        padding: 0;
-        gap: 0;
-    }
-
-    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-trigger-label {
-        display: none;
-    }
-
-    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-chevron {
-        display: none;
-    }
 
 /* Dropdown wrapper ───────────────────────────────────────────────────────── */
 .lf-dd {
