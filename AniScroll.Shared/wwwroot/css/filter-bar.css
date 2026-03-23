@@ -10,6 +10,8 @@
     padding: 0 14px 10px;
     position: relative;
     z-index: 10;
+    flex-wrap: nowrap; /* ← pas de retour à la ligne */
+    overflow: hidden; /* ← rien ne dépasse */
 }
 
 /* + button (open CustomListManager) ──────────────────────────────────────── */
@@ -61,8 +63,10 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        max-width: 200px; /* mobile */
-        width: 200px;
+        flex: 1 1 0; /* ← prend uniquement la place restante */
+        max-width: 9999px;
+        width: auto;
+        min-width: 0; /* ← permet de rétrécir si besoin */
         justify-content: flex-start;
         padding: 0 10px;
         gap: 7px;
