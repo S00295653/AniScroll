@@ -1,7 +1,6 @@
 /* ======================================================
    SEARCH RESULTS PANEL
    ====================================================== */
-
 .search-results-panel {
     position: fixed;
     bottom: 0;
@@ -35,7 +34,6 @@
     .search-results-panel::-webkit-scrollbar {
         display: none;
     }
-
 /* Desktop: frosted panel drops from below the pill */
 @media (min-width: 768px) {
     .search-results-panel {
@@ -50,9 +48,7 @@
         max-height: calc(100dvh - 80px);
         border-radius: 18px;
         border: 1px solid rgba(255,255,255,0.08);
-        /* FIX: was 12px — removed so the rounded bottom edge isn't visible as a gap */
         padding-bottom: 0;
-        /* FIX: was 0.82 — fully opaque so the anime card colour behind never bleeds through */
         background: rgba(10, 10, 16, 1);
         backdrop-filter: blur(28px) saturate(160%);
         -webkit-backdrop-filter: blur(28px) saturate(160%);
