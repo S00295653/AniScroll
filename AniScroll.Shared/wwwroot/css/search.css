@@ -40,7 +40,6 @@
 @media (min-width: 768px) {
     .search-results-panel {
         bottom: auto;
-        /* pill: top 10px + height 44px + gap 8px = 62px */
         top: 62px;
         left: 50%;
         right: auto;
