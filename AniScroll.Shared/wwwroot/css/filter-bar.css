@@ -8,7 +8,7 @@
     align-items: center;
     gap: 4px;
     padding: 0 14px 10px;
-    position: relative; /* anchor for absolute dropdowns */
+    position: relative;
     z-index: 10;
 }
 
@@ -34,96 +34,59 @@
         border-color: rgba(255, 255, 255, 0.18);
     }
 
-/* ── Search toggle button ─────────────────────────────────────────────────── */
-.lf-search-toggle-btn {
+/* ── Expandable search toggle ─────────────────────────────────────────────── */
+.lf-search-toggle {
     flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
-}
-
-.lf-search-toggle-active {
-    background: rgba(233, 69, 96, 0.12) !important;
-    border-color: rgba(233, 69, 96, 0.35) !important;
-    color: #ff8fa3 !important;
-}
-
-    .lf-search-toggle-active:hover {
-        background: rgba(233, 69, 96, 0.2) !important;
-        border-color: rgba(233, 69, 96, 0.5) !important;
-    }
-
-/* ── Buttons that hide when search is open ────────────────────────────────── */
-.lf-bar.lf-bar-search-mode .lf-btn-hide-on-search {
-    width: 0;
-    min-width: 0;
-    padding: 0;
-    margin: 0;
-    border-width: 0;
-    opacity: 0;
-    pointer-events: none;
-    overflow: hidden;
-    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, padding 0.22s ease, margin 0.22s ease;
-}
-
-.lf-bar:not(.lf-bar-search-mode) .lf-btn-hide-on-search {
-    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease 0.05s, padding 0.22s ease, margin 0.22s ease;
-}
-
-/* ── Dropdowns that hide when search is open ──────────────────────────────── */
-.lf-dd-hide-on-search {
-    transition: flex 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease, width 0.22s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lf-bar.lf-bar-search-mode .lf-dd-hide-on-search {
-    flex: 0 0 0px !important;
-    max-width: 0 !important;
-    width: 0 !important;
-    opacity: 0;
-    pointer-events: none;
-    overflow: hidden;
-    transition: flex 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.12s ease, max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── Inline search bar ────────────────────────────────────────────────────── */
-.lf-search-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 0 0 0px;
-    max-width: 0;
-    width: 0;
-    overflow: hidden;
-    opacity: 0;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 0;
+    justify-content: center;
+    gap: 7px;
     height: 32px;
-    transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, border-color 0.18s ease, background 0.18s ease, padding 0.22s ease;
-    pointer-events: none;
+    width: 32px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    overflow: hidden;
+    transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s, padding 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-    .lf-search-bar.lf-search-bar-open {
+    .lf-search-toggle:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .lf-search-toggle.lf-search-open {
         flex: 1 1 0px;
         max-width: 9999px;
         width: auto;
-        opacity: 1;
+        justify-content: flex-start;
         padding: 0 10px;
-        pointer-events: all;
-        border-color: rgba(233, 69, 96, 0.3);
+        cursor: text;
+        border-color: rgba(233, 69, 96, 0.35);
         background: rgba(233, 69, 96, 0.06);
-        transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease 0.1s, border-color 0.18s ease, background 0.18s ease, padding 0.22s ease;
     }
 
-        .lf-search-bar.lf-search-bar-open:focus-within {
+        .lf-search-toggle.lf-search-open:focus-within {
             border-color: rgba(233, 69, 96, 0.55);
             background: rgba(233, 69, 96, 0.09);
         }
 
+    .lf-search-toggle svg {
+        flex-shrink: 0;
+        pointer-events: none;
+    }
+
+/* ── Search input (inside toggle) ─────────────────────────────────────────── */
 .lf-search-input {
     flex: 1;
     min-width: 0;
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
     background: transparent;
     border: none;
     outline: none;
@@ -133,12 +96,20 @@
     caret-color: #E94560;
     user-select: text;
     -webkit-user-select: text;
+    transition: opacity 0.15s ease 0.08s;
 }
 
     .lf-search-input::placeholder {
         color: rgba(255, 255, 255, 0.28);
     }
 
+.lf-search-toggle.lf-search-open .lf-search-input {
+    opacity: 1;
+    pointer-events: all;
+    width: auto;
+}
+
+/* ── Clear button (inside toggle) ─────────────────────────────────────────── */
 .lf-search-clear-btn {
     flex-shrink: 0;
     width: 20px;
@@ -177,11 +148,37 @@
     transform: scale(0.88);
 }
 
+/* ── Dropdowns SHRINK (don't hide) when search is open ───────────────────── */
+.lf-dd-hide-on-search {
+    transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lf-bar.lf-bar-search-mode .lf-dd-hide-on-search {
+    flex: 0 0 40px;
+    max-width: 40px;
+    overflow: hidden;
+}
+
+    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-trigger {
+        justify-content: center;
+        padding: 0;
+        gap: 0;
+    }
+
+    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-trigger-label {
+        display: none;
+    }
+
+    .lf-bar.lf-bar-search-mode .lf-dd-hide-on-search .lf-chevron {
+        display: none;
+    }
+
 /* Dropdown wrapper ───────────────────────────────────────────────────────── */
 .lf-dd {
     position: relative;
     flex: 1;
     min-width: 0;
+    transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Trigger button ─────────────────────────────────────────────────────────── */

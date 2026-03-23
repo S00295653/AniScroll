@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                            transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                                transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -67,32 +67,12 @@
                     }
                 </button>
 
-                <!-- [🔍] Search toggle button -->
-                <button class="lists-add-btn lf-search-toggle-btn @(_searchOpen ? "lf-search-toggle-active" : "")"
-                        @onclick="ToggleSearch" title="Search your list">
-                    @if (_searchOpen)
-                    {
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    }
-                    else
-                    {
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    }
-                </button>
-
-                <!-- Inline search bar (expands, replaces dropdowns) -->
-                <div class="lf-search-bar @(_searchOpen ? "lf-search-bar-open" : "")">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                         style="flex-shrink:0;opacity:0.4;pointer-events:none;">
+                <!-- [🔍] Expandable search toggle -->
+                <div class="lf-search-toggle @(_searchOpen ? "lf-search-open" : "")"
+                     @onclick="HandleSearchToggleClick"
+                     @onclick:stopPropagation="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
@@ -101,10 +81,15 @@
                            type="text"
                            placeholder="Search your list…"
                            value="@_listSearchQuery"
-                           @oninput="HandleListSearchInput" />
+                           @oninput="HandleListSearchInput"
+                           @onblur="HandleSearchInputBlur"
+                           @onfocus="HandleSearchInputFocus"
+                           @onclick:stopPropagation="true" />
                     @if (!string.IsNullOrEmpty(_listSearchQuery))
                     {
-                        <button class="lf-search-clear-btn" @onclick="ClearListSearch">
+                        <button class="lf-search-clear-btn"
+                                @onclick="ClearListSearch"
+                                @onclick:stopPropagation="true">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -114,7 +99,7 @@
                     }
                 </div>
 
-                <!-- Status dropdown (hidden when search open) -->
+                <!-- Status dropdown (shrinks when search open) -->
                 <div class="lf-dd lf-dd-status lf-dd-hide-on-search">
                     @{
                         string statusTriggerColor = _activeStatusColor;
@@ -191,7 +176,7 @@
                     }
                 </div>
 
-                <!-- Custom Lists dropdown (hidden when search open) -->
+                <!-- Custom Lists dropdown (shrinks when search open) -->
                 <div class="lf-dd lf-dd-custom lf-dd-hide-on-search">
                     @{
                         var regularLists = UserListService.GetRegularCustomLists();
@@ -301,7 +286,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                                            @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                                        @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -407,24 +392,44 @@
 
     // ── Search ────────────────────────────────────────────────────────────
     private bool _searchOpen = false;
+    private bool _searchBlurPending = false;
     private string _listSearchQuery = string.Empty;
     private ElementReference _searchInputRef;
 
-    private async Task ToggleSearch()
+    private async Task HandleSearchToggleClick()
     {
-        _searchOpen = !_searchOpen;
         if (!_searchOpen)
         {
-            _listSearchQuery = string.Empty;
-        }
-        else
-        {
+            _searchOpen = true;
+            _searchBlurPending = false;
             CloseAllDropdowns();
             StateHasChanged();
             await Task.Delay(80); // let the bar animate open
             try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
         }
-        StateHasChanged();
+        else
+        {
+            // Already open: re-focus the input
+            try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
+        }
+    }
+
+    private async Task HandleSearchInputBlur()
+    {
+        _searchBlurPending = true;
+        await Task.Delay(150); // leave time for clear-btn click to cancel
+        if (_searchBlurPending)
+        {
+            _searchOpen = false;
+            _listSearchQuery = string.Empty;
+            _searchBlurPending = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleSearchInputFocus()
+    {
+        _searchBlurPending = false;
     }
 
     private void HandleListSearchInput(ChangeEventArgs e)
@@ -433,11 +438,12 @@
         StateHasChanged();
     }
 
-    private void ClearListSearch()
+    private async Task ClearListSearch()
     {
+        _searchBlurPending = false; // cancel any pending close
         _listSearchQuery = string.Empty;
         StateHasChanged();
-        _ = JS.InvokeVoidAsync("focusElement", _searchInputRef);
+        try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
     }
 
     // ── Sort & Filter ─────────────────────────────────────────────────────
@@ -481,6 +487,7 @@
         part = part.TrimEnd('+', '?', ' ');
         return int.TryParse(part, out var v) ? v : 0;
     }
+
     private async Task HandleRandomPicked(AnimeCard anime)
     {
         _showSortFilter = false;
