@@ -10,7 +10,7 @@
     max-height: min(70vh, calc(100dvh - 20px));
     overflow-y: auto;
     overflow-x: hidden;
-    background: rgba(14, 14, 22, 0.96);
+    background: rgba(14, 14, 22, 0.98);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-radius: 22px 22px 0 0;
@@ -20,7 +20,8 @@
     pointer-events: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding-bottom: 148px;
+    /* Reduced from 148px — just enough to clear the nav bar */
+    padding-bottom: 88px;
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94);
@@ -49,8 +50,10 @@
         max-height: calc(100dvh - 80px);
         border-radius: 18px;
         border: 1px solid rgba(255,255,255,0.08);
-        padding-bottom: 12px;
-        background: rgba(10, 10, 16, 0.82);
+        /* No extra padding — content fills right to the rounded bottom edge */
+        padding-bottom: 0;
+        /* Fully opaque so the anime card behind never bleeds through */
+        background: rgba(10, 10, 16, 1);
         backdrop-filter: blur(28px) saturate(160%);
         -webkit-backdrop-filter: blur(28px) saturate(160%);
         box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.1);

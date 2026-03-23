@@ -19,8 +19,9 @@
                            type="text"
                            placeholder="Search anime..."
                            value="@searchQuery"
-                           @oninput="HandleSearchInput" />
-                    <!-- Always rendered so it never shifts the layout; hidden when empty -->
+                           @oninput="HandleSearchInput"
+                           @onfocus="HandleSearchFocus" />
+                    <!-- Always in DOM so the pill width never shifts when typing -->
                     <button class="clear-search-btn"
                             style="@(string.IsNullOrEmpty(searchQuery) ? "visibility:hidden;pointer-events:none;" : "")"
                             @onclick="ClearSearch">
@@ -37,7 +38,7 @@
         <!-- ── Nav buttons row ─────────────────────────────────────────── -->
         <div class="nav-buttons-row">
 
-            <!-- Lists (bookmark icon) -->
+            <!-- Lists -->
             <button class="nav-btn" @onclick="@(() => { OnListsClicked.InvokeAsync(); })">
                 <div class="nav-btn-icon">
                     <svg width="21" height="21" viewBox="0 0 24 24" fill="none"
@@ -97,6 +98,8 @@
     [Parameter] public EventCallback OnListsClicked { get; set; }
     [Parameter] public EventCallback OnProfileClicked { get; set; }
     [Parameter] public EventCallback<string> OnSearchQueryChanged { get; set; }
+    /// <summary>Fired when the search input gains focus — lets the parent re-show cached results.</summary>
+    [Parameter] public EventCallback OnSearchFocused { get; set; }
     [Parameter] public bool IsAniListConnected { get; set; }
 
     private bool isSearchOpen = false;
@@ -137,10 +140,16 @@
         catch { }
     }
 
+    /// <summary>Tells the parent the input was focused so it can restore the results panel.</summary>
+    private async Task HandleSearchFocus()
+    {
+        await OnSearchFocused.InvokeAsync();
+    }
+
     /// <summary>
-    /// Called from Index when the user clicks outside the search panel.
-    /// Collapses the search bar without going through ToggleSearch to avoid
-    /// double-firing OnSearchToggled.
+    /// Collapses the search bar and clears the query.
+    /// Called only when the user explicitly closes (e.g. presses the × toggle button).
+    /// The backdrop click does NOT call this — it just hides the results panel in Index.
     /// </summary>
     public async Task CloseSearchExternal()
     {
@@ -150,11 +159,6 @@
         await OnSearchQueryChanged.InvokeAsync(string.Empty);
         await OnSearchToggled.InvokeAsync();
         StateHasChanged();
-    }
-
-    private async Task HandleListsClick()
-    {
-        await OnListsClicked.InvokeAsync();
     }
 
     private async Task HandleProfileClick()

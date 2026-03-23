@@ -177,7 +177,8 @@
 
     @if (isSearchActive)
     {
-        @* ── Transparent backdrop: click outside results panel closes search ── *@
+        @* ── Transparent backdrop: clicking outside the results panel hides it
+              WITHOUT clearing the query or results (they're cached for refocus). ── *@
         <div style="position:fixed;inset:0;z-index:997;"
              @onclick="HandleSearchBackdropClick"></div>
 
@@ -254,13 +255,13 @@
 
     @if (!showDetailPopup)
     {
-        @* ── @ref added so we can call CloseSearchExternal() from the backdrop handler ── *@
         <AniScroll.Shared.Components.Layout.NavigationBar @ref="_navBar"
                                                           OnSearchToggled="HandleSearchToggled"
                                                           OnListsClicked="HandleListsClicked"
                                                           OnProfileClicked="HandleProfileClicked"
                                                           IsAniListConnected="AniListAuth.IsAuthenticated"
-                                                          OnSearchQueryChanged="HandleSearchQueryChanged" />
+                                                          OnSearchQueryChanged="HandleSearchQueryChanged"
+                                                          OnSearchFocused="HandleSearchFocused" />
     }
 
     <AniScroll.Shared.Components.Layout.AnimeDetailPopup CurrentAnime="selectedAnime"
@@ -309,12 +310,12 @@
     private double CARD_HEIGHT = 800;
     private const double SWIPE_VALIDATION_PERCENT = 0.06;
 
-    // ─── Drag state ───────────────────────────────────────────────────────────
+    // ─── Drag state ──────────────────────────────────────────────────────────
     private bool isDraggingCard = false;
     private double currentDragOffset = 0;
     private bool isTransitioning = false;
 
-    // ─── Horizontal swipe ─────────────────────────────────────────────────────
+    // ─── Horizontal swipe ────────────────────────────────────────────────────
     private enum SwipeAxis { None, Vertical, Horizontal }
     private SwipeAxis _swipeAxis = SwipeAxis.None;
     private double currentDragXOffset = 0;
@@ -338,6 +339,10 @@
     private List<JikanSearchResult> searchResults = new();
     private CancellationTokenSource? searchCts;
 
+    // Last query typed by the user — kept in memory so we can restore the panel
+    // on refocus without firing another API call.
+    private string _currentSearchQuery = string.Empty;
+
     // ─── Preload ──────────────────────────────────────────────────────────────
     private HashSet<int> preloadedIndices = new();
 
@@ -346,7 +351,7 @@
     private ProfilePanel _profilePanel = default!;
     private bool _oauthHandled = false;
 
-    // ─── Navigation bar ref (needed for CloseSearchExternal) ─────────────────
+    // ─── NavigationBar ref ────────────────────────────────────────────────────
     private AniScroll.Shared.Components.Layout.NavigationBar _navBar = default!;
 
     // ─── ESC ──────────────────────────────────────────────────────────────────
@@ -500,6 +505,15 @@
         if (showDetailPopup) { CloseDetailPopup(); return; }
         if (showListsPanel) { CloseListsPanel(); return; }
         if (_showProfilePanel) { _showProfilePanel = false; StateHasChanged(); return; }
+        // ESC also fully closes the search (bar + results + cached query)
+        if (isSearchActive)
+        {
+            isSearchActive = false;
+            _currentSearchQuery = string.Empty;
+            searchResults.Clear();
+            _ = _navBar.CloseSearchExternal();
+            StateHasChanged();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -792,14 +806,19 @@
 
     private async Task HandleSearchQueryChanged(string query)
     {
+        _currentSearchQuery = query;
         searchCts?.Cancel();
         searchCts = new CancellationTokenSource();
         var cts = searchCts;
 
         if (string.IsNullOrWhiteSpace(query))
         {
-            searchResults.Clear(); isSearchActive = false; isSearchLoading = false;
-            StateHasChanged(); return;
+            // X button pressed — clear everything
+            searchResults.Clear();
+            isSearchActive = false;
+            isSearchLoading = false;
+            StateHasChanged();
+            return;
         }
 
         isSearchActive = true; isSearchLoading = true; StateHasChanged();
@@ -816,8 +835,13 @@
 
     private async Task HandleSearchResultClick(JikanSearchResult result)
     {
-        searchResults.Clear(); isSearchActive = false; isSearchLoading = false;
-        isLoadingSelectedAnime = true; StateHasChanged();
+        // Clear cache on explicit selection
+        searchResults.Clear();
+        _currentSearchQuery = string.Empty;
+        isSearchActive = false;
+        isSearchLoading = false;
+        isLoadingSelectedAnime = true;
+        StateHasChanged();
 
         AnimeCard? anime = null;
         if (result.MalId > 0) anime = await AniListService.GetAnimeByMalIdAsync(result.MalId);
@@ -844,18 +868,41 @@
         }
     }
 
+    /// <summary>
+    /// Called when the NavBar × toggle is pressed (or Escape).
+    /// Fully tears down the search state.
+    /// </summary>
     private void HandleSearchToggled()
-    { searchResults.Clear(); isSearchActive = false; isSearchLoading = false; StateHasChanged(); }
+    {
+        searchResults.Clear();
+        _currentSearchQuery = string.Empty;
+        isSearchActive = false;
+        isSearchLoading = false;
+        StateHasChanged();
+    }
 
     /// <summary>
     /// Called when the user clicks the transparent backdrop behind the results panel.
-    /// Collapses both the results panel (Index side) and the search bar (NavBar side).
+    /// Hides the panel but keeps query + results cached for the next focus event.
     /// </summary>
-    private async Task HandleSearchBackdropClick()
+    private void HandleSearchBackdropClick()
     {
-        if (_navBar is not null)
-            await _navBar.CloseSearchExternal();
-        HandleSearchToggled();
+        isSearchActive = false;
+        StateHasChanged();
+        // _currentSearchQuery and searchResults intentionally NOT cleared
+    }
+
+    /// <summary>
+    /// Called when the search input regains focus.
+    /// Re-shows the cached results instantly, no API call needed.
+    /// </summary>
+    private void HandleSearchFocused()
+    {
+        if (!string.IsNullOrEmpty(_currentSearchQuery))
+        {
+            isSearchActive = true;
+            StateHasChanged();
+        }
     }
 
     private void HandleListsClicked() { showListsPanel = true; StateHasChanged(); }
