@@ -308,7 +308,7 @@
         flex-direction: row;
         gap: 7px;
         padding: 6px 14px;
-        border-radius: 0 0 14px 14px;
+        border-radius: 14px 14px 14px 14px;
         height: 36px;
         opacity: 0.62;
         white-space: nowrap;
