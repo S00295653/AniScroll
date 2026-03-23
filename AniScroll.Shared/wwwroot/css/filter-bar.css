@@ -129,7 +129,7 @@
     }
 
 .lf-search-toggle.lf-search-open .lf-search-input {
-    flex: 1 1 0; /* ← prend toute la place dispo quand ouvert */
+    flex: 1 1 0;
     opacity: 1;
     pointer-events: all;
 }
