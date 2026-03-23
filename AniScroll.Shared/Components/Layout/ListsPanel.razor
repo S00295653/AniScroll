@@ -398,30 +398,24 @@
 
     private async Task HandleSearchToggleClick()
     {
-        if (!_searchOpen)
-        {
-            _searchOpen = true;
-            _searchBlurPending = false;
-            CloseAllDropdowns();
-            StateHasChanged();
-            await Task.Delay(80); // let the bar animate open
-            try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
-        }
-        else
-        {
-            // Already open: re-focus the input
-            try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
-        }
+        // Sur PC (géré via CSS), on focus juste
+        _searchOpen = true;
+        _searchBlurPending = false;
+        CloseAllDropdowns();
+        StateHasChanged();
+        await Task.Delay(40);
+        try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
     }
 
     private async Task HandleSearchInputBlur()
     {
         _searchBlurPending = true;
-        await Task.Delay(150); // leave time for clear-btn click to cancel
+        await Task.Delay(150);
         if (_searchBlurPending)
         {
-            _searchOpen = false;
+            // Sur mobile seulement : ferme si vide
             _listSearchQuery = string.Empty;
+            _searchOpen = false;
             _searchBlurPending = false;
             StateHasChanged();
         }

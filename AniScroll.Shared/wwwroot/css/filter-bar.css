@@ -50,7 +50,7 @@
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     overflow: hidden;
-    transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s, padding 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s, padding 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
     .lf-search-toggle:hover {
@@ -60,10 +60,10 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        flex: 0 0 160px;
-        width: 160px;
+        width: 180px; /* mobile */
         justify-content: flex-start;
         padding: 0 10px;
+        gap: 7px;
         cursor: text;
         border-color: rgba(255, 255, 255, 0.14);
         background: rgba(255, 255, 255, 0.07);
@@ -75,17 +75,34 @@
         }
 
 @media (min-width: 600px) {
-    .lf-search-toggle.lf-search-open {
-        flex: 0 0 220px;
-        width: 220px;
+    /* Toujours ouverte sur PC */
+    .lf-search-toggle {
+        width: 240px !important;
+        justify-content: flex-start !important;
+        padding: 0 10px !important;
+        gap: 7px !important;
+        cursor: text !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+        .lf-search-toggle:focus-within {
+            border-color: rgba(255, 255, 255, 0.22) !important;
+            background: rgba(255, 255, 255, 0.09) !important;
+        }
+
+    .lf-search-input {
+        opacity: 1 !important;
+        pointer-events: all !important;
+        width: auto !important;
     }
 }
 
 .lf-search-toggle svg {
     flex-shrink: 0;
     pointer-events: none;
-    display: block; /* évite l'espace baseline */
-    line-height: 0;
+    display: block;
+    margin: auto; /* centrage absolu si padding=0 */
 }
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
@@ -104,7 +121,10 @@
     caret-color: rgba(255, 255, 255, 0.7);
     user-select: text;
     -webkit-user-select: text;
-    transition: opacity 0.15s ease 0.08s;
+    transition: opacity 0.18s ease 0.05s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
     .lf-search-input::placeholder {
