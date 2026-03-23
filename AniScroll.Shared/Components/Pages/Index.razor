@@ -177,6 +177,10 @@
 
     @if (isSearchActive)
     {
+        @* ── Transparent backdrop: click outside results panel closes search ── *@
+        <div style="position:fixed;inset:0;z-index:997;"
+             @onclick="HandleSearchBackdropClick"></div>
+
         <div class="search-results-panel visible"
              @onclick:stopPropagation="true"
              @onmousedown:stopPropagation="true"
@@ -250,7 +254,9 @@
 
     @if (!showDetailPopup)
     {
-        <AniScroll.Shared.Components.Layout.NavigationBar OnSearchToggled="HandleSearchToggled"
+        @* ── @ref added so we can call CloseSearchExternal() from the backdrop handler ── *@
+        <AniScroll.Shared.Components.Layout.NavigationBar @ref="_navBar"
+                                                          OnSearchToggled="HandleSearchToggled"
                                                           OnListsClicked="HandleListsClicked"
                                                           OnProfileClicked="HandleProfileClicked"
                                                           IsAniListConnected="AniListAuth.IsAuthenticated"
@@ -340,6 +346,9 @@
     private ProfilePanel _profilePanel = default!;
     private bool _oauthHandled = false;
 
+    // ─── Navigation bar ref (needed for CloseSearchExternal) ─────────────────
+    private AniScroll.Shared.Components.Layout.NavigationBar _navBar = default!;
+
     // ─── ESC ──────────────────────────────────────────────────────────────────
     private DotNetObjectReference<Index>? _dotNetRef;
 
@@ -392,24 +401,17 @@
     // ─── Virtual window tracking ──────────────────────────────────────────────
     private HashSet<int> _windowEnteredIndices = new();
 
-    /// <summary>
-    /// Call BEFORE changing currentIndex.
-    /// Marks every index that will be freshly mounted in the new window so
-    /// GetCardTransitionClass() suppresses their CSS transition on first paint.
-    /// </summary>
     private void UpdateWindowEntered(int newIndex)
     {
         _windowEnteredIndices.Clear();
         for (int i = newIndex - RENDER_WINDOW; i <= newIndex + RENDER_WINDOW; i++)
         {
             if (i < 0 || i >= animes.Count) continue;
-            // Only mark if outside the current (old) window
             if (Math.Abs(i - currentIndex) > RENDER_WINDOW)
                 _windowEnteredIndices.Add(i);
         }
     }
 
-    /// <summary>Returns a tiny SVG string matching the given list status (built-in only).</summary>
     private static string GetSwipeHintIcon(ListStatus s) => s switch
     {
         ListStatus.Watching =>
@@ -692,7 +694,7 @@
         await Task.Delay(250);
         isTransitioning = false;
         hasMoved = false;
-        _windowEnteredIndices.Clear();   // ← safe to clear; transition is done
+        _windowEnteredIndices.Clear();
     }
 
     private async Task FinishHorizontalSwipe()
@@ -844,6 +846,17 @@
 
     private void HandleSearchToggled()
     { searchResults.Clear(); isSearchActive = false; isSearchLoading = false; StateHasChanged(); }
+
+    /// <summary>
+    /// Called when the user clicks the transparent backdrop behind the results panel.
+    /// Collapses both the results panel (Index side) and the search bar (NavBar side).
+    /// </summary>
+    private async Task HandleSearchBackdropClick()
+    {
+        if (_navBar is not null)
+            await _navBar.CloseSearchExternal();
+        HandleSearchToggled();
+    }
 
     private void HandleListsClicked() { showListsPanel = true; StateHasChanged(); }
     private void CloseListsPanel() { showListsPanel = false; StateHasChanged(); }

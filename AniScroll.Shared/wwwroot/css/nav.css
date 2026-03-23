@@ -133,7 +133,7 @@
     color: rgba(255,255,255,0.65);
     cursor: pointer;
     padding: 0;
-    transition: background 0.18s ease, transform 0.14s ease;
+    transition: background 0.18s ease, transform 0.14s ease, opacity 0.15s ease;
 }
 
     .clear-search-btn:active {
@@ -274,13 +274,13 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
     }
 
-        /* ── Coins concaves via mask-image — sans gap, sans pixelisation ── */
+        /* ── Coins concaves via mask-image ── */
         .main-nav-bar::before,
         .main-nav-bar::after {
             content: '';
             position: absolute;
-            top: -1px; /* colle à la barre, pas de gap */
-            width: calc(var(--notch-radius) + 1px); /* +1px overlap anti-gap */
+            top: -1px;
+            width: calc(var(--notch-radius) + 1px);
             height: calc(var(--notch-radius) + 1px);
             background-color: #0d0d18;
             pointer-events: none;
@@ -290,8 +290,7 @@
         /* Coin gauche */
         .main-nav-bar::before {
             left: calc(var(--notch-radius) * -1);
-            mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) /* +1px adoucit l'antialiasing */
-            );
+            mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
             -webkit-mask-image: radial-gradient( circle at 0% 100%, transparent var(--notch-radius), black calc(var(--notch-radius) + 1px) );
         }
 
@@ -359,26 +358,6 @@
         order: 3;
     }
 
-    /* Séparateurs */
-    .search-row::before,
-    .search-row::after {
-        content: '';
-        display: block;
-        width: 1px;
-        height: 18px;
-        background: rgba(255,255,255,0.12);
-        flex-shrink: 0;
-        align-self: center;
-    }
-
-    .search-row::before {
-        margin-right: 5px;
-    }
-
-    .search-row::after {
-        margin-left: 5px;
-    }
-
     /* ── Search ── */
     .search-row {
         display: flex;
@@ -388,7 +367,7 @@
         max-width: 240px;
         height: auto !important;
         overflow: visible;
-        padding: 0;
+        padding: 0 8px;
     }
 
     .search-morphing-pill {

@@ -20,16 +20,16 @@
                            placeholder="Search anime..."
                            value="@searchQuery"
                            @oninput="HandleSearchInput" />
-                    @if (!string.IsNullOrEmpty(searchQuery))
-                    {
-                        <button class="clear-search-btn" @onclick="ClearSearch">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    }
+                    <!-- Always rendered so it never shifts the layout; hidden when empty -->
+                    <button class="clear-search-btn"
+                            style="@(string.IsNullOrEmpty(searchQuery) ? "visibility:hidden;pointer-events:none;" : "")"
+                            @onclick="ClearSearch">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -135,6 +135,21 @@
         StateHasChanged();
         try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
         catch { }
+    }
+
+    /// <summary>
+    /// Called from Index when the user clicks outside the search panel.
+    /// Collapses the search bar without going through ToggleSearch to avoid
+    /// double-firing OnSearchToggled.
+    /// </summary>
+    public async Task CloseSearchExternal()
+    {
+        if (!isSearchOpen) return;
+        isSearchOpen = false;
+        searchQuery = string.Empty;
+        await OnSearchQueryChanged.InvokeAsync(string.Empty);
+        await OnSearchToggled.InvokeAsync();
+        StateHasChanged();
     }
 
     private async Task HandleListsClick()
