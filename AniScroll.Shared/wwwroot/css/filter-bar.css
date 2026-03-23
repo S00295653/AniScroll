@@ -40,8 +40,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
     height: 32px;
+    max-width: 32px; /* ← animer max-width, pas width */
     width: 32px;
     padding: 0;
     border-radius: 8px;
@@ -50,7 +50,8 @@
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     overflow: hidden;
-    transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s, padding 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: max-width; /* ← hint GPU */
+    transition: max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
 }
 
     .lf-search-toggle:hover {
@@ -60,7 +61,8 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        width: 180px; /* mobile */
+        max-width: 200px; /* mobile */
+        width: 200px;
         justify-content: flex-start;
         padding: 0 10px;
         gap: 7px;
@@ -75,26 +77,20 @@
         }
 
 @media (min-width: 600px) {
-    /* Toujours ouverte sur PC */
-    .lf-search-toggle {
-        width: 240px !important;
+    .lf-search-toggle,
+    .lf-search-toggle.lf-search-open {
+        max-width: 600px !important;
+        width: 600px !important;
         justify-content: flex-start !important;
         padding: 0 10px !important;
         gap: 7px !important;
         cursor: text !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
     }
 
-        .lf-search-toggle:focus-within {
-            border-color: rgba(255, 255, 255, 0.22) !important;
-            background: rgba(255, 255, 255, 0.09) !important;
-        }
-
     .lf-search-input {
+        flex: 1 1 0 !important;
         opacity: 1 !important;
         pointer-events: all !important;
-        width: auto !important;
     }
 }
 
@@ -102,12 +98,11 @@
     flex-shrink: 0;
     pointer-events: none;
     display: block;
-    margin: auto; /* centrage absolu si padding=0 */
 }
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
 .lf-search-input {
-    flex: 1;
+    flex: 0 0 0; /* ← clé : ne prend AUCUNE place quand caché */
     min-width: 0;
     width: 0;
     opacity: 0;
@@ -119,12 +114,10 @@
     font-size: 13px;
     font-family: inherit;
     caret-color: rgba(255, 255, 255, 0.7);
-    user-select: text;
-    -webkit-user-select: text;
-    transition: opacity 0.18s ease 0.05s;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: opacity 0.18s ease, flex 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
     .lf-search-input::placeholder {
@@ -132,11 +125,10 @@
     }
 
 .lf-search-toggle.lf-search-open .lf-search-input {
+    flex: 1 1 0; /* ← prend toute la place dispo quand ouvert */
     opacity: 1;
     pointer-events: all;
-    width: auto;
 }
-
 /* ── Clear button (inside toggle) ─────────────────────────────────────────── */
 .lf-search-clear-btn {
     flex-shrink: 0;
@@ -180,7 +172,7 @@
 .lf-dd {
     position: relative;
     flex: 1;
-    min-width: 0;
+    min-width: 75px; /* ← nouveau */
     transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
