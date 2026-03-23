@@ -8,7 +8,7 @@
     align-items: center;
     gap: 6px;
     padding: 0 14px 10px;
-    position: relative;          /* anchor for absolute dropdowns */
+    position: relative; /* anchor for absolute dropdowns */
     z-index: 10;
 }
 
@@ -25,12 +25,156 @@
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.2s, width 0.2s;
 }
-.lists-add-btn:hover {
+
+    .lists-add-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 255, 255, 0.18);
+    }
+
+/* ── Search toggle button ─────────────────────────────────────────────────── */
+.lf-search-toggle-btn {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
+}
+
+.lf-search-toggle-active {
+    background: rgba(233, 69, 96, 0.12) !important;
+    border-color: rgba(233, 69, 96, 0.35) !important;
+    color: #ff8fa3 !important;
+}
+
+    .lf-search-toggle-active:hover {
+        background: rgba(233, 69, 96, 0.2) !important;
+        border-color: rgba(233, 69, 96, 0.5) !important;
+    }
+
+/* ── Buttons that hide when search is open ────────────────────────────────── */
+.lf-bar.lf-bar-search-mode .lf-btn-hide-on-search {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease, padding 0.22s ease, margin 0.22s ease;
+}
+
+.lf-bar:not(.lf-bar-search-mode) .lf-btn-hide-on-search {
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease 0.05s, padding 0.22s ease, margin 0.22s ease;
+}
+
+/* ── Dropdowns that hide when search is open ──────────────────────────────── */
+.lf-dd-hide-on-search {
+    transition: flex 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease, width 0.22s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lf-bar.lf-bar-search-mode .lf-dd-hide-on-search {
+    flex: 0 0 0px !important;
+    max-width: 0 !important;
+    width: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: flex 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.12s ease, max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Inline search bar ────────────────────────────────────────────────────── */
+.lf-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 0px;
+    max-width: 0;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0;
+    height: 32px;
+    transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, border-color 0.18s ease, background 0.18s ease, padding 0.22s ease;
+    pointer-events: none;
+}
+
+    .lf-search-bar.lf-search-bar-open {
+        flex: 1 1 0px;
+        max-width: 9999px;
+        width: auto;
+        opacity: 1;
+        padding: 0 10px;
+        pointer-events: all;
+        border-color: rgba(233, 69, 96, 0.3);
+        background: rgba(233, 69, 96, 0.06);
+        transition: flex 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease 0.1s, border-color 0.18s ease, background 0.18s ease, padding 0.22s ease;
+    }
+
+        .lf-search-bar.lf-search-bar-open:focus-within {
+            border-color: rgba(233, 69, 96, 0.55);
+            background: rgba(233, 69, 96, 0.09);
+        }
+
+.lf-search-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-family: inherit;
+    caret-color: #E94560;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+    .lf-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.28);
+    }
+
+.lf-search-clear-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.85);
-    border-color: rgba(255, 255, 255, 0.18);
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.14s, color 0.14s, transform 0.12s;
+    animation: lf-clear-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lf-clear-pop {
+    from {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.lf-search-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef4444;
+}
+
+.lf-search-clear-btn:active {
+    transform: scale(0.88);
 }
 
 /* Dropdown wrapper ───────────────────────────────────────────────────────── */
@@ -60,11 +204,12 @@
     overflow: hidden;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.lf-trigger:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.75);
-    border-color: rgba(255, 255, 255, 0.14);
-}
+
+    .lf-trigger:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.75);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
 
 .lf-trigger-active {
     border-color: rgba(99, 102, 241, 0.35);
@@ -85,12 +230,10 @@
     opacity: 0.45;
     transition: transform 0.18s ease;
 }
-.lf-chevron.open {
-    transform: rotate(180deg);
-}
 
-/* Glow dot ───────────────────────────────────────────────────────────────── */
-/* (rendered inline via GlowDot() helper — no extra class needed) */
+    .lf-chevron.open {
+        transform: rotate(180deg);
+    }
 
 /* Count badge (inside trigger) ───────────────────────────────────────────── */
 .lf-count-badge {
@@ -132,15 +275,23 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
-.lf-dd-menu::-webkit-scrollbar       { width: 4px; }
-.lf-dd-menu::-webkit-scrollbar-track { background: transparent; }
-.lf-dd-menu::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
-    border-radius: 4px;
-}
-.lf-dd-menu::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.28);
-}
+
+    .lf-dd-menu::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .lf-dd-menu::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .lf-dd-menu::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.15);
+        border-radius: 4px;
+    }
+
+        .lf-dd-menu::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.28);
+        }
 
 .lf-dd-menu-right {
     left: auto;
@@ -163,9 +314,11 @@
     cursor: pointer;
     transition: background 0.12s;
 }
-.lf-dd-option:hover {
-    background: rgba(255, 255, 255, 0.06);
-}
+
+    .lf-dd-option:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
 .lf-dd-selected {
     font-weight: 600;
 }
@@ -215,10 +368,11 @@
     cursor: pointer;
     transition: background 0.12s, color 0.12s;
 }
-.lf-dd-clear:hover {
-    background: rgba(239, 68, 68, 0.08);
-    color: #ef4444;
-}
+
+    .lf-dd-clear:hover {
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+    }
 
 /* Entry custom list tags ─────────────────────────────────────────────────── */
 .entry-custom-tags {
@@ -242,7 +396,6 @@
    Custom Lists multi-select pills (list editor, AnimeDetailPopup)
    ──────────────────────────────────────────────────────────────────── */
 
-/* Container section – same vertical rhythm as other le-dd-field rows */
 .le-custom-lists-section {
     display: flex;
     flex-direction: column;
@@ -250,14 +403,12 @@
     padding: 10px 0 4px;
 }
 
-/* Flex row that wraps pills */
 .le-custom-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 7px;
 }
 
-/* Individual pill button */
 .le-custom-pill {
     display: inline-flex;
     align-items: center;
@@ -277,29 +428,25 @@
     user-select: none;
 }
 
-.le-custom-pill:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.7);
-    border-color: rgba(255, 255, 255, 0.25);
-}
+    .le-custom-pill:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.7);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
 
-.le-custom-pill:active {
-    transform: scale(0.96);
-}
+    .le-custom-pill:active {
+        transform: scale(0.96);
+    }
 
-/* Active / selected state – border, color and tinted background are set inline
-   via style attribute from the component. The class just handles extra styles. */
 .le-custom-pill-on {
     font-weight: 600;
 }
 
-/* Checkmark svg inside the pills */
 .le-custom-pill svg {
     flex-shrink: 0;
     opacity: 0.9;
 }
 
-/* GlowDot inside pill – reuse the existing le-dd-dot sizing but compact */
 .le-custom-pill .le-dd-dot {
     width: 7px;
     height: 7px;

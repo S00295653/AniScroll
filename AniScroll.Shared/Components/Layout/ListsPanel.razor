@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                        transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                            transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -41,10 +41,10 @@
             </div>
 
             <!-- ── Filter bar ──────────────────────────────────── -->
-            <div class="lf-bar" @onclick:stopPropagation="true">
+            <div class="lf-bar @(_searchOpen ? "lf-bar-search-mode" : "")" @onclick:stopPropagation="true">
 
                 <!-- [+] Manage lists -->
-                <button class="lists-add-btn" @onclick="OpenCustomListManager" title="Manage lists">
+                <button class="lists-add-btn lf-btn-hide-on-search" @onclick="OpenCustomListManager" title="Manage lists">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -53,7 +53,7 @@
                 </button>
 
                 <!-- [⇅] Sort & Filter -->
-                <button class="lists-add-btn lists-sort-btn @(!_sortOptions.IsDefault ? "lists-sort-btn-active" : "")"
+                <button class="lists-add-btn lists-sort-btn lf-btn-hide-on-search @(!_sortOptions.IsDefault ? "lists-sort-btn-active" : "")"
                         @onclick="OpenSortFilter" title="Sort & Filter">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -67,8 +67,55 @@
                     }
                 </button>
 
-                <!-- Status dropdown -->
-                <div class="lf-dd lf-dd-status">
+                <!-- [🔍] Search toggle button -->
+                <button class="lists-add-btn lf-search-toggle-btn @(_searchOpen ? "lf-search-toggle-active" : "")"
+                        @onclick="ToggleSearch" title="Search your list">
+                    @if (_searchOpen)
+                    {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    }
+                    else
+                    {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    }
+                </button>
+
+                <!-- Inline search bar (expands, replaces dropdowns) -->
+                <div class="lf-search-bar @(_searchOpen ? "lf-search-bar-open" : "")">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                         style="flex-shrink:0;opacity:0.4;pointer-events:none;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input @ref="_searchInputRef"
+                           class="lf-search-input"
+                           type="text"
+                           placeholder="Search your list…"
+                           value="@_listSearchQuery"
+                           @oninput="HandleListSearchInput" />
+                    @if (!string.IsNullOrEmpty(_listSearchQuery))
+                    {
+                        <button class="lf-search-clear-btn" @onclick="ClearListSearch">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    }
+                </div>
+
+                <!-- Status dropdown (hidden when search open) -->
+                <div class="lf-dd lf-dd-status lf-dd-hide-on-search">
                     @{
                         string statusTriggerColor = _activeStatusColor;
                         bool statusActive = _selectedStatus.HasValue || _selectedStatusCustomId != null;
@@ -144,8 +191,8 @@
                     }
                 </div>
 
-                <!-- Custom Lists dropdown -->
-                <div class="lf-dd lf-dd-custom">
+                <!-- Custom Lists dropdown (hidden when search open) -->
+                <div class="lf-dd lf-dd-custom lf-dd-hide-on-search">
                     @{
                         var regularLists = UserListService.GetRegularCustomLists();
                         bool customActive = _selectedCustomListIds.Any();
@@ -213,13 +260,36 @@
                 {
                     <div class="lists-empty">
                         <div class="lists-empty-icon">
-                            @((_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any() || !_sortOptions.IsDefault) ? "🔍" : "📺")
+                            @((_searchOpen && !string.IsNullOrEmpty(_listSearchQuery)) ? "🔍"
+                                                : (_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any() || !_sortOptions.IsDefault) ? "🔍" : "📺")
                         </div>
                         <p class="lists-empty-title">
-                            @(UserListService.CountTracked() == 0 ? "Your list is empty" : "No results for these filters")
+                            @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
+                            {
+                                <text>No results for "@_listSearchQuery"</text>
+                            }
+                            else if (UserListService.CountTracked() == 0)
+                            {
+                                <text>Your list is empty</text>
+                            }
+                            else
+                            {
+                                <text>No results for these filters</text>
+                            }
                         </p>
                         <p class="lists-empty-sub">
-                            @(UserListService.CountTracked() == 0 ? "Browse anime and tap \"Add to List\"" : "Try adjusting the filters")
+                            @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
+                            {
+                                <text>Try a different title</text>
+                            }
+                            else if (UserListService.CountTracked() == 0)
+                            {
+                                <text>Browse anime and tap "Add to List"</text>
+                            }
+                            else
+                            {
+                                <text>Try adjusting the filters</text>
+                            }
                         </p>
                     </div>
                 }
@@ -231,7 +301,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                                @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                            @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -335,6 +405,41 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<AnimeCard> OnAnimeSelected { get; set; }
 
+    // ── Search ────────────────────────────────────────────────────────────
+    private bool _searchOpen = false;
+    private string _listSearchQuery = string.Empty;
+    private ElementReference _searchInputRef;
+
+    private async Task ToggleSearch()
+    {
+        _searchOpen = !_searchOpen;
+        if (!_searchOpen)
+        {
+            _listSearchQuery = string.Empty;
+        }
+        else
+        {
+            CloseAllDropdowns();
+            StateHasChanged();
+            await Task.Delay(80); // let the bar animate open
+            try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
+        }
+        StateHasChanged();
+    }
+
+    private void HandleListSearchInput(ChangeEventArgs e)
+    {
+        _listSearchQuery = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private void ClearListSearch()
+    {
+        _listSearchQuery = string.Empty;
+        StateHasChanged();
+        _ = JS.InvokeVoidAsync("focusElement", _searchInputRef);
+    }
+
     // ── Sort & Filter ─────────────────────────────────────────────────────
     private SortFilterOptions _sortOptions = new();
     private bool _showSortFilter = false;
@@ -402,7 +507,13 @@
     private const double PULL_CLOSE_THRESHOLD = 80;
 
     protected override void OnInitialized() => UserListService.OnChanged += HandleListChanged;
-    protected override void OnParametersSet() { if (IsVisible) { pullOffset = 0; isPulling = false; } }
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            pullOffset = 0; isPulling = false;
+        }
+    }
     public void Dispose() => UserListService.OnChanged -= HandleListChanged;
     private void HandleListChanged() => InvokeAsync(StateHasChanged);
 
@@ -412,12 +523,10 @@
     // ── SVG icons for status badges ──────────────────────────────────────
     private MarkupString GetStatusSvgIcon(ListStatus s) => s switch
     {
-        // Play outline — ionicon style (rounded path, stroke only)
         ListStatus.Watching => new MarkupString(
             "<svg width=\"11\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-miterlimit=\"10\" stroke-width=\"32\" style=\"flex-shrink:0;\">" +
             "<path d=\"M112 111v290c0 17.44 17 28.52 31 20.16l247.9-148.37c12.12-7.25 12.12-26.33 0-33.58L143 90.84c-14-8.36-31 2.72-31 20.16z\"/></svg>"),
 
-        // Rotate CCW — Feather icons style, matches reference image
         ListStatus.Rewatching => new MarkupString(
             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"11\" height=\"11\" viewBox=\"0 0 232 232\" fill=\"currentColor\" stroke=\"none\" style=\"flex-shrink:0;\">" +
             "<g transform=\"translate(0,232) scale(0.1,-0.1)\">" +
@@ -425,22 +534,18 @@
             "</g>" +
             "</svg>"),
 
-        // Checkmark — heavier stroke so the rounded knee is clearly visible
         ListStatus.Completed => new MarkupString(
            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
            "<polyline points=\"20 6 9 17 4 12\"/></svg>"),
 
-        // Bookmark outline (pièce jointe)
         ListStatus.Planning => new MarkupString(
             "<svg width=\"10\" height=\"11\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"flex-shrink:0;\">" +
             "<path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>"),
 
-        // Pause bars — rx rounded rects
         ListStatus.Paused => new MarkupString(
-            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" + 
+            "<svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
             "<line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/>" + "<line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>"),
 
-        // X mark — bigger + round caps
         ListStatus.Dropped => new MarkupString(
             "<svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\" style=\"flex-shrink:0;\">" +
             "<line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>"),
@@ -484,6 +589,15 @@
     private IEnumerable<UserListEntry> GetFilteredEntries()
     {
         IEnumerable<UserListEntry> entries = GetBaseEntries();
+
+        // ── Text search filter ─────────────────────────────────────────────
+        if (_searchOpen && !string.IsNullOrWhiteSpace(_listSearchQuery))
+        {
+            var q = _listSearchQuery.Trim();
+            entries = entries.Where(e =>
+                e.Anime.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(e.Anime.NativeTitle) && e.Anime.NativeTitle.Contains(q, StringComparison.OrdinalIgnoreCase)));
+        }
 
         if (_selectedStatusCustomId != null)
             entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
