@@ -1,6 +1,7 @@
 /* ======================================================
    SEARCH RESULTS PANEL
    ====================================================== */
+
 .search-results-panel {
     position: fixed;
     bottom: 0;
@@ -34,6 +35,7 @@
     .search-results-panel::-webkit-scrollbar {
         display: none;
     }
+
 /* Desktop: frosted panel drops from below the pill */
 @media (min-width: 768px) {
     .search-results-panel {
