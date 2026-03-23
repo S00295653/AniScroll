@@ -41,19 +41,19 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* jamais de changement → icône ne bouge plus */
-    gap: 7px;
+    justify-content: center;
     height: 32px;
+    max-width: 32px; /* ← animer max-width, pas width */
     width: 32px;
-    padding: 0 0 0 9px; /* 9px = (32-14)/2 : icône parfaitement centrée */
+    padding: 0;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     overflow: hidden;
-    will-change: width; /* hint GPU → animation composée */
-    transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
+    will-change: max-width; /* ← hint GPU */
+    transition: max-width 0.3s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.18s ease, background 0.18s ease, color 0.15s;
 }
 
     .lf-search-toggle:hover {
@@ -63,8 +63,13 @@
     }
 
     .lf-search-toggle.lf-search-open {
-        width: min(200px, calc(100vw - 185px)); /* 185px ≈ +btn + sort + 2 dropdowns */
-        padding: 0 8px 0 9px; /* même padding gauche → icône immobile */
+        flex: 1 1 0; /* ← prend uniquement la place restante */
+        max-width: 9999px;
+        width: auto;
+        min-width: 0; /* ← permet de rétrécir si besoin */
+        justify-content: flex-start;
+        padding: 0 10px;
+        gap: 7px;
         cursor: text;
         border-color: rgba(255, 255, 255, 0.14);
         background: rgba(255, 255, 255, 0.07);
@@ -78,17 +83,13 @@
 @media (min-width: 600px) {
     .lf-search-toggle,
     .lf-search-toggle.lf-search-open {
+        max-width: 600px !important;
         width: 600px !important;
-        padding: 0 8px 0 9px !important;
+        justify-content: flex-start !important;
+        padding: 0 10px !important;
+        gap: 7px !important;
         cursor: text !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
     }
-
-        .lf-search-toggle:focus-within {
-            border-color: rgba(255, 255, 255, 0.22) !important;
-            background: rgba(255, 255, 255, 0.09) !important;
-        }
 
     .lf-search-input {
         flex: 1 1 0 !important;
@@ -105,8 +106,9 @@
 
 /* ── Search input (inside toggle) ─────────────────────────────────────────── */
 .lf-search-input {
-    flex: 0 0 0;
+    flex: 0 0 0; /* ← clé : ne prend AUCUNE place quand caché */
     min-width: 0;
+    width: 0;
     opacity: 0;
     pointer-events: none;
     background: transparent;
@@ -119,7 +121,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: opacity 0.18s ease 0.06s, flex 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity 0.18s ease, flex 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
     .lf-search-input::placeholder {
@@ -127,7 +129,7 @@
     }
 
 .lf-search-toggle.lf-search-open .lf-search-input {
-    flex: 1 1 0;
+    flex: 1 1 0; /* ← prend toute la place dispo quand ouvert */
     opacity: 1;
     pointer-events: all;
 }
