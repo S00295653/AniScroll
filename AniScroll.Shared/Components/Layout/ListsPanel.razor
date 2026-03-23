@@ -12,7 +12,7 @@
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                                transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -41,7 +41,6 @@
             </div>
 
             <!-- ── Filter bar ──────────────────────────────────── -->
-            <!-- lf-bar-search-mode pilote la visibilité du slot et des dropdowns via CSS -->
             <div class="lf-bar @(_searchOpen ? "lf-bar-search-mode" : "")" @onclick:stopPropagation="true">
 
                 <!-- [+] Manage lists -->
@@ -68,39 +67,39 @@
                     }
                 </button>
 
-                <!-- [🔍] Slot wrapper — occupe la place restante, anime max-width -->
-                <div class="lf-search-slot">
-                    <div class="lf-search-toggle @(_searchOpen ? "lf-search-open" : "")"
-                         @onclick="HandleSearchToggleClick"
-                         @onclick:stopPropagation="true">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input @ref="_searchInputRef"
-                               class="lf-search-input"
-                               type="text"
-                               placeholder="Search your list…"
-                               value="@_listSearchQuery"
-                               @oninput="HandleListSearchInput"
-                               @onclick:stopPropagation="true" />
-                        @if (!string.IsNullOrEmpty(_listSearchQuery))
-                        {
-                            <button class="lf-search-clear-btn"
-                                    @onclick="ClearListSearch"
-                                    @onclick:stopPropagation="true">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
-                        }
-                    </div>
+                <!-- [🔍] Expandable search toggle -->
+                <div class="lf-search-toggle @(_searchOpen ? "lf-search-open" : "")"
+                     @onclick="HandleSearchToggleClick"
+                     @onclick:stopPropagation="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input @ref="_searchInputRef"
+                           class="lf-search-input"
+                           type="text"
+                           placeholder="Search your list…"
+                           value="@_listSearchQuery"
+                           @oninput="HandleListSearchInput"
+                           @onblur="HandleSearchInputBlur"
+                           @onfocus="HandleSearchInputFocus"
+                           @onclick:stopPropagation="true" />
+                    @if (!string.IsNullOrEmpty(_listSearchQuery))
+                    {
+                        <button class="lf-search-clear-btn"
+                                @onclick="ClearListSearch"
+                                @onclick:stopPropagation="true">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    }
                 </div>
 
-                <!-- Status dropdown (caché via CSS .lf-bar-search-mode .lf-dd-hide-on-search) -->
+                <!-- Status dropdown (shrinks when search open) -->
                 <div class="lf-dd lf-dd-status lf-dd-hide-on-search">
                     @{
                         string statusTriggerColor = _activeStatusColor;
@@ -177,7 +176,7 @@
                     }
                 </div>
 
-                <!-- Custom Lists dropdown (caché via CSS .lf-bar-search-mode .lf-dd-hide-on-search) -->
+                <!-- Custom Lists dropdown (shrinks when search open) -->
                 <div class="lf-dd lf-dd-custom lf-dd-hide-on-search">
                     @{
                         var regularLists = UserListService.GetRegularCustomLists();
@@ -237,8 +236,7 @@
             <div class="lists-header-divider"></div>
 
             <!-- ── Entries ──────────────────────────────────────── -->
-            <!-- HandleContentAreaClick : ferme les dropdowns et réouvre la recherche -->
-            <div class="lists-content" @onclick="HandleContentAreaClick">
+            <div class="lists-content" @onclick="CloseAllDropdowns">
                 @{
                     var entries = GetFilteredEntries().ToList();
                 }
@@ -247,11 +245,11 @@
                 {
                     <div class="lists-empty">
                         <div class="lists-empty-icon">
-                            @((!string.IsNullOrEmpty(_listSearchQuery)) ? "🔍"
+                            @((_searchOpen && !string.IsNullOrEmpty(_listSearchQuery)) ? "🔍"
                                                 : (_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any() || !_sortOptions.IsDefault) ? "🔍" : "📺")
                         </div>
                         <p class="lists-empty-title">
-                            @if (!string.IsNullOrEmpty(_listSearchQuery))
+                            @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
                             {
                                 <text>No results for "@_listSearchQuery"</text>
                             }
@@ -265,7 +263,7 @@
                             }
                         </p>
                         <p class="lists-empty-sub">
-                            @if (!string.IsNullOrEmpty(_listSearchQuery))
+                            @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
                             {
                                 <text>Try a different title</text>
                             }
@@ -288,7 +286,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                                        @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -382,7 +380,7 @@
     <SortFilterPopup IsVisible="_showSortFilter"
                      Current="_sortOptions"
                      AllEntries="GetBaseEntries()"
-                     OnClose="() => { _showSortFilter = false; _needsFocus = true; StateHasChanged(); }"
+                     OnClose="() => { _showSortFilter = false; StateHasChanged(); }"
                      OnApply="OnSortFilterApplied"
                      OnRandomPicked="HandleRandomPicked" />
 }
@@ -393,51 +391,39 @@
     [Parameter] public EventCallback<AnimeCard> OnAnimeSelected { get; set; }
 
     // ── Search ────────────────────────────────────────────────────────────
-    // _searchOpen = true par défaut dès que le panel est visible.
-    // Se ferme UNIQUEMENT quand un dropdown s'ouvre ; la query est toujours
-    // préservée et le filtre s'applique même quand _searchOpen == false.
     private bool _searchOpen = false;
-    private bool _needsFocus = false;          // déclenche le focus après le prochain rendu
+    private bool _searchBlurPending = false;
     private string _listSearchQuery = string.Empty;
     private ElementReference _searchInputRef;
 
-    // Ouvre la recherche à chaque fois que le panel devient visible
-    protected override void OnParametersSet()
+    private async Task HandleSearchToggleClick()
     {
-        if (IsVisible)
-        {
-            pullOffset = 0; isPulling = false;
-            if (!_searchOpen)
-            {
-                _searchOpen = true;
-                _needsFocus = true;
-            }
-        }
-    }
-
-    // Focus décalé après le rendu pour laisser la transition CSS démarrer
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_needsFocus && IsVisible)
-        {
-            _needsFocus = false;
-            await Task.Delay(50);
-            try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
-        }
-    }
-
-    // Clic sur le toggle : si la barre est fermée (ex. dropdown ouvert juste avant),
-    // on la rouvre — sinon on se contente de redonner le focus.
-    private void HandleSearchToggleClick()
-    {
-        if (!_searchOpen)
-        {
-            _statusDropdownOpen = false;
-            _customDropdownOpen = false;
-            _searchOpen = true;
-        }
-        _needsFocus = true;
+        // Sur PC (géré via CSS), on focus juste
+        _searchOpen = true;
+        _searchBlurPending = false;
+        CloseAllDropdowns();
         StateHasChanged();
+        await Task.Delay(40);
+        try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
+    }
+
+    private async Task HandleSearchInputBlur()
+    {
+        _searchBlurPending = true;
+        await Task.Delay(150);
+        if (_searchBlurPending)
+        {
+            // Sur mobile seulement : ferme si vide
+            _listSearchQuery = string.Empty;
+            _searchOpen = false;
+            _searchBlurPending = false;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleSearchInputFocus()
+    {
+        _searchBlurPending = false;
     }
 
     private void HandleListSearchInput(ChangeEventArgs e)
@@ -446,11 +432,12 @@
         StateHasChanged();
     }
 
-    private void ClearListSearch()
+    private async Task ClearListSearch()
     {
+        _searchBlurPending = false; // cancel any pending close
         _listSearchQuery = string.Empty;
-        _needsFocus = true;
         StateHasChanged();
+        try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
     }
 
     // ── Sort & Filter ─────────────────────────────────────────────────────
@@ -483,12 +470,7 @@
         }
     }
 
-    private void OnSortFilterApplied(SortFilterOptions opts)
-    {
-        _sortOptions = opts;
-        _needsFocus = true;     // refocus la recherche après fermeture du popup
-        StateHasChanged();
-    }
+    private void OnSortFilterApplied(SortFilterOptions opts) { _sortOptions = opts; StateHasChanged(); }
 
     private static int ParseEp(string? s)
     {
@@ -516,157 +498,7 @@
 
     private bool showCustomListManager = false;
     private void OpenCustomListManager() { CloseAllDropdowns(); showCustomListManager = true; }
-    private void CloseCustomListManager()
-    {
-        showCustomListManager = false;
-        _needsFocus = true;     // refocus après fermeture du gestionnaire de listes
-        StateHasChanged();
-    }
-
-    // ── Dropdown management ───────────────────────────────────────────────
-    // Règle : ouvrir un dropdown ferme la barre de recherche (query conservée).
-    //         Fermer un dropdown (toggle, sélection, clear) réouvre la barre.
-
-    private void ToggleStatusDropdown()
-    {
-        _statusDropdownOpen = !_statusDropdownOpen;
-        if (_statusDropdownOpen)
-        {
-            _customDropdownOpen = false;
-            _searchOpen = false;           // ferme la recherche visuellement
-        }
-        else
-        {
-            _searchOpen = true;            // réouvre la recherche
-            _needsFocus = true;
-        }
-        StateHasChanged();
-    }
-
-    private void ToggleCustomDropdown()
-    {
-        _customDropdownOpen = !_customDropdownOpen;
-        if (_customDropdownOpen)
-        {
-            _statusDropdownOpen = false;
-            _searchOpen = false;
-        }
-        else
-        {
-            _searchOpen = true;
-            _needsFocus = true;
-        }
-        StateHasChanged();
-    }
-
-    // Ferme les deux dropdowns sans toucher à _searchOpen ni refocus
-    // (utilisé par OpenCustomListManager, OpenSortFilter, HandleEntryClick…)
-    private void CloseAllDropdowns()
-    {
-        _statusDropdownOpen = false;
-        _customDropdownOpen = false;
-        StateHasChanged();
-    }
-
-    // Clic sur la zone d'entrées : ferme les dropdowns et réouvre la recherche
-    private void HandleContentAreaClick()
-    {
-        if (_statusDropdownOpen || _customDropdownOpen)
-        {
-            _statusDropdownOpen = false;
-            _customDropdownOpen = false;
-            _searchOpen = true;
-            _needsFocus = true;
-            StateHasChanged();
-        }
-    }
-
-    private void SelectStatus(ListStatus? status, string? customId)
-    {
-        _selectedStatus = status;
-        _selectedStatusCustomId = customId;
-        _statusDropdownOpen = false;
-        _searchOpen = true;            // réouvre après sélection
-        _needsFocus = true;
-        StateHasChanged();
-    }
-
-    private void ToggleCustomList(string id)
-    {
-        // Le dropdown reste ouvert → _searchOpen reste false
-        if (!_selectedCustomListIds.Remove(id)) _selectedCustomListIds.Add(id);
-        StateHasChanged();
-    }
-
-    private void ClearCustomFilters()
-    {
-        _selectedCustomListIds.Clear();
-        _customDropdownOpen = false;
-        _searchOpen = true;
-        _needsFocus = true;
-        StateHasChanged();
-    }
-
-    // ── Filtered entries ──────────────────────────────────────────────────
-    // NOTE : la condition _searchOpen a été supprimée — le filtre texte
-    //        s'applique toujours dès qu'il y a du texte, même barre fermée.
-    private IEnumerable<UserListEntry> GetBaseEntries() =>
-        UserListService.GetAll().Where(e => e.Status.HasValue || e.CustomListIds.Any());
-
-    private IEnumerable<UserListEntry> GetFilteredEntries()
-    {
-        IEnumerable<UserListEntry> entries = GetBaseEntries();
-
-        // Filtre texte — actif indépendamment de _searchOpen
-        if (!string.IsNullOrWhiteSpace(_listSearchQuery))
-        {
-            var q = _listSearchQuery.Trim();
-            entries = entries.Where(e =>
-                e.Anime.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                (!string.IsNullOrEmpty(e.Anime.NativeTitle) && e.Anime.NativeTitle.Contains(q, StringComparison.OrdinalIgnoreCase)));
-        }
-
-        if (_selectedStatusCustomId != null)
-            entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
-        else if (_selectedStatus.HasValue)
-            entries = entries.Where(e => e.Status == _selectedStatus.Value);
-
-        foreach (var id in _selectedCustomListIds)
-            entries = entries.Where(e => e.CustomListIds.Contains(id));
-
-        entries = entries.Where(e => SortFilterPopup.PassesFilters(e, _sortOptions));
-
-        entries = _sortOptions.Sort switch
-        {
-            SortFilterPopup.SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
-            SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
-            SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
-            SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? double.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
-            SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e =>
-                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : -1d),
-            SortFilterPopup.SortMode.AniListScoreAsc => entries.OrderBy(e =>
-                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : double.MaxValue),
-            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e =>
-                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : -1; }),
-            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e =>
-                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : int.MaxValue; }),
-            SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
-            SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
-            SortFilterPopup.SortMode.Favourites => entries
-                 .Where(e => UserListService.IsFavorited(e.Anime.Id))
-                 .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
-            _ => entries.OrderByDescending(e => e.UpdatedAt),
-        };
-
-        return entries;
-    }
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────
-    protected override void OnInitialized() => UserListService.OnChanged += HandleListChanged;
-    public void Dispose() => UserListService.OnChanged -= HandleListChanged;
-    private void HandleListChanged() => InvokeAsync(StateHasChanged);
+    private void CloseCustomListManager() { showCustomListManager = false; StateHasChanged(); }
 
     // ── Pull-to-close ─────────────────────────────────────────────────────
     private double pullOffset = 0;
@@ -674,6 +506,17 @@
     private bool isPulling = false;
     private bool isPullActive = false;
     private const double PULL_CLOSE_THRESHOLD = 80;
+
+    protected override void OnInitialized() => UserListService.OnChanged += HandleListChanged;
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            pullOffset = 0; isPulling = false;
+        }
+    }
+    public void Dispose() => UserListService.OnChanged -= HandleListChanged;
+    private void HandleListChanged() => InvokeAsync(StateHasChanged);
 
     private MarkupString GlowDot(string color) => UiHelpers.GlowDot(color);
     private string GetStatusColor(ListStatus s) => UiHelpers.GetStatusColor(s, UserListService.GetStatusSettings());
@@ -741,6 +584,80 @@
         return "Status";
     }
 
+    private IEnumerable<UserListEntry> GetBaseEntries() =>
+        UserListService.GetAll().Where(e => e.Status.HasValue || e.CustomListIds.Any());
+
+    private IEnumerable<UserListEntry> GetFilteredEntries()
+    {
+        IEnumerable<UserListEntry> entries = GetBaseEntries();
+
+        // ── Text search filter ─────────────────────────────────────────────
+        if (_searchOpen && !string.IsNullOrWhiteSpace(_listSearchQuery))
+        {
+            var q = _listSearchQuery.Trim();
+            entries = entries.Where(e =>
+                e.Anime.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (!string.IsNullOrEmpty(e.Anime.NativeTitle) && e.Anime.NativeTitle.Contains(q, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (_selectedStatusCustomId != null)
+            entries = entries.Where(e => e.CustomListIds.Contains(_selectedStatusCustomId));
+        else if (_selectedStatus.HasValue)
+            entries = entries.Where(e => e.Status == _selectedStatus.Value);
+
+        foreach (var id in _selectedCustomListIds)
+            entries = entries.Where(e => e.CustomListIds.Contains(id));
+
+        entries = entries.Where(e => SortFilterPopup.PassesFilters(e, _sortOptions));
+
+        entries = _sortOptions.Sort switch
+        {
+            SortFilterPopup.SortMode.TitleAZ => entries.OrderBy(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
+            SortFilterPopup.SortMode.TitleZA => entries.OrderByDescending(e => e.Anime.Title, StringComparer.OrdinalIgnoreCase),
+            SortFilterPopup.SortMode.MyScoreDesc => entries.OrderByDescending(e => e.Score).ThenBy(e => e.Anime.Title),
+            SortFilterPopup.SortMode.MyScoreAsc => entries.OrderBy(e => e.Score == 0 ? double.MaxValue : e.Score).ThenBy(e => e.Anime.Title),
+            SortFilterPopup.SortMode.AniListScore => entries.OrderByDescending(e =>
+                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : -1d),
+            SortFilterPopup.SortMode.AniListScoreAsc => entries.OrderBy(e =>
+                double.TryParse(e.Anime.Score, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var sc) ? sc : double.MaxValue),
+            SortFilterPopup.SortMode.EpisodesDesc => entries.OrderByDescending(e =>
+                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : -1; }),
+            SortFilterPopup.SortMode.EpisodesAsc => entries.OrderBy(e =>
+                { var ep = ParseEp(e.Anime.Episodes); return ep > 0 ? ep : int.MaxValue; }),
+            SortFilterPopup.SortMode.YearDesc => entries.OrderByDescending(e => e.Anime.Year ?? 0),
+            SortFilterPopup.SortMode.YearAsc => entries.OrderBy(e => e.Anime.Year ?? 9999),
+            SortFilterPopup.SortMode.Favourites => entries
+                 .Where(e => UserListService.IsFavorited(e.Anime.Id))
+                 .OrderByDescending(e => UserListService.GetFavoritedAt(e.Anime.Id)),
+            _ => entries.OrderByDescending(e => e.UpdatedAt),
+        };
+
+        return entries;
+    }
+
+    private void ToggleStatusDropdown()
+    {
+        _statusDropdownOpen = !_statusDropdownOpen;
+        if (_statusDropdownOpen) _customDropdownOpen = false;
+        StateHasChanged();
+    }
+    private void ToggleCustomDropdown()
+    {
+        _customDropdownOpen = !_customDropdownOpen;
+        if (_customDropdownOpen) _statusDropdownOpen = false;
+        StateHasChanged();
+    }
+    private void CloseAllDropdowns() { _statusDropdownOpen = false; _customDropdownOpen = false; StateHasChanged(); }
+    private void SelectStatus(ListStatus? status, string? customId)
+    {
+        _selectedStatus = status; _selectedStatusCustomId = customId;
+        _statusDropdownOpen = false; StateHasChanged();
+    }
+    private void ToggleCustomList(string id) { if (!_selectedCustomListIds.Remove(id)) _selectedCustomListIds.Add(id); StateHasChanged(); }
+    private void ClearCustomFilters() { _selectedCustomListIds.Clear(); _customDropdownOpen = false; StateHasChanged(); }
+
     private void Close() => OnClose.InvokeAsync();
     private async Task OnPanelKeyDown(KeyboardEventArgs e)
     {
@@ -748,11 +665,7 @@
             await OnClose.InvokeAsync();
     }
 
-    private async Task HandleEntryClick(UserListEntry entry)
-    {
-        CloseAllDropdowns();
-        await OnAnimeSelected.InvokeAsync(entry.Anime);
-    }
+    private async Task HandleEntryClick(UserListEntry entry) { CloseAllDropdowns(); await OnAnimeSelected.InvokeAsync(entry.Anime); }
 
     private void HandleTouchStart(TouchEventArgs e)
     {
