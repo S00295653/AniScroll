@@ -19,7 +19,7 @@
     pointer-events: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding-bottom: 148px;
+    padding-bottom: max(76px, env(safe-area-inset-bottom, 0px));
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94);

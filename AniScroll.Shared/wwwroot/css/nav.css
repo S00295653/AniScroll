@@ -406,3 +406,8 @@
         margin-right: 2px;
     }
 }
+
+.search-row::before,
+.search-row::after {
+    display: none;
+}
