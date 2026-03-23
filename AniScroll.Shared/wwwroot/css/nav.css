@@ -37,15 +37,6 @@
     pointer-events: all;
 }
 
-.search-is-active .nav-section {
-    border-radius: 0;
-}
-
-.search-is-active .main-nav-bar {
-    border-radius: 0;
-    border-top-color: transparent;
-}
-
 /* ── Mobile search row ── */
 .search-row {
     width: 100%;
