@@ -17,24 +17,25 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Install MAUI workloads
-        run: dotnet workload install maui-ios maui-android --skip-sign-check
+        run: dotnet workload install maui-ios --skip-sign-check
 
       - name: Restore
         run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj -p:TargetFrameworks=net9.0-ios
 
       - name: Build iOS (sans signing)
+        env:
+          NOWARN: "CS8620,CS0414,CS8603"
         run: |
           dotnet build AniScroll.Maui/AniScroll.Maui.csproj \
             -f net9.0-ios \
             -c Release \
-            -p:TargetFrameworks=net9.0-ios \
-            /p:RuntimeIdentifier=ios-arm64 \
-            /p:CodesignKey="" \
-            /p:CodesignProvision="" \
-            /p:EnableCodeSigning=false \
-            /p:MtouchLink=None \
-            /p:TreatWarningsAsErrors=false \
-            /p:NoWarn="CS8620;CS0414;CS8603"
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:CodesignKey="" \
+            -p:CodesignProvision="" \
+            -p:EnableCodeSigning=false \
+            -p:MtouchLink=None \
+            -p:TreatWarningsAsErrors=false \
+            -p:NoWarn="$NOWARN"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
