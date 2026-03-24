@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+        <!-- CI macOS : iOS seulement (pas maccatalyst) -->
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net9.0-ios</TargetFrameworks>
+        <!-- Windows dev : toutes les cibles -->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
+        <!-- Linux CI : Android seulement -->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('linux'))">net9.0-android</TargetFrameworks>
 
         <DotNetHostPath>C:\Program Files\dotnet\dotnet.exe</DotNetHostPath>
@@ -20,7 +23,6 @@
         <ApplicationVersion>1</ApplicationVersion>
         <WindowsPackageType>None</WindowsPackageType>
 
-        <!-- Suppress warnings that are not actionable in CI -->
         <NoWarn>CS8620;CS0414;CS8603</NoWarn>
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
