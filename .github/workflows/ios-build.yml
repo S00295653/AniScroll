@@ -2,7 +2,8 @@ name: Build iOS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master, main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,11 +19,20 @@ jobs:
       - name: Install MAUI workloads
         run: dotnet workload install maui-ios
 
-      - name: Build iOS
-        run: dotnet build src/MonApp.csproj -f net9.0-ios -c Release
+      - name: Build iOS (sans signing)
+        run: >
+          dotnet build AniScroll.Maui/AniScroll.Maui.csproj
+          -f net9.0-ios
+          -c Release
+          /p:RuntimeIdentifier=ios-arm64
+          /p:CodesignKey=""
+          /p:CodesignProvision=""
+          /p:EnableCodeSigning=false
+          /p:MtouchLink=None
 
-      - name: Upload IPA
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
-          path: '**/*.ipa'
+          path: AniScroll.Maui/bin/Release/net9.0-ios/**/*.app
+          if-no-files-found: warn
