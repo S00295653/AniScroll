@@ -16,12 +16,11 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Install maui-ios workload
-        run: |
-          dotnet workload install maui-ios --skip-sign-check
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-ios maui-android --skip-sign-check
 
-      - name: Restore dependencies
-        run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj
+      - name: Restore (iOS only)
+        run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj -f net9.0-ios
 
       - name: Build iOS (sans signing)
         run: |
