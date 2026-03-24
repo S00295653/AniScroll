@@ -14,7 +14,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '8.0.x'
 
       - name: Install MAUI workloads
         run: dotnet workload install maui
@@ -22,7 +22,7 @@ jobs:
       - name: Build iOS (sans signing)
         run: >
           dotnet build AniScroll.Maui/AniScroll.Maui.csproj
-          -f net9.0-ios
+          -f net8.0-ios
           -c Release
           /p:RuntimeIdentifier=ios-arm64
           /p:CodesignKey=""
@@ -36,5 +36,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
-          path: AniScroll.Maui/bin/Release/net9.0-ios/**/*.app
+          path: AniScroll.Maui/bin/Release/net8.0-ios/**/*.app
           if-no-files-found: warn
