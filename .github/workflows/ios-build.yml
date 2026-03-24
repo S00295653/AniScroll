@@ -14,13 +14,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.100'
+          dotnet-version: '9.0.x'
 
-      - name: Install MAUI workloads (version pincée)
-        run: |
-          dotnet workload install maui \
-            --from-rollback-file https://aka.ms/dotnet/9/WorkloadRollback.json \
-            --skip-sign-check
+      - name: Install MAUI workloads
+        run: dotnet workload install maui-ios --skip-sign-check
+
+      - name: Restore
+        run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj
 
       - name: Build iOS (sans signing)
         run: >
