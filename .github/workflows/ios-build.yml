@@ -19,14 +19,15 @@ jobs:
       - name: Install MAUI workloads
         run: dotnet workload install maui-ios maui-android --skip-sign-check
 
-      - name: Restore (iOS only)
-        run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj -f net9.0-ios
+      - name: Restore
+        run: dotnet restore AniScroll.Maui/AniScroll.Maui.csproj -p:TargetFrameworks=net9.0-ios
 
       - name: Build iOS (sans signing)
         run: |
           dotnet build AniScroll.Maui/AniScroll.Maui.csproj \
             -f net9.0-ios \
             -c Release \
+            -p:TargetFrameworks=net9.0-ios \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="" \
             /p:CodesignProvision="" \
