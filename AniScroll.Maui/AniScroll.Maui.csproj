@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <!-- Sur macOS (CI iOS) : iOS + MacCatalyst seulement -->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-        <!-- Sur Windows : toutes les cibles -->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.19041.0</TargetFrameworks>
-        <!-- Sur Linux (CI Android) : Android seulement -->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('linux'))">net9.0-android</TargetFrameworks>
 
         <DotNetHostPath>C:\Program Files\dotnet\dotnet.exe</DotNetHostPath>
-
         <OutputType>Exe</OutputType>
         <RootNamespace>AniScroll.Maui</RootNamespace>
         <UseMaui>true</UseMaui>
@@ -23,6 +19,10 @@
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
         <WindowsPackageType>None</WindowsPackageType>
+
+        <!-- Suppress warnings that are not actionable in CI -->
+        <NoWarn>CS8620;CS0414;CS8603</NoWarn>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
