@@ -16,8 +16,11 @@ jobs:
         with:
           dotnet-version: '9.0.100'
 
-      - name: Install MAUI workloads
-        run: dotnet workload install maui
+      - name: Install MAUI workloads (version pincée)
+        run: |
+          dotnet workload install maui \
+            --from-rollback-file https://aka.ms/dotnet/9/WorkloadRollback.json \
+            --skip-sign-check
 
       - name: Build iOS (sans signing)
         run: >
