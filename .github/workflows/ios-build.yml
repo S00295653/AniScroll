@@ -40,9 +40,16 @@ jobs:
       - name: Build iOS (sans signing)
         run: dotnet build AniScroll.Maui/AniScroll.Maui.csproj -f net9.0-ios -c Release -p:RuntimeIdentifier=ios-arm64 -p:CodesignKey="" -p:CodesignProvision="" -p:EnableCodeSigning=false -p:MtouchLink=None -p:UseInterpreter=true
 
-      - name: Upload artifact
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -r AniScroll.Maui/bin/Release/net9.0-ios/ios-arm64/*.app Payload/
+          zip -r AniScroll.ipa Payload
+          rm -rf Payload
+
+      - name: Upload .ipa
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: AniScroll.Maui/bin/Release/net9.0-ios/**/*.app
+          name: AniScroll-ios
+          path: AniScroll.ipa
           if-no-files-found: warn
