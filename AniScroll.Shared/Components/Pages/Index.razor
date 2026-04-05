@@ -177,17 +177,7 @@
 
     @if (isSearchActive)
     {
-        @* ── Transparent backdrop: clicking outside the results panel hides it
-              WITHOUT clearing the query or results (they're cached for refocus). ── *@
-        <div style="position:fixed;inset:0;z-index:997;"
-             @onclick="HandleSearchBackdropClick"></div>
-
-        <div class="search-results-panel visible"
-             @onclick:stopPropagation="true"
-             @onmousedown:stopPropagation="true"
-             @ontouchstart:stopPropagation="true"
-             @ontouchmove:stopPropagation="true"
-             @ontouchend:stopPropagation="true">
+        <div class="search-results-panel visible">
 
             @if (isSearchLoading && !searchResults.Any())
             {
@@ -787,6 +777,7 @@
 
     private async Task ShowAnimeDetails(AnimeCard anime)
     {
+        isSearchActive = false;
         bool isJikanStub = anime.Id == 0;
         bool missingData = !isJikanStub && (anime.Relations.Count == 0
                            || anime.Tags.Count == 0);
@@ -892,17 +883,6 @@
     }
 
     /// <summary>
-    /// Called when the user clicks the transparent backdrop behind the results panel.
-    /// Hides the panel but keeps query + results cached for the next focus event.
-    /// </summary>
-    private void HandleSearchBackdropClick()
-    {
-        isSearchActive = false;
-        StateHasChanged();
-        // _currentSearchQuery and searchResults intentionally NOT cleared
-    }
-
-    /// <summary>
     /// Called when the search input regains focus.
     /// Re-shows the cached results instantly, no API call needed.
     /// </summary>
@@ -915,13 +895,13 @@
         }
     }
 
-    private void HandleListsClicked() { showListsPanel = true; StateHasChanged(); }
+    private void HandleListsClicked() { isSearchActive = false; showListsPanel = true; StateHasChanged(); }
     private void CloseListsPanel() { showListsPanel = false; StateHasChanged(); }
 
     private async Task HandleListsAnimeSelected(AnimeCard anime)
     { await ShowAnimeDetails(anime); }
 
-    private void HandleProfileClicked() { _showProfilePanel = !_showProfilePanel; }
+    private void HandleProfileClicked() { isSearchActive = false; _showProfilePanel = !_showProfilePanel; }
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  DISPOSE

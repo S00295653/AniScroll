@@ -145,8 +145,9 @@
                     <div class="sfp-section-label">My Score</div>
                     <div class="sfp-dual-slider">
                         <input type="text" inputmode="decimal" class="sfp-num-input"
+                               @ref="_scoreFromTextRef"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
+                               @onchange="OnScoreFromTextChange" />
                         <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onpointerdown="e => OnTrackClickAsync(e, SliderType.Score)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
@@ -166,8 +167,9 @@
                                    @onclick:stopPropagation="true" />
                         </div>
                         <input type="text" inputmode="decimal" class="sfp-num-input"
+                               @ref="_scoreToTextRef"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
+                               @onchange="OnScoreToTextChange" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -570,6 +572,7 @@
     private ElementReference _yearWrapRef, _scoreWrapRef, _epWrapRef;
     private ElementReference _yearLoRef,  _yearHiRef;
     private ElementReference _scoreLoRef, _scoreHiRef;
+    private ElementReference _scoreFromTextRef, _scoreToTextRef;
     private ElementReference _epLoRef,    _epHiRef;
 
     private bool _jsReady = false;
@@ -913,6 +916,30 @@
             await JS.InvokeVoidAsync("sfpSetValue", _scoreLoRef, _scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
         }
         ScheduleResultCountUpdate();
+    }
+
+    private async Task OnScoreFromTextChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString()?.Replace(',', '.');
+        if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            var rounded = Math.Min(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreTo);
+            _scoreFrom = rounded;
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreFromTextRef, rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+            ScheduleResultCountUpdate();
+        }
+    }
+
+    private async Task OnScoreToTextChange(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString()?.Replace(',', '.');
+        if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            var rounded = Math.Max(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreFrom);
+            _scoreTo = rounded;
+            await JS.InvokeVoidAsync("sfpSetValue", _scoreToTextRef, rounded.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+            ScheduleResultCountUpdate();
+        }
     }
 
     private async Task OnEpFromInput(int v)

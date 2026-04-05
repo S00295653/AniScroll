@@ -216,21 +216,16 @@
 }
 
 .modal-poster {
-    width: 120px;     /* was 110px */
-    height: 174px;    /* was 158px — keeps 2:3 ratio */
-    border-radius: 8px;
-    background-size: cover;
-    background-position: center top;  /* show faces/top of artwork */
-    background-repeat: no-repeat;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.7);
-    image-rendering: auto;
-    -webkit-image-rendering: auto;
+    width: 120px;
+    border-radius: 4px;
+    box-shadow: 0 0 29px rgba(0,0,0,0.35);
+    display: block;
+    vertical-align: text-top;
 }
 
 @media (min-width: 768px) {
     .modal-poster {
-        width: 180px;   /* was 170px */
-        height: 260px;  /* was 245px */
+        width: 180px;
     }
 }
 

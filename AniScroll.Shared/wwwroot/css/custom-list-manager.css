@@ -13,6 +13,9 @@
     align-items: flex-end;
     justify-content: center;
     animation: overlayFadeIn 0.18s ease;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .clm-panel {
@@ -26,6 +29,7 @@
     animation: sheetSlideUp 0.3s cubic-bezier(0.22,1,0.36,1);
     border-top: 1px solid rgba(255,255,255,0.07);
     box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+    touch-action: auto;
 }
 
 @media (min-width: 700px) {
@@ -91,6 +95,8 @@
     -ms-overflow-style: none;
     flex-direction: column;
     gap: 0;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
 }
 .clm-body::-webkit-scrollbar { display: none; }
 

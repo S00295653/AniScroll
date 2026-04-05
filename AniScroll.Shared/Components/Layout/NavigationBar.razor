@@ -17,7 +17,7 @@
                     <input @ref="searchInputRef"
                            class="search-field"
                            type="text"
-                           placeholder="Search anime..."
+                           placeholder="Search"
                            value="@searchQuery"
                            @oninput="HandleSearchInput"
                            @onfocus="HandleSearchFocus" />
@@ -65,7 +65,7 @@
                 }
                 else
                 {
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -119,7 +119,7 @@
         else
         {
             StateHasChanged();
-            await Task.Delay(600);
+            await Task.Delay(400);
             try { await JS.InvokeVoidAsync("focusElement", searchInputRef); }
             catch { }
         }
