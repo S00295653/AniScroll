@@ -13,7 +13,6 @@
         <div class="clm-panel"
              @onclick:stopPropagation="true"
              @onpointerdown:stopPropagation="true"
-             @onpointerdown="() => _pointerDownOnPanel = true"
              @onpointerup:stopPropagation="true">
 
             <!-- ── Header ──────────────────────────────────────────── -->
@@ -317,8 +316,6 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
-
-    private bool _pointerDownOnPanel;
 
     // ── Row wrapper ──────────────────────────────────────────────────────
     private class Row

@@ -35,7 +35,12 @@
                         <div class="modal-poster-section">
                             <div class="modal-poster"
                                  style="background-image: url('@CurrentAnime.ImageUrl');
-                                        @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")">
+                                        @(!string.IsNullOrEmpty(CurrentAnime.CoverColor) ? $"background-color:{CurrentAnime.CoverColor};" : "")"
+                                 @onpointerdown="StartPosterLongPress"
+                                 @onpointerup="CancelPosterLongPress"
+                                 @onpointerleave="CancelPosterLongPress"
+                                 @onpointercancel="CancelPosterLongPress"
+                                 @onclick:stopPropagation="true">
                             </div>
 
                             <div class="modal-action-buttons">
@@ -690,7 +695,42 @@
     </div>
 }
 
+<!-- ══════════════════════════════════════════════════════════════
+     FULLSCREEN IMAGE VIEWER
+     ══════════════════════════════════════════════════════════════ -->
+@if (_showFullImage && CurrentAnime != null)
+{
+    <div class="fullimg-overlay" @onclick="() => _showFullImage = false">
+        <img class="fullimg-img" src="@CurrentAnime.ImageUrl" alt="@CurrentAnime.Title" @onclick:stopPropagation="true" />
+    </div>
+}
+
 <!-- ══ Share panel styles ══ -->
+<style>
+.fullimg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 6000;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: sp-ov-in .18s ease;
+    cursor: zoom-out;
+}
+.fullimg-img {
+    max-width: 92vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+    user-select: none;
+    -webkit-user-select: none;
+}
+</style>
+
 <style>
 .sp-overlay {
     position: fixed;
@@ -843,6 +883,31 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    // ── Fullscreen image ─────────────────────────────────────────────────────
+    private bool _showFullImage = false;
+    private System.Threading.CancellationTokenSource? _longPressCts;
+
+    private void StartPosterLongPress(PointerEventArgs e)
+    {
+        _longPressCts?.Cancel();
+        _longPressCts = new System.Threading.CancellationTokenSource();
+        var token = _longPressCts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500, token);
+                await InvokeAsync(() => { _showFullImage = true; StateHasChanged(); });
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    private void CancelPosterLongPress(PointerEventArgs e)
+    {
+        _longPressCts?.Cancel();
+    }
+
     // ── Share ─────────────────────────────────────────────────────────────────
     private bool _shareOpen   = false;
     private bool _shareCopied = false;
@@ -911,6 +976,7 @@
         UserListService.OnChanged -= HandleListChanged;
         try { _ = JS.InvokeVoidAsync("unregisterEdgeSwipeInterceptor"); } catch { }
         _copyResetCts?.Cancel(); _copyResetCts?.Dispose();
+        _longPressCts?.Cancel(); _longPressCts?.Dispose();
     }
 
     private void HandleListChanged() { RefreshListState(); InvokeAsync(StateHasChanged); }
@@ -922,7 +988,7 @@
             isFavorited = false; showSpoilers = false; showListEditor = false; showDeleteConfirm = false;
             pullOffset = 0; isPulling = false; isPullTrackingActive = false;
             edgeSwipeOffset = 0; isEdgeSwiping = false; isEdgeSwipeTrackingActive = false;
-            _scoreBarDragging = false; _epBarDragging = false; _shareOpen = false; _shareCopied = false;
+            _scoreBarDragging = false; _epBarDragging = false; _shareOpen = false; _shareCopied = false; _showFullImage = false;
             _lastAnimeId = CurrentAnime?.Id; RefreshListState();
         }
     }

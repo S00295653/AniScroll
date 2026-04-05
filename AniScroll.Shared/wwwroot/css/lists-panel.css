@@ -215,6 +215,8 @@
     padding: 8px 16px 32px;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    position: relative;
+    z-index: 1;
 }
 
     .lists-content::-webkit-scrollbar {

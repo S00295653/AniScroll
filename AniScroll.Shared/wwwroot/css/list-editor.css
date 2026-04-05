@@ -202,11 +202,13 @@
 .list-editor-save-btn:hover  { background: #0284c7; box-shadow: 0 3px 16px rgba(14,165,233,0.55); }
 .list-editor-save-btn:active { transform: scale(0.94); }
 
-/* Body — FIX: not scrollable, compact */
+/* Body — scrollable with containment */
 .list-editor-body {
     flex: 1;
-    overflow: hidden;
-    min-height: 0; /* FIX: flex children default to min-height:auto which ignores overflow:hidden */
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    min-height: 0;
     padding: 10px 14px 0;
     display: flex;
     flex-direction: column;

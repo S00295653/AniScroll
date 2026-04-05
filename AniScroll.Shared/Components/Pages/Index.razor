@@ -330,7 +330,6 @@
     private bool showDetailPopup = false;
     private bool showListsPanel = false;
     private AnimeCard? selectedAnime = null;
-    private bool _detailOpenedFromLists = false;
 
     // ─── Search ───────────────────────────────────────────────────────────────
     private bool isSearchActive = false;
@@ -455,6 +454,18 @@
         try { await LoadAnimes(60, isBackgroundLoad: false); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Init] {ex}"); isLoading = false; }
         finally { isInitialLoadComplete = true; StateHasChanged(); }
+
+        // Preload studios and metadata in the background
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await AniListService.FetchGenresAndTagsAsync();
+                if (AniListService.GetCachedStudios() == null && !AniListService.IsStudiosLoading)
+                    await AniListService.FetchAllStudiosAsync();
+            }
+            catch { }
+        });
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -777,9 +788,8 @@
     private async Task ShowAnimeDetails(AnimeCard anime)
     {
         bool isJikanStub = anime.Id == 0;
-        bool missingData = !isJikanStub && anime.Relations.Count == 0
-                           && string.IsNullOrEmpty(anime.Format)
-                           && anime.Tags.Count == 0;
+        bool missingData = !isJikanStub && (anime.Relations.Count == 0
+                           || anime.Tags.Count == 0);
 
         if (isJikanStub || missingData)
         {
@@ -797,7 +807,7 @@
     private void CloseDetailPopup()
     {
         showDetailPopup = false; selectedAnime = null;
-        _detailOpenedFromLists = false; StateHasChanged();
+        StateHasChanged();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -909,7 +919,7 @@
     private void CloseListsPanel() { showListsPanel = false; StateHasChanged(); }
 
     private async Task HandleListsAnimeSelected(AnimeCard anime)
-    { _detailOpenedFromLists = true; await ShowAnimeDetails(anime); }
+    { await ShowAnimeDetails(anime); }
 
     private void HandleProfileClicked() { _showProfilePanel = !_showProfilePanel; }
 

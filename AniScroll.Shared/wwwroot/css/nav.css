@@ -339,6 +339,7 @@
     /* ── ORDER: Lists · Search · Profile ── */
     .nav-buttons-row .nav-btn:first-child {
         order: 1;
+        flex-shrink: 0;
     }
 
     .search-row {
@@ -347,15 +348,16 @@
 
     .nav-buttons-row .nav-btn:last-child {
         order: 3;
+        flex-shrink: 0;
     }
 
     /* ── Search ── */
     .search-row {
         display: flex;
         align-items: center;
-        flex: 1;
-        min-width: 160px;
-        max-width: 240px;
+        flex: 1 1 0;
+        min-width: 80px;
+        max-width: 340px;
         height: auto !important;
         overflow: visible;
         padding: 0 8px;
@@ -367,6 +369,7 @@
         transition: none !important;
         flex: 1;
         width: 100%;
+        min-width: 0;
         height: 30px;
         margin: 0;
         border-radius: 15px;

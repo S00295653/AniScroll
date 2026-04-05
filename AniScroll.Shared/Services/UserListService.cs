@@ -147,12 +147,29 @@ namespace AniScroll.Shared.Services
 
         public void SaveEntry(UserListEntry entry)
         {
-            entry.UpdatedAt = DateTime.UtcNow;
-            if (!_entries.ContainsKey(entry.Anime.Id))
+            bool isNew = !_entries.TryGetValue(entry.Anime.Id, out var existing);
+            if (isNew)
+            {
                 entry.AddedAt = DateTime.UtcNow;
+                entry.UpdatedAt = DateTime.UtcNow;
+            }
+            else if (HasEntryChanged(existing!, entry))
+            {
+                entry.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                entry.UpdatedAt = existing!.UpdatedAt;
+            }
             _entries[entry.Anime.Id] = entry;
             OnChanged?.Invoke();
         }
+
+        private static bool HasEntryChanged(UserListEntry a, UserListEntry b) =>
+            a.Status != b.Status || a.Score != b.Score || a.EpisodesWatched != b.EpisodesWatched ||
+            a.TotalRewatches != b.TotalRewatches || a.Notes != b.Notes || a.StartDate != b.StartDate ||
+            a.FinishDate != b.FinishDate || a.IsPrivate != b.IsPrivate || a.HideFromStatusLists != b.HideFromStatusLists ||
+            !a.CustomListIds.SequenceEqual(b.CustomListIds);
 
         public void ImportEntry(UserListEntry entry)
         {

@@ -1,29 +1,4 @@
 /* ======================================================
-   LISTS TABS ROW: + button for custom list manager
-   ====================================================== */
-
-.lists-add-btn {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s, transform 0.13s;
-    font-family: inherit;
-    flex-shrink: 0;
-    margin-right: 2px;
-}
-.lists-add-btn:hover  { background: rgba(255,255,255,0.13); color: white; }
-.lists-add-btn:active { transform: scale(0.88); }
-
-
-/* ======================================================
    CUSTOM LIST MANAGER POPUP
    ====================================================== */
 

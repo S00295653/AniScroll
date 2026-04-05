@@ -10,8 +10,8 @@
     padding: 0 14px 10px;
     position: relative;
     z-index: 10;
-    flex-wrap: nowrap; /* ← pas de retour à la ligne */
-    overflow: hidden; /* ← rien ne dépasse */
+    flex-wrap: nowrap;
+    overflow: visible;
 }
 
 /* + button (open CustomListManager) ──────────────────────────────────────── */

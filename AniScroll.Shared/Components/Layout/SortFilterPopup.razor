@@ -146,7 +146,7 @@
                     <div class="sfp-dual-slider">
                         <input type="text" inputmode="decimal" class="sfp-num-input"
                                value="@_scoreFrom.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(v, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
+                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreFrom = Math.Min(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreTo); ScheduleResultCountUpdate(); } }" />
                         <div class="sfp-slider-wrap" @ref="_scoreWrapRef" @onpointerdown="e => OnTrackClickAsync(e, SliderType.Score)">
                             <div class="sfp-slider-track"></div>
                             <div class="sfp-slider-fill" style="@ScoreFillStyle"></div>
@@ -167,7 +167,7 @@
                         </div>
                         <input type="text" inputmode="decimal" class="sfp-num-input"
                                value="@_scoreTo.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(v, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
+                               @onchange="e => { var raw = e.Value?.ToString()?.Replace(',', '.'); if (double.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) { _scoreTo = Math.Max(Math.Clamp(Math.Round(v * 2, MidpointRounding.AwayFromZero) / 2, 0, 10), _scoreFrom); ScheduleResultCountUpdate(); } }" />
                     </div>
                 </div>
                 <div class="sfp-divider"></div>
@@ -548,8 +548,6 @@
 
     public enum SortMode
     {
-        RecentlyAdded,    // kept for back-compat
-        OldestFirst,      // kept for back-compat
         RecentlyUpdated,
         Favourites,
         TitleAZ, TitleZA,
