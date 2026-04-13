@@ -3,6 +3,7 @@
 @inject AniListAuthService AniListAuth
 @inject UserListService UserListService
 @inject IJSRuntime JS
+@implements IDisposable
 
 @if (IsActive)
 {
@@ -147,6 +148,8 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public bool IsActive { get; set; }
 
+    private DotNetObjectReference<AccountTab>? _selfRef;
+
     private string _pastedToken = "";
 
     private enum PanelState { NotConnected, Loading, Connected, Importing, Done, Error, WaitingForPin }
@@ -207,8 +210,11 @@
     {
         try
         {
+            _selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("aniListListenForToken", _selfRef);
             await JS.InvokeVoidAsync("open", AniListAuth.GetAuthUrl(), "_blank");
             _state = PanelState.WaitingForPin;
+            _loadingText = "Waiting for authorization…";
             StateHasChanged();
         }
         catch (Exception ex)
@@ -217,6 +223,22 @@
             _errorMessage = "Could not open AniList login: " + ex.Message;
             StateHasChanged();
         }
+    }
+
+    [JSInvokable]
+    public async Task OnTokenFromOtherTab(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return;
+        _pastedToken = token;
+        AniListAuth.SetToken(token);
+        try { await JS.InvokeVoidAsync("aniListSaveToken", token); } catch { }
+        _state = PanelState.Loading;
+        _loadingText = "Fetching your profile…";
+        await InvokeAsync(StateHasChanged);
+        var user = await AniListAuth.FetchCurrentUserAsync();
+        _state = user == null ? PanelState.Error : PanelState.Connected;
+        if (user == null) _errorMessage = "Invalid token or could not fetch profile.";
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task SubmitToken()
@@ -350,10 +372,16 @@
 
     private async Task Disconnect()
     {
-        try { await JS.InvokeVoidAsync("aniListRemoveToken"); } catch { }
+        try { await JS.InvokeVoidAsync("aniListStopListening"); } catch { }
         AniListAuth.ClearToken();
         _state = PanelState.NotConnected;
         _importDone = 0; _importTotal = 0; _listsCreated = 0;
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("aniListStopListening"); } catch { }
+        _selfRef?.Dispose();
     }
 }

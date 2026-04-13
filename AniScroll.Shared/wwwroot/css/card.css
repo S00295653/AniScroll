@@ -23,6 +23,8 @@
     .anime-card.active {
         pointer-events: all;
         z-index: 10;
+        touch-action: none;
+        -ms-touch-action: none;
     }
 
 /* ========== BACKGROUND IMAGE ========== */

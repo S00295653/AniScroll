@@ -41,6 +41,9 @@ html, body {
     top: 0;
     left: 0;
     overflow: hidden;
+    touch-action: none;
+    -ms-touch-action: none;
+    overscroll-behavior: none;
 }
 
 /* Desktop: pill floats over cards — no offset, cards use full height */

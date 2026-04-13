@@ -1,5 +1,5 @@
 ﻿// ═══════════════════════════════════════════════════════════════════════
-//  scroll-helpers.js  —  AniScroll
+//  scroll-helpers.js  —  AniScroll (patched: MAUI drag + OAuth cross-tab)
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── Viewport / scroll helpers ────────────────────────────────────────────────
@@ -437,37 +437,101 @@ window.removeWheelScrollPrevention = function (el) {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-//  AniList OAuth helpers
+//  AniList OAuth helpers — cross-tab communication
 // ═══════════════════════════════════════════════════════════════════════
+
+var _aniListTokenKey = 'anilist_token';
+var _aniListTokenSignalKey = 'anilist_token_signal';
+var _aniListTokenCallback = null;
+var _aniListPollInterval = null;
 
 window.aniListGetToken = function () {
     try {
-        const hash = window.location.hash;
+        var hash = window.location.hash;
         if (hash && hash.includes('access_token=')) {
-            const params = new URLSearchParams(hash.substring(1));
-            const token = params.get('access_token');
+            var params = new URLSearchParams(hash.substring(1));
+            var token = params.get('access_token');
             if (token) {
-                localStorage.setItem('anilist_token', token);
+                localStorage.setItem(_aniListTokenKey, token);
+                // Signal other tabs
+                localStorage.setItem(_aniListTokenSignalKey, Date.now().toString());
                 history.replaceState(null, '', window.location.pathname + window.location.search);
+                // Try to close this tab (works if opened via window.open)
+                setTimeout(function () {
+                    try { window.close(); } catch (e) { }
+                }, 400);
                 return { token: token, isNewAuth: true };
             }
         }
-        const saved = localStorage.getItem('anilist_token');
+        var saved = localStorage.getItem(_aniListTokenKey);
         return { token: saved || null, isNewAuth: false };
     } catch (e) {
-        console.warn('[oauth-helpers] aniListGetToken error:', e);
+        console.warn('[oauth] aniListGetToken error:', e);
         return { token: null, isNewAuth: false };
     }
 };
 
 window.aniListSaveToken = function (token) {
-    try { if (token) localStorage.setItem('anilist_token', token); }
-    catch (e) { console.warn('[oauth-helpers] aniListSaveToken error:', e); }
+    try { if (token) localStorage.setItem(_aniListTokenKey, token); }
+    catch (e) { console.warn('[oauth] aniListSaveToken error:', e); }
 };
 
 window.aniListRemoveToken = function () {
-    try { localStorage.removeItem('anilist_token'); }
-    catch (e) { console.warn('[oauth-helpers] aniListRemoveToken error:', e); }
+    try {
+        localStorage.removeItem(_aniListTokenKey);
+        localStorage.removeItem(_aniListTokenSignalKey);
+    } catch (e) { console.warn('[oauth] aniListRemoveToken error:', e); }
+};
+
+/**
+ * Start listening for token arrival from another tab via localStorage events + polling.
+ * Called after opening the OAuth popup.
+ */
+window.aniListListenForToken = function (dotNetRef) {
+    window.aniListStopListening();
+
+    // Remember the current token value so we only react to NEW writes
+    var tokenAtStart = null;
+    try { tokenAtStart = localStorage.getItem(_aniListTokenKey); } catch (e) { }
+
+    _aniListTokenCallback = function (e) {
+        if (e.key === _aniListTokenSignalKey || e.key === _aniListTokenKey) {
+            var token = null;
+            try { token = localStorage.getItem(_aniListTokenKey); } catch (ex) { }
+            if (token && token !== tokenAtStart) {
+                window.aniListStopListening();
+                dotNetRef.invokeMethodAsync('OnTokenFromOtherTab', token);
+            }
+        }
+    };
+    window.addEventListener('storage', _aniListTokenCallback);
+
+    // Polling fallback (storage events don't fire in same-tab or some WebViews)
+    var pollCount = 0;
+    _aniListPollInterval = setInterval(function () {
+        pollCount++;
+        if (pollCount > 300) { // 5 min max
+            window.aniListStopListening();
+            return;
+        }
+        var token = null;
+        try { token = localStorage.getItem(_aniListTokenKey); } catch (ex) { }
+        if (token && token !== tokenAtStart) {
+            window.aniListStopListening();
+            dotNetRef.invokeMethodAsync('OnTokenFromOtherTab', token);
+        }
+    }, 1000);
+};
+
+window.aniListStopListening = function () {
+    if (_aniListTokenCallback) {
+        window.removeEventListener('storage', _aniListTokenCallback);
+        _aniListTokenCallback = null;
+    }
+    if (_aniListPollInterval) {
+        clearInterval(_aniListPollInterval);
+        _aniListPollInterval = null;
+    }
 };
 
 
@@ -546,6 +610,7 @@ window.unregisterEscapeKey = function () {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  CARD DRAG — native JS, zero Blazor overhead on every move frame
+//  PATCHED: added pointer events for MAUI WebView compatibility
 // ═══════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -589,6 +654,22 @@ window.unregisterEscapeKey = function () {
         img.style.transform = '';
         void img.offsetWidth;
         img.style.transition = '';
+    }
+
+    // Check if any overlay/modal is open (drag should be suppressed)
+    function isOverlayOpen() {
+        return !!(
+            document.querySelector('.anime-detail-overlay') ||
+            document.querySelector('.lists-overlay') ||
+            document.querySelector('.sfp-overlay') ||
+            document.querySelector('.swset-overlay') ||
+            document.querySelector('.pp-overlay') ||
+            document.querySelector('.clm-overlay') ||
+            document.querySelector('.search-results-panel.visible') ||
+            document.querySelector('.list-editor-overlay') ||
+            document.querySelector('.delete-confirm-overlay') ||
+            document.querySelector('.sp-overlay')
+        );
     }
 
     // ── Entrance animation ────────────────────────────────────────────────────
@@ -755,11 +836,35 @@ window.unregisterEscapeKey = function () {
         attributeFilter: ['class'],
     });
 
+    // ── Native pointerdown on active card (MAUI WebView fix) ──────────────────
+    // Uses event delegation on document. Bypasses Blazor's event system which
+    // can fail to forward mousedown/touchstart in MAUI WebView2.
+    document.addEventListener('pointerdown', function (e) {
+        if (!_dotNet || isDragging) return;
+
+        // Don't interfere with overlays/modals
+        if (isOverlayOpen()) return;
+
+        // Check if the pointerdown is on the active card
+        var card = e.target.closest('.anime-card.active');
+        if (!card) return;
+
+        // Don't intercept clicks on interactive elements
+        var tag = e.target.tagName.toLowerCase();
+        if (tag === 'button' || tag === 'input' || tag === 'a' || tag === 'textarea' || tag === 'select') return;
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea')) return;
+
+        // Start drag via native JS
+        window.startCardDrag(e.clientX, e.clientY);
+    }, { passive: false, capture: false });
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     window.initCardDrag = function (dotNetRef) { _dotNet = dotNetRef; };
 
     window.startCardDrag = function (x, y) {
+        if (isDragging) return; // Prevent double-start
+
         isDragging = true;
         startX = x; startY = y;
         curX = 0; curY = 0;
@@ -783,8 +888,6 @@ window.unregisterEscapeKey = function () {
             _cached.img = c.querySelector('.anime-image');
 
             // Disable box-shadow + backdrop-filter for the duration of the drag.
-            // These are the two most expensive GPU ops on mobile — removing them
-            // during motion cuts rasterisation cost to near zero.
             c.classList.add('dragging');
         }
     };
@@ -805,9 +908,21 @@ window.unregisterEscapeKey = function () {
 
     // ── Native listeners ──────────────────────────────────────────────────────
 
-    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    // Pointer events (universal — works on MAUI, desktop, touch, pen)
+    document.addEventListener('pointermove', e => {
+        if (isDragging) {
+            onMove(e.clientX, e.clientY);
+            e.preventDefault();
+        }
+    }, { passive: false });
+    document.addEventListener('pointerup', () => { if (isDragging) onEnd(); });
+    document.addEventListener('pointercancel', () => { if (isDragging) onEnd(); });
+
+    // Mouse fallback (older browsers without pointer events)
+    document.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX, e.clientY); });
     document.addEventListener('mouseup', () => { if (isDragging) onEnd(); });
 
+    // Touch fallback
     document.addEventListener('touchmove', e => {
         if (isDragging && e.touches.length) {
             onMove(e.touches[0].clientX, e.touches[0].clientY);
@@ -834,13 +949,7 @@ window.unregisterEscapeKey = function () {
         if (!_dotNet || isDragging || _wheelCooldown) return;
 
         // Don't handle wheel when overlays/modals are open
-        if (document.querySelector('.anime-detail-overlay') ||
-            document.querySelector('.lists-overlay') ||
-            document.querySelector('.sfp-overlay') ||
-            document.querySelector('.swset-overlay') ||
-            document.querySelector('.pp-overlay') ||
-            document.querySelector('.clm-overlay') ||
-            document.querySelector('.search-results-panel.visible')) return;
+        if (isOverlayOpen()) return;
 
         // Only trigger on meaningful scroll delta
         if (Math.abs(e.deltaY) < 10) return;

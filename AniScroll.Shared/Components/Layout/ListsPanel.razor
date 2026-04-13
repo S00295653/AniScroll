@@ -425,6 +425,11 @@
     private void HandleSearchInputFocus()
     {
         _searchBlurPending = false;
+        if (!_searchOpen)
+        {
+            _searchOpen = true;
+            StateHasChanged();
+        }
     }
 
     private void HandleListSearchInput(ChangeEventArgs e)
@@ -593,7 +598,7 @@
         IEnumerable<UserListEntry> entries = GetBaseEntries();
 
         // ── Text search filter ─────────────────────────────────────────────
-        if (_searchOpen && !string.IsNullOrWhiteSpace(_listSearchQuery))
+        if (!string.IsNullOrWhiteSpace(_listSearchQuery))
         {
             var q = _listSearchQuery.Trim();
             entries = entries.Where(e =>
