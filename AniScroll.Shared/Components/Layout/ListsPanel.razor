@@ -413,9 +413,10 @@
         await Task.Delay(150);
         if (_searchBlurPending)
         {
-            // Sur mobile seulement : ferme si vide
-            _listSearchQuery = string.Empty;
-            _searchOpen = false;
+            if (string.IsNullOrEmpty(_listSearchQuery))
+            {
+                _searchOpen = false;
+            }
             _searchBlurPending = false;
             StateHasChanged();
         }

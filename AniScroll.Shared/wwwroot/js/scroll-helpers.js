@@ -826,6 +826,36 @@ window.unregisterEscapeKey = function () {
             suppressNextClick = false;
         }
     }, true);
+
+    // ── Mouse wheel navigation between cards ─────────────────────────────
+    let _wheelCooldown = false;
+
+    document.addEventListener('wheel', e => {
+        if (!_dotNet || isDragging || _wheelCooldown) return;
+
+        // Don't handle wheel when overlays/modals are open
+        if (document.querySelector('.anime-detail-overlay') ||
+            document.querySelector('.lists-overlay') ||
+            document.querySelector('.sfp-overlay') ||
+            document.querySelector('.swset-overlay') ||
+            document.querySelector('.pp-overlay') ||
+            document.querySelector('.clm-overlay') ||
+            document.querySelector('.search-results-panel.visible')) return;
+
+        // Only trigger on meaningful scroll delta
+        if (Math.abs(e.deltaY) < 10) return;
+
+        _wheelCooldown = true;
+
+        // deltaY > 0 = scroll down = next card = negative offset
+        const yOffset = e.deltaY > 0 ? -100 : 100;
+        _dotNet.invokeMethodAsync('OnDragEnd', 0, yOffset, 'vertical', false);
+
+        // Cooldown prevents rapid-fire navigation
+        setTimeout(() => { _wheelCooldown = false; }, 350);
+
+        e.preventDefault();
+    }, { passive: false });
 })();
 
 // ═══════════════════════════════════════════════════════════════════════
