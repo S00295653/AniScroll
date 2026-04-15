@@ -99,7 +99,7 @@
 
 /* ── Section block ───────────────────────────────────── */
 .swset-section-block {
-    height: 400px;
+    height: 400px; 
     flex-shrink: 0;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     animation: swsetUp 0.22s ease-out 0.05s both;
