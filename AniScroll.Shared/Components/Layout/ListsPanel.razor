@@ -9,10 +9,11 @@
 {
     <div class="lists-overlay" @onclick="() => { CloseAllDropdowns(); Close(); }">
         <div class="lists-panel"
+             @onclick="CloseAllDropdowns"
              @onclick:stopPropagation="true"
              @onkeydown="OnPanelKeyDown" @onkeydown:stopPropagation="true"
              style="transform: translateY(@(pullOffset.ToString("F1", CultureInfo.InvariantCulture))px);
-                                                transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
+                                                    transition: @(isPulling ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)");">
 
             <!-- ── Drag handle ──────────────────────────────────── -->
             <div class="lists-handle-zone"
@@ -100,7 +101,7 @@
                 </div>
 
                 <!-- Status dropdown (shrinks when search open) -->
-                <div class="lf-dd lf-dd-status lf-dd-hide-on-search">
+                <div class="lf-dd lf-dd-status lf-dd-hide-on-search" @onclick:stopPropagation="true">
                     @{
                         string statusTriggerColor = _activeStatusColor;
                         bool statusActive = _selectedStatus.HasValue || _selectedStatusCustomId != null;
@@ -177,7 +178,7 @@
                 </div>
 
                 <!-- Custom Lists dropdown (shrinks when search open) -->
-                <div class="lf-dd lf-dd-custom lf-dd-hide-on-search">
+                <div class="lf-dd lf-dd-custom lf-dd-hide-on-search" @onclick:stopPropagation="true">
                     @{
                         var regularLists = UserListService.GetRegularCustomLists();
                         bool customActive = _selectedCustomListIds.Any();
@@ -247,9 +248,9 @@
                         <div class="lists-empty-icon">
                             @((_searchOpen && !string.IsNullOrEmpty(_listSearchQuery)) ? "🔍"
                                                 : (_selectedStatus.HasValue || _selectedStatusCustomId != null || _selectedCustomListIds.Any() || !_sortOptions.IsDefault) ? "🔍" : "📺")
-                        </div>
-                        <p class="lists-empty-title">
-                            @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
+                </div>
+                <p class="lists-empty-title">
+                    @if (_searchOpen && !string.IsNullOrEmpty(_listSearchQuery))
                             {
                                 <text>No results for "@_listSearchQuery"</text>
                             }
@@ -286,7 +287,7 @@
                         <div class="list-entry" @onclick="() => HandleEntryClick(e)">
                             <div class="entry-poster"
                                  style="background-image: url('@e.Anime.ImageUrl');
-                                                                                        @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
+                                                                                                    @(!string.IsNullOrEmpty(e.Anime.CoverColor) ? $"background-color:{e.Anime.CoverColor};" : "")">
                             </div>
                             <div class="entry-info">
                                 <div class="entry-title">
@@ -398,7 +399,6 @@
 
     private async Task HandleSearchToggleClick()
     {
-        // Sur PC (géré via CSS), on focus juste
         _searchOpen = true;
         _searchBlurPending = false;
         CloseAllDropdowns();
@@ -440,7 +440,7 @@
 
     private async Task ClearListSearch()
     {
-        _searchBlurPending = false; // cancel any pending close
+        _searchBlurPending = false;
         _listSearchQuery = string.Empty;
         StateHasChanged();
         try { await JS.InvokeVoidAsync("focusElement", _searchInputRef); } catch { }
@@ -597,7 +597,6 @@
     {
         IEnumerable<UserListEntry> entries = GetBaseEntries();
 
-        // ── Text search filter ─────────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(_listSearchQuery))
         {
             var q = _listSearchQuery.Trim();

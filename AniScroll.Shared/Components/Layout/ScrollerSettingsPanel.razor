@@ -24,7 +24,8 @@
                 <button class="swset-close-btn" @onclick="Close">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </button>
             </div>
@@ -34,7 +35,7 @@
                 @{
                     var lc = GetEffectiveColor(false);
                     var rc = GetEffectiveColor(true);
-                    var leftLabel  = GetEffectiveLabel(false);
+                    var leftLabel = GetEffectiveLabel(false);
                     var rightLabel = GetEffectiveLabel(true);
                 }
                 <div class="swset-row">
@@ -67,7 +68,7 @@
                     <div class="swset-skeleton">
                         <div class="swset-sk-img"><div class="swset-sk-poster"></div></div>
                         <div class="swset-sk-info">
-                            <div class="swset-sk-line swset-sk-title"  style="width:72%;animation-delay:.05s;"></div>
+                            <div class="swset-sk-line swset-sk-title" style="width:72%;animation-delay:.05s;"></div>
                             <div class="swset-sk-line swset-sk-season" style="width:34%;animation-delay:.09s;"></div>
                             <div class="swset-sk-genres" style="animation-delay:.13s;">
                                 <div class="swset-sk-genre" style="width:46px;"></div>
@@ -114,213 +115,12 @@
                 </div>
             </div>
 
-            <!-- ── Algorithm Info Section ──────────────────────────────────── -->
-            <div class="swset-future-sections">
-                @{
-                    var _algoPrefs = UserPreferences.BuildFrom(UserListService.GetAll());
-                }
-
-                <!-- ── Feed Engine section ── -->
-                <div class="swset-algo-section">
-
-                    <div class="swset-algo-header">
-                        <div class="swset-algo-header-left">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                            </svg>
-                            <span class="swset-algo-title">Feed Engine</span>
-                        </div>
-                        @if (_algoPrefs.HasData)
-                        {
-                            <span class="swset-algo-live-badge">● LIVE</span>
-                        }
-                        else
-                        {
-                            <span class="swset-algo-cold-badge">COLD START</span>
-                        }
-                    </div>
-
-                    @if (!_algoPrefs.HasData)
-                    {
-                        <div class="swset-algo-cold-info">
-                            <p class="swset-algo-cold-text">
-                                The feed uses global popularity &amp; ratings until you track 5+ anime (Completed, Watching, or scored ≥ 7). Once enough data is collected, recommendations will adapt to your taste.
-                            </p>
-                            @{
-                                int engCount = UserListService.GetAll().Count(e =>
-                                e.Status == ListStatus.Completed ||
-                                e.Status == ListStatus.Watching ||
-                                e.Status == ListStatus.Rewatching ||
-                                e.Score >= 7);
-                                int engPct = Math.Min(100, engCount * 20);
-                            }
-                            <div class="swset-algo-cold-progress">
-                                <div class="swset-algo-cold-bar" style="width:@engPct%"></div>
-                            </div>
-                            <span class="swset-algo-cold-label">@engCount / 5 engaged anime</span>
-                        </div>
-                    }
-                    else
-                    {
-                        <!-- Personalised feed stats -->
-                        <div class="swset-algo-rows">
-
-                            <!-- Score threshold -->
-                            <div class="swset-algo-row">
-                                <div class="swset-algo-row-left">
-                                    <span class="swset-algo-row-icon">🎯</span>
-                                    <div>
-                                        <span class="swset-algo-row-label">Min AniList score shown</span>
-                                        <span class="swset-algo-row-hint">Raised from your @(_algoPrefs.AvgPersonalScore > 0 ? _algoPrefs.AvgPersonalScore.ToString("F1") : "—") avg rating</span>
-                                    </div>
-                                </div>
-                                <span class="swset-algo-row-value">@_algoPrefs.MinScoreThreshold / 100</span>
-                            </div>
-
-                            <!-- Format preference -->
-                            <div class="swset-algo-row">
-                                <div class="swset-algo-row-left">
-                                    <span class="swset-algo-row-icon">📺</span>
-                                    <div>
-                                        <span class="swset-algo-row-label">Preferred format</span>
-                                        <span class="swset-algo-row-hint">Dominant format in your completed list</span>
-                                    </div>
-                                </div>
-                                <span class="swset-algo-row-value">@(_algoPrefs.PrefersTV ? "TV Series" : "Mixed")</span>
-                            </div>
-
-                            <!-- Pool weights summary -->
-                            <div class="swset-algo-row swset-algo-row-full">
-                                <span class="swset-algo-row-icon">⚖️</span>
-                                <span class="swset-algo-row-label">Feed pool weights (per 60 cards)</span>
-                            </div>
-                            <div class="swset-algo-pools">
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Taste · popular</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-taste" style="width:33%"></div></div>
-                                    <span class="swset-algo-pool-count">20</span>
-                                </div>
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Taste · acclaimed</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-rated" style="width:17%"></div></div>
-                                    <span class="swset-algo-pool-count">10</span>
-                                </div>
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Niche gems</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-niche" style="width:13%"></div></div>
-                                    <span class="swset-algo-pool-count">8</span>
-                                </div>
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Discovery</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-disc" style="width:17%"></div></div>
-                                    <span class="swset-algo-pool-count">10</span>
-                                </div>
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Airing</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-airing" style="width:17%"></div></div>
-                                    <span class="swset-algo-pool-count">10</span>
-                                </div>
-                                <div class="swset-algo-pool">
-                                    <span class="swset-algo-pool-name">Upcoming</span>
-                                    <div class="swset-algo-pool-bar"><div class="swset-algo-pool-fill swset-pool-upcoming" style="width:2%"></div></div>
-                                    <span class="swset-algo-pool-count">1</span>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Favourite genres -->
-                        @if (_algoPrefs.FavoriteGenres.Any())
-                        {
-                            <div class="swset-algo-subsection">
-                                <span class="swset-algo-sub-title">❤️ Favourite Genres</span>
-                                <span class="swset-algo-sub-hint">Primary signal for pools 1 &amp; 2</span>
-                                <div class="swset-algo-tags">
-                                    @for (int i = 0; i < _algoPrefs.FavoriteGenres.Count; i++)
-                                    {
-                                        var isTop = i == 0;
-                                        <span class="swset-algo-tag swset-tag-fav @(isTop ? "swset-tag-top" : "")">
-                                            @if (isTop)
-                                            {
-                                                <span>👑</span>
-                                            }
-                                            @_algoPrefs.FavoriteGenres[i]
-                                        </span>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Secondary genres -->
-                        @if (_algoPrefs.SecondaryGenres.Any())
-                        {
-                            <div class="swset-algo-subsection">
-                                <span class="swset-algo-sub-title">✨ Secondary Genres</span>
-                                <span class="swset-algo-sub-hint">Widens niche discovery pool</span>
-                                <div class="swset-algo-tags">
-                                    @foreach (var g in _algoPrefs.SecondaryGenres)
-                                    {
-                                        <span class="swset-algo-tag swset-tag-sec">@g</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Discovery genres -->
-                        @if (_algoPrefs.DiscoveryGenres.Any())
-                        {
-                            <div class="swset-algo-subsection">
-                                <span class="swset-algo-sub-title">🔭 Discovery Genres</span>
-                                <span class="swset-algo-sub-hint">Adjacent genres you haven't explored much</span>
-                                <div class="swset-algo-tags">
-                                    @foreach (var g in _algoPrefs.DiscoveryGenres)
-                                    {
-                                        <span class="swset-algo-tag swset-tag-disc">@g</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Disliked genres -->
-                        @if (_algoPrefs.DislikedGenres.Any())
-                        {
-                            <div class="swset-algo-subsection">
-                                <span class="swset-algo-sub-title">🚫 Filtered Out</span>
-                                <span class="swset-algo-sub-hint">Based on low scores &amp; dropped anime</span>
-                                <div class="swset-algo-tags">
-                                    @foreach (var g in _algoPrefs.DislikedGenres)
-                                    {
-                                        <span class="swset-algo-tag swset-tag-dis">@g</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-
-                        <!-- Top tags -->
-                        @if (_algoPrefs.FavoriteTags.Any())
-                        {
-                            <div class="swset-algo-subsection">
-                                <span class="swset-algo-sub-title">🏷️ Top Tags</span>
-                                <span class="swset-algo-sub-hint">High-confidence content tags (rank ≥ 60%)</span>
-                                <div class="swset-algo-tags">
-                                    @foreach (var t in _algoPrefs.FavoriteTags)
-                                    {
-                                        <span class="swset-algo-tag swset-tag-tag">@t</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    }
-
-                </div>
-            </div>
-
             <!-- ══ PICKER — bottom sheet inside .swset-screen ══════ -->
             @if (_pickerOpen)
             {
-              
+
                 var badgeColor = GetEffectiveColor(_pickingRight);
-            
+
 
                 <!-- dim backdrop covering the settings screen -->
                 <div class="swset-picker-backdrop" @onclick="ClosePicker"></div>
@@ -332,8 +132,8 @@
                     <div class="swset-picker-header">
                         <div class="swset-picker-direction-badge"
                              style="background:color-mix(in srgb,@badgeColor 12%,transparent);
-                                    border:1px solid color-mix(in srgb,@badgeColor 35%,transparent);
-                                    color:@badgeColor;">
+                                            border:1px solid color-mix(in srgb,@badgeColor 35%,transparent);
+                                            color:@badgeColor;">
                             @if (_pickingRight)
                             {
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6" /></svg>
@@ -348,7 +148,8 @@
                         <button class="swset-close-btn" @onclick="ClosePicker">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                         </button>
                     </div>
@@ -374,14 +175,17 @@
                                     if (!Enum.TryParse<ListStatus>(s.Key, out var ls)) { continue; }
                                     var lsCapture = ls;
                                     bool isSel = _pickingRight
-                                        ? (_rightStatus == lsCapture && _rightCustomId == null)
-                                        : (_leftStatus  == lsCapture && _leftCustomId  == null);
+                                    ? (_rightStatus == lsCapture && _rightCustomId == null)
+                                    : (_leftStatus == lsCapture && _leftCustomId == null);
                                     <button class="swset-picker-item @(isSel ? "swset-picker-item-sel" : "")"
                                             style="@(isSel ? $"border-color:{s.Color}55;background:color-mix(in srgb,{s.Color} 14%,transparent);color:{s.Color};" : "")"
                                             @onclick="() => PickStatus(lsCapture, null)">
                                         <span class="swset-picker-dot" style="background:@s.Color;box-shadow:0 0 5px @(s.Color)88;"></span>
                                         <span class="swset-picker-name">@s.DisplayName</span>
-                                        @if (isSel) { <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg> }
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        }
                                     </button>
                                 }
                                 else
@@ -393,7 +197,10 @@
                                             @onclick="() => PickStatus(null, cll.Id)">
                                         <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
                                         <span class="swset-picker-name">@cll.Name</span>
-                                        @if (isSel) { <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg> }
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        }
                                     </button>
                                 }
                             }
@@ -415,7 +222,10 @@
                                             @onclick="() => PickStatus(null, cll.Id)">
                                         <span class="swset-picker-dot" style="background:@cll.Color;box-shadow:0 0 5px @(cll.Color)88;"></span>
                                         <span class="swset-picker-name">@cll.Name</span>
-                                        @if (isSel) { <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg> }
+                                        @if (isSel)
+                                        {
+                                            <svg class="swset-picker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        }
                                     </button>
                                 }
                             </div>
@@ -435,19 +245,19 @@
     [Parameter] public EventCallback<SwipeSettings> OnChanged { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
-    private ListStatus _rightStatus  = ListStatus.Completed;
-    private ListStatus _leftStatus   = ListStatus.Planning;
-    private string?    _rightCustomId = null;
-    private string?    _leftCustomId  = null;
-    private bool       _pickerOpen    = false;
-    private bool       _pickingRight  = true;
+    private ListStatus _rightStatus = ListStatus.Completed;
+    private ListStatus _leftStatus = ListStatus.Planning;
+    private string? _rightCustomId = null;
+    private string? _leftCustomId = null;
+    private bool _pickerOpen = false;
+    private bool _pickingRight = true;
 
     protected override void OnParametersSet()
     {
-        _rightStatus   = Current.RightStatus;
-        _leftStatus    = Current.LeftStatus;
+        _rightStatus = Current.RightStatus;
+        _leftStatus = Current.LeftStatus;
         _rightCustomId = Current.RightCustomId;
-        _leftCustomId  = Current.LeftCustomId;
+        _leftCustomId = Current.LeftCustomId;
     }
 
     private void OpenPicker(bool isRight) { _pickingRight = isRight; _pickerOpen = true; }
@@ -457,12 +267,12 @@
     {
         ListStatus resolved = status ?? ListStatus.Planning;
         if (_pickingRight) { _rightStatus = resolved; _rightCustomId = customId; }
-        else               { _leftStatus  = resolved; _leftCustomId  = customId; }
+        else { _leftStatus = resolved; _leftCustomId = customId; }
         _pickerOpen = false;
-        Current.RightStatus   = _rightStatus;
-        Current.LeftStatus    = _leftStatus;
+        Current.RightStatus = _rightStatus;
+        Current.LeftStatus = _leftStatus;
         Current.RightCustomId = _rightCustomId;
-        Current.LeftCustomId  = _leftCustomId;
+        Current.LeftCustomId = _leftCustomId;
         await OnChanged.InvokeAsync(Current);
         StateHasChanged();
     }
@@ -494,13 +304,13 @@
 
     private string GetSvgIcon(ListStatus s) => s switch
     {
-        ListStatus.Watching   => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-miterlimit=\"10\" stroke-width=\"32\"><path d=\"M112 111v290c0 17.44 17 28.52 31 20.16l247.9-148.37c12.12-7.25 12.12-26.33 0-33.58L143 90.84c-14-8.36-31 2.72-31 20.16z\"/></svg>",
+        ListStatus.Watching => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-miterlimit=\"10\" stroke-width=\"32\"><path d=\"M112 111v290c0 17.44 17 28.52 31 20.16l247.9-148.37c12.12-7.25 12.12-26.33 0-33.58L143 90.84c-14-8.36-31 2.72-31 20.16z\"/></svg>",
         ListStatus.Rewatching => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 .49-4.5\"/></svg>",
-        ListStatus.Completed  => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>",
-        ListStatus.Planning   => "<svg width=\"13\" height=\"15\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>",
-        ListStatus.Paused     => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/><line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>",
-        ListStatus.Dropped    => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>",
-        _                     => ""
+        ListStatus.Completed => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>",
+        ListStatus.Planning => "<svg width=\"13\" height=\"15\" viewBox=\"0 0 512 512\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"32\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M352 48H160a48 48 0 00-48 48v368l144-128 144 128V96a48 48 0 00-48-48z\"/></svg>",
+        ListStatus.Paused => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><line x1=\"7\" y1=\"4\" x2=\"7\" y2=\"20\"/><line x1=\"17\" y1=\"4\" x2=\"17\" y2=\"20\"/></svg>",
+        ListStatus.Dropped => "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.8\" stroke-linecap=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>",
+        _ => ""
     };
 
     private void Close() => OnClose.InvokeAsync();

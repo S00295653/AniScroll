@@ -16,11 +16,6 @@
 <div class="anime-scroll-app @(isSearchActive ? "search-is-active" : "")" @ref="appContainer">
     <div class="build-version">v1.7.5</div>
 
-    <button @onclick="() => showDebugPanel = true"
-            style="position:fixed;top:30px;left:10px;z-index:200;background:rgba(233,69,96,0.8);border:none;color:white;font-size:9px;padding:3px 6px;border-radius:5px;cursor:pointer;font-family:monospace;">
-        DEBUG
-    </button>
-
     <div class="main-scroll">
         @for (int i = 0; i < animes.Count; i++)
         {
@@ -262,9 +257,6 @@
                 OnClose="CloseListsPanel"
                 OnAnimeSelected="HandleListsAnimeSelected" />
 
-    <AniScroll.Shared.Components.Layout.DebugPanel IsVisible="showDebugPanel"
-                                                   OnHide="@(() => showDebugPanel = false)" />
-
     <ProfilePanel IsVisible="_showProfilePanel"
                   OnClose="@(() => _showProfilePanel = false)"
                   @ref="_profilePanel" />
@@ -277,8 +269,6 @@
 </div>
 
 @code {
-    private bool showDebugPanel = false;
-
     // ─── Data ────────────────────────────────────────────────────────────────
     private List<AnimeCard> animes = new();
 
@@ -327,9 +317,6 @@
     private bool isLoadingSelectedAnime = false;
     private List<JikanSearchResult> searchResults = new();
     private CancellationTokenSource? searchCts;
-
-    // Last query typed by the user — kept in memory so we can restore the panel
-    // on refocus without firing another API call.
     private string _currentSearchQuery = string.Empty;
 
     // ─── Preload ──────────────────────────────────────────────────────────────
@@ -445,7 +432,6 @@
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Init] {ex}"); isLoading = false; }
         finally { isInitialLoadComplete = true; StateHasChanged(); }
 
-        // Preload studios and metadata in the background
         _ = Task.Run(async () =>
         {
             try
@@ -506,7 +492,6 @@
         if (showDetailPopup) { CloseDetailPopup(); return; }
         if (showListsPanel) { CloseListsPanel(); return; }
         if (_showProfilePanel) { _showProfilePanel = false; StateHasChanged(); return; }
-        // ESC also fully closes the search (bar + results + cached query)
         if (isSearchActive)
         {
             isSearchActive = false;
@@ -814,7 +799,6 @@
 
         if (string.IsNullOrWhiteSpace(query))
         {
-            // X button pressed — clear everything
             searchResults.Clear();
             isSearchActive = false;
             isSearchLoading = false;
@@ -836,7 +820,6 @@
 
     private async Task HandleSearchResultClick(JikanSearchResult result)
     {
-        // Clear cache on explicit selection
         searchResults.Clear();
         _currentSearchQuery = string.Empty;
         isSearchActive = false;
@@ -869,10 +852,6 @@
         }
     }
 
-    /// <summary>
-    /// Called when the NavBar × toggle is pressed (or Escape).
-    /// Fully tears down the search state.
-    /// </summary>
     private void HandleSearchToggled()
     {
         searchResults.Clear();
@@ -882,10 +861,6 @@
         StateHasChanged();
     }
 
-    /// <summary>
-    /// Called when the search input regains focus.
-    /// Re-shows the cached results instantly, no API call needed.
-    /// </summary>
     private void HandleSearchFocused()
     {
         if (!string.IsNullOrEmpty(_currentSearchQuery))
